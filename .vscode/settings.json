@@ -1,0 +1,29 @@
+{
+  // Use clangd (driven by build/compile_commands.json) instead of the
+  // Microsoft C/C++ extension's IntelliSense.
+  "C_Cpp.intelliSenseEngine": "disabled",
+
+  // Explicitly use the system clangd on the remote host (installed via apt).
+  "clangd.path": "/usr/bin/clangd",
+
+  "clangd.arguments": [
+    "--compile-commands-dir=${workspaceFolder}/build",
+    "--background-index",
+    "--completion-style=detailed",
+    "--header-insertion=never",
+    "--all-scopes-completion"
+  ],
+
+  // CMake Tools: keep configure simple; our CMakeLists handles the rest.
+  "cmake.buildDirectory": "${workspaceFolder}/build",
+  "cmake.configureOnOpen": false,
+
+  "files.associations": {
+    "*.hpp": "cpp"
+  },
+
+  "[cpp]": {
+    "editor.defaultFormatter": null,
+    "editor.formatOnSave": false
+  }
+}

@@ -1,26 +1,22 @@
 // Minimal REPL PoC (design §12: for the PoC the CLI owns the whole loop).
 // Reads lines from stdin, each line = a fresh session (reset + prefill +
-// greedy decode until EOS or token cap). Commands: /quit, /reset.
+// greedy decode until EOS or token cap). Commands: /quit.
 //
 // Usage: alice_repl <model_dir> <manifest.json> [max_new_tokens=64] [max_seq=8192]
+//        alice_repl <model_dir> <manifest.json> <max_new_tokens> <max_seq> <prompt>
 
 #include <cstdint>
 #include <cstdio>
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>  // std::min, std::ranges::find
 
 #include "alice/manifest.hpp"
 #include "alice/model.hpp"
 #include "tokenizer.hpp"
 
 namespace {
-
-bool is_eos(int32_t t, const std::vector<uint32_t>& eos) {
-  for (const uint32_t e : eos)
-    if (uint32_t(t) == e) return true;
-  return false;
-}
 
 // Length of the longest complete-UTF-8 prefix (tokens can split characters).
 size_t utf8_complete_len(const std::string& s) {
@@ -35,13 +31,26 @@ size_t utf8_complete_len(const std::string& s) {
   return i;
 }
 
+// Streaming decode helper: prints the bytes of `full` past *shown that form
+// complete UTF-8 characters (a token boundary can split a character), then
+// advances *shown. Byte-exact (embedded NULs possible) and flushed per call.
+void print_new_utf8_suffix(const std::string& full, size_t* shown) {
+  const size_t complete = utf8_complete_len(full);
+  if (complete <= *shown) return;
+  std::fwrite(full.data() + *shown, 1, complete - *shown, stdout);
+  std::fflush(stdout);
+  *shown = complete;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
   if (argc < 3) {
     std::fprintf(stderr,
-                 "usage: %s <model_dir> <manifest.json> [max_new_tokens=64] [max_seq=8192]\n",
-                 argv[0]);
+                 "usage: %s <model_dir> <manifest.json> [max_new_tokens=64] [max_seq=8192]\n"
+                 "       %s <model_dir> <manifest.json> <max_new_tokens> <max_seq> <prompt>\n"
+                 "       (with a prompt argument: run once, non-interactive)\n",
+                 argv[0], argv[0]);
     return 1;
   }
   const std::string model_dir = argv[1];
@@ -58,25 +67,23 @@ int main(int argc, char** argv) {
     cfg.max_prefill_chunk = 512;
     cfg.sampling.temperature = 0.0f;  // greedy
     auto model = alice::ModelLoader::load(model_dir, manifest_path, cfg);
-    std::fprintf(stderr, "[alice] model loaded (vocab %u). /quit to exit, /reset to clear.\n",
+    std::fprintf(stderr, "[alice] model loaded (vocab %u). /quit to exit, session cleared on every round.\n",
                  model->vocab_size());
 
     std::string line;
     for (;;) {
       std::fprintf(stderr, "\n>> ");
       std::cout.flush();
-      if (!std::getline(std::cin, line)) break;
+      if (argc > 5) line = argv[5];   // If prompt is supplied then skip user input
+      else if (!std::getline(std::cin, line)) break;
       if (line == "/quit") break;
-      if (line == "/reset") {
-        model->reset();
-        std::fprintf(stderr, "[state cleared]\n");
-        continue;
-      }
       if (line.empty()) continue;
 
       model->reset();  // PoC: every line is a fresh session
-      std::vector<int32_t> ids = {int32_t(manifest.config.bos_token_id)};
-      for (const int32_t t : tokenizer.encode(line)) ids.push_back(t);
+
+      // session policy: sequence starts at BOS; encode() is a pure text->ids function
+      auto ids = tokenizer.encode(line);
+      ids.insert(ids.begin(), int32_t(manifest.config.bos_token_id));
       if (ids.size() >= max_seq) {
         std::fprintf(stderr, "[prompt too long for max_seq]\n");
         continue;
@@ -90,22 +97,21 @@ int main(int argc, char** argv) {
       }
 
       // decode, streaming only complete-UTF-8 suffixes
+      const auto& eos_ids = manifest.config.eos_token_ids;
+      const auto is_eos = [&](int32_t id) {  // C++20: ranges::contains is C++23
+        return std::ranges::find(eos_ids, id) != eos_ids.end();
+      };
       size_t shown = 0;
       std::vector<int32_t> gen;
       for (int step = 0; step < max_new; ++step) {
-        if (is_eos(t, manifest.config.eos_token_ids)) break;
+        if (is_eos(t)) break;
         gen.push_back(t);
-        const std::string full = tokenizer.decode(gen);
-        const size_t complete = utf8_complete_len(full);
-        if (complete > shown) {
-          std::fwrite(full.data() + shown, 1, complete - shown, stdout);
-          std::fflush(stdout);
-          shown = complete;
-        }
+        print_new_utf8_suffix(tokenizer.decode(gen), &shown);
         const int32_t cur = t;
         t = model->forward(std::span<const int32_t>(&cur, 1));
       }
       std::printf("\n");
+      if (argc > 5) break;  // prompt was supplied: no interactive mode
     }
   } catch (const std::exception& e) {
     std::fprintf(stderr, "fatal: %s\n", e.what());

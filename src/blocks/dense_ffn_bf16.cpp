@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 
+#include "cpu_avx2/dense_ffn.hpp"
 #include "cpu_generic/dense_ffn.hpp"
 
 namespace alice {
@@ -11,6 +12,16 @@ std::unique_ptr<DenseFfnBF16> DenseFfnBF16::create(HardwareClass hw, BF16View w_
                                                    const ModelConfig& mc,
                                                    const EngineConfig& ec) {
   switch (hw) {
+    case HardwareClass::CPU_AVX2:
+#if (defined(__x86_64__) || defined(_M_X64)) && defined(__GNUC__)
+      // Runtime guard: the AVX2 TU is compiled with -mavx2 -mfma; only
+      // dispatch when the machine actually has both. Otherwise fall through
+      // to the oracle (the factory fallback chain, design §7.1).
+      if (__builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma"))
+        return std::make_unique<cpu_avx2::DenseFfnBF16CpuAvx2>(w_gate, w_up, w_down, mc,
+                                                               ec);
+#endif
+      [[fallthrough]];
     case HardwareClass::CPU_GENERIC:
       return std::make_unique<cpu_generic::DenseFfnBF16CpuGeneric>(w_gate, w_up, w_down, mc,
                                                                    ec);

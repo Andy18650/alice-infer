@@ -1,6 +1,7 @@
 // CPU_GENERIC oracle tests: naive kernels, FFN wiring, and the attention
 // block's core properties (incremental == batched, causality, reset, bounds).
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <vector>
@@ -138,6 +139,113 @@ TEST(DenseFfn, ChunkLimitHardError) {
   auto ffn = alice::DenseFfnBF16::create(HardwareClass::CPU_GENERIC, gate.view, up.view,
                                          down.view, ffn_mc(), ec);
   F32Mat io(2, 2, {1, 2, 3, 4});
+  EXPECT_THROW(ffn->forward(io.view), std::runtime_error);
+}
+
+// --- CPU_AVX2 FFN ------------------------------------------------------------
+//
+// Numerics policy (user-signed-off, design §10): cross-impl equivalence is
+// TOLERANCE-based (chunked accumulation reorders sums); within-impl
+// determinism and incremental==batched stay BIT-EXACT (one fixed loop
+// schedule for all S).
+
+#if defined(__x86_64__) && defined(__GNUC__)
+static bool HasAvx2() {
+  return __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma");
+}
+#else
+static bool HasAvx2() { return false; }
+#endif
+
+// Multi-chunk dims: I = 600 = 2*256 + 88 forces the chunk loop + tail.
+ModelConfig ffn_mc_600() {
+  ModelConfig mc;
+  mc.hidden_size = 8;
+  mc.intermediate_size = 600;
+  return mc;
+}
+
+std::vector<float> ffn_pattern(uint32_t r, uint32_t c, uint32_t seed) {
+  std::vector<float> v(size_t(r) * c);
+  for (size_t i = 0; i < v.size(); ++i)
+    v[i] = float(int((i * 7 + seed * 13) % 17) - 8) * 0.03125f;  // bf16-exact
+  return v;
+}
+
+TEST(DenseFfnAvx2, ForwardMatchesHandCompute) {
+  if (!HasAvx2()) GTEST_SKIP() << "no AVX2 on this machine";
+  Bf16Mat gate(3, 2, {1, 0, 0, 1, 1, 1});
+  Bf16Mat up(3, 2, {1, 1, 0, 1, 1, 0});
+  Bf16Mat down(2, 3, {1, 0, 1, 0, 1, 0});
+  EngineConfig ec;
+  ec.max_prefill_chunk = 2;
+  auto ffn = alice::DenseFfnBF16::create(HardwareClass::CPU_AVX2, gate.view, up.view,
+                                         down.view, ffn_mc(), ec);
+  F32Mat io(1, 2, {1, 2});
+  ffn->forward(io.view);
+  const float a0 = 0.7310586f * 3, a1 = 1.7615942f * 2, a2 = 2.8577223f * 1;
+  EXPECT_NEAR(io.data[0], a0 + a2, 1e-4);
+  EXPECT_NEAR(io.data[1], a1, 1e-4);
+}
+
+TEST(DenseFfnAvx2, ApproxVsGenericMultiChunk) {
+  if (!HasAvx2()) GTEST_SKIP() << "no AVX2 on this machine";
+  const auto mc = ffn_mc_600();
+  EngineConfig ec;
+  ec.max_prefill_chunk = 4;
+  Bf16Mat g1(600, 8, ffn_pattern(600, 8, 1)), u1(600, 8, ffn_pattern(600, 8, 2)),
+      d1(8, 600, ffn_pattern(8, 600, 3));
+  auto oracle = alice::DenseFfnBF16::create(HardwareClass::CPU_GENERIC, g1.view, u1.view,
+                                            d1.view, mc, ec);
+  Bf16Mat g2(600, 8, ffn_pattern(600, 8, 1)), u2(600, 8, ffn_pattern(600, 8, 2)),
+      d2(8, 600, ffn_pattern(8, 600, 3));
+  auto avx2 = alice::DenseFfnBF16::create(HardwareClass::CPU_AVX2, g2.view, u2.view,
+                                          d2.view, mc, ec);
+  std::vector<float> input = ffn_pattern(4, 8, 4);
+  F32Mat io1(4, 8, input), io2(4, 8, input);
+  oracle->forward(io1.view);
+  avx2->forward(io2.view);
+  float max_diff = 0.0f;
+  for (size_t i = 0; i < io1.data.size(); ++i) {
+    const float d = std::fabs(io1.data[i] - io2.data[i]);
+    max_diff = d > max_diff ? d : max_diff;
+  }
+  // Observed: ~1e-6 for these magnitudes. Threshold has ~100x margin.
+  EXPECT_LT(max_diff, 1e-4f) << "max |generic - avx2| = " << max_diff;
+}
+
+TEST(DenseFfnAvx2, IncrementalEqualsBatchedBitExact) {
+  if (!HasAvx2()) GTEST_SKIP() << "no AVX2 on this machine";
+  const auto mc = ffn_mc_600();
+  EngineConfig ec;
+  ec.max_prefill_chunk = 4;
+  Bf16Mat g(600, 8, ffn_pattern(600, 8, 1)), u(600, 8, ffn_pattern(600, 8, 2)),
+      dn(8, 600, ffn_pattern(8, 600, 3));
+  auto ffn = alice::DenseFfnBF16::create(HardwareClass::CPU_AVX2, g.view, u.view, dn.view,
+                                         mc, ec);
+  F32Mat batched(4, 8, ffn_pattern(4, 8, 4));
+  ffn->forward(batched.view);
+  F32Mat acc(4, 8);
+  for (uint32_t s = 0; s < 4; ++s) {
+    std::vector<float> row(8);
+    for (uint32_t c = 0; c < 8; ++c)  // same formula as ffn_pattern(4, 8, 4)
+      row[c] = float(int(((s * 8 + c) * 7 + 4 * 13) % 17) - 8) * 0.03125f;
+    F32Mat one(1, 8, row);
+    ffn->forward(one.view);
+    std::copy(one.data.begin(), one.data.end(), acc.data.begin() + s * 8);
+  }
+  EXPECT_EQ(batched.data, acc.data);  // bit-exact within impl (fixed schedule)
+}
+
+TEST(DenseFfnAvx2, ChunkLimitHardError) {
+  if (!HasAvx2()) GTEST_SKIP() << "no AVX2 on this machine";
+  Bf16Mat g(600, 8, ffn_pattern(600, 8, 1)), u(600, 8, ffn_pattern(600, 8, 2)),
+      dn(8, 600, ffn_pattern(8, 600, 3));
+  EngineConfig ec;
+  ec.max_prefill_chunk = 1;
+  auto ffn = alice::DenseFfnBF16::create(HardwareClass::CPU_AVX2, g.view, u.view, dn.view,
+                                         ffn_mc_600(), ec);
+  F32Mat io(2, 8, std::vector<float>(16, 0.5f));
   EXPECT_THROW(ffn->forward(io.view), std::runtime_error);
 }
 

@@ -65,8 +65,9 @@ int main(int argc, char** argv) {
   if (argc < 3) {
     std::fprintf(stderr,
                  "usage: %s <model_dir> <manifest.json> [max_new_tokens=64] [max_seq=8192]\n"
-                 "       %s <model_dir> <manifest.json> <max_new_tokens> <max_seq> <prompt>\n"
-                 "       (with a prompt argument: run once, non-interactive)\n",
+                 "       %s <model_dir> <manifest.json> <max_new_tokens> <max_seq> <prompt> [hardware]\n"
+                 "       (with a prompt argument: run once, non-interactive;\n"
+                 "        hardware: cpu_generic (default) | cpu_avx2)\n",
                  argv[0], argv[0]);
     return 1;
   }
@@ -74,6 +75,9 @@ int main(int argc, char** argv) {
   const std::string manifest_path = argv[2];
   const int max_new = argc > 3 ? std::atoi(argv[3]) : 64;
   const uint32_t max_seq = argc > 4 ? uint32_t(std::atoi(argv[4])) : 8192;
+  const alice::HardwareClass hw =
+      (argc > 6 && std::string(argv[6]) == "cpu_avx2") ? alice::HardwareClass::CPU_AVX2
+                                                       : alice::HardwareClass::CPU_GENERIC;
 
   try {
     const alice::Manifest manifest = alice::Manifest::parse(manifest_path);
@@ -82,10 +86,12 @@ int main(int argc, char** argv) {
     alice::EngineConfig cfg;
     cfg.max_seq_len = max_seq;
     cfg.max_prefill_chunk = 512;
+    cfg.hardware = hw;
     cfg.sampling.temperature = 0.0f;  // greedy
     auto model = alice::ModelLoader::load(model_dir, manifest_path, cfg);
-    std::fprintf(stderr, "[alice] model loaded (vocab %u). /quit to exit, session cleared on every round.\n",
-                 model->vocab_size());
+    std::fprintf(stderr, "[alice] model loaded (vocab %u, hardware %s). /quit to exit, session cleared on every round.\n",
+                 model->vocab_size(),
+                 hw == alice::HardwareClass::CPU_AVX2 ? "cpu_avx2" : "cpu_generic");
 
     std::string line;
     for (;;) {

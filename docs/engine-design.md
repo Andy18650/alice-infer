@@ -265,6 +265,33 @@ manifest config.
   compute-bound and prefers ~80 threads (≈ 75 tok/s). Tests run with
   OMP_NUM_THREADS=48 via the gtest_discover_tests ENVIRONMENT property in
   CMakeLists.txt (the single discoverable place).
+- **Numerics-equivalence policy** (user-signed-off 2026-07): bit-exactness
+  is scoped to (a) within-impl determinism per fixed schedule (including
+  incremental==batched and thread-count independence) and (b) the oracle's
+  own OpenMP parallelization. CROSS-impl equivalence is tolerance-based —
+  optimized impls may reorder FP sums; the teacher-forced canonical test is
+  the equivalence gate. Rationale: disassembly shows the oracle's decode is
+  reduction-LATENCY-bound (~29 tok/s predicted from the scalar `addss`
+  chain vs 28.5 measured, NOT bandwidth-bound), and IEEE non-associativity
+  forbids the compiler from fixing it; breaking the chain requires
+  reordering, which is ours to allow, not the compiler's.
+- **CPU_AVX2 status** (first custom+optimized operator, dense FFN only;
+  factory chain CPU_AVX2→CPU_GENERIC resolves per block type, cpuid-
+  guarded): fully private storage and math (no shared toolbox), per-TU
+  `-mavx2 -mfma`. Step 2 (structure, scalar inner loops) landed: aligned
+  64B storage with parallel first-touch (NUMA-local residency without
+  mbind); **S-dispatch on schedule, never on arithmetic order** — S==1
+  uses dot-form with contiguous row streaming (a column-block-parallel
+  down-pass measured ~3.5x WORSE at 48T: 64B slices at 4KB stride destroy
+  DRAM row-buffer efficiency); S>1 uses the fused gate/up/down chunk loop
+  with transposed w_down and a private [S,d] accumulator. Both paths
+  accumulate per element in ascending-j order → incremental==batched stays
+  bit-exact. w_down kept in both layouts (+50% FFN weight storage, flagged
+  for memory audit). Measured (1B, Release): decode 26.7→32.6 tok/s
+  (+22%) at 48T; prefill 50.3→30.8 (regression from the column-block
+  pattern — accepted, blocked layout / step-3 intrinsics are the fix);
+  ~+30% structure win at 1T. Step 3 (AVX2+FMA intrinsics into the
+  isolated dot/axpy kernels) is next.
 - Kernel workspaces (tiled/swizzled layouts, device buffers) are private
   buffers allocated at construction.
 

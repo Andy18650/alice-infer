@@ -26,6 +26,7 @@ add_library(alice
   src/blocks/cpu_generic/kernels.cpp
   src/blocks/cpu_generic/dense_ffn.cpp
   src/blocks/cpu_generic/gqa_attention.cpp
+  src/blocks/cpu_avx2/dense_ffn.cpp
   src/embedder.cpp
   src/lm_head.cpp
   src/sampler.cpp
@@ -38,6 +39,13 @@ add_library(alice::alice ALIAS alice)
 target_include_directories(alice PUBLIC include)
 target_link_libraries(alice PRIVATE nlohmann_json::nlohmann_json ${CMAKE_DL_LIBS})
 target_compile_options(alice PRIVATE -Wall -Wextra -Wpedantic)
+
+# The CPU_AVX2 operator TU gets ISA flags per-file; the rest of the binary
+# stays portable. Dispatch is runtime-guarded (cpuid) in the factory.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+  set_source_files_properties(src/blocks/cpu_avx2/dense_ffn.cpp
+    PROPERTIES COMPILE_OPTIONS "-mavx2;-mfma")
+endif()
 
 # OpenMP for intra-op kernel parallelism (design §10: each implementation's
 # private business). Sequential fallback when unavailable (pragma macro

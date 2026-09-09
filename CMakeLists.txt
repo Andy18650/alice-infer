@@ -21,6 +21,16 @@ endif()
 add_library(alice
   src/safetensors.cpp
   src/manifest.cpp
+  src/blocks/dense_ffn_bf16.cpp
+  src/blocks/gqa_attention_bf16.cpp
+  src/blocks/cpu_generic/kernels.cpp
+  src/blocks/cpu_generic/dense_ffn.cpp
+  src/blocks/cpu_generic/gqa_attention.cpp
+  src/embedder.cpp
+  src/lm_head.cpp
+  src/sampler.cpp
+  src/trunk.cpp
+  src/model.cpp
 )
 add_library(alice::alice ALIAS alice)
 target_include_directories(alice PUBLIC include)
@@ -41,6 +51,8 @@ if(ALICE_BUILD_TESTS)
     tests/test_tensor.cpp
     tests/test_safetensors.cpp
     tests/test_manifest.cpp
+    tests/test_blocks.cpp
+    tests/test_model.cpp
   )
   target_link_libraries(alice_tests PRIVATE alice GTest::gtest_main)
   target_compile_definitions(alice_tests PRIVATE ALICE_SOURCE_DIR="${CMAKE_SOURCE_DIR}")

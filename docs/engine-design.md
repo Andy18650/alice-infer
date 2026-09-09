@@ -257,6 +257,26 @@ manifest config.
 - Kimi K3: attention residuals (trunk history + gather weights).
 - MoE Blocks: many small expert weights behind one Block interface.
 
+- Quantized weight formats (MXFP4, NVFP4, FP8_E4M3 with 128×128 FP32 block
+  scales, …). A quantized matrix is a FORMAT (a bundle of tensors + compute
+  semantics), not a dtype; each piece lands on an existing layer:
+  1. **File reality** — `DType` gains storage dtypes (F8_E4M3, U8, …);
+     safetensors parser accepts them. (Today it rejects.)
+  2. **Contract** — `WeightSpec` gains a composite variant (format tag,
+     logical shape, component sub-specs: data + scales [+ global scale]);
+     `validate()` learns format-specific shape relations (e.g. scales
+     `[M, ⌈N/32⌉]` for MXFP4, `[⌈M/128⌉, ⌈N/128⌉]` for FP8-B128).
+     Two-way audit totality is preserved.
+  3. **Semantics** — new abstract block classes per format (the block-type ×
+     dtype axis simply gains values). Fallback implementations may legally
+     dequantize at load (constructor contract: "copies/converts/packs");
+     native implementations keep packed data + scales and compute from them.
+  Boundary (FP32 io), Trunk, state, and loader flow are all unchanged;
+  mixed-format models fall out naturally since format is per-block-type.
+  Testing: per-format tolerance policy (scale-after-accumulate vs
+  scale-before) instead of bit-exactness; §4's "bf16 baked in" line and §13
+  get amended when the first format lands.
+
 Extension points: Trunk polymorphism; Block type registry in the manifest;
 opaque per-Block state layouts; snapshot/stash interface on StatefulBlock.
 

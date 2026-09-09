@@ -1,34 +1,38 @@
-// CPU_AVX2 implementation of DenseFfnBF16.
+// CPU_AVX2 implementation of DenseFfnBF16 — the first self-contained
+// optimized operator (design §10). Fully private weight storage and math
+// (no shared toolbox); per-TU -mavx2 -mfma with cpuid-guarded dispatch.
 //
-// Step 2 of the AVX2 plan: STRUCTURE ONLY, scalar inner loops —
-//   * aligned private weight storage with parallel first-touch (NUMA-local
+// Structure (the step-2 lessons, baked in):
+//   * aligned 64B private storage with parallel first-touch (NUMA-local
 //     residency without mbind: the thread that streams a page at forward()
 //     time is, under static scheduling + same thread count, the one that
 //     faulted it in at construction),
 //   * TWO schedules dispatched on S, never on arithmetic order:
-//       - S == 1 (decode): dot-form for all three projections, parallel over
-//         output rows — every thread streams CONTIGUOUS weight rows (the
-//         oracle's DRAM-friendly pattern). Measured: a column-block-parallel
-//         down-pass (64B slices at 4KB stride) collapses DRAM efficiency
-//         and costs ~3.5x decode at 48 threads; hence this path.
+//       - S == 1 (decode): dot-form for all three projections, parallel
+//         over output rows — every thread streams CONTIGUOUS weight rows.
+//         (Measured: a column-block-parallel down-pass at S==1 costs
+//         ~3.5x decode at 48 threads — 64B slices at 4KB stride collapse
+//         DRAM row-buffer/prefetcher efficiency; hence this path.)
 //       - S > 1 (prefill): fused gate/up/down chunk loop; the [S, I]
-//         intermediate never exists, w_down is consumed TRANSPOSED so the
-//         down-pass streams contiguous rows ("out += act_j * WdT[j][:]")
-//         instead of strided columns.
-//     Both paths accumulate every output element over j in ASCENDING order
-//     with one add per j — the identical FP op sequence — so
-//     incremental==batched stays BIT-EXACT (verified by test).
-//   * private [S, d] output accumulator for the fused path, because fusion
-//     cannot accumulate into io while later chunks still read the input
-//     from io; copied back at the end to fulfil the in-place contract.
-//   * w_down is kept in BOTH layouts (row-major for the dot path,
-//     transposed for the fused path): +50% FFN weight storage, flagged for
-//     the memory audit.
+//         intermediate never exists; each weight row serves all S tokens
+//         while hot; w_down consumed TRANSPOSED so the down-pass streams
+//         contiguous rows ("out += act_j * WdT[j][:]") instead of strided
+//         columns. Its column-block parallelization is the same strided
+//         pattern — currently masked (prefill is not at the bandwidth
+//         wall); the blocked-WdT layout is the queued fix.
+//   * private [S, d] output accumulator for the fused path (fusion cannot
+//     accumulate into io while later chunks still read the input from io);
+//     copied back at the end to fulfil the in-place contract.
+//   * w_down kept in BOTH layouts (row-major wd_ for the dot path,
+//     transposed wdt_ for the fused path): +50% FFN weight storage,
+//     flagged for the memory audit.
 //
-// Numerics (user-signed-off, design §10): chunked accumulation changes
-// summation order vs the oracle, so cross-impl equivalence is
-// tolerance-based. Determinism per fixed schedule and incremental==batched
-// bit-equality ARE preserved (see above).
+// Numerics (user-signed-off, design §10): cross-impl equivalence is
+// tolerance-based (chunked + lane-group accumulation reorder sums vs the
+// oracle). Within-impl: deterministic per (S, thread count); row
+// independence always holds; incremental==batched is TOLERANCE-based
+// because the S==1 dot-form and S>1 chunked-axpy down-passes sum in
+// different orders (see the kernels' NUMERICS NOTE).
 
 #include "dense_ffn.hpp"
 

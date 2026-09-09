@@ -290,8 +290,23 @@ manifest config.
   for memory audit). Measured (1B, Release): decode 26.7→32.6 tok/s
   (+22%) at 48T; prefill 50.3→30.8 (regression from the column-block
   pattern — accepted, blocked layout / step-3 intrinsics are the fix);
-  ~+30% structure win at 1T. Step 3 (AVX2+FMA intrinsics into the
-  isolated dot/axpy kernels) is next.
+  ~+30% structure win at 1T.
+  Step 3 (AVX2+FMA intrinsics) landed: dot = 4 vector accumulators +
+  FMA (breaks the scalar chain), axpy vectorized, bf16->fp32 via the
+  shift trick (Zen3 has no native bf16); scalar fallback kept in #else.
+  NUMERICS: multi-accumulator dot sums in lane-group order, so the S==1
+  dot-form and S>1 chunked-axpy down-passes no longer agree bit-exactly —
+  within-impl incremental==batched is now TOLERANCE-based for this impl
+  (row independence unaffected; determinism per (impl, S, threads)
+  stands). alice_bench_ffn gives per-block numbers (S=1: 0.94 ->
+  0.22 ms/call = 4.2x; S=128: 104 -> 31.6 ms = 3.3x; same-block bench
+  keeps weights largely L3-resident — use for deltas). E2E (1B, 48T):
+  prefill 50.9 -> 108.6 tok/s (node0), decode 33.6 -> 42.2 (spread —
+  decode now seeks BOTH memory controllers; first-touch spread beats
+  interleave). With FFN 4x faster, the still-naive attention + lm_head
+  (0.85 GB of the 2.5 GB/token) now dominate decode — their turn next.
+  Chunk/tile constants are 1B-tuned: revisit cache-fit assumptions for
+  the 70B shapes (d=8192: X[512,d] alone is 16 MB ~ one CCD's L3).
 - **NUMA probes** (zero-code, numactl; sweep script takes a numa_mode):
   at 48T the avx2 prefill/decode measured 30.9/32.5 baseline first-touch,
   50.2/35.0 under --interleave=all (+bind), and 55.1/34.2 pinned to node0

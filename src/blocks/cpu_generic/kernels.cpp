@@ -19,14 +19,16 @@ void matmul_wt(const TensorView& in, const TensorView& w, TensorView& out) {
   const uint32_t S = in.rows, I = in.cols, O = w.rows;
   if (w.cols != I || out.rows != S || out.cols != O)
     throw std::invalid_argument("cpu_generic: matmul shape mismatch");
-  for (uint32_t s = 0; s < S; ++s) {
-    const float* in_row = in.as<float>() + size_t(s) * in.stride();
-    float* out_row = out.as<float>() + size_t(s) * out.stride();
-    for (uint32_t o = 0; o < O; ++o) {
-      const uint16_t* w_row = w.as<uint16_t>() + size_t(o) * w.stride();
+  // o outer: one parallel region, O-way parallelism; each (s, o) reduction
+  // stays sequential inside a thread (bit-exact vs the sequential oracle).
+  ALICE_OMP_PARALLEL_FOR
+  for (uint32_t o = 0; o < O; ++o) {
+    const uint16_t* w_row = w.as<uint16_t>() + size_t(o) * w.stride();
+    for (uint32_t s = 0; s < S; ++s) {
+      const float* in_row = in.as<float>() + size_t(s) * in.stride();
       float acc = 0.0f;
       for (uint32_t i = 0; i < I; ++i) acc += in_row[i] * bf16_to_f32(w_row[i]);
-      out_row[o] = acc;
+      out.as<float>()[size_t(s) * out.stride() + o] = acc;
     }
   }
 }

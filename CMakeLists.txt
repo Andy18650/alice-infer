@@ -39,6 +39,17 @@ target_include_directories(alice PUBLIC include)
 target_link_libraries(alice PRIVATE nlohmann_json::nlohmann_json ${CMAKE_DL_LIBS})
 target_compile_options(alice PRIVATE -Wall -Wextra -Wpedantic)
 
+# OpenMP for intra-op kernel parallelism (design §10: each implementation's
+# private business). Sequential fallback when unavailable (pragma macro
+# compiles to nothing); OMP_NUM_THREADS=1 reproduces the baseline.
+find_package(OpenMP QUIET)
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(alice PRIVATE OpenMP::OpenMP_CXX)
+  message(STATUS "alice: OpenMP enabled (${OpenMP_CXX_VERSION})")
+else()
+  message(STATUS "alice: OpenMP not found, kernels run sequentially")
+endif()
+
 # Minimal REPL PoC (design §12: the CLI owns the whole loop for now)
 add_executable(alice_repl src/frontend/repl.cpp)
 target_link_libraries(alice_repl PRIVATE alice)

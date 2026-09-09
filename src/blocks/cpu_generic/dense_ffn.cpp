@@ -48,11 +48,9 @@ void DenseFfnBF16CpuGeneric::forward(TensorView io) {
   TensorView up{up_.get(), DType::F32, S, inter_, 0};
   matmul_wt(io, wgv_, gate);
   matmul_wt(io, wuv_, up);
-  for (uint32_t s = 0; s < S; ++s) {
-    float* g = gate.as<float>() + size_t(s) * inter_;
-    float* u = up.as<float>() + size_t(s) * inter_;
-    for (uint32_t i = 0; i < inter_; ++i) u[i] = silu(g[i]) * u[i];
-  }
+  // elementwise activation (buffers are contiguous): silu(gate) * up
+  ALICE_OMP_PARALLEL_FOR
+  for (size_t e = 0; e < size_t(S) * inter_; ++e) up_[e] = silu(gate_[e]) * up_[e];
   matmul_wt(up, wdv_, io);  // reads up_, writes io: no aliasing
 }
 

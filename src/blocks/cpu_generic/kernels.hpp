@@ -10,6 +10,17 @@
 #include "alice/manifest.hpp"  // RopeScaling
 #include "alice/tensor.hpp"
 
+// Intra-op parallelism is the implementation's private business (design
+// §10): OpenMP when available, transparent sequential fallback otherwise.
+// Parallelism is over OUTPUT ELEMENTS ONLY — every reduction stays
+// sequential within a thread, so results are bit-identical to the naive
+// sequential oracle. OMP_NUM_THREADS=1 reproduces the baseline exactly.
+#if defined(_OPENMP)
+#define ALICE_OMP_PARALLEL_FOR _Pragma("omp parallel for")
+#else
+#define ALICE_OMP_PARALLEL_FOR
+#endif
+
 namespace alice::cpu_generic {
 
 inline float bf16_to_f32(uint16_t b) {
@@ -21,7 +32,7 @@ inline float bf16_to_f32(uint16_t b) {
 
 // out[s][o] = sum_i in[s][i] * bf16(w[o][i]).
 // in: fp32 [S, I]; w: bf16 [O, I]; out: fp32 [S, O]. fp32 accumulation.
-// `in` and `out` must not alias.
+// `in` and `out` must not alias. OpenMP-parallel over output columns o.
 void matmul_wt(const TensorView& in, const TensorView& w, TensorView& out);
 
 // x[s][:] /= rms(x[s][:]) (+eps), then *= g[:]. In-place; x is fp32 [S, d].

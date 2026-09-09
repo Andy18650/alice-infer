@@ -32,6 +32,7 @@ class LmHead {
  private:
   uint32_t vocab_ = 0, d_ = 0, mpc_ = 1;
   std::unique_ptr<std::byte[]> w_;       // private bf16 copy
+  TensorView wv_;                        // view of w_ for the shared kernel
   std::unique_ptr<float[]> logits_;      // private [mpc * vocab] fp32
 };
 

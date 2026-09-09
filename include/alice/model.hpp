@@ -24,6 +24,11 @@ class Model {
   // if the context would exceed max_seq_len, or on empty input.
   int32_t forward(std::span<const int32_t> tokens);
 
+  // Same processing, but returns the raw logits view (fp32 [1, vocab],
+  // valid until the next forward) instead of sampling. Pure probe for
+  // tests/canonical comparison; no sampler involvement.
+  TensorView forward_logits(std::span<const int32_t> tokens);
+
   // New session: resets all stateful blocks (KV caches), keeps allocations.
   void reset();
 
@@ -32,6 +37,8 @@ class Model {
  private:
   friend class ModelLoader;
   Model() = default;
+
+  TensorView run(std::span<const int32_t> tokens);  // shared body of the two above
 
   EngineConfig cfg_;
   std::unique_ptr<Embedder> embedder_;

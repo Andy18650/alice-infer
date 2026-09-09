@@ -1,0 +1,24 @@
+{
+ "prompt": "def fibonacci(n):",
+ "input_ids": [
+  128000,
+  755,
+  76798,
+  1471,
+  1680
+ ],
+ "generated_ids": [
+  720,
+  262,
+  3270,
+  262,
+  1115,
+  734,
+  27983,
+  279
+ ],
+ "generated_text": " \n    \"\"\"\n    This function generates the",
+ "steps": 8,
+ "vocab": 128256,
+ "dtype": "float32"
+}

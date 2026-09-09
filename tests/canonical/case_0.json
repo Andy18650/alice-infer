@@ -1,0 +1,25 @@
+{
+ "prompt": "The capital of France is",
+ "input_ids": [
+  128000,
+  791,
+  6864,
+  315,
+  9822,
+  374
+ ],
+ "generated_ids": [
+  12366,
+  13,
+  578,
+  469,
+  3168,
+  301,
+  22703,
+  374
+ ],
+ "generated_text": " Paris. The Eiffel Tower is",
+ "steps": 8,
+ "vocab": 128256,
+ "dtype": "float32"
+}

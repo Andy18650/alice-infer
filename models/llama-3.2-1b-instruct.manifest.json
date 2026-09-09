@@ -16,7 +16,13 @@
    "low_freq_factor": 1.0,
    "high_freq_factor": 4.0,
    "original_max_position_embeddings": 8192
-  }
+  },
+  "bos_token_id": 128000,
+  "eos_token_ids": [
+   128001,
+   128008,
+   128009
+  ]
  },
  "embedder": {
   "token_embedding": {

@@ -1,0 +1,31 @@
+{
+ "prompt": "Once upon a time, there was a little robot who",
+ "input_ids": [
+  128000,
+  12805,
+  5304,
+  264,
+  892,
+  11,
+  1070,
+  574,
+  264,
+  2697,
+  12585,
+  889
+ ],
+ "generated_ids": [
+  12439,
+  304,
+  264,
+  2678,
+  11,
+  54916,
+  291,
+  26129
+ ],
+ "generated_text": " lived in a small, cluttered workshop",
+ "steps": 8,
+ "vocab": 128256,
+ "dtype": "float32"
+}

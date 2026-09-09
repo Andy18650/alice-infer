@@ -31,11 +31,17 @@ add_library(alice
   src/sampler.cpp
   src/trunk.cpp
   src/model.cpp
+  src/frontend/tokenizer.cpp
+  src/frontend/pcre2.cpp
 )
 add_library(alice::alice ALIAS alice)
 target_include_directories(alice PUBLIC include)
-target_link_libraries(alice PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(alice PRIVATE nlohmann_json::nlohmann_json ${CMAKE_DL_LIBS})
 target_compile_options(alice PRIVATE -Wall -Wextra -Wpedantic)
+
+# Minimal REPL PoC (design §12: the CLI owns the whole loop for now)
+add_executable(alice_repl src/frontend/repl.cpp)
+target_link_libraries(alice_repl PRIVATE alice)
 
 if(ALICE_BUILD_TESTS)
   enable_testing()
@@ -53,8 +59,10 @@ if(ALICE_BUILD_TESTS)
     tests/test_manifest.cpp
     tests/test_blocks.cpp
     tests/test_model.cpp
+    tests/test_tokenizer.cpp
+    tests/test_canonical.cpp
   )
-  target_link_libraries(alice_tests PRIVATE alice GTest::gtest_main)
+  target_link_libraries(alice_tests PRIVATE alice GTest::gtest_main nlohmann_json::nlohmann_json)
   target_compile_definitions(alice_tests PRIVATE ALICE_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
   include(GoogleTest)
   gtest_discover_tests(alice_tests)

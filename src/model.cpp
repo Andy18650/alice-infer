@@ -11,9 +11,8 @@
 
 namespace alice {
 
-int32_t Model::forward(std::span<const int32_t> tokens) {
-  if (tokens.empty())
-    throw std::runtime_error("Model::forward: empty token span");
+TensorView Model::run(std::span<const int32_t> tokens) {
+  if (tokens.empty()) throw std::runtime_error("Model::forward: empty token span");
   if (tokens.size() > cfg_.max_prefill_chunk)
     throw std::runtime_error("Model::forward: " + std::to_string(tokens.size()) +
                              " tokens exceeds max_prefill_chunk " +
@@ -27,8 +26,14 @@ int32_t Model::forward(std::span<const int32_t> tokens) {
     trunk_->write(i);
   }
   trunk_->output();
-  return sampler_->sample(lm_head_->project_last(trunk_->io()));
+  return lm_head_->project_last(trunk_->io());
 }
+
+int32_t Model::forward(std::span<const int32_t> tokens) {
+  return sampler_->sample(run(tokens));
+}
+
+TensorView Model::forward_logits(std::span<const int32_t> tokens) { return run(tokens); }
 
 void Model::reset() {
   for (auto& b : blocks_)

@@ -67,6 +67,9 @@ Manifest from_json(const json& j) {
     mc.rope_scaling.original_max_position_embeddings =
         rs.at("original_max_position_embeddings").get<uint32_t>();
   }
+  if (c.contains("bos_token_id")) mc.bos_token_id = c.at("bos_token_id").get<uint32_t>();
+  if (c.contains("eos_token_ids"))
+    mc.eos_token_ids = c.at("eos_token_ids").get<std::vector<uint32_t>>();
 
   m.token_embedding = parse_spec(j.at("embedder").at("token_embedding"), "embedder");
 

@@ -44,6 +44,9 @@ struct ModelConfig {
   float rope_theta = 500000.0f;
   bool has_rope_scaling = false;
   RopeScaling rope_scaling;
+  // Token metadata (frontend concern; engine ignores them). Optional.
+  uint32_t bos_token_id = 128000;
+  std::vector<uint32_t> eos_token_ids;
 };
 
 struct BlockSpec {

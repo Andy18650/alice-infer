@@ -5,6 +5,7 @@
 // Usage: alice_repl <model_dir> <manifest.json> [max_new_tokens=64] [max_seq=8192]
 //        alice_repl <model_dir> <manifest.json> <max_new_tokens> <max_seq> <prompt>
 
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <iostream>
@@ -40,6 +41,22 @@ void print_new_utf8_suffix(const std::string& full, size_t* shown) {
   std::fwrite(full.data() + *shown, 1, complete - *shown, stdout);
   std::fflush(stdout);
   *shown = complete;
+}
+
+using Clock = std::chrono::steady_clock;
+double elapsed_s(Clock::time_point t0) {
+  return std::chrono::duration<double>(Clock::now() - t0).count();
+}
+
+// Phase timing on stderr: total, count, average per token, tokens/second.
+void print_stats(const char* phase, size_t tokens, double seconds) {
+  if (tokens == 0) {
+    std::fprintf(stderr, "[%s: 0 tokens in %.3f s]\n", phase, seconds);
+    return;
+  }
+  std::fprintf(stderr, "[%s: %zu tokens in %.3f s — %.2f ms/token, %.1f tok/s]\n",
+               phase, tokens, seconds, seconds * 1e3 / double(tokens),
+               double(tokens) / seconds);
 }
 
 }  // namespace
@@ -90,17 +107,22 @@ int main(int argc, char** argv) {
       }
 
       // chunked prefill
+      std::fprintf(stderr, "prefilling...\n");
+      const auto prefill_t0 = Clock::now();
       int32_t t = -1;
       for (size_t off = 0; off < ids.size(); off += cfg.max_prefill_chunk) {
         const size_t n = std::min<size_t>(cfg.max_prefill_chunk, ids.size() - off);
         t = model->forward(std::span<const int32_t>(ids.data() + off, n));
       }
+      print_stats("prefill", ids.size(), elapsed_s(prefill_t0));
 
       // decode, streaming only complete-UTF-8 suffixes
       const auto& eos_ids = manifest.config.eos_token_ids;
       const auto is_eos = [&](int32_t id) {  // C++20: ranges::contains is C++23
         return std::ranges::find(eos_ids, id) != eos_ids.end();
       };
+      std::fprintf(stderr, "decoding...\n");
+      const auto decode_t0 = Clock::now();
       size_t shown = 0;
       std::vector<int32_t> gen;
       for (int step = 0; step < max_new; ++step) {
@@ -111,6 +133,8 @@ int main(int argc, char** argv) {
         t = model->forward(std::span<const int32_t>(&cur, 1));
       }
       std::printf("\n");
+      std::fflush(stdout);  // keep stdout/stderr ordering sane for the stats line
+      print_stats("decode", gen.size(), elapsed_s(decode_t0));
       if (argc > 5) break;  // prompt was supplied: no interactive mode
     }
   } catch (const std::exception& e) {

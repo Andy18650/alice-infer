@@ -9,10 +9,10 @@ namespace alice::cpu_generic {
 
 class GqaAttentionBF16CpuGeneric final : public GqaAttentionBF16 {
  public:
-  GqaAttentionBF16CpuGeneric(TensorView wq, TensorView wk, TensorView wv, TensorView wo,
+  GqaAttentionBF16CpuGeneric(BF16View wq, BF16View wk, BF16View wv, BF16View wo,
                              const ModelConfig& mc, const EngineConfig& ec);
 
-  void forward(TensorView io) override;
+  void forward(F32View io) override;
   void reset_state() override { pos_ = 0; }  // allocation kept, cache invalidated
 
  private:
@@ -20,8 +20,8 @@ class GqaAttentionBF16CpuGeneric final : public GqaAttentionBF16 {
   uint32_t max_seq_ = 0, mpc_ = 0;
   float scale_ = 0.0f;  // 1/sqrt(head_dim)
 
-  std::unique_ptr<std::byte[]> wq_, wk_, wv_, wo_;  // private bf16 copies
-  TensorView wqv_, wkv_, wvv_, wov_;
+  std::unique_ptr<bf16[]> wq_, wk_, wv_, wo_;  // private copies
+  BF16View wqv_, wkv_, wvv_, wov_;
 
   // State (append-only): [max_seq, nkv*hd] fp32. pos_ is both the private
   // position counter and the cache length — plain attention never evicts

@@ -18,7 +18,7 @@ class Sampler {
   explicit Sampler(SamplingConfig cfg) : cfg_(cfg), rng_(cfg.seed) {}
 
   // logits: fp32 [1, vocab].
-  int32_t sample(const TensorView& logits);
+  int32_t sample(F32View logits);
 
  private:
   SamplingConfig cfg_;

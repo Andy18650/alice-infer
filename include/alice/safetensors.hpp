@@ -47,9 +47,15 @@ class File {
   // Throws std::runtime_error on IO error.
   void read(const TensorInfo& info, void* dst) const;
 
-  // Describes a staging buffer holding `info` as a TensorView (for the
-  // constructor hand-off and for manifest validation messages).
-  static TensorView view(const TensorInfo& info, void* staging);
+  // The single checked runtime->static dtype conversion at the load
+  // boundary: describes a staging buffer holding `info` as a TView<T>,
+  // verifying the file dtype matches T. Throws std::invalid_argument.
+  template <typename T>
+  static TView<T> view_as(const TensorInfo& info, void* staging) {
+    if (info.dtype != dtype_of<T>())
+      throw std::invalid_argument("safetensors: view_as type mismatch on '" + info.name + "'");
+    return TView<T>{static_cast<T*>(staging), info.rows, info.cols, 0};
+  }
 
  private:
   int fd_ = -1;

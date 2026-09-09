@@ -6,9 +6,9 @@
 
 namespace alice {
 
-std::unique_ptr<GqaAttentionBF16> GqaAttentionBF16::create(HardwareClass hw, TensorView wq,
-                                                           TensorView wk, TensorView wv,
-                                                           TensorView wo,
+std::unique_ptr<GqaAttentionBF16> GqaAttentionBF16::create(HardwareClass hw, BF16View wq,
+                                                           BF16View wk, BF16View wv,
+                                                           BF16View wo,
                                                            const ModelConfig& mc,
                                                            const EngineConfig& ec) {
   switch (hw) {

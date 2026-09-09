@@ -5,17 +5,7 @@
 
 namespace alice::cpu_generic {
 
-namespace {
-void require_f32(const TensorView& t, const char* what) {
-  if (t.dtype != DType::F32)
-    throw std::invalid_argument(std::string("cpu_generic: ") + what + " must be fp32");
-}
-}  // namespace
-
-void matmul_wt(const TensorView& in, const TensorView& w, TensorView& out) {
-  require_f32(in, "matmul in");
-  require_f32(out, "matmul out");
-  if (w.dtype != DType::BF16) throw std::invalid_argument("cpu_generic: matmul w must be bf16");
+void matmul_wt(F32View in, BF16View w, F32View out) {
   const uint32_t S = in.rows, I = in.cols, O = w.rows;
   if (w.cols != I || out.rows != S || out.cols != O)
     throw std::invalid_argument("cpu_generic: matmul shape mismatch");
@@ -23,20 +13,19 @@ void matmul_wt(const TensorView& in, const TensorView& w, TensorView& out) {
   // stays sequential inside a thread (bit-exact vs the sequential oracle).
   ALICE_OMP_PARALLEL_FOR
   for (uint32_t o = 0; o < O; ++o) {
-    const uint16_t* w_row = w.as<uint16_t>() + size_t(o) * w.stride();
+    const bf16* w_row = w.data + size_t(o) * w.stride();
     for (uint32_t s = 0; s < S; ++s) {
-      const float* in_row = in.as<float>() + size_t(s) * in.stride();
+      const float* in_row = in.data + size_t(s) * in.stride();
       float acc = 0.0f;
-      for (uint32_t i = 0; i < I; ++i) acc += in_row[i] * bf16_to_f32(w_row[i]);
-      out.as<float>()[size_t(s) * out.stride() + o] = acc;
+      for (uint32_t i = 0; i < I; ++i) acc += in_row[i] * w_row[i].to_f32();
+      out.data[size_t(s) * out.stride() + o] = acc;
     }
   }
 }
 
-void rmsnorm_inplace(TensorView& x, const float* g, float eps) {
-  require_f32(x, "rmsnorm x");
+void rmsnorm_inplace(F32View x, const float* g, float eps) {
   for (uint32_t s = 0; s < x.rows; ++s) {
-    float* row = x.as<float>() + size_t(s) * x.stride();
+    float* row = x.data + size_t(s) * x.stride();
     float ss = 0.0f;
     for (uint32_t i = 0; i < x.cols; ++i) ss += row[i] * row[i];
     const float inv = 1.0f / std::sqrt(ss / float(x.cols) + eps);
@@ -44,24 +33,20 @@ void rmsnorm_inplace(TensorView& x, const float* g, float eps) {
   }
 }
 
-void copy_rows(TensorView& dst, const TensorView& src) {
-  require_f32(dst, "copy dst");
-  require_f32(src, "copy src");
+void copy_rows(F32View dst, F32View src) {
   if (dst.rows != src.rows || dst.cols != src.cols)
     throw std::invalid_argument("cpu_generic: copy shape mismatch");
   for (uint32_t s = 0; s < src.rows; ++s)
-    std::memcpy(dst.as<float>() + size_t(s) * dst.stride(),
-                src.as<float>() + size_t(s) * src.stride(), src.cols * sizeof(float));
+    std::memcpy(dst.data + size_t(s) * dst.stride(), src.data + size_t(s) * src.stride(),
+                src.cols * sizeof(float));
 }
 
-void add_rows(TensorView& dst, const TensorView& src) {
-  require_f32(dst, "add dst");
-  require_f32(src, "add src");
+void add_rows(F32View dst, F32View src) {
   if (dst.rows != src.rows || dst.cols != src.cols)
     throw std::invalid_argument("cpu_generic: add shape mismatch");
   for (uint32_t s = 0; s < src.rows; ++s) {
-    float* d = dst.as<float>() + size_t(s) * dst.stride();
-    const float* r = src.as<float>() + size_t(s) * src.stride();
+    float* d = dst.data + size_t(s) * dst.stride();
+    const float* r = src.data + size_t(s) * src.stride();
     for (uint32_t i = 0; i < src.cols; ++i) d[i] += r[i];
   }
 }

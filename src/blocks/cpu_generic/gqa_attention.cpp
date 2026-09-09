@@ -9,20 +9,19 @@
 namespace alice::cpu_generic {
 
 namespace {
-std::unique_ptr<std::byte[]> copy_weight(const TensorView& src, TensorView& view) {
-  if (src.dtype != DType::BF16)
-    throw std::invalid_argument("GqaAttentionBF16CpuGeneric: weights must be bf16");
+template <typename T>
+std::unique_ptr<T[]> copy_weight(TView<T> src, TView<T>& view, const char* what) {
   if (src.stride() != src.cols)
-    throw std::invalid_argument("GqaAttentionBF16CpuGeneric: strided weights unsupported");
-  auto buf = std::make_unique<std::byte[]>(src.nbytes());
+    throw std::invalid_argument(std::string(what) + ": strided weights unsupported");
+  auto buf = std::make_unique<T[]>(src.numel());
   std::memcpy(buf.get(), src.data, src.nbytes());
-  view = TensorView{buf.get(), src.dtype, src.rows, src.cols, 0};
+  view = TView<T>{buf.get(), src.rows, src.cols, 0};
   return buf;
 }
 }  // namespace
 
 GqaAttentionBF16CpuGeneric::GqaAttentionBF16CpuGeneric(
-    TensorView wq, TensorView wk, TensorView wv, TensorView wo, const ModelConfig& mc,
+    BF16View wq, BF16View wk, BF16View wv, BF16View wo, const ModelConfig& mc,
     const EngineConfig& ec)
     : nh_(mc.num_heads),
       nkv_(mc.num_kv_heads),
@@ -39,10 +38,10 @@ GqaAttentionBF16CpuGeneric::GqaAttentionBF16CpuGeneric(
   if (nh_ % nkv_ != 0)
     throw std::invalid_argument("GqaAttentionBF16CpuGeneric: num_heads % num_kv_heads != 0");
 
-  wq_ = copy_weight(wq, wqv_);
-  wk_ = copy_weight(wk, wkv_);
-  wv_ = copy_weight(wv, wvv_);
-  wo_ = copy_weight(wo, wov_);
+  wq_ = copy_weight(wq, wqv_, "GqaAttentionBF16CpuGeneric");
+  wk_ = copy_weight(wk, wkv_, "GqaAttentionBF16CpuGeneric");
+  wv_ = copy_weight(wv, wvv_, "GqaAttentionBF16CpuGeneric");
+  wo_ = copy_weight(wo, wov_, "GqaAttentionBF16CpuGeneric");
 
   kcache_ = std::make_unique<float[]>(size_t(max_seq_) * kvd);
   vcache_ = std::make_unique<float[]>(size_t(max_seq_) * kvd);
@@ -60,20 +59,20 @@ GqaAttentionBF16CpuGeneric::GqaAttentionBF16CpuGeneric(
                     mc.has_rope_scaling, mc.rope_scaling);
 }
 
-void GqaAttentionBF16CpuGeneric::forward(TensorView io) {
+void GqaAttentionBF16CpuGeneric::forward(F32View io) {
   const uint32_t S = io.rows;
   if (S > mpc_)
     throw std::runtime_error("GqaAttentionBF16CpuGeneric: prefill chunk exceeded");
-  if (io.cols != d_ || io.dtype != DType::F32)
-    throw std::invalid_argument("GqaAttentionBF16CpuGeneric: io must be fp32 [S, d]");
+  if (io.cols != d_)
+    throw std::invalid_argument("GqaAttentionBF16CpuGeneric: io must be [S, d]");
   if (pos_ + S > max_seq_)
     throw std::runtime_error("GqaAttentionBF16CpuGeneric: max_seq_len exceeded");
 
   const uint32_t qd = nh_ * hd_, kvd = nkv_ * hd_, half = hd_ / 2;
-  TensorView q{q_.get(), DType::F32, S, qd, 0};
-  TensorView k{k_.get(), DType::F32, S, kvd, 0};
-  TensorView v{v_.get(), DType::F32, S, kvd, 0};
-  TensorView attn{attn_.get(), DType::F32, S, qd, 0};
+  F32View q{q_.get(), S, qd, 0};
+  F32View k{k_.get(), S, kvd, 0};
+  F32View v{v_.get(), S, kvd, 0};
+  F32View attn{attn_.get(), S, qd, 0};
 
   matmul_wt(io, wqv_, q);
   matmul_wt(io, wkv_, k);
@@ -85,11 +84,11 @@ void GqaAttentionBF16CpuGeneric::forward(TensorView io) {
     const float* cos_row = rope_cos_.get() + size_t(pos) * half;
     const float* sin_row = rope_sin_.get() + size_t(pos) * half;
     for (uint32_t h = 0; h < nh_; ++h)
-      rope_rotate(q.as<float>() + size_t(s) * qd + h * hd_, hd_, cos_row, sin_row);
-    float* k_row = k.as<float>() + size_t(s) * kvd;
+      rope_rotate(q.data + size_t(s) * qd + h * hd_, hd_, cos_row, sin_row);
+    float* k_row = k.data + size_t(s) * kvd;
     for (uint32_t g = 0; g < nkv_; ++g) rope_rotate(k_row + g * hd_, hd_, cos_row, sin_row);
     std::memcpy(kcache_.get() + size_t(pos) * kvd, k_row, kvd * sizeof(float));
-    std::memcpy(vcache_.get() + size_t(pos) * kvd, v.as<float>() + size_t(s) * kvd,
+    std::memcpy(vcache_.get() + size_t(pos) * kvd, v.data + size_t(s) * kvd,
                 kvd * sizeof(float));
   }
 
@@ -98,7 +97,7 @@ void GqaAttentionBF16CpuGeneric::forward(TensorView io) {
     const uint32_t T = pos_ + s + 1;
     for (uint32_t h = 0; h < nh_; ++h) {
       const uint32_t g = h / group_;
-      const float* q_head = q.as<float>() + size_t(s) * qd + h * hd_;
+      const float* q_head = q.data + size_t(s) * qd + h * hd_;
       for (uint32_t t = 0; t < T; ++t) {
         const float* k_head = kcache_.get() + size_t(t) * kvd + g * hd_;
         float dot = 0.0f;
@@ -106,7 +105,7 @@ void GqaAttentionBF16CpuGeneric::forward(TensorView io) {
         scores_[t] = dot * scale_;
       }
       softmax(scores_.get(), T);
-      float* out_head = attn.as<float>() + size_t(s) * qd + h * hd_;
+      float* out_head = attn.data + size_t(s) * qd + h * hd_;
       for (uint32_t i = 0; i < hd_; ++i) out_head[i] = 0.0f;
       for (uint32_t t = 0; t < T; ++t) {
         const float* v_head = vcache_.get() + size_t(t) * kvd + g * hd_;

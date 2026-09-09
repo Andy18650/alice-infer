@@ -73,11 +73,12 @@ TEST(Safetensors, RoundTrip) {
   f.read(info, buf.data());
   for (size_t i = 0; i < buf.size(); ++i) EXPECT_EQ(buf[i], std::byte(i & 0xFF));
 
-  auto v = File::view(info, buf.data());
-  EXPECT_EQ(v.dtype, DType::BF16);
+  auto v = File::view_as<alice::bf16>(info, buf.data());
   EXPECT_EQ(v.rows, 2u);
   EXPECT_EQ(v.cols, 3u);
   EXPECT_EQ(v.numel(), 6u);
+  // the boundary check: wrong static type is rejected
+  EXPECT_THROW(File::view_as<float>(info, buf.data()), std::invalid_argument);
 }
 
 TEST(Safetensors, RankOneBecomesRowVector) {

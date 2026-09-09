@@ -27,11 +27,11 @@ class Model {
   // Same processing, but returns the raw logits view (fp32 [1, vocab],
   // valid until the next forward) instead of sampling. Pure probe for
   // tests/canonical comparison; no sampler involvement.
-  TensorView forward_logits(std::span<const int32_t> tokens);
+  F32View forward_logits(std::span<const int32_t> tokens);
 
   // Full-projection probe: returns fp32 [S, vocab] logits for EVERY position
   // (teacher-forcing comparison in the canonical test). Expensive.
-  TensorView forward_logits_all(std::span<const int32_t> tokens);
+  F32View forward_logits_all(std::span<const int32_t> tokens);
 
   // New session: resets all stateful blocks (KV caches), keeps allocations.
   void reset();
@@ -42,7 +42,7 @@ class Model {
   friend class ModelLoader;
   Model() = default;
 
-  TensorView run(std::span<const int32_t> tokens, bool all_positions);  // shared body
+  F32View run(std::span<const int32_t> tokens, bool all_positions);  // shared body
 
   EngineConfig cfg_;
   std::unique_ptr<Embedder> embedder_;

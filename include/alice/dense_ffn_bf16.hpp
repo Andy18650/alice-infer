@@ -5,7 +5,6 @@
 #include "alice/block.hpp"
 #include "alice/engine_config.hpp"
 #include "alice/manifest.hpp"
-#include "alice/tensor.hpp"
 
 namespace alice {
 
@@ -13,16 +12,16 @@ namespace alice {
 // one abstract class per block type × weight dtype.
 //
 // Constructor contract, IDENTICAL for every implementation:
-//   (TensorView w_gate, TensorView w_up, TensorView w_down,
+//   (BF16View w_gate, BF16View w_up, BF16View w_down,
 //    const ModelConfig&, const EngineConfig&)
-// Weights arrive validated (manifest audit), bf16, shapes
+// Weights arrive validated (manifest audit), statically typed bf16, shapes
 // [I, d] / [I, d] / [d, I]. The constructor copies/converts/packs them into
 // private buffers; the passed views are considered FREED on return.
 class DenseFfnBF16 : public Block {
  public:
   // Factory with hardware-class fallback chain (CPU_GENERIC only for now).
-  static std::unique_ptr<DenseFfnBF16> create(HardwareClass hw, TensorView w_gate,
-                                              TensorView w_up, TensorView w_down,
+  static std::unique_ptr<DenseFfnBF16> create(HardwareClass hw, BF16View w_gate,
+                                              BF16View w_up, BF16View w_down,
                                               const ModelConfig& mc,
                                               const EngineConfig& ec);
 };

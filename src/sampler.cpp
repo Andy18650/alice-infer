@@ -7,11 +7,11 @@
 
 namespace alice {
 
-int32_t Sampler::sample(const TensorView& logits) {
-  if (logits.dtype != DType::F32 || logits.rows != 1)
-    throw std::invalid_argument("Sampler: logits must be fp32 [1, vocab]");
+int32_t Sampler::sample(F32View logits) {
+  if (logits.rows != 1)
+    throw std::invalid_argument("Sampler: logits must be [1, vocab]");
   const uint32_t V = logits.cols;
-  const float* in = logits.as<float>();
+  const float* in = logits.data;
 
   if (cfg_.temperature == 0.0f)  // greedy
     return int32_t(std::max_element(in, in + V) - in);

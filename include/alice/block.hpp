@@ -18,12 +18,12 @@ enum class HardwareClass { CPU_GENERIC, CPU_AVX2, CPU_AVX512, CPU_AMX };
 //
 // Boundary contract: `io` is FP32 host memory, [S, d] row-major, IN-PLACE —
 // the Block reads its input from io on entry and writes its output into the
-// same io before returning. This is the explicit "no per-layer boundary
-// buffers" contract; the single static io buffer is owned by the Trunk.
+// same io before returning. The dtype is static at type level (F32View);
+// the single static io buffer is owned by the Trunk.
 class Block {
  public:
   virtual ~Block() = default;
-  virtual void forward(TensorView io) = 0;
+  virtual void forward(F32View io) = 0;
 };
 
 // A Block that owns non-weight state (attention KV cache, SSM recurrent

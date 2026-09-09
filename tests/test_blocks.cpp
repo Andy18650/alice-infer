@@ -17,46 +17,33 @@
 
 namespace {
 
-using alice::DType;
+using alice::bf16;
+using alice::BF16View;
 using alice::EngineConfig;
+using alice::F32View;
 using alice::HardwareClass;
 using alice::ModelConfig;
-using alice::TensorView;
 namespace cg = alice::cpu_generic;
 
-uint16_t bf16(float f) {
-  uint32_t b;
-  std::memcpy(&b, &f, 4);
-  return uint16_t(b >> 16);  // truncation; exact for test values
-}
-
 struct Bf16Mat {
-  std::vector<uint16_t> data;
-  TensorView view;
+  std::vector<bf16> data;
+  BF16View view;
   Bf16Mat(uint32_t r, uint32_t c, const std::vector<float>& vals)
-      : data(vals.size()), view{nullptr, DType::BF16, r, c, 0} {
-    for (size_t i = 0; i < vals.size(); ++i) data[i] = bf16(vals[i]);
+      : data(vals.size()), view{nullptr, r, c, 0} {
+    for (size_t i = 0; i < vals.size(); ++i) data[i] = bf16::from_f32(vals[i]);
     view.data = data.data();
   }
 };
 
 struct F32Mat {
   std::vector<float> data;
-  TensorView view;
+  F32View view;
   F32Mat(uint32_t r, uint32_t c, std::vector<float> vals)
-      : data(std::move(vals)), view{nullptr, DType::F32, r, c, 0} {
+      : data(std::move(vals)), view{nullptr, r, c, 0} {
     view.data = data.data();
   }
   F32Mat(uint32_t r, uint32_t c) : F32Mat(r, c, std::vector<float>(size_t(r) * c, 0.0f)) {}
 };
-
-TEST(Kernels, Bf16Conversion) {
-  EXPECT_EQ(bf16(1.0f), 0x3F80);
-  EXPECT_FLOAT_EQ(cg::bf16_to_f32(0x3F80), 1.0f);
-  EXPECT_FLOAT_EQ(cg::bf16_to_f32(0xBF80), -1.0f);
-  EXPECT_FLOAT_EQ(cg::bf16_to_f32(bf16(-2.5f)), -2.5f);
-  EXPECT_FLOAT_EQ(cg::bf16_to_f32(0x0000), 0.0f);
-}
 
 TEST(Kernels, MatmulWt) {
   F32Mat in(2, 3, {1, 2, 3, 4, 5, 6});

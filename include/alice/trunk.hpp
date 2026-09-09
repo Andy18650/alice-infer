@@ -15,14 +15,14 @@ class RmsNormAddTrunk {
  public:
   // pre_norms: one validated bf16 [1, d] view PER BLOCK (execution order);
   // final_norm likewise. All copied into private fp32 buffers; freed on return.
-  RmsNormAddTrunk(std::vector<TensorView> pre_norms, TensorView final_norm, float eps,
+  RmsNormAddTrunk(std::vector<BF16View> pre_norms, BF16View final_norm, float eps,
                   uint32_t hidden, uint32_t max_prefill_chunk);
 
   // Starts a forward pass of S tokens; returns the residual view [S, d]
   // (fp32) for the Embedder to fill. S <= max_prefill_chunk (hard error).
-  TensorView begin_pass(uint32_t S);
+  F32View begin_pass(uint32_t S);
 
-  TensorView io();  // current io view [S, d] fp32
+  F32View io();  // current io view [S, d] fp32
 
   void read(size_t block);   // io = rmsnorm(residual, pre_norm[block])
   void write(size_t block);  // residual += io

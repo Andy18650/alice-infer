@@ -6,8 +6,8 @@
 
 namespace alice {
 
-std::unique_ptr<DenseFfnBF16> DenseFfnBF16::create(HardwareClass hw, TensorView w_gate,
-                                                   TensorView w_up, TensorView w_down,
+std::unique_ptr<DenseFfnBF16> DenseFfnBF16::create(HardwareClass hw, BF16View w_gate,
+                                                   BF16View w_up, BF16View w_down,
                                                    const ModelConfig& mc,
                                                    const EngineConfig& ec) {
   switch (hw) {

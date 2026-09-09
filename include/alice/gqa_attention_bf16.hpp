@@ -5,7 +5,6 @@
 #include "alice/block.hpp"
 #include "alice/engine_config.hpp"
 #include "alice/manifest.hpp"
-#include "alice/tensor.hpp"
 
 namespace alice {
 
@@ -13,15 +12,15 @@ namespace alice {
 // Stateful: owns the KV cache; position is a private counter (design §6).
 //
 // Constructor contract, IDENTICAL for every implementation:
-//   (TensorView wq, TensorView wk, TensorView wv, TensorView wo,
+//   (BF16View wq, BF16View wk, BF16View wv, BF16View wo,
 //    const ModelConfig&, const EngineConfig&)
-// Weights arrive validated, bf16, shapes [nh*hd, d] / [nkv*hd, d] /
-// [nkv*hd, d] / [d, nh*hd]; considered FREED when the constructor returns.
+// Weights arrive validated, statically typed bf16, shapes [nh*hd, d] /
+// [nkv*hd, d] / [nkv*hd, d] / [d, nh*hd]; considered FREED on return.
 class GqaAttentionBF16 : public StatefulBlock {
  public:
-  static std::unique_ptr<GqaAttentionBF16> create(HardwareClass hw, TensorView wq,
-                                                  TensorView wk, TensorView wv,
-                                                  TensorView wo, const ModelConfig& mc,
+  static std::unique_ptr<GqaAttentionBF16> create(HardwareClass hw, BF16View wq,
+                                                  BF16View wk, BF16View wv,
+                                                  BF16View wo, const ModelConfig& mc,
                                                   const EngineConfig& ec);
 };
 

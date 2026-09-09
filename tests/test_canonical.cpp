@@ -65,13 +65,13 @@ TEST(Canonical, TeacherForcedLogitsMatchHF) {
     int worst_pos = -1;
     for (size_t off = 0; off < seq.size(); off += cfg.max_prefill_chunk) {
       const size_t n = std::min<size_t>(cfg.max_prefill_chunk, seq.size() - off);
-      const alice::TensorView logits =
+      const alice::F32View logits =
           model->forward_logits_all(std::span<const int32_t>(seq.data() + off, n));
       ASSERT_EQ(logits.rows, uint32_t(n));
       ASSERT_EQ(logits.cols, uint32_t(vocab));
       for (size_t r = 0; r < n; ++r) {
         const size_t pos = off + r;
-        const float* got = logits.as<float>() + r * logits.stride();
+        const float* got = logits.data + r * logits.stride();
         const float* want = ref.data() + pos * vocab;
         for (int v = 0; v < vocab; ++v) {
           const float d = std::fabs(got[v] - want[v]);

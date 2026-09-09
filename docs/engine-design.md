@@ -247,6 +247,12 @@ manifest config.
   thread pool is neither needed nor possible; the real knobs are thread
   count, affinity, and spin policy (`OMP_WAIT_POLICY=active`; cf. Colibri's
   hot-thread tuning). The sequential loop avoids nested oversubscription.
+  CPU_GENERIC kernels parallelize with OpenMP over OUTPUT ELEMENTS ONLY —
+  every reduction stays sequential within a thread, so results are
+  bit-identical to the naive oracle and `OMP_NUM_THREADS=1` reproduces the
+  sequential baseline with the same binary. (Reference: 1B decode on the
+  EPYC box ≈ 1 tok/s sequential → ≈ 20 tok/s at 96 threads, right at the
+  ~50 GB/s weight-streaming bandwidth bound.)
 - Kernel workspaces (tiled/swizzled layouts, device buffers) are private
   buffers allocated at construction.
 

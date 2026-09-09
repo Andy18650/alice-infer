@@ -142,8 +142,4 @@ void File::read(const TensorInfo& info, void* dst) const {
   read_exact(fd_, dst, info.nbytes, static_cast<off_t>(info.offset), info.name);
 }
 
-TensorView File::view(const TensorInfo& info, void* staging) {
-  return TensorView{staging, info.dtype, info.rows, info.cols, 0};
-}
-
 }  // namespace alice::safetensors

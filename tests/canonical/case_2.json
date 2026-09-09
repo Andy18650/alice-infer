@@ -18,7 +18,7 @@
   279
  ],
  "generated_text": " \n    \"\"\"\n    This function generates the",
- "steps": 8,
+ "seq_len": 13,
  "vocab": 128256,
  "dtype": "float32"
 }

@@ -6,8 +6,14 @@ Run from the repo root with the project venv:
 
 Outputs (committed to the repo):
   tests/canonical/tokenizer_battery.json  — [{text, ids}] for tokenizer tests
-  tests/canonical/case_<i>.json           — generation meta (prompt, ids, shape)
-  tests/canonical/case_<i>.logits.f32     — raw float32 logits [steps, vocab]
+  tests/canonical/case_<i>.json           — case meta (prompt, ids, shape)
+  tests/canonical/case_<i>.teacher.f32    — float32 logits [seq_len, vocab]
+
+The generation cases are TEACHER-FORCED: the reference token sequence
+(prompt + greedy continuation) is replayed through the model in a single
+forward pass and the logits at EVERY position are recorded. The C++ test
+replays the same sequence and compares logit vectors only — no argmax
+comparison, so reference near-ties are irrelevant by construction.
 
 Determinism notes: greedy decoding, eager attention, CPU, fixed transformers
 version. The logits are a bf16-compute reference; exact values are only
@@ -85,27 +91,29 @@ def main():
 
     for i, prompt in enumerate(PROMPTS):
         ids = [BOS] + tok.encode(prompt, add_special_tokens=False)
-        input_ids = torch.tensor([ids])
         with torch.no_grad():
             out = model.generate(
-                input_ids, max_new_tokens=GEN_STEPS, do_sample=False,
-                num_beams=1, pad_token_id=128004,
-                output_logits=True, return_dict_in_generate=True)
-        logits = torch.stack(out.logits, dim=1)[0].float().numpy()  # [steps, V]
-        generated = out.sequences[0].tolist()[len(ids):]
+                torch.tensor([ids]), max_new_tokens=GEN_STEPS, do_sample=False,
+                num_beams=1, pad_token_id=128004)
+        generated = out[0].tolist()[len(ids):]
+
+        # teacher-forced replay of the full reference sequence
+        full = ids + generated
+        with torch.no_grad():
+            logits = model(torch.tensor([full])).logits[0].float().numpy()  # [seq, V]
 
         meta = {
             "prompt": prompt,
             "input_ids": ids,
             "generated_ids": generated,
             "generated_text": tok.decode(generated),
-            "steps": int(logits.shape[0]),
+            "seq_len": int(logits.shape[0]),
             "vocab": int(logits.shape[1]),
             "dtype": "float32",
         }
         with open(os.path.join(OUT, f"case_{i}.json"), "w") as f:
             json.dump(meta, f, ensure_ascii=False, indent=1)
-        logits.astype("<f4").tofile(os.path.join(OUT, f"case_{i}.logits.f32"))
+        logits.astype("<f4").tofile(os.path.join(OUT, f"case_{i}.teacher.f32"))
         print(f"case_{i}: {prompt!r} -> {meta['generated_text']!r}")
 
 

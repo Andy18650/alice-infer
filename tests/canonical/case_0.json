@@ -19,7 +19,7 @@
   374
  ],
  "generated_text": " Paris. The Eiffel Tower is",
- "steps": 8,
+ "seq_len": 14,
  "vocab": 128256,
  "dtype": "float32"
 }

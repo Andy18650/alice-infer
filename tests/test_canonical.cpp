@@ -1,7 +1,10 @@
-// Canonical comparison: our greedy generation and logits vs the committed
-// PyTorch reference fixtures (tests/canonical/case_*.json + .logits.f32).
-// Token ids must match EXACTLY; logits are a bf16-compute reference, so they
-// get a generous tolerance with printed metrics.
+// Canonical comparison, teacher-forced: the reference sequence (prompt +
+// canonical greedy continuation) is replayed through our engine and the
+// LOGIT VECTORS at every position are compared — no argmax assertions, so
+// reference near-ties are irrelevant by construction.
+//
+// Logits are a bf16-compute reference (ours is fp32 compute with bf16
+// weights), so the comparison is within-tolerance with printed metrics.
 
 #include <algorithm>
 #include <cmath>
@@ -17,6 +20,7 @@
 namespace {
 
 constexpr int kCases = 3;
+constexpr float kMaxLogitDrift = 0.75f;  // generous; observed ~0.1-0.2
 
 std::string fixture(const std::string& name) {
   return std::string(ALICE_SOURCE_DIR) + "/tests/canonical/" + name;
@@ -27,7 +31,7 @@ bool fixtures_present() {
          std::filesystem::exists(fixture("case_0.json"));
 }
 
-TEST(Canonical, GreedyMatchesHF) {
+TEST(Canonical, TeacherForcedLogitsMatchHF) {
   if (!fixtures_present()) GTEST_SKIP() << "model or canonical fixtures not present";
 
   alice::EngineConfig cfg;
@@ -42,69 +46,46 @@ TEST(Canonical, GreedyMatchesHF) {
     std::ifstream min(fixture("case_" + std::to_string(ci) + ".json"));
     const auto meta = nlohmann::json::parse(
         std::string((std::istreambuf_iterator<char>(min)), std::istreambuf_iterator<char>()));
-    const auto input_ids = meta.at("input_ids").get<std::vector<int32_t>>();
-    const auto generated = meta.at("generated_ids").get<std::vector<int32_t>>();
-    const int steps = meta.at("steps").get<int>();
+    auto seq = meta.at("input_ids").get<std::vector<int32_t>>();
+    for (const int32_t t : meta.at("generated_ids").get<std::vector<int32_t>>())
+      seq.push_back(t);
+    const int seq_len = meta.at("seq_len").get<int>();
     const int vocab = meta.at("vocab").get<int>();
-    ASSERT_EQ(int(generated.size()), steps);
+    ASSERT_EQ(int(seq.size()), seq_len);
 
-    std::vector<float> ref_logits(size_t(steps) * vocab);
-    std::ifstream bin(fixture("case_" + std::to_string(ci) + ".logits.f32"),
+    std::vector<float> ref(size_t(seq_len) * vocab);
+    std::ifstream bin(fixture("case_" + std::to_string(ci) + ".teacher.f32"),
                       std::ios::binary);
-    bin.read(reinterpret_cast<char*>(ref_logits.data()), ref_logits.size() * sizeof(float));
-    ASSERT_TRUE(bin.good() || bin.eof());
+    bin.read(reinterpret_cast<char*>(ref.data()), ref.size() * sizeof(float));
+    ASSERT_EQ(size_t(bin.gcount()), ref.size() * sizeof(float));
 
     model->reset();
-    // chunked prefill; the last chunk's logits are step-0 logits
-    alice::TensorView logits;
-    for (size_t off = 0; off < input_ids.size(); off += cfg.max_prefill_chunk) {
-      const size_t n = std::min<size_t>(cfg.max_prefill_chunk, input_ids.size() - off);
-      logits = model->forward_logits(
-          std::span<const int32_t>(input_ids.data() + off, n));
-    }
-    ASSERT_EQ(logits.cols, uint32_t(vocab));
-
-    auto check_step = [&](const alice::TensorView& ours, int step) {
-      const float* ref = ref_logits.data() + size_t(step) * vocab;
-      const float* got = ours.as<float>();
-      float max_diff = 0.0f;
-      double sum_diff = 0.0;
-      for (int v = 0; v < vocab; ++v) {
-        const float d = std::fabs(got[v] - ref[v]);
-        max_diff = std::max(max_diff, d);
-        sum_diff += d;
+    float max_drift = 0.0f;
+    double sum_drift = 0.0;
+    int worst_pos = -1;
+    for (size_t off = 0; off < seq.size(); off += cfg.max_prefill_chunk) {
+      const size_t n = std::min<size_t>(cfg.max_prefill_chunk, seq.size() - off);
+      const alice::TensorView logits =
+          model->forward_logits_all(std::span<const int32_t>(seq.data() + off, n));
+      ASSERT_EQ(logits.rows, uint32_t(n));
+      ASSERT_EQ(logits.cols, uint32_t(vocab));
+      for (size_t r = 0; r < n; ++r) {
+        const size_t pos = off + r;
+        const float* got = logits.as<float>() + r * logits.stride();
+        const float* want = ref.data() + pos * vocab;
+        for (int v = 0; v < vocab; ++v) {
+          const float d = std::fabs(got[v] - want[v]);
+          if (d > max_drift) {
+            max_drift = d;
+            worst_pos = int(pos);
+          }
+          sum_drift += d;
+        }
       }
-      const int32_t our_top = int32_t(std::max_element(got, got + vocab) - got);
-      const int32_t ref_top = int32_t(std::max_element(ref, ref + vocab) - ref);
-      float ref_second = -1e30f;
-      for (int v = 0; v < vocab; ++v)
-        if (v != ref_top) ref_second = std::max(ref_second, ref[v]);
-      printf("case %d step %d: max|Δlogit|=%.4f mean|Δ|=%.5f top1 ours=%d ref=%d margin=%.4f\n",
-             ci, step, max_diff, sum_diff / vocab, our_top, ref_top,
-             ref[ref_top] - ref_second);
-      EXPECT_LT(max_diff, 0.75f) << "logit drift beyond bf16-reference tolerance";
-      // bf16 compute noise can flip argmax on near-ties (observed: case 1
-      // step 4 is an EXACT tie in the reference, ref[11] == ref[26129]).
-      // Decisive steps must match exactly; near-ties must land within margin.
-      constexpr float kTieBand = 0.25f;
-      if (ref[ref_top] - ref_second > kTieBand) {
-        EXPECT_EQ(our_top, ref_top) << "case " << ci << " step " << step << " (decisive)";
-        if (step < steps) EXPECT_EQ(our_top, generated[step]);
-      } else {
-        EXPECT_GE(ref[our_top], ref[ref_top] - kTieBand)
-            << "case " << ci << " step " << step << " (tie band)";
-      }
-      return our_top;
-    };
-
-    int32_t t = check_step(logits, 0);
-    for (int s = 1; s < steps; ++s) {
-      // feed the CANONICAL token to keep sequences aligned (drift isolation)
-      const int32_t feed = generated[s - 1];
-      logits = model->forward_logits(std::span<const int32_t>(&feed, 1));
-      t = check_step(logits, s);
     }
-    (void)t;
+    printf("case %d: %d positions, max|Δlogit|=%.4f (pos %d), mean|Δ|=%.5f\n", ci,
+           seq_len, max_drift, worst_pos, sum_drift / (double(seq_len) * vocab));
+    EXPECT_LT(max_drift, kMaxLogitDrift) << "case " << ci << ": logit drift beyond tolerance";
   }
 }
 

@@ -25,7 +25,7 @@
   26129
  ],
  "generated_text": " lived in a small, cluttered workshop",
- "steps": 8,
+ "seq_len": 20,
  "vocab": 128256,
  "dtype": "float32"
 }

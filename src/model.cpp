@@ -11,7 +11,7 @@
 
 namespace alice {
 
-TensorView Model::run(std::span<const int32_t> tokens) {
+TensorView Model::run(std::span<const int32_t> tokens, bool all_positions) {
   if (tokens.empty()) throw std::runtime_error("Model::forward: empty token span");
   if (tokens.size() > cfg_.max_prefill_chunk)
     throw std::runtime_error("Model::forward: " + std::to_string(tokens.size()) +
@@ -26,14 +26,21 @@ TensorView Model::run(std::span<const int32_t> tokens) {
     trunk_->write(i);
   }
   trunk_->output();
-  return lm_head_->project_last(trunk_->io());
+  return all_positions ? lm_head_->project(trunk_->io())
+                       : lm_head_->project_last(trunk_->io());
 }
 
 int32_t Model::forward(std::span<const int32_t> tokens) {
-  return sampler_->sample(run(tokens));
+  return sampler_->sample(run(tokens, false));
 }
 
-TensorView Model::forward_logits(std::span<const int32_t> tokens) { return run(tokens); }
+TensorView Model::forward_logits(std::span<const int32_t> tokens) {
+  return run(tokens, false);
+}
+
+TensorView Model::forward_logits_all(std::span<const int32_t> tokens) {
+  return run(tokens, true);
+}
 
 void Model::reset() {
   for (auto& b : blocks_)
@@ -123,7 +130,7 @@ std::unique_ptr<Model> ModelLoader::load(const std::string& model_dir,
   }
   {  // lm_head (tied: aliases the embedding table — private copy, noted in lm_head.hpp)
     auto s = stage(file, m.lm_head);
-    model->lm_head_ = std::make_unique<LmHead>(s.view);
+    model->lm_head_ = std::make_unique<LmHead>(s.view, cfg.max_prefill_chunk);
   }
   model->sampler_ = std::make_unique<Sampler>(cfg.sampling);
   return model;

@@ -62,11 +62,73 @@ AlignedPtr<T> alloc_aligned(size_t n) {
   return AlignedPtr<T>(static_cast<T*>(p));
 }
 
-// --- isolated inner kernels (step 3 replaces these with AVX2+FMA) ----------
+// --- isolated inner kernels -------------------------------------------------
+// Step 3: AVX2+FMA intrinsics (this TU is compiled with -mavx2 -mfma on x86;
+// the scalar versions remain as the portable fallback and oracle-A/B).
+//
+// bf16 -> fp32 conversion is the shift trick: bf16 is the top 16 bits of
+// fp32, so widen u16->u32 and shift left 16. Zen3 has no native bf16.
+//
+// NUMERICS NOTE: the multi-accumulator dot sums in lane-group order, not
+// strict ascending order. Per (impl, S, thread-count) the schedule is fixed
+// and deterministic, but the S==1 dot-form down-pass and the S>1 chunked
+// axpy down-pass no longer produce bit-identical sums — within-impl
+// incremental==batched becomes TOLERANCE-based here (cross-impl already
+// was; policy in design §10). Row independence is unaffected.
 
-// Dot product over a weight row. NOTE: single accumulator, strict order —
-// deliberately the same dependency chain as the oracle so step 2 measures
-// structure alone (and so the step-3 intrinsic swap is an isolated change).
+#if defined(__AVX2__) && defined(__FMA__)
+#include <immintrin.h>
+
+inline __m256 load8_bf16_as_f32(const bf16* p) {
+  const __m128i raw = _mm_loadu_si128(reinterpret_cast<const __m128i*>(p));
+  return _mm256_castsi256_ps(_mm256_slli_epi32(_mm256_cvtepu16_epi32(raw), 16));
+}
+
+inline float hsum256(__m256 v) {
+  __m128 s = _mm_add_ps(_mm256_castps256_ps128(v), _mm256_extractf128_ps(v, 1));
+  s = _mm_add_ps(s, _mm_movehl_ps(s, s));
+  s = _mm_add_ss(s, _mm_shuffle_ps(s, s, 1));
+  return _mm_cvtss_f32(s);
+}
+
+// Dot product over a weight row. Four independent vector accumulators (32
+// lanes in flight) break the scalar dependency chain: Zen3 FMA latency 4,
+// throughput 2/cycle — a single accumulator starves both pipes.
+float dot_bf16_f32(const float* x, const bf16* w, uint32_t n) {
+  __m256 acc0 = _mm256_setzero_ps(), acc1 = _mm256_setzero_ps();
+  __m256 acc2 = _mm256_setzero_ps(), acc3 = _mm256_setzero_ps();
+  uint32_t i = 0;
+  for (; i + 32 <= n; i += 32) {
+    acc0 = _mm256_fmadd_ps(_mm256_loadu_ps(x + i), load8_bf16_as_f32(w + i), acc0);
+    acc1 = _mm256_fmadd_ps(_mm256_loadu_ps(x + i + 8), load8_bf16_as_f32(w + i + 8), acc1);
+    acc2 = _mm256_fmadd_ps(_mm256_loadu_ps(x + i + 16), load8_bf16_as_f32(w + i + 16), acc2);
+    acc3 = _mm256_fmadd_ps(_mm256_loadu_ps(x + i + 24), load8_bf16_as_f32(w + i + 24), acc3);
+  }
+  for (; i + 8 <= n; i += 8)
+    acc0 = _mm256_fmadd_ps(_mm256_loadu_ps(x + i), load8_bf16_as_f32(w + i), acc0);
+  acc0 = _mm256_add_ps(_mm256_add_ps(acc0, acc1), _mm256_add_ps(acc2, acc3));
+  float acc = hsum256(acc0);
+  for (; i < n; ++i) acc += x[i] * w[i].to_f32();
+  return acc;
+}
+
+void axpy_bf16(float* out, float a, const bf16* w, uint32_t n) {
+  const __m256 va = _mm256_set1_ps(a);
+  uint32_t i = 0;
+  for (; i + 16 <= n; i += 16) {
+    _mm256_storeu_ps(out + i,
+                     _mm256_fmadd_ps(va, load8_bf16_as_f32(w + i), _mm256_loadu_ps(out + i)));
+    _mm256_storeu_ps(out + i + 8, _mm256_fmadd_ps(va, load8_bf16_as_f32(w + i + 8),
+                                                  _mm256_loadu_ps(out + i + 8)));
+  }
+  for (; i + 8 <= n; i += 8)
+    _mm256_storeu_ps(out + i,
+                     _mm256_fmadd_ps(va, load8_bf16_as_f32(w + i), _mm256_loadu_ps(out + i)));
+  for (; i < n; ++i) out[i] += a * w[i].to_f32();
+}
+
+#else  // portable scalar fallback (single accumulator, strict order)
+
 float dot_bf16_f32(const float* x, const bf16* w, uint32_t n) {
   float acc = 0.0f;
   for (uint32_t i = 0; i < n; ++i) acc += x[i] * w[i].to_f32();
@@ -76,6 +138,8 @@ float dot_bf16_f32(const float* x, const bf16* w, uint32_t n) {
 void axpy_bf16(float* out, float a, const bf16* w, uint32_t n) {
   for (uint32_t i = 0; i < n; ++i) out[i] += a * w[i].to_f32();
 }
+
+#endif
 
 float silu(float x) { return x / (1.0f + std::exp(-x)); }
 

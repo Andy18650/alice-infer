@@ -214,7 +214,11 @@ TEST(DenseFfnAvx2, ApproxVsGenericMultiChunk) {
   EXPECT_LT(max_diff, 1e-4f) << "max |generic - avx2| = " << max_diff;
 }
 
-TEST(DenseFfnAvx2, IncrementalEqualsBatchedBitExact) {
+// Tolerance-based, NOT bit-exact: the S==1 down-pass (multi-accumulator
+// dot) and the S>1 down-pass (chunked axpy) sum in different orders
+// (design §10 numerics note in the impl). Row INDEPENDENCE still holds —
+// this test verifies the outputs agree to FP-reorder noise.
+TEST(DenseFfnAvx2, IncrementalEqualsBatchedApprox) {
   if (!HasAvx2()) GTEST_SKIP() << "no AVX2 on this machine";
   const auto mc = ffn_mc_600();
   EngineConfig ec;
@@ -234,7 +238,13 @@ TEST(DenseFfnAvx2, IncrementalEqualsBatchedBitExact) {
     ffn->forward(one.view);
     std::copy(one.data.begin(), one.data.end(), acc.data.begin() + s * 8);
   }
-  EXPECT_EQ(batched.data, acc.data);  // bit-exact within impl (fixed schedule)
+  float max_diff = 0.0f;
+  for (size_t i = 0; i < batched.data.size(); ++i) {
+    const float d = std::fabs(batched.data[i] - acc.data[i]);
+    max_diff = d > max_diff ? d : max_diff;
+  }
+  // Observed: ~1e-6 for these magnitudes. Threshold has ~100x margin.
+  EXPECT_LT(max_diff, 1e-4f) << "max |batched - incremental| = " << max_diff;
 }
 
 TEST(DenseFfnAvx2, ChunkLimitHardError) {

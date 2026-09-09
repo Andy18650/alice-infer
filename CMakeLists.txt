@@ -76,5 +76,9 @@ if(ALICE_BUILD_TESTS)
   target_link_libraries(alice_tests PRIVATE alice GTest::gtest_main nlohmann_json::nlohmann_json)
   target_compile_definitions(alice_tests PRIVATE ALICE_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
   include(GoogleTest)
-  gtest_discover_tests(alice_tests)
+  # Easy win from the thread sweep (tools/omp_sweep.sh, docs §10): on this
+  # box decode peaks at one thread per physical core (48), while all 96 is
+  # slower and unstable. Set here so every ctest run gets it automatically;
+  # override per-run with CTEST_ENVIRONMENT or by editing this line.
+  gtest_discover_tests(alice_tests PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=48")
 endif()

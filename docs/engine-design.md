@@ -50,10 +50,18 @@ boundaries.
 
 ## 4. Tensor & dtype contract
 
-- `TensorView`: non-owning, rank ≤ 2 (`[M, N]` row-major; rank-1 tensors load
-  as `1×N`), runtime dtype (bf16 / fp16 / f32), no templates.
-- No owning Tensor class. Ownership lives in mappings, private Block buffers,
-  and Trunk buffers.
+- **Dtype is static at type level.** `TView<T>`: non-owning, rank ≤ 2
+  (`[M, N]` row-major; rank-1 tensors load as `1×N`), element type in the
+  type — no `void*`, no runtime dtype field, no `as<T>()` (aliases
+  `F32View`, `BF16View`; `bf16` is a strong storage struct with explicit
+  fp32 conversion). A wrong-dtype view is a compile error, not a runtime
+  check.
+- Runtime dtype survives ONLY in `safetensors::TensorInfo` / manifest
+  `WeightSpec` (the `DType` enum) — file reality. The single checked
+  runtime→static conversion is `File::view_as<T>()` at the load boundary.
+- No owning Tensor class, and no polymorphic view hierarchy: quantized
+  formats get concrete COMPOSITE types (data + scales structs) named by
+  their abstract block class's constructor contract (§11).
 - bf16 storage with fp32 accumulation is baked in as the numerics contract.
 - Prefill vs decode is **shape dispatch inside kernels** (M==1 → GEMV path),
   not tensor generality. (Whether the interface also *explicitly* separates
@@ -250,9 +258,13 @@ manifest config.
   CPU_GENERIC kernels parallelize with OpenMP over OUTPUT ELEMENTS ONLY —
   every reduction stays sequential within a thread, so results are
   bit-identical to the naive oracle and `OMP_NUM_THREADS=1` reproduces the
-  sequential baseline with the same binary. (Reference: 1B decode on the
-  EPYC box ≈ 1 tok/s sequential → ≈ 20 tok/s at 96 threads, right at the
-  ~50 GB/s weight-streaming bandwidth bound.)
+  sequential baseline with the same binary. Thread-count sweep
+  (tools/omp_sweep.sh) on the EPYC box: decode peaks at one thread per
+  physical core — 48 threads ≈ 28.5 tok/s, stable; all 96 ≈ 11–18 tok/s
+  and unstable (memory-bound GEMV: SMT siblings only contend). Prefill is
+  compute-bound and prefers ~80 threads (≈ 75 tok/s). Tests run with
+  OMP_NUM_THREADS=48 via the gtest_discover_tests ENVIRONMENT property in
+  CMakeLists.txt (the single discoverable place).
 - Kernel workspaces (tiled/swizzled layouts, device buffers) are private
   buffers allocated at construction.
 

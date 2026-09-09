@@ -62,6 +62,10 @@ endif()
 add_executable(alice_repl src/frontend/repl.cpp)
 target_link_libraries(alice_repl PRIVATE alice)
 
+# Per-block microbenchmark (dense FFN; pattern for future per-operator benches)
+add_executable(alice_bench_ffn src/frontend/bench_ffn.cpp)
+target_link_libraries(alice_bench_ffn PRIVATE alice)
+
 if(ALICE_BUILD_TESTS)
   enable_testing()
   find_package(GTest QUIET)

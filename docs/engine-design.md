@@ -292,6 +292,20 @@ manifest config.
   pattern — accepted, blocked layout / step-3 intrinsics are the fix);
   ~+30% structure win at 1T. Step 3 (AVX2+FMA intrinsics into the
   isolated dot/axpy kernels) is next.
+- **NUMA probes** (zero-code, numactl; sweep script takes a numa_mode):
+  at 48T the avx2 prefill/decode measured 30.9/32.5 baseline first-touch,
+  50.2/35.0 under --interleave=all (+bind), and 55.1/34.2 pinned to node0
+  only (--cpunodebind=0 --membind=0). Conclusions: (a) the prefill
+  "regression" was placement, not structure — under node0 pinning avx2
+  beats the oracle in BOTH phases (55.1 vs 47.3, 34.2 vs 33.6);
+  (b) scaling on one node is monotonic to SMT-saturated T=48 — no T=24
+  peak, because the kernel is still latency-chain-bound (SMT hides the
+  scalar stalls) and ~85 GB/s is far under one node's streaming capacity;
+  (c) decode marginally prefers dual-node interleave (35.0), prefill
+  prefers single-node locality (55.1). Baked-in mbind interleave
+  (Tier-1, ~100 lines via raw syscall) is priced and deferred until
+  step-3 kernels change the bandwidth picture; pinning stays an env knob
+  deliberately.
 - Kernel workspaces (tiled/swizzled layouts, device buffers) are private
   buffers allocated at construction.
 

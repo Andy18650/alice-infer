@@ -6,9 +6,16 @@ being rebuilt from this document.
 ## 1. Purpose & target
 
 - From-scratch C++20 LLM inference engine. CPU-first, GPU later.
-- Bring-up model: DeepSeek-R1-Distill-Llama-70B (bf16 safetensors, 80 layers,
-  hidden 8192, GQA 64 q / 8 kv heads, head_dim 128, intermediate 28672,
-  vocab 128256, llama3 RoPE scaling, ~141 GB in 17 shards).
+- Bring-up model: **Llama-3.2-1B-Instruct**
+  (`/opt/models/Llama-3.2-1B-Instruct/`, single-shard bf16 safetensors,
+  16 layers, hidden 2048, GQA 32 q / 8 kv heads, head_dim 64,
+  intermediate 8192, vocab 128256, tied embeddings — lm_head aliases
+  embed_tokens, so manifest aliasing is exercised on day one — llama3
+  RoPE scaling, three EOS ids). Same LlamaForCausalLM architecture as the
+  original target, at bring-up size.
+- Scale target (for sizing decisions): DeepSeek-R1-Distill-Llama-70B
+  (bf16, 80 layers, hidden 8192, GQA 64/8, head_dim 128,
+  intermediate 28672, ~141 GB in 17 shards at /opt/models/deepseek-ai).
 - Build: CMake. Minimal core dependencies (nlohmann/json confined to .cpp
   files; GoogleTest for tests; BLAS behind a wrapper).
 
@@ -98,10 +105,13 @@ the final position are the distribution for the first generated token.
 Invariant: **every token enters Block state exactly once, and its logits are
 available immediately after processing.**
 
-Position is implicit: state is append-only, so a stateful Block's current
-length IS the position (KV write offset; RoPE phase = base + arange(S) for a
-prefill chunk). No position object crosses any interface. RoPE tables are
-private buffers of the attention implementation, built at construction from
+Position never crosses any interface. Each stateful Block keeps a private
+position counter, incremented per token processed (KV write offset; RoPE
+phase = base + arange(S) for a prefill chunk). The counter is NOT the state
+length: a Block may evict and compact its state at will (KVPress-style),
+leaving its state shorter than the position — strictly the Block's own
+business, invisible to everything outside it. RoPE tables are private
+buffers of the attention implementation, built at construction from
 manifest config.
 
 ## 7. Class structure
@@ -134,8 +144,10 @@ manifest config.
 - Hardware selection: one factory per abstract class; runtime detection
   (cpuid / CUDA) with an explicit fallback chain. Kept deliberately shallow —
   CPU-only for the foreseeable bring-up period.
-- `EngineConfig` (construction-time, engine-wide): `max_seq_len`,
-  `max_prefill_chunk` (requests beyond → hard error), hardware override.
+- Construction-time, engine-wide parameters (`max_seq_len`;
+  `max_prefill_chunk` — requests beyond → hard error; hardware override)
+  are passed to the factory/loader; an `EngineConfig` struct is just
+  packaging for these, not a designed object yet.
 - Implementations may reuse transient memory *internally* — e.g. chunked
   FFN: tile over the intermediate dim (gate-chunk · up-chunk → SiLU-mul →
   partial down-proj → accumulate running sum), the flash-attention tiling
@@ -195,7 +207,9 @@ manifest config.
 - **Static boundary buffers.** The Trunk owns the residual stream and the
   single static io buffer `[max_prefill_chunk, d]` FP32 — the purely static
   form of scratch sharing, applied exactly where we have control: Block
-  boundaries.
+  boundaries. Ownership caveat: the io buffer must be handed from the Trunk
+  to Embedder/LmHead/Blocks; if that plumbing proves awkward, ownership
+  moves to `Model` (flagged, not decided).
 - **Load flow**: per Block, in order — `pread` its tensors from shard files
   into staging RAM → constructor copies/converts/packs into private buffers →
   staging freed immediately. Peak load RAM ≈ resident weights + one Block's
@@ -227,6 +241,12 @@ manifest config.
   BLAS and defines `ALICE_BLAS_BACKEND_*`.
 - Threading model: the model loop is strictly sequential; intra-op
   parallelism (threads, BLAS) is each implementation's private business.
+  OpenMP and OpenBLAS both keep persistent worker pools (created at the
+  first parallel region / first call, reused thereafter — no per-call
+  spawn), and neither accepts an injected external pool, so an engine-wide
+  thread pool is neither needed nor possible; the real knobs are thread
+  count, affinity, and spin policy (`OMP_WAIT_POLICY=active`; cf. Colibri's
+  hot-thread tuning). The sequential loop avoids nested oversubscription.
 - Kernel workspaces (tiled/swizzled layouts, device buffers) are private
   buffers allocated at construction.
 
@@ -244,8 +264,11 @@ opaque per-Block state layouts; snapshot/stash interface on StatefulBlock.
 
 - Tokenizer / chat template / detokenizer inside `Model` (frontend's job —
   the CLI/server will own one eventually; the engine repo boundary is ids).
-- The generation loop and stop conditions (EOS, max_tokens) live in the
-  session/frontend; `Model` provides the token-level step.
+- The generation loop and stop conditions (EOS — the bring-up model has
+  three EOS ids — max_tokens) live in the frontend; `Model` provides the
+  token-level step. Long-term one frontend serves both CLI and API server;
+  for the first PoC the CLI simply owns the entire REPL (accepted
+  simplification).
 - GGUF (for now). Multi-request scheduling. Fork/beam/speculative state ops.
 - Python inside the engine core.
 
@@ -254,7 +277,7 @@ opaque per-Block state layouts; snapshot/stash interface on StatefulBlock.
 - GoogleTest. Naive-vs-optimized kernel equivalence as the core property
   (`CPU_GENERIC` is always available as the oracle).
 - Synthetic safetensors fixtures (incl. corruption cases). Manifest
-  validation against the real 70B source.
+  validation against the real 1B source (later the 70B).
 - Determinism: same tokens + fresh state + temperature 0 → identical output.
 
 ## 14. Open questions & reminders
@@ -262,7 +285,10 @@ opaque per-Block state layouts; snapshot/stash interface on StatefulBlock.
 - **Prefill/decode separation** — whether the interface explicitly separates
   decode from prefill (beyond shape dispatch). CIRCLE BACK when designing
   SSM/linear attention blocks, whose prefill (chunkwise-parallel) and decode
-  (recurrent-step) forms differ far more than attention's.
+  (recurrent-step) forms differ far more than attention's. Related:
+  speculative decoding blurs the line further — decode becomes 'short
+  prefill with frequent rollbacks' needing multiple logits per step; likely
+  a new interface when the time comes.
 - **Transient sharing** — private now; revisit if memory pressure demands
   (§8).
 - **Trunk/norm merge** — revisit triggers in §7.2.

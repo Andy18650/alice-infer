@@ -20,7 +20,10 @@ constexpr size_t dtype_size(DType t) {
 }
 
 // Non-owning, rank <= 2 view over row-major storage. Ownership lives in
-// arenas, file mappings and caches — never in this type.
+// private Block buffers, load-staging buffers, and Trunk buffers — never
+// in this type. Used at trust boundaries only (Block io contract,
+// constructor weight hand-off, load-time validation); block internals are
+// dtype-static and layout-private (see docs/engine-design.md §4, §7.1).
 //
 // Deliberately NOT an N-D tensor: weights are matrices or vectors, and
 // per-head structure in attention is a kernel parameter, not a layout.

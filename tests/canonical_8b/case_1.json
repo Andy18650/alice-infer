@@ -1,0 +1,32 @@
+{
+ "prompt": "Once upon a time, there was a little robot who",
+ "input_ids": [
+  128000,
+  12805,
+  59723,
+  266,
+  547,
+  11,
+  700,
+  365,
+  116607,
+  1468,
+  1565,
+  45739,
+  14965
+ ],
+ "generated_ids": [
+  198,
+  33413,
+  11,
+  779,
+  358,
+  2846,
+  4560,
+  311
+ ],
+ "generated_text": "ĊOkay,ĠsoĠI'mĠtryingĠto",
+ "seq_len": 21,
+ "vocab": 128256,
+ "dtype": "float32"
+}

@@ -1,0 +1,26 @@
+{
+ "prompt": "def fibonacci(n):",
+ "input_ids": [
+  128000,
+  451,
+  544,
+  581,
+  40445,
+  1471,
+  1680
+ ],
+ "generated_ids": [
+  28,
+  16,
+  489,
+  220,
+  17,
+  489,
+  220,
+  18
+ ],
+ "generated_text": "=1Ġ+Ġ2Ġ+Ġ3",
+ "seq_len": 15,
+ "vocab": 128256,
+ "dtype": "float32"
+}

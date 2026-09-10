@@ -22,28 +22,14 @@ namespace {
 constexpr int kCases = 3;
 constexpr float kMaxLogitDrift = 0.75f;  // generous; observed ~0.1-0.2
 
-std::string fixture(const std::string& name) {
-  return std::string(ALICE_SOURCE_DIR) + "/tests/canonical/" + name;
+std::string fixture(const std::string& dir, const std::string& name) {
+  return std::string(ALICE_SOURCE_DIR) + "/tests/" + dir + "/" + name;
 }
 
-bool fixtures_present() {
-  return std::filesystem::exists("/opt/models/Llama-3.2-1B-Instruct/model.safetensors") &&
-         std::filesystem::exists(fixture("case_0.json"));
-}
-
-TEST(Canonical, TeacherForcedLogitsMatchHF) {
-  if (!fixtures_present()) GTEST_SKIP() << "model or canonical fixtures not present";
-
-  alice::EngineConfig cfg;
-  cfg.max_seq_len = 256;
-  cfg.max_prefill_chunk = 8;
-  cfg.sampling.temperature = 0.0f;
-  auto model = alice::ModelLoader::load(
-      "/opt/models/Llama-3.2-1B-Instruct",
-      std::string(ALICE_SOURCE_DIR) + "/models/llama-3.2-1b-instruct.manifest.json", cfg);
-
+void run_teacher_forced(alice::Model& model, const std::string& fixture_dir,
+                        uint32_t chunk) {
   for (int ci = 0; ci < kCases; ++ci) {
-    std::ifstream min(fixture("case_" + std::to_string(ci) + ".json"));
+    std::ifstream min(fixture(fixture_dir, "case_" + std::to_string(ci) + ".json"));
     const auto meta = nlohmann::json::parse(
         std::string((std::istreambuf_iterator<char>(min)), std::istreambuf_iterator<char>()));
     auto seq = meta.at("input_ids").get<std::vector<int32_t>>();
@@ -54,19 +40,19 @@ TEST(Canonical, TeacherForcedLogitsMatchHF) {
     ASSERT_EQ(int(seq.size()), seq_len);
 
     std::vector<float> ref(size_t(seq_len) * vocab);
-    std::ifstream bin(fixture("case_" + std::to_string(ci) + ".teacher.f32"),
+    std::ifstream bin(fixture(fixture_dir, "case_" + std::to_string(ci) + ".teacher.f32"),
                       std::ios::binary);
     bin.read(reinterpret_cast<char*>(ref.data()), ref.size() * sizeof(float));
     ASSERT_EQ(size_t(bin.gcount()), ref.size() * sizeof(float));
 
-    model->reset();
+    model.reset();
     float max_drift = 0.0f;
     double sum_drift = 0.0;
     int worst_pos = -1;
-    for (size_t off = 0; off < seq.size(); off += cfg.max_prefill_chunk) {
-      const size_t n = std::min<size_t>(cfg.max_prefill_chunk, seq.size() - off);
+    for (size_t off = 0; off < seq.size(); off += chunk) {
+      const size_t n = std::min<size_t>(chunk, seq.size() - off);
       const alice::F32View logits =
-          model->forward_logits_all(std::span<const int32_t>(seq.data() + off, n));
+          model.forward_logits_all(std::span<const int32_t>(seq.data() + off, n));
       ASSERT_EQ(logits.rows, uint32_t(n));
       ASSERT_EQ(logits.cols, uint32_t(vocab));
       for (size_t r = 0; r < n; ++r) {
@@ -83,10 +69,43 @@ TEST(Canonical, TeacherForcedLogitsMatchHF) {
         }
       }
     }
-    printf("case %d: %d positions, max|Δlogit|=%.4f (pos %d), mean|Δ|=%.5f\n", ci,
-           seq_len, max_drift, worst_pos, sum_drift / (double(seq_len) * vocab));
+    printf("%s case %d: %d positions, max|Δlogit|=%.4f (pos %d), mean|Δ|=%.5f\n",
+           fixture_dir.c_str(), ci, seq_len, max_drift, worst_pos,
+           sum_drift / (double(seq_len) * vocab));
     EXPECT_LT(max_drift, kMaxLogitDrift) << "case " << ci << ": logit drift beyond tolerance";
   }
+}
+
+TEST(Canonical, TeacherForcedLogitsMatchHF) {
+  const std::string model_dir = "/opt/models/Llama-3.2-1B-Instruct";
+  if (!std::filesystem::exists(model_dir + "/model.safetensors") ||
+      !std::filesystem::exists(fixture("canonical", "case_0.json")))
+    GTEST_SKIP() << "model or canonical fixtures not present";
+
+  alice::EngineConfig cfg;
+  cfg.max_seq_len = 256;
+  cfg.max_prefill_chunk = 8;
+  cfg.sampling.temperature = 0.0f;
+  auto model = alice::ModelLoader::load(
+      model_dir,
+      std::string(ALICE_SOURCE_DIR) + "/models/llama-3.2-1b-instruct.manifest.json", cfg);
+  run_teacher_forced(*model, "canonical", cfg.max_prefill_chunk);
+}
+
+TEST(Canonical8B, TeacherForcedLogitsMatchHF) {
+  const std::string model_dir = "/opt/models/deepseek-ai/deepseek-r1-distill-llama-8b";
+  const std::string manifest =
+      std::string(ALICE_SOURCE_DIR) + "/models/deepseek-r1-distill-llama-8b.manifest.json";
+  if (!std::filesystem::exists(model_dir + "/model-00001-of-000002.safetensors") ||
+      !std::filesystem::exists(fixture("canonical_8b", "case_0.json")))
+    GTEST_SKIP() << "8B model or canonical fixtures not present";
+
+  alice::EngineConfig cfg;
+  cfg.max_seq_len = 256;
+  cfg.max_prefill_chunk = 8;
+  cfg.sampling.temperature = 0.0f;
+  auto model = alice::ModelLoader::load(model_dir, manifest, cfg);
+  run_teacher_forced(*model, "canonical_8b", cfg.max_prefill_chunk);
 }
 
 }  // namespace

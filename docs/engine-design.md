@@ -241,6 +241,23 @@ manifest config.
 - Safetensors specifics: shards discovered by directory scan; duplicate
   tensor names across shards = error; rank ≤ 2 enforced; headers read for
   manifest validation; manifest-driven assembly.
+- **Multi-shard status (implemented)**: `safetensors::Files` is the
+  multi-shard weight source — an ordered set of opened `File`s probed
+  linearly per lookup against their RESIDENT header maps. No centralized
+  catalog is built or retained (each tensor is resolved exactly once at
+  load; ~722 tensors x <= 17 in-RAM hash probes is negligible), and HF's
+  model.safetensors.index.json is deliberately ignored — probing is
+  authoritative and self-validating via the two-way audit, keeping the
+  manifest the sole external contract. The manifest format is unchanged:
+  sharding is physical packaging, not part of the logical contract.
+  Cross-shard duplicate names are rejected at open; the unclaimed-tensor
+  audit is global across shards. Manifests for llama-family models are
+  authored by tools/gen_manifest.py (config.json -> explicit manifest).
+  Validated with DeepSeek-R1-Distill-Llama-8B (2 shards, 15 GB,
+  /opt/models/deepseek-ai/deepseek-r1-distill-llama-8b): loads and
+  generates coherently (48T cpu_avx2: ~190 ms/tok prefill, ~105 ms/tok
+  decode — the 1B-tuned chunk/tile constants and the NUMA story are the
+  known next steps before the 70B).
 
 ## 10. Kernels & backends
 

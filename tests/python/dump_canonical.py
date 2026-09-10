@@ -3,11 +3,14 @@
 
 Run from the repo root with the project venv:
     .venv/bin/python tests/python/dump_canonical.py
+    .venv/bin/python tests/python/dump_canonical.py \
+        --model /opt/models/deepseek-ai/deepseek-r1-distill-llama-8b \
+        --out tests/canonical_8b --skip-battery
 
 Outputs (committed to the repo):
-  tests/canonical/tokenizer_battery.json  — [{text, ids}] for tokenizer tests
-  tests/canonical/case_<i>.json           — case meta (prompt, ids, shape)
-  tests/canonical/case_<i>.teacher.f32    — float32 logits [seq_len, vocab]
+  <out>/tokenizer_battery.json  — [{text, ids}] for tokenizer tests
+  <out>/case_<i>.json           — case meta (prompt, ids, shape)
+  <out>/case_<i>.teacher.f32    — float32 logits [seq_len, vocab]
 
 The generation cases are TEACHER-FORCED: the reference token sequence
 (prompt + greedy continuation) is replayed through the model in a single
@@ -21,6 +24,7 @@ guaranteed with the same torch/transformers versions, so C++ tests must treat
 them as within-tolerance references, not bit-exact ones.
 """
 
+import argparse
 import json
 import os
 
@@ -28,8 +32,6 @@ import numpy as np
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-MODEL = "/opt/models/Llama-3.2-1B-Instruct"
-OUT = os.path.join(os.path.dirname(__file__), "..", "canonical")
 BOS = 128000
 GEN_STEPS = 8
 
@@ -76,17 +78,27 @@ PROMPTS = [
 
 
 def main():
-    os.makedirs(OUT, exist_ok=True)
-    tok = AutoTokenizer.from_pretrained(MODEL)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--model", default="/opt/models/Llama-3.2-1B-Instruct")
+    ap.add_argument("--out",
+                    default=os.path.join(os.path.dirname(__file__), "..", "canonical"))
+    ap.add_argument("--skip-battery", action="store_true",
+                    help="skip the tokenizer battery (same-family tokenizer "
+                         "already covered by the 1B fixtures)")
+    args = ap.parse_args()
 
-    battery = [{"text": t, "ids": tok.encode(t, add_special_tokens=False)}
-               for t in BATTERY]
-    with open(os.path.join(OUT, "tokenizer_battery.json"), "w") as f:
-        json.dump(battery, f, ensure_ascii=False, indent=1)
-    print(f"battery: {len(battery)} cases")
+    os.makedirs(args.out, exist_ok=True)
+    tok = AutoTokenizer.from_pretrained(args.model)
+
+    if not args.skip_battery:
+        battery = [{"text": t, "ids": tok.encode(t, add_special_tokens=False)}
+                   for t in BATTERY]
+        with open(os.path.join(args.out, "tokenizer_battery.json"), "w") as f:
+            json.dump(battery, f, ensure_ascii=False, indent=1)
+        print(f"battery: {len(battery)} cases")
 
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL, dtype=torch.bfloat16, attn_implementation="eager")
+        args.model, dtype=torch.bfloat16, attn_implementation="eager")
     model.eval()
 
     for i, prompt in enumerate(PROMPTS):
@@ -111,9 +123,9 @@ def main():
             "vocab": int(logits.shape[1]),
             "dtype": "float32",
         }
-        with open(os.path.join(OUT, f"case_{i}.json"), "w") as f:
+        with open(os.path.join(args.out, f"case_{i}.json"), "w") as f:
             json.dump(meta, f, ensure_ascii=False, indent=1)
-        logits.astype("<f4").tofile(os.path.join(OUT, f"case_{i}.teacher.f32"))
+        logits.astype("<f4").tofile(os.path.join(args.out, f"case_{i}.teacher.f32"))
         print(f"case_{i}: {prompt!r} -> {meta['generated_text']!r}")
 
 

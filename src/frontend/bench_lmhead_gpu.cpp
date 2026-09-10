@@ -90,7 +90,23 @@ int main(int argc, char** argv) {
   HIP_CHECK(hipMalloc(&dw, size_t(V) * D * 2));
   HIP_CHECK(hipMalloc(&dx, size_t(128) * D * 2));
   HIP_CHECK(hipMalloc(&dc, size_t(128) * V * 4));
-  HIP_CHECK(hipMemcpy(dw, w.get(), size_t(V) * D * 2, hipMemcpyHostToDevice));
+  // One-time H2D staging cost, pageable vs pinned source (the model-load
+  // path stages from PAGEABLE loader buffers today):
+  {
+    double t = now_s();
+    HIP_CHECK(hipMemcpy(dw, w.get(), size_t(V) * D * 2, hipMemcpyHostToDevice));
+    const double pageable = now_s() - t;
+    bf16* wp = nullptr;
+    HIP_CHECK(hipHostMalloc(&wp, size_t(V) * D * 2, hipHostMallocDefault));
+    std::memcpy(wp, w.get(), size_t(V) * D * 2);
+    t = now_s();
+    HIP_CHECK(hipMemcpy(dw, wp, size_t(V) * D * 2, hipMemcpyHostToDevice));
+    const double pinned = now_s() - t;
+    std::printf("W staging %.0f MB H2D: pageable %.2f s (%.2f GB/s), pinned %.2f s (%.2f GB/s)\n",
+                size_t(V) * D * 2 / 1e6, pageable, size_t(V) * D * 2 / pageable / 1e9,
+                pinned, size_t(V) * D * 2 / pinned / 1e9);
+    HIP_CHECK(hipHostFree(wp));
+  }
 
   rocblas_handle handle;
   RB_CHECK(rocblas_create_handle(&handle));

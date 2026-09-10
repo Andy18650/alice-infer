@@ -87,11 +87,11 @@ target_link_libraries(alice_repl PRIVATE alice)
 add_executable(alice_bench_ffn src/frontend/bench_ffn.cpp)
 target_link_libraries(alice_bench_ffn PRIVATE alice)
 
-# BLAS scouting bench for lm_head (experiment; links an extracted OpenBLAS
-# .so by absolute path — no system install, no BLAS dependency in alice).
-set(ALICE_OPENBLAS_SO
-    "/tmp/openblas-local/usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblas.so.0"
-    CACHE FILEPATH "path to an OpenBLAS shared object for the scout bench")
+# BLAS scouting bench for lm_head (concluded experiment, kept as evidence;
+# builds only when ALICE_OPENBLAS_SO points at an OpenBLAS .so, e.g. the
+# system libopenblas0 package. No BLAS dependency in alice itself.)
+set(ALICE_OPENBLAS_SO "" CACHE FILEPATH
+    "path to an OpenBLAS shared object for the scout bench")
 if(EXISTS "${ALICE_OPENBLAS_SO}")
   add_executable(alice_bench_lmhead src/frontend/bench_lmhead.cpp)
   target_link_libraries(alice_bench_lmhead PRIVATE alice "${ALICE_OPENBLAS_SO}")

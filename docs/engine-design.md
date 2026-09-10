@@ -302,6 +302,23 @@ manifest config.
   — bf16 epsilon, HF-reference-flavored, tolerance-covered; (d) build
   needs no hipcc: host-only C API, pre-compiled Tensile gfx90a code
   objects, __HIP_PLATFORM_AMD__ define for g++.
+  GPU_ROCBLAS HARDWARE CLASS (2026-07, first GPU resident): dense FFN
+  on device 0 (interim auto-select: EngineConfig default AUTO = GPU
+  when present, per-block-type fallback chains — attention stays CPU;
+  the loader overhaul is pending). Weights staged to device at
+  construction; per forward: host bf16 convert (pinned) -> H2D ->
+  FUSED gate/up GEMM ([Wg;Wu] one [2I,d] matrix, one launch) ->
+  hipRTC-compiled silu-mul elementwise (no hipcc in the build; RTC
+  source lives inside the impl, truncating bf16 conversion matches
+  host from_f32) -> down GEMM -> D2H. All GEMMs rocblas_gemm_ex
+  bf16->fp32-HPA. Validated: block tests (7e-4 vs oracle, bit-exact
+  batched==incremental at toy values), canonical teacher-forced with
+  GPU FFN auto-selected: 1B max|d| 0.33, 8B 0.38 (CPU-only: 0.22/
+  0.28; gate 0.75) — bf16-x/act rounding adds marginally to drift.
+  E2E (long prompt, 48T): 1B decode 43.6 -> 52.9 tok/s, prefill ~tied
+  (157 vs 154 — naive CPU attention now dominates prefill); 8B decode
+  9.5 -> 14.5 tok/s, prefill ~3-5x at short prompts. 8B FFN weights
+  resident: ~13 GB of the 64 GB die.
 - Threading model: the model loop is strictly sequential; intra-op
   parallelism (threads, BLAS) is each implementation's private business.
   OpenMP and OpenBLAS both keep persistent worker pools (created at the

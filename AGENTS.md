@@ -17,6 +17,19 @@ Bring-up models: Llama-3.2-1B-Instruct, DeepSeek-R1-Distill-Llama-8B,
 DeepSeek-R1-Distill-Llama-70B (all under `/opt/models`, manifests in
 `models/`).
 
+## How constraints work here (read first)
+
+- **Constraints come from the user, not from past agent improvisations.**
+  When the right solution needs something outside the current sandbox — a
+  package install, a new compiler/toolchain, a system config change —
+  STOP and ask. Do not improvise around it: no /tmp-extracted .debs, no
+  vendored library copies, no avoiding a standard compiler because the
+  build file is currently simple. Standard approaches (system packages,
+  hipcc, system libraries) are PREFERRED over hermetic workarounds.
+- Nothing in this file or docs/engine-design.md is a constraint unless
+  the user said it. If you find yourself treating an earlier agent
+  decision as law, flag it and ask instead of building on it.
+
 ## Hard invariants (do not break)
 
 - **Typed tensor system**: `TView<T>` non-owning rank-2 view, element type
@@ -72,10 +85,12 @@ cmake --build build-release -j                     # Release: measure here
   `ALICE_CANONICAL_{MODEL_DIR,MANIFEST,FIXTURES[,CHUNK]}` — no recompile.
 - Manifests are generated, not hand-written: `tools/gen_manifest.py`;
   pre-flight audit with `tools/check_manifest.py`.
-- GPU work: host-only C++ vs rocBLAS/HIP C APIs (no hipcc in the build;
-  custom device kernels via hipRTC, source strings inside the impl);
-  `__HIP_PLATFORM_AMD__` define; pinned host buffers mandatory (pageable
-  D2H runs a ~1 GB/s staged path).
+- GPU work: host-only C++ vs rocBLAS/HIP C APIs; custom device kernels
+  currently via hipRTC (source strings inside the impl) — that was an
+  agent choice to keep the build simple, NOT a user constraint; hipcc
+  is acceptable if it makes things cleaner. `__HIP_PLATFORM_AMD__`
+  define; pinned host buffers mandatory (pageable copies run a staged
+  driver path, measured 2.2 GB/s vs 28.5 GB/s pinned).
 - Commits: detailed messages (what + why + measured numbers); update
   `docs/engine-design.md` status paragraphs with every feature.
 
@@ -104,5 +119,7 @@ cmake --build build-release -j                     # Release: measure here
 AMD EPYC 7413 (Zen3, AVX2 no AVX-512), 2×24 physical cores SMT-2,
 NUMA node0 = cpus 0-23,48-71 (257 GB), node1 = 24-47,72-95 (254 GB).
 4× MI250X = 8 GCDs × 64 GB HBM2e (~1.6 TB/s each, gfx90a), ROCm 7.1.
-No sudo for agents (sudo needs interactive auth); system ROCm + Ubuntu
-OpenBLAS (.deb extracted at /tmp/openblas-local) available.
+No sudo for agents (sudo needs interactive auth) — ASK the user to run
+package installs. /tmp is a 250 GB tmpfs and NOT durable storage.
+Fresh configures fetch googletest + nlohmann_json over the network
+(FetchContent) unless system packages provide them.

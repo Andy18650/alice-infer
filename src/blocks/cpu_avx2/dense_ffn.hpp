@@ -31,14 +31,14 @@ class DenseFfnBF16CpuAvx2 final : public DenseFfnBF16 {
 
  private:
   uint32_t d_ = 0, inter_ = 0, mpc_ = 0;
-  size_t ldw_ = 0;  // gate/up/transposed-down row stride (padded to 64B)
-  size_t ldi_ = 0;  // row-major w_down row stride (padded to 64B)
+  size_t ldw_ = 0;  // gate/up row stride (padded to 64B)
+  size_t ldi_ = 0;  // w_down row stride (padded to 64B)
 
   AlignedPtr<bf16> wg_, wu_;   // [I, ldw], copied with parallel first-touch
-  AlignedPtr<bf16> wdt_;       // w_down TRANSPOSED: [I, ldw] (Wd[i][j] -> WdT[j][i])
-  AlignedPtr<bf16> wd_;        // w_down row-major [d, ldi] (S==1 dot path)
-  AlignedPtr<float> act_;      // [chunk, mpc] fused-chunk activations
+  AlignedPtr<bf16> wd_;        // [d, ldi] row-major; the tile kernel consumes
+                               // it k-contiguously — no transposed copy needed
   AlignedPtr<float> full_act_; // [I] full activation vector (S==1 path)
+  AlignedPtr<float> gatec_, upc_, actc_;  // [mpc, kChunk] chunk buffers
   AlignedPtr<float> out_;      // [mpc, d] private output accumulator
 };
 

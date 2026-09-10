@@ -192,7 +192,7 @@ TEST(DenseFfnAvx2, ApproxVsGenericMultiChunk) {
   if (!HasAvx2()) GTEST_SKIP() << "no AVX2 on this machine";
   const auto mc = ffn_mc_600();
   EngineConfig ec;
-  ec.max_prefill_chunk = 4;
+  ec.max_prefill_chunk = 8;
   Bf16Mat g1(600, 8, ffn_pattern(600, 8, 1)), u1(600, 8, ffn_pattern(600, 8, 2)),
       d1(8, 600, ffn_pattern(8, 600, 3));
   auto oracle = alice::DenseFfnBF16::create(HardwareClass::CPU_GENERIC, g1.view, u1.view,
@@ -201,8 +201,10 @@ TEST(DenseFfnAvx2, ApproxVsGenericMultiChunk) {
       d2(8, 600, ffn_pattern(8, 600, 3));
   auto avx2 = alice::DenseFfnBF16::create(HardwareClass::CPU_AVX2, g2.view, u2.view,
                                           d2.view, mc, ec);
-  std::vector<float> input = ffn_pattern(4, 8, 4);
-  F32Mat io1(4, 8, input), io2(4, 8, input);
+  // S = 5 exercises the tile grid's m-edge row (5 = 4 + 1); I = 600 is a
+  // multiple of 3, d = 8 exercises the n-edge tiles (8 = 3 + 3 + 2).
+  std::vector<float> input = ffn_pattern(5, 8, 4);
+  F32Mat io1(5, 8, input), io2(5, 8, input);
   oracle->forward(io1.view);
   avx2->forward(io2.view);
   float max_diff = 0.0f;

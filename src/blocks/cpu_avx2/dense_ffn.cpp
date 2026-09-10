@@ -2,37 +2,39 @@
 // optimized operator (design §10). Fully private weight storage and math
 // (no shared toolbox); per-TU -mavx2 -mfma with cpuid-guarded dispatch.
 //
-// Structure (the step-2 lessons, baked in):
+// Structure:
 //   * aligned 64B private storage with parallel first-touch (NUMA-local
 //     residency without mbind: the thread that streams a page at forward()
 //     time is, under static scheduling + same thread count, the one that
-//     faulted it in at construction),
-//   * TWO schedules dispatched on S, never on arithmetic order:
+//     faulted it in at construction).
+//   * S-dispatch (GEMV vs GEMM are different physics — llama.cpp does the
+//     same: tinyBLAS refuses m<4 and falls back):
 //       - S == 1 (decode): dot-form for all three projections, parallel
-//         over output rows — every thread streams CONTIGUOUS weight rows.
-//         (Measured: a column-block-parallel down-pass at S==1 costs
-//         ~3.5x decode at 48 threads — 64B slices at 4KB stride collapse
-//         DRAM row-buffer/prefetcher efficiency; hence this path.)
-//       - S > 1 (prefill): fused gate/up/down chunk loop; the [S, I]
-//         intermediate never exists; each weight row serves all S tokens
-//         while hot; w_down consumed TRANSPOSED so the down-pass streams
-//         contiguous rows ("out += act_j * WdT[j][:]") instead of strided
-//         columns. Its column-block parallelization is the same strided
-//         pattern — currently masked (prefill is not at the bandwidth
-//         wall); the blocked-WdT layout is the queued fix.
+//         over output rows; every thread streams CONTIGUOUS weight rows.
+//       - S > 1 (prefill): fused gate/up/down chunk loop (the [S, I]
+//         intermediate never exists) whose chunk loop over I is the
+//         K-blocking, with a tinyBLAS-style REGISTER-TILE microkernel
+//         (gemm_bloc<RM,RN>, reference/sgemm.cpp): RM*RN independent dot
+//         accumulators per tile hide FMA latency by construction and
+//         reuse every loaded vector from registers (A row x RN, B row
+//         x RM). Both operands are k-contiguous, so B (weights) is
+//         consumed ROW BY ROW — output-tile parallelism partitions
+//         weights by whole rows = contiguous per-thread streams. The
+//         transposed w_down of the previous revision (and its strided
+//         column-block pattern + 50% extra storage) is RETIRED: it was
+//         a workaround for not having a real microkernel.
 //   * private [S, d] output accumulator for the fused path (fusion cannot
-//     accumulate into io while later chunks still read the input from io);
-//     copied back at the end to fulfil the in-place contract.
-//   * w_down kept in BOTH layouts (row-major wd_ for the dot path,
-//     transposed wdt_ for the fused path): +50% FFN weight storage,
-//     flagged for the memory audit.
+//     accumulate into io while later chunks still read the input from
+//     io); copied back at the end to fulfil the in-place contract.
+//   * threading: one persistent omp parallel region, static omp for
+//     throughout (no dynamic scheduling by decision).
 //
 // Numerics (user-signed-off, design §10): cross-impl equivalence is
 // tolerance-based (chunked + lane-group accumulation reorder sums vs the
-// oracle). Within-impl: deterministic per (S, thread count); row
+// oracle). Within-impl: deterministic per (S, thread count) — tiles are
+// independent, chunk accumulation is fixed ascending order; row
 // independence always holds; incremental==batched is TOLERANCE-based
-// because the S==1 dot-form and S>1 chunked-axpy down-passes sum in
-// different orders (see the kernels' NUMERICS NOTE).
+// because the S==1 dot-form and S>1 tile paths sum in different orders.
 
 #include "dense_ffn.hpp"
 
@@ -42,18 +44,19 @@
 
 #if defined(_OPENMP)
 #define ALICE_AVX2_OMP_PARALLEL_FOR _Pragma("omp parallel for")
-#define ALICE_AVX2_OMP_PARALLEL_FOR_C2 _Pragma("omp parallel for collapse(2)")
+#define ALICE_AVX2_OMP_PARALLEL _Pragma("omp parallel")
+#define ALICE_AVX2_OMP_FOR _Pragma("omp for")
 #else
 #define ALICE_AVX2_OMP_PARALLEL_FOR
-#define ALICE_AVX2_OMP_PARALLEL_FOR_C2
+#define ALICE_AVX2_OMP_PARALLEL
+#define ALICE_AVX2_OMP_FOR
 #endif
 
 namespace alice::cpu_avx2 {
 namespace {
 
-constexpr size_t kAlign = 64;       // cache line; AVX2 32B loads are a subset
-constexpr uint32_t kChunk = 256;    // intermediate rows per fused chunk
-constexpr uint32_t kColBlock = 32;  // down-pass column tile (64B of bf16)
+constexpr size_t kAlign = 64;     // cache line; AVX2 32B loads are a subset
+constexpr uint32_t kChunk = 256;  // intermediate rows per fused chunk (K-block)
 
 constexpr size_t round_up(size_t n, size_t m) { return (n + m - 1) / m * m; }
 
@@ -73,12 +76,13 @@ AlignedPtr<T> alloc_aligned(size_t n) {
 // bf16 -> fp32 conversion is the shift trick: bf16 is the top 16 bits of
 // fp32, so widen u16->u32 and shift left 16. Zen3 has no native bf16.
 //
-// NUMERICS NOTE: the multi-accumulator dot sums in lane-group order, not
-// strict ascending order. Per (impl, S, thread-count) the schedule is fixed
-// and deterministic, but the S==1 dot-form down-pass and the S>1 chunked
-// axpy down-pass no longer produce bit-identical sums — within-impl
-// incremental==batched becomes TOLERANCE-based here (cross-impl already
-// was; policy in design §10). Row independence is unaffected.
+// NUMERICS NOTE: the multi-accumulator dot and the register tile both sum
+// in lane-group order, not strict ascending order. Per (impl, S, thread-
+// count) the schedule is fixed and deterministic, but the S==1 dot-form
+// down-pass and the S>1 tile down-pass no longer produce bit-identical
+// sums — within-impl incremental==batched is TOLERANCE-based here
+// (cross-impl already was; policy in design §10). Row independence is
+// unaffected.
 
 #if defined(__AVX2__) && defined(__FMA__)
 #include <immintrin.h>
@@ -95,9 +99,8 @@ inline float hsum256(__m256 v) {
   return _mm_cvtss_f32(s);
 }
 
-// Dot product over a weight row. Four independent vector accumulators (32
-// lanes in flight) break the scalar dependency chain: Zen3 FMA latency 4,
-// throughput 2/cycle — a single accumulator starves both pipes.
+// Dot product over a weight row (decode path). Four independent vector
+// accumulators (32 lanes in flight) break the scalar dependency chain.
 float dot_bf16_f32(const float* x, const bf16* w, uint32_t n) {
   __m256 acc0 = _mm256_setzero_ps(), acc1 = _mm256_setzero_ps();
   __m256 acc2 = _mm256_setzero_ps(), acc3 = _mm256_setzero_ps();
@@ -116,22 +119,42 @@ float dot_bf16_f32(const float* x, const bf16* w, uint32_t n) {
   return acc;
 }
 
-void axpy_bf16(float* out, float a, const bf16* w, uint32_t n) {
-  const __m256 va = _mm256_set1_ps(a);
-  uint32_t i = 0;
-  for (; i + 16 <= n; i += 16) {
-    _mm256_storeu_ps(out + i,
-                     _mm256_fmadd_ps(va, load8_bf16_as_f32(w + i), _mm256_loadu_ps(out + i)));
-    _mm256_storeu_ps(out + i + 8, _mm256_fmadd_ps(va, load8_bf16_as_f32(w + i + 8),
-                                                  _mm256_loadu_ps(out + i + 8)));
+// Register-tile microkernel (tinyBLAS-style; reference/sgemm.cpp): computes
+// the RMxRN output tile at (m0, n0) of C = A * B^T (+C if accumulate), where
+// BOTH operands are k-contiguous (A [m,k] fp32, B [n,k] bf16, PyTorch
+// [out,in] weight layout). Each of the RM*RN outputs is an independent dot
+// with its own vector accumulator: RM*RN = 12 chains hide FMA latency by
+// construction, and every loaded vector is reused from registers (A row x
+// RN outputs, B row x RM outputs). hsum once per tile at the end. Because
+// B is consumed ROW BY ROW, parallelizing over output tiles partitions
+// weights by whole rows — contiguous per-thread streams, no transpose.
+template <int RM, int RN>
+void gemm_bloc(const float* A, size_t lda, const bf16* B, size_t ldb, float* C,
+               size_t ldc, uint32_t m0, uint32_t n0, uint32_t k, bool accumulate) {
+  __m256 Cv[RN][RM];
+  for (int j = 0; j < RN; ++j)
+    for (int i = 0; i < RM; ++i) Cv[j][i] = _mm256_setzero_ps();
+  const uint32_t k8 = k & ~7u;
+  for (uint32_t l = 0; l < k8; l += 8) {
+    __m256 Bv[RN];  // RM=4 > RN=3: keep B in regs (12 acc + 3 Bv + 1 Av = 16)
+    for (int j = 0; j < RN; ++j)
+      Bv[j] = load8_bf16_as_f32(B + size_t(n0 + j) * ldb + l);
+    for (int i = 0; i < RM; ++i) {
+      const __m256 Av = _mm256_loadu_ps(A + size_t(m0 + i) * lda + l);
+      for (int j = 0; j < RN; ++j) Cv[j][i] = _mm256_fmadd_ps(Av, Bv[j], Cv[j][i]);
+    }
   }
-  for (; i + 8 <= n; i += 8)
-    _mm256_storeu_ps(out + i,
-                     _mm256_fmadd_ps(va, load8_bf16_as_f32(w + i), _mm256_loadu_ps(out + i)));
-  for (; i < n; ++i) out[i] += a * w[i].to_f32();
+  for (int j = 0; j < RN; ++j)
+    for (int i = 0; i < RM; ++i) {
+      float s = hsum256(Cv[j][i]);
+      for (uint32_t l = k8; l < k; ++l)  // scalar k tail
+        s += A[size_t(m0 + i) * lda + l] * B[size_t(n0 + j) * ldb + l].to_f32();
+      float& c = C[size_t(m0 + i) * ldc + (n0 + j)];
+      if (accumulate) c += s; else c = s;
+    }
 }
 
-#else  // portable scalar fallback (single accumulator, strict order)
+#else  // portable scalar fallback
 
 float dot_bf16_f32(const float* x, const bf16* w, uint32_t n) {
   float acc = 0.0f;
@@ -139,11 +162,51 @@ float dot_bf16_f32(const float* x, const bf16* w, uint32_t n) {
   return acc;
 }
 
-void axpy_bf16(float* out, float a, const bf16* w, uint32_t n) {
-  for (uint32_t i = 0; i < n; ++i) out[i] += a * w[i].to_f32();
+template <int RM, int RN>
+void gemm_bloc(const float* A, size_t lda, const bf16* B, size_t ldb, float* C,
+               size_t ldc, uint32_t m0, uint32_t n0, uint32_t k, bool accumulate) {
+  for (int j = 0; j < RN; ++j)
+    for (int i = 0; i < RM; ++i) {
+      float acc = 0.0f;
+      for (uint32_t l = 0; l < k; ++l)
+        acc += A[size_t(m0 + i) * lda + l] * B[size_t(n0 + j) * ldb + l].to_f32();
+      float& c = C[size_t(m0 + i) * ldc + (n0 + j)];
+      if (accumulate) c += acc; else c = acc;
+    }
 }
 
 #endif
+
+// Tile-grid driver: processes flat tile index range [t0, t1) of the
+// (ceil(m/4) x ceil(n/3)) grid, dispatching edge tiles to smaller
+// instantiations (RM 1..4 x RN 1..3). Consecutive t = consecutive m-tiles
+// within one n-tile, so a thread's static range reuses the same B rows.
+void gemm_tiles(const float* A, size_t lda, const bf16* B, size_t ldb, float* C,
+                size_t ldc, uint32_t m, uint32_t n, uint32_t k, bool accumulate,
+                uint32_t t0, uint32_t t1) {
+  const uint32_t mtiles = (m + 3) / 4;
+  const uint32_t ntiles = (n + 2) / 3;
+  (void)ntiles;
+  for (uint32_t t = t0; t < t1; ++t) {
+    const uint32_t m0 = (t % mtiles) * 4, n0 = (t / mtiles) * 3;
+    const uint32_t rm = m - m0 < 4 ? m - m0 : 4;
+    const uint32_t rn = n - n0 < 3 ? n - n0 : 3;
+    switch (rm * 10 + rn) {
+      case 43: gemm_bloc<4, 3>(A, lda, B, ldb, C, ldc, m0, n0, k, accumulate); break;
+      case 42: gemm_bloc<4, 2>(A, lda, B, ldb, C, ldc, m0, n0, k, accumulate); break;
+      case 41: gemm_bloc<4, 1>(A, lda, B, ldb, C, ldc, m0, n0, k, accumulate); break;
+      case 33: gemm_bloc<3, 3>(A, lda, B, ldb, C, ldc, m0, n0, k, accumulate); break;
+      case 32: gemm_bloc<3, 2>(A, lda, B, ldb, C, ldc, m0, n0, k, accumulate); break;
+      case 31: gemm_bloc<3, 1>(A, lda, B, ldb, C, ldc, m0, n0, k, accumulate); break;
+      case 23: gemm_bloc<2, 3>(A, lda, B, ldb, C, ldc, m0, n0, k, accumulate); break;
+      case 22: gemm_bloc<2, 2>(A, lda, B, ldb, C, ldc, m0, n0, k, accumulate); break;
+      case 21: gemm_bloc<2, 1>(A, lda, B, ldb, C, ldc, m0, n0, k, accumulate); break;
+      case 13: gemm_bloc<1, 3>(A, lda, B, ldb, C, ldc, m0, n0, k, accumulate); break;
+      case 12: gemm_bloc<1, 2>(A, lda, B, ldb, C, ldc, m0, n0, k, accumulate); break;
+      case 11: gemm_bloc<1, 1>(A, lda, B, ldb, C, ldc, m0, n0, k, accumulate); break;
+    }
+  }
+}
 
 float silu(float x) { return x / (1.0f + std::exp(-x)); }
 
@@ -154,15 +217,6 @@ void copy_rows_first_touch(BF16View src, bf16* dst, size_t dst_ld) {
   for (uint32_t r = 0; r < src.rows; ++r)
     std::memcpy(dst + size_t(r) * dst_ld, src.data + size_t(r) * src.stride(),
                 src.cols * sizeof(bf16));
-}
-
-// Transposed copy for w_down ([d, I] -> dst [I, ld]); parallel first-touch
-// over destination rows.
-void copy_transposed_first_touch(BF16View src, bf16* dst, size_t dst_ld) {
-  ALICE_AVX2_OMP_PARALLEL_FOR
-  for (uint32_t j = 0; j < src.cols; ++j)
-    for (uint32_t i = 0; i < src.rows; ++i)
-      dst[size_t(j) * dst_ld + i] = src.data[size_t(i) * src.stride() + j];
 }
 
 void zero_first_touch(float* p, size_t n) {
@@ -184,17 +238,19 @@ DenseFfnBF16CpuAvx2::DenseFfnBF16CpuAvx2(BF16View w_gate, BF16View w_up,
   ldi_ = round_up(inter_, kAlign / sizeof(bf16));
   wg_ = alloc_aligned<bf16>(size_t(inter_) * ldw_);
   wu_ = alloc_aligned<bf16>(size_t(inter_) * ldw_);
-  wdt_ = alloc_aligned<bf16>(size_t(inter_) * ldw_);
-  wd_ = alloc_aligned<bf16>(size_t(d_) * ldi_);  // row-major copy for the dot path
+  wd_ = alloc_aligned<bf16>(size_t(d_) * ldi_);
   copy_rows_first_touch(w_gate, wg_.get(), ldw_);
   copy_rows_first_touch(w_up, wu_.get(), ldw_);
-  copy_transposed_first_touch(w_down, wdt_.get(), ldw_);
   copy_rows_first_touch(w_down, wd_.get(), ldi_);
   full_act_ = alloc_aligned<float>(inter_);
 
-  act_ = alloc_aligned<float>(size_t(kChunk) * mpc_);
+  gatec_ = alloc_aligned<float>(size_t(mpc_) * kChunk);
+  upc_ = alloc_aligned<float>(size_t(mpc_) * kChunk);
+  actc_ = alloc_aligned<float>(size_t(mpc_) * kChunk);
   out_ = alloc_aligned<float>(size_t(mpc_) * d_);
-  zero_first_touch(act_.get(), size_t(kChunk) * mpc_);
+  zero_first_touch(gatec_.get(), size_t(mpc_) * kChunk);
+  zero_first_touch(upc_.get(), size_t(mpc_) * kChunk);
+  zero_first_touch(actc_.get(), size_t(mpc_) * kChunk);
   zero_first_touch(out_.get(), size_t(mpc_) * d_);
 }
 
@@ -220,44 +276,51 @@ void DenseFfnBF16CpuAvx2::forward(F32View io) {
     return;
   }
 
-  // --- prefill: fused chunk loop -------------------------------------------
-  ALICE_AVX2_OMP_PARALLEL_FOR
-  for (size_t e = 0; e < size_t(S) * d_; ++e) out_[e] = 0.0f;
+  // --- prefill: fused chunk loop with register-tile GEMM --------------------
+  // The chunk loop over I is the K-blocking; all three projections run the
+  // same microkernel. One persistent parallel region (static omp for
+  // throughout — no dynamic scheduling), implicit barriers between phases.
+  ALICE_AVX2_OMP_PARALLEL
+  {
+    ALICE_AVX2_OMP_FOR
+    for (size_t e = 0; e < size_t(S) * d_; ++e) out_[e] = 0.0f;
 
-  for (uint32_t j0 = 0; j0 < inter_; j0 += kChunk) {
-    const uint32_t je = std::min(j0 + kChunk, inter_);
-    const uint32_t cn = je - j0;
+    for (uint32_t j0 = 0; j0 < inter_; j0 += kChunk) {
+      const uint32_t je = std::min(j0 + kChunk, inter_);
+      const uint32_t cn = je - j0;
+      const uint32_t mt = (S + 3) / 4, nt_c = (cn + 2) / 3, nt_d = (d_ + 2) / 3;
 
-    // Phase 1: act[c][s] = silu(x_s . Wg[j0+c]) * (x_s . Wu[j0+c]).
-    // Parallel over chunk rows c; weight row stays hot for all S dots.
-    ALICE_AVX2_OMP_PARALLEL_FOR
-    for (uint32_t c = 0; c < cn; ++c) {
-      const bf16* wg = wg_.get() + size_t(j0 + c) * ldw_;
-      const bf16* wu = wu_.get() + size_t(j0 + c) * ldw_;
-      float* a = act_.get() + size_t(c) * mpc_;
+      // gate / up: C = x . Wg[chunk]^T, C = x . Wu[chunk]^T  (chunk cols only)
+      ALICE_AVX2_OMP_FOR
+      for (uint32_t t = 0; t < mt * nt_c; ++t)
+        gemm_tiles(x, xld, wg_.get() + size_t(j0) * ldw_, ldw_, gatec_.get(), kChunk,
+                   S, cn, d_, false, t, t + 1);
+      ALICE_AVX2_OMP_FOR
+      for (uint32_t t = 0; t < mt * nt_c; ++t)
+        gemm_tiles(x, xld, wu_.get() + size_t(j0) * ldw_, ldw_, upc_.get(), kChunk,
+                   S, cn, d_, false, t, t + 1);
+
+      // act[s][c] = silu(gate) * up   (layout [S][kChunk]: k-contiguous
+      // rows — note row stride kChunk, NOT cn: flat indexing breaks on the
+      // tail chunk where cn < kChunk)
+      ALICE_AVX2_OMP_FOR
       for (uint32_t s = 0; s < S; ++s) {
-        const float* xr = x + size_t(s) * xld;
-        a[s] = silu(dot_bf16_f32(xr, wg, d_)) * dot_bf16_f32(xr, wu, d_);
+        float* a = actc_.get() + size_t(s) * kChunk;
+        const float* g = gatec_.get() + size_t(s) * kChunk;
+        const float* u = upc_.get() + size_t(s) * kChunk;
+        for (uint32_t c = 0; c < cn; ++c) a[c] = silu(g[c]) * u[c];
       }
+
+      // down: out_ += act . Wd[:, chunk]^T  — B = row-major wd_, column
+      // offset j0; each thread's i-tiles read WHOLE wd_ rows unit-stride.
+      ALICE_AVX2_OMP_FOR
+      for (uint32_t t = 0; t < mt * nt_d; ++t)
+        gemm_tiles(actc_.get(), kChunk, wd_.get() + j0, ldi_, out_.get(), d_, S, d_,
+                   cn, true, t, t + 1);
     }
 
-    // Phase 2: out[s][i] += sum_c act[c][s] * WdT[j0+c][i], fixed ascending
-    // c order per output element (thread-count-independent bits).
-    ALICE_AVX2_OMP_PARALLEL_FOR_C2
-    for (uint32_t s = 0; s < S; ++s)
-      for (uint32_t ib = 0; ib < d_; ib += kColBlock) {
-        float* o = out_.get() + size_t(s) * d_ + ib;
-        const uint32_t n = std::min(kColBlock, d_ - ib);
-        for (uint32_t c = 0; c < cn; ++c)
-          axpy_bf16(o, act_[size_t(c) * mpc_ + s],
-                    wdt_.get() + size_t(j0 + c) * ldw_ + ib, n);
-      }
-  }
-
-  // Fulfil the in-place io contract.
-  if (io.stride() == d_) {
-    std::memcpy(io.data, out_.get(), size_t(S) * d_ * sizeof(float));
-  } else {
+    // Fulfil the in-place io contract.
+    ALICE_AVX2_OMP_FOR
     for (uint32_t s = 0; s < S; ++s)
       std::memcpy(io.data + size_t(s) * io.stride(), out_.get() + size_t(s) * d_,
                   d_ * sizeof(float));

@@ -56,6 +56,40 @@ ToyTensor bf16_matrix(const std::string& name, uint32_t r, uint32_t c) {
   return t;
 }
 
+TEST(Safetensors, MultiShardProbe) {
+  auto a = write_file({bf16_matrix("a.weight", 2, 3)}, "ms_a");
+  auto b = write_file({bf16_matrix("b.weight", 4, 2)}, "ms_b");
+  auto fs = alice::safetensors::Files::open({a, b});
+  EXPECT_EQ(fs.num_shards(), 2u);
+  EXPECT_TRUE(fs.contains("a.weight"));
+  EXPECT_TRUE(fs.contains("b.weight"));
+  EXPECT_FALSE(fs.contains("c.weight"));
+  EXPECT_EQ(fs.at("b.weight").rows, 4u);  // resolved from the second shard
+  EXPECT_THROW((void)fs.at("c.weight"), std::out_of_range);
+}
+
+TEST(Safetensors, MultiShardDuplicateRejected) {
+  auto a = write_file({bf16_matrix("dup.weight", 2, 3)}, "ms_da");
+  auto b = write_file({bf16_matrix("dup.weight", 2, 3)}, "ms_db");
+  try {
+    auto fs = alice::safetensors::Files::open({a, b});
+    FAIL() << "expected duplicate-across-shards to throw";
+  } catch (const std::runtime_error& e) {
+    EXPECT_NE(std::string(e.what()).find("dup.weight"), std::string::npos);
+  }
+}
+
+TEST(Safetensors, MultiShardReadResolvesOwner) {
+  const auto want = bf16_matrix("b.weight", 4, 2);
+  auto a = write_file({bf16_matrix("a.weight", 2, 3)}, "ms_ra");
+  auto b = write_file({want}, "ms_rb");
+  auto fs = alice::safetensors::Files::open({a, b});
+  const auto& info = fs.at("b.weight");
+  std::vector<std::byte> buf(info.nbytes);
+  fs.read(info, buf.data());
+  EXPECT_EQ(buf, want.data);
+}
+
 TEST(Safetensors, RoundTrip) {
   auto path = write_file({bf16_matrix("a.weight", 2, 3)}, "roundtrip");
   auto f = File::open(path);

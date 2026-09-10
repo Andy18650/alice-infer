@@ -118,7 +118,7 @@ Manifest Manifest::parse_string(const std::string& json_text) {
   }
 }
 
-std::vector<std::string> validate(const Manifest& m, const safetensors::File& f) {
+std::vector<std::string> validate(const Manifest& m, const safetensors::Files& f) {
   std::vector<std::string> errors;
   std::set<std::string> direct_claims;
   std::set<std::string> all_claims;
@@ -201,10 +201,11 @@ std::vector<std::string> validate(const Manifest& m, const safetensors::File& f)
       if (!want.count(role)) errors.push_back(ctx + ": unknown role '" + role + "'");
   }
 
-  // --- unclaimed tensors in the weight source ---
-  for (const auto& t : f.tensors())
-    if (!all_claims.count(t.name))
-      errors.push_back("weight source: tensor '" + t.name + "' is unclaimed by the manifest");
+  // --- unclaimed tensors in the weight source (global across shards) ---
+  for (const auto& shard : f.shards())
+    for (const auto& t : shard.tensors())
+      if (!all_claims.count(t.name))
+        errors.push_back("weight source: tensor '" + t.name + "' is unclaimed by the manifest");
 
   return errors;
 }

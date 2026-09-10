@@ -12,7 +12,7 @@
 namespace {
 
 using alice::Manifest;
-using alice::safetensors::File;
+using alice::safetensors::Files;
 
 // --- toy weight source: one attention + one ffn block, tiny dims -----------
 // hidden=8, intermediate=16, heads=2, kv_heads=1, head_dim=4, vocab=16
@@ -21,8 +21,8 @@ struct ToyTensor {
   std::vector<uint32_t> shape;
 };
 
-std::string toy_file(const std::vector<ToyTensor>& extra = {}) {
-  std::vector<ToyTensor> ts = {
+std::vector<ToyTensor> toy_tensors() {
+  return {
       {"model.embed_tokens.weight", {16, 8}},
       {"model.layers.0.self_attn.q_proj.weight", {8, 8}},
       {"model.layers.0.self_attn.k_proj.weight", {4, 8}},
@@ -35,9 +35,11 @@ std::string toy_file(const std::vector<ToyTensor>& extra = {}) {
       {"model.layers.0.post_attention_layernorm.weight", {8}},
       {"model.norm.weight", {8}},
   };
-  ts.insert(ts.end(), extra.begin(), extra.end());
+}
 
-  std::string path = std::string(::testing::TempDir()) + "/alice_mani_toy2.safetensors";
+std::string write_shard(const std::string& tag, const std::vector<ToyTensor>& ts) {
+  std::string path =
+      std::string(::testing::TempDir()) + "/alice_mani_" + tag + ".safetensors";
   std::string json = "{";
   size_t off = 0;
   for (size_t i = 0; i < ts.size(); ++i) {
@@ -61,6 +63,12 @@ std::string toy_file(const std::vector<ToyTensor>& extra = {}) {
   std::vector<char> zeros(off, 0);
   out.write(zeros.data(), zeros.size());
   return path;
+}
+
+std::string toy_file(const std::vector<ToyTensor>& extra = {}) {
+  auto ts = toy_tensors();
+  ts.insert(ts.end(), extra.begin(), extra.end());
+  return write_shard("toy2", ts);
 }
 
 std::string spec(const std::string& name, const std::string& shape) {
@@ -110,7 +118,7 @@ std::string replace_first(std::string s, const std::string& from, const std::str
 }
 
 TEST(Manifest, ToyContractHolds) {
-  auto f = File::open(toy_file());
+  auto f = Files::open({toy_file()});
   auto m = Manifest::parse_string(toy_manifest_json());
   EXPECT_EQ(m.blocks.size(), 2u);
   EXPECT_EQ(m.pre_norms.size(), 2u);
@@ -120,15 +128,40 @@ TEST(Manifest, ToyContractHolds) {
   EXPECT_TRUE(errors.empty());
 }
 
+TEST(Manifest, MultiShardContractHolds) {
+  // Split the toy tensors across two shards; the audit is global.
+  auto ts = toy_tensors();
+  auto mid = ts.begin() + 5;
+  auto a = write_shard("shard_a", {ts.begin(), mid});
+  auto b = write_shard("shard_b", {mid, ts.end()});
+  auto f = Files::open({a, b});
+  EXPECT_EQ(f.num_shards(), 2u);
+  auto errors = validate(Manifest::parse_string(toy_manifest_json()), f);
+  for (const auto& e : errors) ADD_FAILURE() << "unexpected: " << e;
+  EXPECT_TRUE(errors.empty());
+}
+
+TEST(Manifest, MultiShardUnclaimedInSecondShard) {
+  auto ts = toy_tensors();
+  auto mid = ts.begin() + 5;
+  auto a = write_shard("shard_a", {ts.begin(), mid});
+  std::vector<ToyTensor> rest(mid, ts.end());
+  rest.push_back({"model.surprise.weight", {4}});
+  auto b = write_shard("shard_b", rest);
+  auto f = Files::open({a, b});
+  auto errors = validate(Manifest::parse_string(toy_manifest_json()), f);
+  expect_error(errors, "unclaimed");
+}
+
 TEST(Manifest, MissingTensor) {
-  auto f = File::open(toy_file());
+  auto f = Files::open({toy_file()});
   auto j = replace_first(toy_manifest_json(), "q_proj.weight", "qq_proj.weight");
   auto errors = validate(Manifest::parse_string(j), f);
   expect_error(errors, "not found");
 }
 
 TEST(Manifest, ShapeMismatch) {
-  auto f = File::open(toy_file());
+  auto f = Files::open({toy_file()});
   auto j = toy_manifest_json();
   auto pos = j.find("q_proj.weight");
   ASSERT_NE(pos, std::string::npos);
@@ -140,7 +173,7 @@ TEST(Manifest, ShapeMismatch) {
 }
 
 TEST(Manifest, DtypeMismatch) {
-  auto f = File::open(toy_file());
+  auto f = Files::open({toy_file()});
   auto j = toy_manifest_json();
   auto pos = j.find("q_proj.weight");
   ASSERT_NE(pos, std::string::npos);
@@ -152,13 +185,13 @@ TEST(Manifest, DtypeMismatch) {
 }
 
 TEST(Manifest, UnclaimedTensor) {
-  auto f = File::open(toy_file({{"model.surprise.weight", {4}}}));
+  auto f = Files::open({toy_file({{"model.surprise.weight", {4}}})});
   auto errors = validate(Manifest::parse_string(toy_manifest_json()), f);
   expect_error(errors, "unclaimed");
 }
 
 TEST(Manifest, DuplicateClaim) {
-  auto f = File::open(toy_file());
+  auto f = Files::open({toy_file()});
   // lm_head directly claims embed_tokens instead of aliasing it
   auto j = replace_first(toy_manifest_json(),
                          "{\"alias_of\": \"model.embed_tokens.weight\",",
@@ -168,7 +201,7 @@ TEST(Manifest, DuplicateClaim) {
 }
 
 TEST(Manifest, BadAliasTarget) {
-  auto f = File::open(toy_file());
+  auto f = Files::open({toy_file()});
   auto j = replace_first(toy_manifest_json(),
                          "\"alias_of\": \"model.embed_tokens.weight\"",
                          "\"alias_of\": \"model.nonexistent.weight\"");
@@ -177,7 +210,7 @@ TEST(Manifest, BadAliasTarget) {
 }
 
 TEST(Manifest, ConfigInconsistency) {
-  auto f = File::open(toy_file());
+  auto f = Files::open({toy_file()});
   // heads 2 -> 4 would make wq expected [16, 8] vs manifest [8, 8]
   auto j = replace_first(toy_manifest_json(), "\"num_heads\": 2", "\"num_heads\": 4");
   auto errors = validate(Manifest::parse_string(j), f);
@@ -185,7 +218,7 @@ TEST(Manifest, ConfigInconsistency) {
 }
 
 TEST(Manifest, PreNormCountMismatch) {
-  auto f = File::open(toy_file());
+  auto f = Files::open({toy_file()});
   auto j = toy_manifest_json();
   auto pos = j.find("post_attention_layernorm");
   ASSERT_NE(pos, std::string::npos);
@@ -200,14 +233,14 @@ TEST(Manifest, PreNormCountMismatch) {
 }
 
 TEST(Manifest, UnknownBlockType) {
-  auto f = File::open(toy_file());
+  auto f = Files::open({toy_file()});
   auto j = replace_first(toy_manifest_json(), "gqa_attention_bf16", "mamba_bf16");
   auto errors = validate(Manifest::parse_string(j), f);
   expect_error(errors, "unknown block type");
 }
 
 TEST(Manifest, MissingRole) {
-  auto f = File::open(toy_file());
+  auto f = Files::open({toy_file()});
   auto j = replace_first(toy_manifest_json(), "\"wo\":", "\"w_oops\":");
   auto errors = validate(Manifest::parse_string(j), f);
   expect_error(errors, "missing required role");
@@ -222,8 +255,8 @@ TEST(Manifest, RealBringUpModel) {
   if (!std::filesystem::exists(weights) || !std::filesystem::exists(manifest))
     GTEST_SKIP() << "bring-up model or manifest not present";
 
-  auto f = File::open(weights);
-  EXPECT_EQ(f.tensors().size(), 146u);
+  auto f = Files::open({weights});
+  EXPECT_EQ(f.shards().front().tensors().size(), 146u);
   auto m = Manifest::parse(manifest);
   EXPECT_EQ(m.blocks.size(), 32u);
   EXPECT_EQ(m.pre_norms.size(), 32u);

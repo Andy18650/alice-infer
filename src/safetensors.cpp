@@ -142,4 +142,42 @@ void File::read(const TensorInfo& info, void* dst) const {
   read_exact(fd_, dst, info.nbytes, static_cast<off_t>(info.offset), info.name);
 }
 
+Files Files::open(const std::vector<std::string>& paths) {
+  if (paths.empty()) throw std::runtime_error("safetensors: Files::open: no shards given");
+  Files fs;
+  fs.files_.reserve(paths.size());
+  fs.paths_ = paths;
+  for (const auto& p : paths) fs.files_.push_back(File::open(p));
+
+  // One-time cross-shard audit: no tensor name may be claimed by two
+  // shards (HF guarantees uniqueness; we enforce it rather than trust it).
+  std::unordered_map<std::string, size_t> seen;
+  for (size_t i = 0; i < fs.files_.size(); ++i)
+    for (const auto& t : fs.files_[i].tensors()) {
+      auto [it, inserted] = seen.emplace(t.name, i);
+      if (!inserted)
+        throw std::runtime_error("safetensors: tensor '" + t.name + "' appears in both " +
+                                 fs.paths_[it->second] + " and " + fs.paths_[i]);
+    }
+  return fs;
+}
+
+const File& Files::owner_of(const std::string& name) const {
+  for (const auto& f : files_)
+    if (f.contains(name)) return f;
+  throw std::out_of_range("safetensors: no tensor named '" + name + "' in any shard");
+}
+
+bool Files::contains(const std::string& name) const {
+  for (const auto& f : files_)
+    if (f.contains(name)) return true;
+  return false;
+}
+
+const TensorInfo& Files::at(const std::string& name) const { return owner_of(name).at(name); }
+
+void Files::read(const TensorInfo& info, void* dst) const {
+  owner_of(info.name).read(info, dst);
+}
+
 }  // namespace alice::safetensors

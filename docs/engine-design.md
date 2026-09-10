@@ -307,6 +307,23 @@ manifest config.
   (0.85 GB of the 2.5 GB/token) now dominate decode — their turn next.
   Chunk/tile constants are 1B-tuned: revisit cache-fit assumptions for
   the 70B shapes (d=8192: X[512,d] alone is 16 MB ~ one CCD's L3).
+  Step 4 (tinyBLAS-style register tile, lessons from llamafile sgemm.cpp
+  — local copy in ~/projects/inference/reference/): gemm_bloc<RM,RN>
+  computes an RMxRN tile (4x3 on AVX2: 12 independent dot accumulators =
+  16 vector regs with 3 B + 1 A) of C = A.B^T with BOTH operands
+  k-contiguous; weights are consumed ROW BY ROW so output-tile
+  parallelism = contiguous per-thread streams. The transposed w_down,
+  the column-block pattern, and the +50% dual-layout storage are all
+  RETIRED (the transpose was a workaround for not having a real
+  microkernel). Edge tiles RM 1..4 x RN 1..3 handle arbitrary S and
+  non-divisible dims (tinyBLAS instead cascades divisibility and falls
+  back; we must serve all S). Static omp for only, by user decision.
+  Measured: S=128 block bench 31.6 -> 10.7 ms/call (1.2 TFLOP/s, ~50%
+  of Zen3 AVX2 peak; 11x oracle); E2E prefill 108.6 -> 153.5 tok/s
+  (interleave now beats node0 — prefill turned bandwidth-hungry as
+  predicted); decode unchanged (43.6 spread, GEMV path untouched).
+  One real bug caught by tests: the combine pass flat-indexed the
+  [S][kChunk] chunk buffers, breaking on tail chunks (cn < kChunk).
 - **NUMA probes** (zero-code, numactl; sweep script takes a numa_mode):
   at 48T the avx2 prefill/decode measured 30.9/32.5 baseline first-touch,
   50.2/35.0 under --interleave=all (+bind), and 55.1/34.2 pinned to node0

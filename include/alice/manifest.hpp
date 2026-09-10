@@ -70,10 +70,11 @@ struct Manifest {
   static Manifest parse_string(const std::string& json_text);
 };
 
-// Two-way audit of the manifest against an opened weight source. Returns ALL
-// problems found (missing tensor, shape/dtype mismatch, duplicate claim,
-// unclaimed tensor, bad alias, config inconsistency, unknown block type or
-// role, pre_norm count mismatch). Empty vector == the contract holds.
-std::vector<std::string> validate(const Manifest& m, const safetensors::File& f);
+// Two-way audit of the manifest against an opened weight source (single- or
+// multi-shard). Returns ALL problems found (missing tensor, shape/dtype
+// mismatch, duplicate claim, unclaimed tensor — globally across shards,
+// bad alias, config inconsistency, unknown block type or role, pre_norm
+// count mismatch). Empty vector == the contract holds.
+std::vector<std::string> validate(const Manifest& m, const safetensors::Files& f);
 
 }  // namespace alice

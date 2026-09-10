@@ -59,7 +59,7 @@ struct Staging {
 // view_as<T> is the single checked runtime->static dtype conversion at the
 // load boundary (the manifest audit already validated it).
 template <typename T>
-Staging<T> stage(const safetensors::File& f, const WeightSpec& w) {
+Staging<T> stage(const safetensors::Files& f, const WeightSpec& w) {
   const auto& info = f.at(w.is_alias() ? w.alias_of : w.name);
   Staging<T> s;
   s.buf = std::make_unique<T[]>(info.numel());
@@ -68,16 +68,16 @@ Staging<T> stage(const safetensors::File& f, const WeightSpec& w) {
   return s;
 }
 
-std::string find_single_safetensors(const std::string& dir) {
+// All .safetensors shards in the directory, lexically sorted (HF shard
+// names are zero-padded, so lexical order == shard order; probe order is
+// semantically irrelevant but deterministic error messages are nice).
+std::vector<std::string> find_safetensors(const std::string& dir) {
   std::vector<std::string> files;
   for (const auto& e : std::filesystem::directory_iterator(dir))
     if (e.path().extension() == ".safetensors") files.push_back(e.path().string());
   std::sort(files.begin(), files.end());
   if (files.empty()) throw std::runtime_error("ModelLoader: no .safetensors in " + dir);
-  if (files.size() > 1)
-    throw std::runtime_error(
-        "ModelLoader: multi-shard models not yet supported (arrives with the 70B)");
-  return files.front();
+  return files;
 }
 
 }  // namespace
@@ -86,7 +86,7 @@ std::unique_ptr<Model> ModelLoader::load(const std::string& model_dir,
                                          const std::string& manifest_path,
                                          const EngineConfig& cfg) {
   Manifest m = Manifest::parse(manifest_path);
-  auto file = safetensors::File::open(find_single_safetensors(model_dir));
+  auto file = safetensors::Files::open(find_safetensors(model_dir));
 
   const auto errors = validate(m, file);  // two-way audit before any compute
   if (!errors.empty()) {

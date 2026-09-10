@@ -23,7 +23,7 @@ struct TensorInfo {
 
 // A single safetensors file, read with pread (design §9: no mmap anywhere;
 // the loader stages tensors in RAM and constructors copy into private
-// buffers). Multi-shard directory assembly is the ModelLoader's business.
+// buffers). Multi-shard assembly is the Files class below.
 //
 // Enforced at open: header parses, dtype ∈ {BF16, F32}, rank ≤ 2 (rank-1
 // loads as 1×N), data_offsets consistent with shape × dtype_size.
@@ -61,6 +61,44 @@ class File {
   int fd_ = -1;
   std::vector<TensorInfo> tensors_;
   std::unordered_map<std::string, size_t> index_;
+};
+
+// A multi-shard weight source: an ordered set of opened Files. Lookups probe
+// the shards' RESIDENT header maps linearly — no centralized catalog is
+// built or retained (design §8: each tensor is resolved exactly once at
+// load, so a probe of <= N hash maps is negligible; HF's
+// model.safetensors.index.json is deliberately ignored — the manifest is the
+// contract and the two-way audit validates the source directly).
+// Duplicate names ACROSS shards are rejected at open.
+class Files {
+ public:
+  Files() = default;
+  Files(Files&&) = default;
+  Files& operator=(Files&&) = default;
+  Files(const Files&) = delete;
+  Files& operator=(const Files&) = delete;
+
+  // Opens every shard; throws std::runtime_error on any IO/format problem
+  // or on a tensor name claimed by two shards.
+  static Files open(const std::vector<std::string>& paths);
+
+  size_t num_shards() const { return files_.size(); }
+  const std::vector<File>& shards() const { return files_; }
+
+  bool contains(const std::string& name) const;
+  const TensorInfo& at(const std::string& name) const;  // throws std::out_of_range
+
+  // Reads the whole tensor into dst from whichever shard holds it.
+  void read(const TensorInfo& info, void* dst) const;
+
+  // The single checked runtime->static dtype conversion happens on the
+  // per-shard TensorInfo — reuse File::view_as<T> unchanged.
+
+ private:
+  const File& owner_of(const std::string& name) const;  // throws out_of_range
+
+  std::vector<File> files_;
+  std::vector<std::string> paths_;  // for error messages
 };
 
 }  // namespace alice::safetensors

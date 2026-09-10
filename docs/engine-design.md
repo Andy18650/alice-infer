@@ -258,6 +258,15 @@ manifest config.
   generates coherently (48T cpu_avx2: ~190 ms/tok prefill, ~105 ms/tok
   decode — the 1B-tuned chunk/tile constants and the NUMA story are the
   known next steps before the 70B).
+  70B smoke-verified end to end (17 shards, 141 GB, zero code changes —
+  one manifest): ~2 min load, coherent generation. Untuned placement
+  baseline (48T): prefill node0 2.1 / interleave 1.9 / spread 0.6 tok/s
+  (locality worth ~4x, same as 1B); decode spread 1.0 / node0 0.8 /
+  interleave 0.8 tok/s — spread = 137 GB/s effective vs node0 = 117
+  GB/s, BOTH near their memory envelopes: decode placement buys <= 20%,
+  so decode wins must come from byte reduction, not placement; prefill
+  has large structural headroom (naive attention, 1B-tuned constants).
+  Load itself is also fastest node0-bound (~120 s).
 
 ## 10. Kernels & backends
 
@@ -413,6 +422,13 @@ opaque per-Block state layouts; snapshot/stash interface on StatefulBlock.
   The 8B run formally validates the multi-shard loader + a second model
   family instance end to end. For the 70B, tools/check_manifest.py gives
   the cheap header-level pre-flight (723/723 tensors, no 141 GB pread).
+  Ad-hoc models validate with zero recompile via CanonicalEnv
+  (ALICE_CANONICAL_{MODEL_DIR,MANIFEST,FIXTURES}[,CHUNK]). 70B validated
+  this way: max|d| 0.30/0.33/0.68 per case (gate 0.75). WATCH ITEM: max
+  drift grows with depth (16L 0.22 / 32L 0.28 / 80L 0.68, worst at the
+  final position, mean stays ~0.03) — expected bf16-vs-fp32 accumulation
+  over 80 layers, but if a future model breaches 0.75, investigate per-
+  position drift shape before widening the gate.
 
 ## 14. Open questions & reminders
 

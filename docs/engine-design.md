@@ -273,6 +273,21 @@ manifest config.
 - BLAS wrapper lives in code: self-declared `extern "C"` prototypes
   (OpenBLAS `cblas_sbgemm` vs MKL `cblas_gemm_bf16bf16f32`); CMake only finds
   BLAS and defines `ALICE_BLAS_BACKEND_*`.
+  BLAS SCOUTING VERDICT (2026-07, alice_bench_lmhead, lm_head shape
+  V=128256 x d=2048, 48T node0): no obtainable BLAS build ships a bf16
+  GEMM (scipy wheel and Debian/Ubuntu OpenBLAS both disable cblas_sbgemm;
+  a source build's sbgemm is a convert-to-fp32 fallback on Zen3 anyway),
+  so the test was fp32 cblas_sgemm vs the production bf16 oracle:
+  S=1 14.4 ms vs 4.9 ms oracle (3x WORSE — 2x traffic, GEMV is
+  bandwidth-bound); S=8 cached 17.0 ms (3.6x better) but 130 ms with
+  per-call conversion; S=128 cached 55.8 ms = 1.2 TFLOP/s (11x the
+  oracle) — the SAME 1.2 TFLOP/s our hand-rolled gemm_tile achieves
+  reading bf16 natively with half the memory traffic and no 2x fp32
+  weight copy. Conclusion: BLAS matches but does not beat our step-4
+  kernel, loses at S=1, and costs either 2x weight memory (cached) or a
+  ~100 ms conversion (per-call). NO BLAS integration; bf16-native
+  hand-rolled kernels are the path. Side benefit: an independent
+  calibration that gemm_tile sits at mature-library level.
 - Threading model: the model loop is strictly sequential; intra-op
   parallelism (threads, BLAS) is each implementation's private business.
   OpenMP and OpenBLAS both keep persistent worker pools (created at the

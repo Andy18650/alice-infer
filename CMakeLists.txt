@@ -78,6 +78,20 @@ else()
   message(STATUS "OpenBLAS .so not found at ALICE_OPENBLAS_SO; skipping bench_lmhead")
 endif()
 
+# rocBLAS scouting bench for lm_head (GPU counterpart; host-only C++ against
+# the C APIs — no hipcc, Tensile code objects are pre-compiled).
+find_library(ALICE_ROCBLAS_LIB rocblas)
+find_library(ALICE_HIP_LIB amdhip64)
+if(ALICE_ROCBLAS_LIB AND ALICE_HIP_LIB AND EXISTS "/usr/include/rocblas/rocblas.h")
+  add_executable(alice_bench_lmhead_gpu src/frontend/bench_lmhead_gpu.cpp)
+  # hipcc defines this implicitly; plain g++ must pick a platform explicitly.
+  target_compile_definitions(alice_bench_lmhead_gpu PRIVATE __HIP_PLATFORM_AMD__)
+  target_link_libraries(alice_bench_lmhead_gpu PRIVATE alice "${ALICE_ROCBLAS_LIB}"
+                                                       "${ALICE_HIP_LIB}")
+else()
+  message(STATUS "rocBLAS/HIP not found; skipping bench_lmhead_gpu")
+endif()
+
 if(ALICE_BUILD_TESTS)
   enable_testing()
   find_package(GTest QUIET)

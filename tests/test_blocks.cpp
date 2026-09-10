@@ -261,6 +261,77 @@ TEST(DenseFfnAvx2, ChunkLimitHardError) {
   EXPECT_THROW(ffn->forward(io.view), std::runtime_error);
 }
 
+// --- GPU_ROCBLAS (auto-selected when a ROCm GPU is present) ----------------
+// Tolerances are looser than the AVX2 suite: the GPU path bf16-rounds x AND
+// the SiLU intermediate on the way in (fp32 accumulate), so drift vs the
+// fp32-x oracle is bf16-epsilon-scale, not reorder-scale.
+TEST(DenseFfnGpu, ApproxVsGenericMultiChunk) {
+  if (!alice::gpu_available()) GTEST_SKIP() << "no ROCm GPU";
+  const auto mc = ffn_mc_600();
+  EngineConfig ec;
+  ec.max_prefill_chunk = 8;
+  Bf16Mat g1(600, 8, ffn_pattern(600, 8, 1)), u1(600, 8, ffn_pattern(600, 8, 2)),
+      d1(8, 600, ffn_pattern(8, 600, 3));
+  auto oracle = alice::DenseFfnBF16::create(HardwareClass::CPU_GENERIC, g1.view, u1.view,
+                                            d1.view, mc, ec);
+  Bf16Mat g2(600, 8, ffn_pattern(600, 8, 1)), u2(600, 8, ffn_pattern(600, 8, 2)),
+      d2(8, 600, ffn_pattern(8, 600, 3));
+  auto gpu = alice::DenseFfnBF16::create(HardwareClass::GPU_ROCBLAS, g2.view, u2.view,
+                                         d2.view, mc, ec);
+  std::vector<float> input = ffn_pattern(5, 8, 4);
+  F32Mat io1(5, 8, input), io2(5, 8, input);
+  oracle->forward(io1.view);
+  gpu->forward(io2.view);
+  float max_diff = 0.0f;
+  for (size_t i = 0; i < io1.data.size(); ++i) {
+    const float d = std::fabs(io1.data[i] - io2.data[i]);
+    max_diff = d > max_diff ? d : max_diff;
+  }
+  // Observed: ~7e-4 (bf16 rounding of x and the SiLU intermediate).
+  EXPECT_LT(max_diff, 0.1f) << "max |generic - gpu| = " << max_diff;
+}
+
+TEST(DenseFfnGpu, IncrementalEqualsBatchedApprox) {
+  if (!alice::gpu_available()) GTEST_SKIP() << "no ROCm GPU";
+  const auto mc = ffn_mc_600();
+  EngineConfig ec;
+  ec.max_prefill_chunk = 4;
+  Bf16Mat g(600, 8, ffn_pattern(600, 8, 1)), u(600, 8, ffn_pattern(600, 8, 2)),
+      dn(8, 600, ffn_pattern(8, 600, 3));
+  auto ffn = alice::DenseFfnBF16::create(HardwareClass::GPU_ROCBLAS, g.view, u.view,
+                                         dn.view, mc, ec);
+  F32Mat batched(4, 8, ffn_pattern(4, 8, 4));
+  ffn->forward(batched.view);
+  F32Mat acc(4, 8);
+  for (uint32_t s = 0; s < 4; ++s) {
+    std::vector<float> row(8);
+    for (uint32_t c = 0; c < 8; ++c)
+      row[c] = float(int(((s * 8 + c) * 7 + 4 * 13) % 17) - 8) * 0.03125f;
+    F32Mat one(1, 8, row);
+    ffn->forward(one.view);
+    std::copy(one.data.begin(), one.data.end(), acc.data.begin() + s * 8);
+  }
+  float max_diff = 0.0f;
+  for (size_t i = 0; i < batched.data.size(); ++i) {
+    const float d = std::fabs(batched.data[i] - acc.data[i]);
+    max_diff = d > max_diff ? d : max_diff;
+  }
+  // Observed: 0 (bit-exact at these exact-representable values).
+  EXPECT_LT(max_diff, 0.1f) << "max |batched - incremental| = " << max_diff;
+}
+
+TEST(DenseFfnGpu, ChunkLimitHardError) {
+  if (!alice::gpu_available()) GTEST_SKIP() << "no ROCm GPU";
+  Bf16Mat g(600, 8, ffn_pattern(600, 8, 1)), u(600, 8, ffn_pattern(600, 8, 2)),
+      dn(8, 600, ffn_pattern(8, 600, 3));
+  EngineConfig ec;
+  ec.max_prefill_chunk = 1;
+  auto ffn = alice::DenseFfnBF16::create(HardwareClass::GPU_ROCBLAS, g.view, u.view,
+                                         dn.view, ffn_mc_600(), ec);
+  F32Mat io(2, 8, std::vector<float>(16, 0.5f));
+  EXPECT_THROW(ffn->forward(io.view), std::runtime_error);
+}
+
 // --- attention --------------------------------------------------------------
 
 struct AttnFixture {

@@ -12,7 +12,13 @@ namespace alice {
 // hardware class per abstract block class. CPU_GENERIC is the naive reference
 // implementation and the permanent test oracle. Detection + fallback chains
 // live in the per-abstract-class factories (added with the implementations).
-enum class HardwareClass { CPU_GENERIC, CPU_AVX2, CPU_AVX512, CPU_AMX };
+enum class HardwareClass { CPU_GENERIC, CPU_AVX2, CPU_AVX512, CPU_AMX, GPU_ROCBLAS, AUTO };
+
+// True when a usable ROCm GPU is present (device 0, "the first GPU").
+// Compiles to a constant false in builds without ROCm. Loader/hardware
+// auto-selection uses this; the EngineConfig override still forces a class.
+// (Interim mechanism — the loader is slated for an overhaul.)
+bool gpu_available();
 
 // Block interface (design §7.1).
 //

@@ -21,6 +21,7 @@ endif()
 add_library(alice
   src/safetensors.cpp
   src/manifest.cpp
+  src/hardware.cpp
   src/blocks/dense_ffn_bf16.cpp
   src/blocks/gqa_attention_bf16.cpp
   src/blocks/cpu_generic/kernels.cpp
@@ -58,6 +59,26 @@ else()
   message(STATUS "alice: OpenMP not found, kernels run sequentially")
 endif()
 
+# ROCm GPU (GPU_ROCBLAS hardware class; auto-selected when present, interim
+# until the loader overhaul). Host-only C++ against the C APIs — no hipcc;
+# custom device kernels compile at runtime via hipRTC. When absent, the
+# factories' fallback chains simply resolve to the CPU implementations.
+find_library(ALICE_ROCBLAS_LIB rocblas)
+find_library(ALICE_HIP_LIB amdhip64)
+find_library(ALICE_HIPRTC_LIB hiprtc)
+if(ALICE_ROCBLAS_LIB AND ALICE_HIP_LIB AND ALICE_HIPRTC_LIB AND
+   EXISTS "/usr/include/rocblas/rocblas.h")
+  target_sources(alice PRIVATE src/blocks/gpu_rocblas/platform.cpp
+                               src/blocks/gpu_rocblas/dense_ffn.cpp)
+  target_compile_definitions(alice PRIVATE ALICE_HAVE_ROCBLAS __HIP_PLATFORM_AMD__)
+  target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}" "${ALICE_HIP_LIB}"
+                                      "${ALICE_HIPRTC_LIB}")
+  set(ALICE_HAVE_ROCBLAS TRUE)
+  message(STATUS "alice: ROCm found, GPU_ROCBLAS hardware class enabled")
+else()
+  message(STATUS "alice: ROCm not found, GPU_ROCBLAS hardware class disabled")
+endif()
+
 # Minimal REPL PoC (design §12: the CLI owns the whole loop for now)
 add_executable(alice_repl src/frontend/repl.cpp)
 target_link_libraries(alice_repl PRIVATE alice)
@@ -80,9 +101,7 @@ endif()
 
 # rocBLAS scouting bench for lm_head (GPU counterpart; host-only C++ against
 # the C APIs — no hipcc, Tensile code objects are pre-compiled).
-find_library(ALICE_ROCBLAS_LIB rocblas)
-find_library(ALICE_HIP_LIB amdhip64)
-if(ALICE_ROCBLAS_LIB AND ALICE_HIP_LIB AND EXISTS "/usr/include/rocblas/rocblas.h")
+if(ALICE_HAVE_ROCBLAS)
   add_executable(alice_bench_lmhead_gpu src/frontend/bench_lmhead_gpu.cpp)
   # hipcc defines this implicitly; plain g++ must pick a platform explicitly.
   target_compile_definitions(alice_bench_lmhead_gpu PRIVATE __HIP_PLATFORM_AMD__)

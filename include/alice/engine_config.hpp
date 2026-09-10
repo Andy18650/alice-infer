@@ -18,7 +18,7 @@ struct SamplingConfig {
 struct EngineConfig {
   uint32_t max_seq_len = 8192;        // state sized for this; exceeding = hard error
   uint32_t max_prefill_chunk = 512;   // forward() with more tokens = hard error
-  HardwareClass hardware = HardwareClass::CPU_GENERIC;
+  HardwareClass hardware = HardwareClass::AUTO;  // GPU when available, else CPU chain
   SamplingConfig sampling;
 };
 

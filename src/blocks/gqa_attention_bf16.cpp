@@ -14,6 +14,8 @@ std::unique_ptr<GqaAttentionBF16> GqaAttentionBF16::create(HardwareClass hw, BF1
   switch (hw) {
     // Fallback chain (design §7.1): a hardware class with no attention
     // implementation yet resolves to the best available one below it.
+    case HardwareClass::AUTO:      // no GPU attention impl yet
+    case HardwareClass::GPU_ROCBLAS:  // no GPU attention impl yet
     case HardwareClass::CPU_AVX2:  // no AVX2 attention impl yet
       [[fallthrough]];
     case HardwareClass::CPU_GENERIC:

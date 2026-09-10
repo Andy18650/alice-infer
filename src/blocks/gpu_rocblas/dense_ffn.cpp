@@ -1,5 +1,6 @@
 #include "dense_ffn.hpp"
 
+#include <cstring>
 #include <stdexcept>
 
 #include "platform.hpp"
@@ -124,11 +125,12 @@ void DenseFfnBF16GpuRocblas::forward(F32View io) {
                            rocblas_datatype_f32_r, rocblas_gemm_algo_standard, 0, 0));
 
   HIP_CHECK(hipMemcpy(hb_out_, dout_, size_t(S) * d_ * 4, hipMemcpyDeviceToHost));
-  for (uint32_t s = 0; s < S; ++s) {
-    float* dst = io.data + size_t(s) * io.stride();
-    const float* src = hb_out_ + size_t(s) * d_;
-    for (uint32_t i = 0; i < d_; ++i) dst[i] = src[i];
-  }
+#if defined(_OPENMP)
+#pragma omp parallel for if (S > 8)
+#endif
+  for (uint32_t s = 0; s < S; ++s)
+    std::memcpy(io.data + size_t(s) * io.stride(), hb_out_ + size_t(s) * d_,
+                d_ * sizeof(float));
 }
 
 }  // namespace alice::gpu_rocblas

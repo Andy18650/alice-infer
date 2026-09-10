@@ -407,6 +407,12 @@ opaque per-Block state layouts; snapshot/stash interface on StatefulBlock.
 - Synthetic safetensors fixtures (incl. corruption cases). Manifest
   validation against the real 1B source (later the 70B).
 - Determinism: same tokens + fresh state + temperature 0 → identical output.
+- Teacher-forced canonical logits vs HF, per model (tests/canonical*/,
+  dump_canonical.py --model/--out/--skip-battery): 1B max|Δ| 0.22 and 8B
+  max|Δ| 0.28 (same bf16-reference vs fp32-compute magnitude, gate 0.75).
+  The 8B run formally validates the multi-shard loader + a second model
+  family instance end to end. For the 70B, tools/check_manifest.py gives
+  the cheap header-level pre-flight (723/723 tensors, no 141 GB pread).
 
 ## 14. Open questions & reminders
 

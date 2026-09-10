@@ -1,0 +1,25 @@
+{
+ "prompt": "The capital of France is",
+ "input_ids": [
+  128000,
+  791,
+  66163,
+  1073,
+  50100,
+  285
+ ],
+ "generated_ids": [
+  60704,
+  382,
+  72586,
+  11,
+  279,
+  1217,
+  6267,
+  330
+ ],
+ "generated_text": "Paris.ĊĊAlright,ĠtheĠuserĠwroteĠ\"",
+ "seq_len": 14,
+ "vocab": 128256,
+ "dtype": "float32"
+}

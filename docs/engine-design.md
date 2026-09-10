@@ -288,6 +288,20 @@ manifest config.
   ~100 ms conversion (per-call). NO BLAS integration; bf16-native
   hand-rolled kernels are the path. Side benefit: an independent
   calibration that gemm_tile sits at mature-library level.
+  GPU SCOUT (2026-07, alice_bench_lmhead_gpu, rocBLAS 5.1 gemm_ex
+  bf16->fp32-HPA on ONE gfx90a die of the 4x MI250X (8 GCDs x 64 GB
+  HBM2e ~1.6 TB/s each), pinned host buffers): S=1 1.00 ms vs 4.87 ms
+  CPU oracle (4.9x; gemm phase 0.60 ms = 853 GB/s HBM — Tensile n=1
+  GEMM, no bf16 gemv in rocBLAS 5.1; custom GEMV could approach HBM
+  peak), S=8 0.79 ms (77x), S=128 3.72 ms (168x; gemm 0.99 ms = 68
+  TFLOP/s matrix-core). Lessons: (a) pageable D2H runs a ~1 GB/s staged
+  path — pinned buffers mandatory; (b) logits D2H is the offload tax
+  (512 KB at S=1 fine; 65 MB at S=128 = 2.3 ms) — a GPU lm_head wants
+  the SAMPLER on-device (copy back 4 bytes, not 512 KB); (c) bf16-x
+  rounding costs max|d| 0.125 vs fp32-x oracle at synthetic magnitudes
+  — bf16 epsilon, HF-reference-flavored, tolerance-covered; (d) build
+  needs no hipcc: host-only C API, pre-compiled Tensile gfx90a code
+  objects, __HIP_PLATFORM_AMD__ define for g++.
 - Threading model: the model loop is strictly sequential; intra-op
   parallelism (threads, BLAS) is each implementation's private business.
   OpenMP and OpenBLAS both keep persistent worker pools (created at the

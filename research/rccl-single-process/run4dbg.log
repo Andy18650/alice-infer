@@ -1,0 +1,284 @@
+devices=8 ranks=4 rccl version=22707
+
+[2026-09-11 16:09:30] andyhu-AS-4124GQ-TNMI:9898:9898 [0] obj-x86_64-linux-gnu/hipify/src/init.cc:174 NCCL WARN NUMA auto balancing enabled which can lead to variability in the RCCL performance! Disable by "sudo sysctl kernel.numa_balancing=0"
+andyhu-AS-4124GQ-TNMI:9898:9898 [0] NCCL INFO Kernel version: 7.0.0-31-generic
+
+[2026-09-11 16:09:30] andyhu-AS-4124GQ-TNMI:9898:9898 [0] obj-x86_64-linux-gnu/hipify/src/init.cc:195 NCCL WARN Missing "iommu=pt" from kernel command line which can lead to system instablity or hang!
+andyhu-AS-4124GQ-TNMI:9898:9898 [0] NCCL INFO Hipruntime version: 70152801, firmware version: 100
+[setup] HIP contexts + buffers for 4 ranks OK
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO ROCr version 1.1
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Dmabuf feature disabled without NCCL_DMABUF_ENABLE=1
+
+[2026-09-11 16:09:30] andyhu-AS-4124GQ-TNMI:9898:9904 [0] obj-x86_64-linux-gnu/hipify/src/init.cc:174 NCCL WARN NUMA auto balancing enabled which can lead to variability in the RCCL performance! Disable by "sudo sysctl kernel.numa_balancing=0"
+
+[2026-09-11 16:09:30] andyhu-AS-4124GQ-TNMI:9898:9905 [1] obj-x86_64-linux-gnu/hipify/src/init.cc:174 NCCL WARN NUMA auto balancing enabled which can lead to variability in the RCCL performance! Disable by "sudo sysctl kernel.numa_balancing=0"
+
+[2026-09-11 16:09:30] andyhu-AS-4124GQ-TNMI:9898:9906 [2] obj-x86_64-linux-gnu/hipify/src/init.cc:174 NCCL WARN NUMA auto balancing enabled which can lead to variability in the RCCL performance! Disable by "sudo sysctl kernel.numa_balancing=0"
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Kernel version: 7.0.0-31-generic
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Kernel version: 7.0.0-31-generic
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Kernel version: 7.0.0-31-generic
+
+[2026-09-11 16:09:30] andyhu-AS-4124GQ-TNMI:9898:9907 [3] obj-x86_64-linux-gnu/hipify/src/init.cc:174 NCCL WARN NUMA auto balancing enabled which can lead to variability in the RCCL performance! Disable by "sudo sysctl kernel.numa_balancing=0"
+
+[2026-09-11 16:09:30] andyhu-AS-4124GQ-TNMI:9898:9905 [1] obj-x86_64-linux-gnu/hipify/src/init.cc:195 NCCL WARN Missing "iommu=pt" from kernel command line which can lead to system instablity or hang!
+
+[2026-09-11 16:09:30] andyhu-AS-4124GQ-TNMI:9898:9906 [2] obj-x86_64-linux-gnu/hipify/src/init.cc:195 NCCL WARN Missing "iommu=pt" from kernel command line which can lead to system instablity or hang!
+
+[2026-09-11 16:09:30] andyhu-AS-4124GQ-TNMI:9898:9904 [0] obj-x86_64-linux-gnu/hipify/src/init.cc:195 NCCL WARN Missing "iommu=pt" from kernel command line which can lead to system instablity or hang!
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Kernel version: 7.0.0-31-generic
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO RCCL version : 2.27.7-Unknown 
+HIP version  : 7.1.52801-
+ROCm version : EXPLICIT_ROCM_VERSION
+Hostname     : andyhu-AS-4124GQ-TNMI
+Librccl path : /usr/lib/x86_64-linux-gnu/librccl.so.1
+
+[2026-09-11 16:09:30] andyhu-AS-4124GQ-TNMI:9898:9907 [3] obj-x86_64-linux-gnu/hipify/src/init.cc:195 NCCL WARN Missing "iommu=pt" from kernel command line which can lead to system instablity or hang!
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO NET/Plugin: Could not find: libnccl-net.so. 
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO NET/IB : No device found.
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO NET/IB : Using [RO]; OOB enp5s0:192.168.10.103<0>
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO NET/Socket : Using [0]enp5s0:192.168.10.103<0> [1]enxb03af2b6059f:169.254.3.1<0>
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Initialized NET plugin Socket
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Assigned NET plugin Socket to comm
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Using network Socket
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Assigned NET plugin Socket to comm
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Using network Socket
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Assigned NET plugin Socket to comm
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Using network Socket
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Assigned NET plugin Socket to comm
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Using network Socket
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO [node_id = 2; gpu_id = 14571; unique_id = 2603542738275925465; location_id = 12544; bdf = 12544; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO [node_id = 6; gpu_id = 41154; unique_id = 2813994736361022635; location_id = 44544; bdf = 44544; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO [node_id = 4; gpu_id = 57586; unique_id = 7345385419228132415; location_id = 4352; bdf = 4352; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO [node_id = 9; gpu_id = 8466; unique_id = 7864504848813660084; location_id = 37632; bdf = 37632; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO [node_id = 3; gpu_id = 27432; unique_id = 11946875045138129550; location_id = 13312; bdf = 13312; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO [node_id = 8; gpu_id = 30939; unique_id = 13117141738163118053; location_id = 36352; bdf = 36352; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO [node_id = 7; gpu_id = 63755; unique_id = 13485864929526795551; location_id = 45824; bdf = 45824; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO [node_id = 5; gpu_id = 45873; unique_id = 17451717368649477198; location_id = 5120; bdf = 5120; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO [node_id = 2; gpu_id = 14571; unique_id = 2603542738275925465; location_id = 12544; bdf = 12544; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO [node_id = 6; gpu_id = 41154; unique_id = 2813994736361022635; location_id = 44544; bdf = 44544; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO [node_id = 4; gpu_id = 57586; unique_id = 7345385419228132415; location_id = 4352; bdf = 4352; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO [node_id = 9; gpu_id = 8466; unique_id = 7864504848813660084; location_id = 37632; bdf = 37632; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO [node_id = 3; gpu_id = 27432; unique_id = 11946875045138129550; location_id = 13312; bdf = 13312; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO [node_id = 8; gpu_id = 30939; unique_id = 13117141738163118053; location_id = 36352; bdf = 36352; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO [node_id = 7; gpu_id = 63755; unique_id = 13485864929526795551; location_id = 45824; bdf = 45824; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO [node_id = 5; gpu_id = 45873; unique_id = 17451717368649477198; location_id = 5120; bdf = 5120; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO [node_id = 2; gpu_id = 14571; unique_id = 2603542738275925465; location_id = 12544; bdf = 12544; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO [node_id = 6; gpu_id = 41154; unique_id = 2813994736361022635; location_id = 44544; bdf = 44544; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO [node_id = 4; gpu_id = 57586; unique_id = 7345385419228132415; location_id = 4352; bdf = 4352; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO [node_id = 9; gpu_id = 8466; unique_id = 7864504848813660084; location_id = 37632; bdf = 37632; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO [node_id = 3; gpu_id = 27432; unique_id = 11946875045138129550; location_id = 13312; bdf = 13312; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO [node_id = 8; gpu_id = 30939; unique_id = 13117141738163118053; location_id = 36352; bdf = 36352; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO [node_id = 7; gpu_id = 63755; unique_id = 13485864929526795551; location_id = 45824; bdf = 45824; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO [node_id = 5; gpu_id = 45873; unique_id = 17451717368649477198; location_id = 5120; bdf = 5120; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO [node_id = 2; gpu_id = 14571; unique_id = 2603542738275925465; location_id = 12544; bdf = 12544; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO [node_id = 6; gpu_id = 41154; unique_id = 2813994736361022635; location_id = 44544; bdf = 44544; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO [node_id = 4; gpu_id = 57586; unique_id = 7345385419228132415; location_id = 4352; bdf = 4352; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO [node_id = 9; gpu_id = 8466; unique_id = 7864504848813660084; location_id = 37632; bdf = 37632; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO [node_id = 3; gpu_id = 27432; unique_id = 11946875045138129550; location_id = 13312; bdf = 13312; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO [node_id = 8; gpu_id = 30939; unique_id = 13117141738163118053; location_id = 36352; bdf = 36352; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO [node_id = 7; gpu_id = 63755; unique_id = 13485864929526795551; location_id = 45824; bdf = 45824; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO [node_id = 5; gpu_id = 45873; unique_id = 17451717368649477198; location_id = 5120; bdf = 5120; domain = 0; partition = 0], 
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO initialized internal alternative rsmi functionality
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO initialized internal alternative rsmi functionality
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO initialized internal alternative rsmi functionality
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO initialized internal alternative rsmi functionality
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO ncclCommInitRank_impl comm 0x77e92c0016b0 rank 1 nranks 4 cudaDev 1 nvmlDev 3 busId 34000 commId 0xd87d1f42b354bc5b - Init START
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO ncclCommInitRank_impl comm 0x77e9340017d0 rank 0 nranks 4 cudaDev 0 nvmlDev 2 busId 31000 commId 0xd87d1f42b354bc5b - Init START
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO ncclCommInitRank_impl comm 0x77e9280016b0 rank 3 nranks 4 cudaDev 3 nvmlDev 1 busId 14000 commId 0xd87d1f42b354bc5b - Init START
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO RAS client listening socket at 127.0.0.1<28028>
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO ncclCommInitRank_impl comm 0x77e9240016b0 rank 2 nranks 4 cudaDev 2 nvmlDev 0 busId 11000 commId 0xd87d1f42b354bc5b - Init START
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO initialized internal alternative rsmi functionality
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO initialized internal alternative rsmi functionality
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO initialized internal alternative rsmi functionality
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO initialized internal alternative rsmi functionality
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Setting affinity for GPU 2 to 0-23,48-71
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Setting affinity for GPU 3 to 0-23,48-71
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Setting affinity for GPU 0 to 0-23,48-71
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Setting affinity for GPU 1 to 0-23,48-71
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO comm 0x77e9280016b0 rank 3 nRanks 4 nNodes 1 localRanks 4 localRank 3 MNNVL 0
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO comm 0x77e9340017d0 rank 0 nRanks 4 nNodes 1 localRanks 4 localRank 0 MNNVL 0
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO comm 0x77e9240016b0 rank 2 nRanks 4 nNodes 1 localRanks 4 localRank 2 MNNVL 0
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO comm 0x77e92c0016b0 rank 1 nRanks 4 nNodes 1 localRanks 4 localRank 1 MNNVL 0
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Trees [0] 1/-1/-1->3->2 [1] 2/-1/-1->3->-1 [2] 2/-1/-1->3->1 [3] -1/-1/-1->3->2 [4] 1/-1/-1->3->2 [5] 2/-1/-1->3->-1 [6] 2/-1/-1->3->1 [7] -1/-1/-1->3->2 [8] 1/-1/-1->3->2 [9] 2/-1/-1->3->-1 [10] 2/-1/-1->3->1 [11] -1/-1/-1->3->2 [12] 1/-1/-1->3->2 [13] 2/-1/-1->3->-1 [14] 2/-1/-1->3->1 [15] -1/-1/-1->3->2 comm 0x77e9280016b0 nRanks 04 busId 14000
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Trees [0] 0/-1/-1->1->3 [1] -1/-1/-1->1->0 [2] 3/-1/-1->1->0 [3] 0/-1/-1->1->-1 [4] 0/-1/-1->1->3 [5] -1/-1/-1->1->0 [6] 3/-1/-1->1->0 [7] 0/-1/-1->1->-1 [8] 0/-1/-1->1->3 [9] -1/-1/-1->1->0 [10] 3/-1/-1->1->0 [11] 0/-1/-1->1->-1 [12] 0/-1/-1->1->3 [13] -1/-1/-1->1->0 [14] 3/-1/-1->1->0 [15] 0/-1/-1->1->-1 comm 0x77e92c0016b0 nRanks 04 busId 34000
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Trees [0] 3/-1/-1->2->-1 [1] 0/-1/-1->2->3 [2] -1/-1/-1->2->3 [3] 3/-1/-1->2->0 [4] 3/-1/-1->2->-1 [5] 0/-1/-1->2->3 [6] -1/-1/-1->2->3 [7] 3/-1/-1->2->0 [8] 3/-1/-1->2->-1 [9] 0/-1/-1->2->3 [10] -1/-1/-1->2->3 [11] 3/-1/-1->2->0 [12] 3/-1/-1->2->-1 [13] 0/-1/-1->2->3 [14] -1/-1/-1->2->3 [15] 3/-1/-1->2->0 comm 0x77e9240016b0 nRanks 04 busId 11000
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 00/16 : 0 2 3 1
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO P2P Chunksize set to 131072
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO P2P Chunksize set to 131072
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO P2P Chunksize set to 131072
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 01/16 : 0 2 3 1
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 02/16 : 0 1 3 2
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 03/16 : 0 1 3 2
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 04/16 : 0 2 3 1
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 05/16 : 0 2 3 1
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 06/16 : 0 1 3 2
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 07/16 : 0 1 3 2
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 08/16 : 0 2 3 1
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 09/16 : 0 2 3 1
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 10/16 : 0 1 3 2
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 11/16 : 0 1 3 2
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 12/16 : 0 2 3 1
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 13/16 : 0 2 3 1
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 14/16 : 0 1 3 2
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 15/16 : 0 1 3 2
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Trees [0] -1/-1/-1->0->1 [1] 1/-1/-1->0->2 [2] 1/-1/-1->0->-1 [3] 2/-1/-1->0->1 [4] -1/-1/-1->0->1 [5] 1/-1/-1->0->2 [6] 1/-1/-1->0->-1 [7] 2/-1/-1->0->1 [8] -1/-1/-1->0->1 [9] 1/-1/-1->0->2 [10] 1/-1/-1->0->-1 [11] 2/-1/-1->0->1 [12] -1/-1/-1->0->1 [13] 1/-1/-1->0->2 [14] 1/-1/-1->0->-1 [15] 2/-1/-1->0->1 comm 0x77e9340017d0 nRanks 04 busId 31000
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO P2P Chunksize set to 131072
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 1
+andyhu-AS-4124GQ-TNMI:9898:9909 [1] NCCL INFO [Proxy Service] Device 1 CPU core 11
+andyhu-AS-4124GQ-TNMI:9898:9916 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 21
+andyhu-AS-4124GQ-TNMI:9898:9914 [2] NCCL INFO [Proxy Service UDS] Device 2 CPU core 63
+andyhu-AS-4124GQ-TNMI:9898:9913 [3] NCCL INFO [Proxy Service UDS] Device 3 CPU core 54
+andyhu-AS-4124GQ-TNMI:9898:9910 [1] NCCL INFO [Proxy Service UDS] Device 1 CPU core 14
+andyhu-AS-4124GQ-TNMI:9898:9912 [2] NCCL INFO [Proxy Service] Device 2 CPU core 54
+andyhu-AS-4124GQ-TNMI:9898:9915 [0] NCCL INFO [Proxy Service] Device 0 CPU core 63
+andyhu-AS-4124GQ-TNMI:9898:9911 [3] NCCL INFO [Proxy Service] Device 3 CPU core 22
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 00/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 02/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 01/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 03/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 04/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 06/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 05/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 07/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 08/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 10/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 09/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 11/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 12/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 14/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 13/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 15/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 00/0 : 0[31000] -> 2[11000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 02/0 : 2[11000] -> 0[31000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 00/0 : 3[14000] -> 1[34000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 01/0 : 0[31000] -> 2[11000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 02/0 : 1[34000] -> 3[14000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 03/0 : 2[11000] -> 0[31000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 01/0 : 3[14000] -> 1[34000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 03/0 : 1[34000] -> 3[14000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 04/0 : 0[31000] -> 2[11000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 04/0 : 3[14000] -> 1[34000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 06/0 : 2[11000] -> 0[31000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 06/0 : 1[34000] -> 3[14000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 05/0 : 0[31000] -> 2[11000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 07/0 : 2[11000] -> 0[31000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 05/0 : 3[14000] -> 1[34000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 07/0 : 1[34000] -> 3[14000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 08/0 : 0[31000] -> 2[11000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 10/0 : 2[11000] -> 0[31000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 08/0 : 3[14000] -> 1[34000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 10/0 : 1[34000] -> 3[14000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 09/0 : 0[31000] -> 2[11000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 11/0 : 2[11000] -> 0[31000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 09/0 : 3[14000] -> 1[34000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 12/0 : 0[31000] -> 2[11000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 11/0 : 1[34000] -> 3[14000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 14/0 : 2[11000] -> 0[31000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 12/0 : 3[14000] -> 1[34000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 13/0 : 0[31000] -> 2[11000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 14/0 : 1[34000] -> 3[14000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 15/0 : 2[11000] -> 0[31000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 13/0 : 3[14000] -> 1[34000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 15/0 : 1[34000] -> 3[14000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 02/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 00/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 01/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 03/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 04/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 06/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 05/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 07/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 08/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 10/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 09/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 11/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 12/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 14/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 13/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 15/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 02/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 00/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 03/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 01/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 06/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 04/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 07/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 05/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 10/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 08/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 11/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 09/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 14/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 12/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 15/0 : 2[11000] -> 3[14000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 13/0 : 0[31000] -> 1[34000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 02/0 : 3[14000] -> 1[34000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 00/0 : 1[34000] -> 3[14000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 01/0 : 2[11000] -> 0[31000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 06/0 : 3[14000] -> 1[34000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 04/0 : 1[34000] -> 3[14000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 03/0 : 0[31000] -> 2[11000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 10/0 : 3[14000] -> 1[34000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 05/0 : 2[11000] -> 0[31000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 08/0 : 1[34000] -> 3[14000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 07/0 : 0[31000] -> 2[11000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 09/0 : 2[11000] -> 0[31000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 14/0 : 3[14000] -> 1[34000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 12/0 : 1[34000] -> 3[14000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 11/0 : 0[31000] -> 2[11000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Channel 13/0 : 2[11000] -> 0[31000] via P2P/direct pointer comm 0x77e9240016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 02/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 00/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Channel 15/0 : 0[31000] -> 2[11000] via P2P/direct pointer comm 0x77e9340017d0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 01/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 03/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 04/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 06/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 05/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 07/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 08/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 10/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 09/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 11/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 12/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Channel 13/0 : 3[14000] -> 2[11000] via P2P/direct pointer comm 0x77e9280016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 14/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Channel 15/0 : 1[34000] -> 0[31000] via P2P/direct pointer comm 0x77e92c0016b0 nRanks 04
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Connected all trees
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Connected all trees
+andyhu-AS-4124GQ-TNMI:9898:9918 [2] NCCL INFO [Proxy Progress] Device 2 CPU core 60
+andyhu-AS-4124GQ-TNMI:9898:9919 [3] NCCL INFO [Proxy Progress] Device 3 CPU core 60
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Connected all trees
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Connected all trees
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 256 | 256
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO 16 coll channels, 16 collnet channels, 0 nvls channels, 16 p2p channels, 2 p2p channels per peer
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 256 | 256
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO 16 coll channels, 16 collnet channels, 0 nvls channels, 16 p2p channels, 2 p2p channels per peer
+andyhu-AS-4124GQ-TNMI:9898:9920 [1] NCCL INFO [Proxy Progress] Device 1 CPU core 55
+andyhu-AS-4124GQ-TNMI:9898:9921 [0] NCCL INFO [Proxy Progress] Device 0 CPU core 67
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 256 | 256
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO 16 coll channels, 16 collnet channels, 0 nvls channels, 16 p2p channels, 2 p2p channels per peer
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 256 | 256
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO 16 coll channels, 16 collnet channels, 0 nvls channels, 16 p2p channels, 2 p2p channels per peer
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO CC Off, workFifoBytes 4194304
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO RCCL Unroll Factor (pre-set): 3
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO RCCL Unroll Factor (pre-set): 3
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO RCCL Unroll Factor (pre-set): 3
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO RCCL Unroll Factor (pre-set): 3
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so. Using internal tuner plugin.
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO ncclCommInitRank_impl comm 0x77e9340017d0 rank 0 nranks 4 cudaDev 0 nvmlDev 2 busId 31000 commId 0xd87d1f42b354bc5b - Init COMPLETE
+andyhu-AS-4124GQ-TNMI:9898:9904 [0] NCCL INFO Init timings - ncclCommInitRank_impl: rank 0 nranks 4 total 2.34 (kernels 0.08, alloc 0.32, bootstrap 0.02, allgathers 0.07, topo 0.58, graphs 0.01, connections 1.26, rest 0.00)
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO ncclCommInitRank_impl comm 0x77e9240016b0 rank 2 nranks 4 cudaDev 2 nvmlDev 0 busId 11000 commId 0xd87d1f42b354bc5b - Init COMPLETE
+andyhu-AS-4124GQ-TNMI:9898:9906 [2] NCCL INFO Init timings - ncclCommInitRank_impl: rank 2 nranks 4 total 2.34 (kernels 0.07, alloc 0.34, bootstrap 0.00, allgathers 0.01, topo 0.65, graphs 0.01, connections 1.24, rest 0.03)
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO ncclCommInitRank_impl comm 0x77e92c0016b0 rank 1 nranks 4 cudaDev 1 nvmlDev 3 busId 34000 commId 0xd87d1f42b354bc5b - Init COMPLETE
+andyhu-AS-4124GQ-TNMI:9898:9905 [1] NCCL INFO Init timings - ncclCommInitRank_impl: rank 1 nranks 4 total 2.34 (kernels 0.08, alloc 0.31, bootstrap 0.02, allgathers 0.07, topo 0.58, graphs 0.01, connections 1.26, rest 0.00)
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO ncclCommInitRank_impl comm 0x77e9280016b0 rank 3 nranks 4 cudaDev 3 nvmlDev 1 busId 14000 commId 0xd87d1f42b354bc5b - Init COMPLETE
+andyhu-AS-4124GQ-TNMI:9898:9907 [3] NCCL INFO Init timings - ncclCommInitRank_impl: rank 3 nranks 4 total 2.34 (kernels 0.07, alloc 0.33, bootstrap 0.01, allgathers 0.00, topo 0.65, graphs 0.01, connections 1.24, rest 0.03)

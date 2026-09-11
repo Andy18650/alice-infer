@@ -1,0 +1,2 @@
+devices=8 ranks=4 rccl version=22707
+[setup] HIP contexts + buffers for 4 ranks OK

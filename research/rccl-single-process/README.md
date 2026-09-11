@@ -69,16 +69,45 @@ per rank ≈ 6 µs at the worst link class; hierarchical is better. ~160
 allreduces/token at 80 layers ⇒ ~1 ms against a ~22 ms TP=4 decode
 budget (~4%). Viable with margin.
 
-## Recommendations
+## UPDATE (2026-09-11, same day): surgical RCCL replacement VALIDATED
 
-- **First TP path: hand-rolled P2P allreduce behind a `CrossDeviceReduce`
-  seam** (single process, model owns devices; threads only for the
-  collective, or fused into block epilogues later). No RCCL dependency.
-- **RCCL: report the Ubuntu bug** (hipified 7.1.0-0ubuntu2 build segfaults
-  on any ≥2-rank collective on gfx90a) and revisit only if the user
-  installs AMD's matched RCCL (amdgpu repo, needs sudo) or Ubuntu fixes
-  the package. RCCL remains the right answer for complex collectives
-  (all-to-all if MoE expert-parallel arrives).
+AMD's own RCCL build works against Canonical's HIP runtime. Method:
+download `rccl_2.27.7.70100-20~24.04_amd64.deb` + `rocm-smi-lib` +
+`rocprofiler-register` from `repo.radeon.com/rocm/apt/7.1/pool/main/r/...`,
+`dpkg -x` into `~/scratch/rocm-debs/amd-7.1/`, run the study with
+`LD_LIBRARY_PATH=<overlay>/opt/rocm-7.1.0/lib`. No sudo, no system change,
+no code change — an environment fix at the environment layer. The AMD and
+Canonical builds are the SAME upstream RCCL (2.27.7.70100); only the build
+lineage differs — confirming the crash is Canonical's packaging defect.
+
+Results (exact-match correctness at 4M floats, both configs):
+
+| size | 4 ranks sync/call | 8 ranks sync/call | 8 ranks pipelined |
+|------|------------------|-------------------|-------------------|
+| 32 KB (decode row) | 45.7 µs | 71.4 µs | 36.3 µs |
+| 1 MB | 80.7 µs | 115.0 µs | 74.6 µs (197 GB/s) |
+| 16 MB (prefill chunk) | 397.7 µs | 319.7 µs | 288.1 µs (**815 GB/s**) |
+
+Notes: comm init is ~24 s per process (one-time; Canonical's broken build
+reported 2.3 s only because it never completed real setup). Small-message
+latency (45–71 µs sync/call at TP decode sizes) is the weak point vs the
+hand-rolled P2P estimate (~6 µs); large-message ring throughput (815 GB/s
+effective at 16 MB) is the strong point vs a naive flat hand-rolled
+allreduce. The overlay debs + study logs are in `~/scratch/rocm-debs/`;
+`amd71-{4,8}.log` beside this README.
+
+## Recommendations (updated)
+
+- **TP collective backend: BOTH paths now validated.** AMD-overlay RCCL
+  (zero code, works today) and hand-rolled P2P (zero dependency). Choose
+  per message-size regime at integration time: RCCL's ring dominates
+  prefill-sized traffic (815 GB/s), hand-rolled should dominate
+  decode-sized latency (est. ~6 µs vs RCCL's 45–71 µs). The
+  `CrossDeviceReduce` seam makes this a per-call-site decision, not a
+  global one.
+- **Report the Ubuntu bug** (hipified 7.1.0-0ubuntu2 segfaults on any
+  ≥2-rank collective on gfx90a; AMD's same-version build works — clean
+  A/B). The overlay proves the fix exists upstream.
 - Add `iommu=pt` to the kernel cmdline at the next maintenance window
   (user action; RCCL explicitly warns about hang/instability without it).
 

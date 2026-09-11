@@ -1,0 +1,10 @@
+devices=8 ranks=4 rccl version=22707
+[setup] HIP contexts + buffers for 4 ranks OK
+[correct] 4 ranks: exact match (0/4194304 wrong)
+[latency]       8 KB: sync/call     52.4 us   pipelined     21.1 us   (2.3 GB/s eff.)
+[latency]      32 KB: sync/call     45.7 us   pipelined     21.8 us   (9.0 GB/s eff.)
+[latency]      64 KB: sync/call     58.3 us   pipelined     35.9 us   (11.0 GB/s eff.)
+[latency]     256 KB: sync/call     60.0 us   pipelined     38.1 us   (41.3 GB/s eff.)
+[latency]    1024 KB: sync/call     80.7 us   pipelined     60.7 us   (103.7 GB/s eff.)
+[latency]   16384 KB: sync/call    397.7 us   pipelined    371.9 us   (270.7 GB/s eff.)
+[init] all ranks done; wall 24888 ms (per-rank max 24188 ms)

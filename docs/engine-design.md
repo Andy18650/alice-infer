@@ -1,494 +1,292 @@
 # Alice Inference Engine — Design
 
-Status: living draft. Captures decisions to date; the previous code skeleton is
-being rebuilt from this document.
+Status: living document. This revision (2026-09) commits the engine to
+GPU-resident execution and retires the CPU-first bring-up architecture.
+The tree is mid-migration; AGENTS.md tracks the state of play.
 
 ## 1. Purpose & target
 
-- From-scratch C++20 LLM inference engine. CPU-first, GPU later.
-- Bring-up model: **Llama-3.2-1B-Instruct**
-  (`/opt/models/Llama-3.2-1B-Instruct/`, single-shard bf16 safetensors,
-  16 layers, hidden 2048, GQA 32 q / 8 kv heads, head_dim 64,
-  intermediate 8192, vocab 128256, tied embeddings — lm_head aliases
-  embed_tokens, so manifest aliasing is exercised on day one — llama3
-  RoPE scaling, three EOS ids). Same LlamaForCausalLM architecture as the
-  original target, at bring-up size.
-- Scale target (for sizing decisions): DeepSeek-R1-Distill-Llama-70B
-  (bf16, 80 layers, hidden 8192, GQA 64/8, head_dim 128,
-  intermediate 28672, ~141 GB in 17 shards at /opt/models/deepseek-ai).
-- Build: CMake. Minimal core dependencies (nlohmann/json confined to .cpp
-  files; GoogleTest for tests; BLAS behind a wrapper).
+A from-scratch C++20 LLM inference engine for this machine: 4× MI250X
+(8 GCDs × 64 GB HBM2e, gfx90a, ROCm 7.1) behind a 48-core Zen3 host.
+Relatively high-performance and relatively general: built for this
+hardware first, structured so other GPU vendors can be added later
+without rearchitecting.
+
+Code quality is a feature, not a preference. Development is agent-heavy,
+and ill-shaped code compounds under agent edits into "playdough": layers
+of patches and one-time constraints squeezing the project out of shape.
+The codebase must stay small, readable, and self-documenting; the tech
+stack (CMake, C++, vendor libraries, hipcc) is chosen by what produces
+good code and good results, never the reverse, and no decision is kept
+past the moment it is demonstrably wrong.
+
+Bring-up models: Llama-3.2-1B-Instruct, DeepSeek-R1-Distill-Llama-8B,
+DeepSeek-R1-Distill-Llama-70B (under `/opt/models`, manifests in
+`models/`). The 70B (141 GB bf16, 80 layers, 17 shards) is the sizing
+reference.
 
 ## 2. Deployment assumptions
 
-Single user. One live context at a time; every new input is appended to *the*
-context. No prefix matching between requests. No rollback requests at the
-engine level (the session API provides limited truncation via snapshots).
+Single user. One live context at a time; every new input is appended to
+*the* context. No prefix matching, no rollback requests at the engine
+level. Consequences: no multi-context registry or locking; stateful
+Blocks own their state directly, sized once for max context; state ops
+reduce to write-during-forward and `reset_state()`; memory planning is
+fully static at load. If multi-session ever arrives it is bolted on by
+instantiating state per session — compute never rearchitects, because
+state lives behind Block boundaries.
 
-Consequences:
+## 3. Execution model
 
-- No multi-context registry or handle indirection. Stateful Blocks own their
-  state directly, allocated once, sized for max context length.
-- State operations reduce to two verbs: write-during-forward and
-  `reset_state()`. No fork/clone/truncate machinery.
-- No locking anywhere; nothing is shared between concurrent sequences.
-- Memory planning is fully static at load time.
+The engine requires a GPU. There are no CPU-only builds.
 
-If multi-session ever arrives, it is bolted on by instantiating state per
-session — compute never rearchitects, because state lives behind Block
-boundaries.
+All model state lives on the device: the residual stream, the block io
+buffer, attention KV, norm weights, RoPE tables. All state operations —
+normalization, residual adds, position encoding — execute on the device.
+A forward pass performs no host↔device transfers inside the block loop;
+the regular traffic is token ids (in at the embedder, out at the sampler
+— four bytes per step). The host loads weights, tokenizes, detokenizes,
+and runs the frontend.
 
-## 3. Source-of-truth philosophy: model = program, manifest = contract
+The stream is FP32 end to end. The numerics boundary that was paid for
+during bring-up is kept — only GEMM operands are quantized (bf16
+storage, fp32 accumulate). What changed is the stream's address space,
+not its precision.
 
-- The engine consumes safetensors directly. GGUF is out of scope (for now).
-- An external **manifest** describes model composition: per-Block type and
-  weight roles `{name, shape, dtype}` (or `{alias_of}` for tied/aliased
-  tensors). Hand-written first; a generator from HF `config.json` later.
-- The manifest is the *total contract*: `validate()` performs a two-way audit
-  against the actual weight source (missing / shape / dtype / duplicate claim
-  / unclaimed tensor / alias resolution) and reports all errors at once.
+Blocks are written for their target architecture, in that architecture's
+native language and libraries. There is no vendor-compatibility shim
+inside Blocks, because optimized-kernel reality does not abstract:
+FlashAttention has a different best implementation per SM generation,
+wgmma source does not compile across adjacent NVIDIA architectures,
+NVFP4 is native on sm_100 and emulated elsewhere, and the right tensor-
+parallel strategy depends on link topology. A shim would leak at exactly
+the points that matter. Portability is instead achieved by writing
+several native implementations of one abstract block class and selecting
+at load the one matching the device present. Vendor BLAS is used where
+it genuinely covers the problem (dense GEMM) and not where it doesn't
+(attention, fused elementwise chains, quantized formats).
 
-## 4. Tensor & dtype contract
+The Trunk's own operations are the deliberate exception: norms, residual
+adds, and RoPE are plain SIMT kernels — no matrix intrinsics, no warp
+tricks — written once against a small macro header that maps kernel
+spelling onto HIP/CUDA/MUSA-flavored compilers. That header exists for
+this level only and never crosses a Block boundary.
 
-- **Dtype is static at type level.** `TView<T>`: non-owning, rank ≤ 2
-  (`[M, N]` row-major; rank-1 tensors load as `1×N`), element type in the
-  type — no `void*`, no runtime dtype field, no `as<T>()` (aliases
-  `F32View`, `BF16View`; `bf16` is a strong storage struct with explicit
-  fp32 conversion). A wrong-dtype view is a compile error, not a runtime
-  check.
-- Runtime dtype survives ONLY in `safetensors::TensorInfo` / manifest
-  `WeightSpec` (the `DType` enum) — file reality. The single checked
-  runtime→static conversion is `File::view_as<T>()` at the load boundary.
-- No owning Tensor class, and no polymorphic view hierarchy: quantized
-  formats get concrete COMPOSITE types (data + scales structs) named by
-  their abstract block class's constructor contract (§11).
-- bf16 storage with fp32 accumulation is baked in as the numerics contract.
-- Prefill vs decode is **shape dispatch inside kernels** (M==1 → GEMV path),
-  not tensor generality. (Whether the interface also *explicitly* separates
-  prefill/decode is an open question — see Open Questions.)
+CPU Blocks survive in exactly one role: development reference. A CPU
+reference block implements the same Block interface by copying its input
+to the host, computing with naive, maximally readable code, and copying
+the result back. Its purpose is fault localization in research-grade
+kernels: a correct Flash Linear Attention implementation is a research
+project of its own, and comparing a full GPU model against a full CPU
+model cannot isolate which block diverges — swapping one block instance
+at a time can. Transfer cost is irrelevant because such blocks never run
+in production. One practical exception may eventually appear — CPU-
+resident MoE experts — and will be designed for if it does.
 
-## 5. Component taxonomy
+Device code is compiled with the vendor toolchain (hipcc on this
+machine). Runtime-compiled string kernels (hipRTC) are retired: they
+existed to keep hipcc out of the build, and the build no longer avoids
+hipcc.
 
-- **Functional** — fully stateless primitives, `torch.nn.functional`-style:
-  everything needed (weights included) is passed per call. Layers/Blocks may
-  bypass them with fused implementations.
-- **Weightful** — owns weights; immutable after load; context-independent
-  (FFN, projections).
-- **Stateful** — owns state not derivable from weights (attention KV cache,
-  SSM recurrent state).
-- **Block** — smallest unit the manifest describes; self-contained compute
-  module (weightful or stateful).
-- **Embedder** — token ids → FP32 vectors. Sibling interface (its input is
-  ids, not an FP32 chunk).
-- **LmHead** — FP32 hidden → FP32 logits, different size in/out; deliberately
-  NOT bent into the Block signature for one outlier. At prefill only the
-  final hidden row is projected by default.
-- **Sampler** — FP32 logits → token id. See §7.3.
-- **Trunk** — owns the residual-stream buffers, the static Block-boundary io
-  buffer(s), ALL connection weights (norm gammas now; HC mixing /
-  attention-residual gather weights later), and the wiring scheme. See §7.2.
-- **Model** — container + wiring loop. Owns its parts directly via
-  `unique_ptr`, fail-fast checks at construction. Knows no architecture
-  specifics. Top-level contract: token ids in → token id out.
+## 4. Model = program, manifest = contract
 
-## 6. Forward loop
+The engine consumes safetensors directly (GGUF out of scope). An
+externally authored **manifest** describes model composition: per-Block
+type and weight roles `{name, shape, dtype}` or `{alias_of}`. The
+manifest is the *total contract*: `validate()` performs a two-way audit
+against the weight source (missing / shape / dtype / duplicate claim /
+unclaimed tensor / alias resolution) and reports all errors at once.
+Sharding is physical packaging, invisible to the contract: shards are
+probed via their resident headers (never HF's index.json), cross-shard
+duplicates are rejected, and the unclaimed-tensor audit is global.
+Manifests are generated by `tools/gen_manifest.py`, pre-flight-checked
+by `tools/check_manifest.py`.
 
-All inter-Block data is FP32, host memory, `[S, d]` row-major, carried in
-ONE static io buffer owned by the Trunk. `forward` is in-place: the Block
-reads its input from io and writes its output into the same io — an explicit
-"no per-layer boundary buffers" contract.
+## 5. Tensor & dtype contract
+
+The typed view system is the **loading vocabulary**: `TView<T>`
+(non-owning, rank ≤ 2, element type in the type), the strong `bf16`
+struct, and the single checked runtime→static conversion
+`File::view_as<T>()` at the load boundary. Runtime `DType` survives only
+in file-facing structs (`TensorInfo`, `WeightSpec`). Quantized formats
+get concrete composite types (data + scales), never a polymorphic view
+hierarchy.
+
+The device-side stream and device buffers are not TViews. They are raw
+device allocations owned by components, referenced as plain pointers in
+device code. (The io buffer was never meant to be a TView; the view
+system was designed for the load path.)
+
+## 6. Component taxonomy
+
+- **Functional / Weightful / Stateful / Block** — as before: stateless
+  primitives; weight owners; state owners (KV, SSM state); the Block is
+  the smallest unit the manifest describes.
+- **Embedder** — token ids → stream rows (a device-side gather).
+- **LmHead** — final hidden → logits (device GEMM; last row only at
+  prefill). Deliberately not bent into the Block signature.
+- **Sampler** — logits → token id, on device; owns RNG state. The
+  sampled id is the only per-step D2H unless a frontend asks for logits.
+- **Trunk** — owns the device-resident stream buffers, ALL norm weights,
+  the norm/residual SIMT kernels, and the wiring scheme. A model with a
+  new residual scheme gets a new Trunk, by design.
+- **Model** — container + wiring loop; owns parts via `unique_ptr`;
+  knows no architecture specifics. Token ids in → token id out.
+
+## 7. Forward loop
 
 ```
-io = embedder.embed(tokens)        // ids → FP32 [S, d], into the io buffer
+io = embedder.embed(token_ids)          // gather into the fp32 stream
 for block in blocks:
-    trunk.read(i, io)              // residual → io, apply normalization
-    block.forward(io)              // in-place: io in, io out
-    trunk.write(i, io)             // residual += io
-logits = lm_head.project(trunk.output(io))   // final norm; last row at prefill
-token  = sampler.sample(logits)
+    trunk.read(i)                       // residual → io, apply norm (SIMT)
+    block.forward(stream)               // in place on the device stream
+    trunk.write(i)                      // residual += io
+token = sampler.sample(lm_head.project(trunk.output()))   // on device
 ```
 
-Prefill processes the *entire* prompt including the last token; the logits at
-the final position are the distribution for the first generated token.
-Invariant: **every token enters Block state exactly once, and its logits are
-available immediately after processing.**
+Prefill processes the entire prompt including the last token. Invariant:
+every token enters Block state exactly once, and its logits are
+available immediately after processing. Position never crosses any
+interface; each stateful Block keeps a private position counter and may
+evict/compact its state at will — strictly its own business.
 
-Position never crosses any interface. Each stateful Block keeps a private
-position counter, incremented per token processed (KV write offset; RoPE
-phase = base + arange(S) for a prefill chunk). The counter is NOT the state
-length: a Block may evict and compact its state at will (KVPress-style),
-leaving its state shorter than the position — strictly the Block's own
-business, invisible to everything outside it. RoPE tables are private
-buffers of the attention implementation, built at construction from
-manifest config.
+## 8. Class structure
 
-## 7. Class structure
+### 8.1 Blocks
 
-### 7.1 Blocks
+- `Block`: `forward` over the shared device stream, in place; virtual
+  destructor. `StatefulBlock` adds `reset_state()` plus default-trap
+  snapshot methods (future session API).
+- One abstract class per (block type × weight dtype), unchanged: dtype
+  dispatch stays at the type level, so no implementation carries
+  per-dtype switches with per-architecture ifdefs.
+- Concrete implementations are `final`, one per target architecture
+  (`DenseFfnBF16Gfx90a`, …). A factory selects the implementation for
+  the device present. **There is no fallback chain terminating in a CPU
+  impl**: if nothing matches the present hardware, loading fails loudly.
+  Silent downgrade was a bring-up convenience; in production it hides
+  configuration errors.
+- CPU reference blocks: one naive host implementation per abstract block
+  class, swappable in for development (§3). Self-contained — the D2H/H2D
+  copies live inside the reference block, so the Block interface stays
+  uniform and nothing else knows they exist.
+- Self-containment, unchanged: private weight storage, private math, no
+  shared kernel toolbox across impls. Constructors take already
+  validated weight views, copy/convert/pack into private layout
+  (staging H2D included), and treat the staged views as freed on return.
 
-- `Block` — abstract interface: `void forward(TensorView io)`, virtual
-  destructor. Boundary contract: FP32 host data, in-place.
-- `StatefulBlock : Block` — adds `reset_state()` (needed now: new session),
-  plus declared-but-unimplemented snapshot/stash methods with default traps:
-  `serialize_state`, `snapshot_create`, `snapshot_rollback` (future revision;
-  see session-api.md).
-- One **abstract class per (block type × weight dtype)** — e.g.
-  `DenseFfnBF16`. Even when the compute graph is identical across dtypes,
-  each gets its own abstract class. Rationale (anti-Tensor-class): dtype-in-
-  data plus graph-in-code forces per-dtype switches with per-architecture
-  ifdefs in every block (e.g. NVFP4 fallback off sm_100+). Fixing dtype at
-  the type level keeps each implementation a single switch-free unit.
-- One **concrete `final` implementation per hardware class**
-  (`CPU_GENERIC`, `CPU_AVX2`, `CPU_AVX512`, `CPU_AMX`, `SM_90`, …).
-  `CPU_GENERIC` is the naive reference implementation — a first-class
-  citizen and the permanent test oracle, not scaffolding.
-- **Constructor contract** (identical signature across all implementations
-  of an abstract class; enforced by convention + factory, since constructors
-  can't be virtual): takes *already validated* weight views + `EngineConfig`;
-  allocates private buffers (weights, transients, state if any); copies/
-  converts/packs weights into its own layout (CPU impls may pre-pack for
-  their kernels; GPU impls stage H2D). Passed weight views are considered
-  freed the moment the constructor returns.
-- Hardware selection: one factory per abstract class; runtime detection
-  (cpuid / CUDA) with an explicit fallback chain. Kept deliberately shallow —
-  CPU-only for the foreseeable bring-up period.
-- Construction-time, engine-wide parameters (`max_seq_len`;
-  `max_prefill_chunk` — requests beyond → hard error; hardware override)
-  are passed to the factory/loader; an `EngineConfig` struct is just
-  packaging for these, not a designed object yet.
-- Implementations may reuse transient memory *internally* — e.g. chunked
-  FFN: tile over the intermediate dim (gate-chunk · up-chunk → SiLU-mul →
-  partial down-proj → accumulate running sum), the flash-attention tiling
-  idea without online softmax. The running sum lives block-privately (one
-  extra memcpy vs. the in-place contract — accepted).
+### 8.2 Trunk
 
-### 7.2 Trunk
+Role unchanged (the "where the mess lives" class), now device-resident:
+owns the stream buffers, norm weights, and the plain-SIMT norm/residual
+kernels of §3. First implementation: RMSNorm + add-residual. Revisit
+triggers for merging norm into Trunk: trunk-impl proliferation,
+mixed-norm models.
 
-- The "where the mess lives" class — the `XXForCausalLM` analog. A model
-  proposing a new residual scheme gets a new Trunk implementation, by design
-  (the technology argument: same as a new attention or FFN type).
-- Owns: residual-stream buffer(s), the static io buffer(s), norm weights,
-  norm compute, and the residual wiring.
-- **Normalization is merged into the Trunk**, deliberately: norm × residual
-  combinations risk blow-up, per-layer Normalizer objects are excessive
-  (mainstream models use one norm type uniformly), and callback plumbing is
-  rejected. Revisit triggers: trunk-impl proliferation, mixed-norm models
-  arriving, CPU-side norm appearing in profiles.
-- First implementation: RMSNorm + plain add-residual (Llama family).
+### 8.3 Model, Embedder, LmHead, Sampler
 
-### 7.3 Model, Embedder, LmHead, Sampler
+Thin concrete classes; no dtype×arch abstract matrix until a second
+implementation exists. Sampler config fixed at construction (temperature
+0 = argmax for tests); the Sampler owns the RNG — acceptable mutable
+state under single-session.
 
-- `Model` owns: Embedder, Blocks, Trunk, LmHead, Sampler. Stays wiring-only.
-- These components are **thin concrete classes now** — no dtype×hardware
-  abstract matrix until a second implementation exists (Lesson 101: do not
-  over-architect). Algorithm-level extensibility (n-gram embeddings, exotic
-  samplers) is future abstract-class territory.
-- `Sampler` is contained in Model (top-level: ids in → id out), with
-  sampling config fixed at construction/session start (mirrors the session
-  API, where temperature is an auxiliary new_session parameter). Temperature
-  0 (= argmax) for tests. Setters may come later for an OpenAI-compatible
-  endpoint; expected to be rare (providers converge on fixed recommended
-  sampling configs — the policy distribution is shaped by post-training at
-  those settings; e.g. reasoning models repetition-loop at temperature 0).
-  The Sampler owns the RNG — the first mutable non-weight state in the
-  pipeline; acceptable under single-session.
+### 8.4 ModelLoader
 
-### 7.4 ModelLoader
+Narrow entry that sniffs format by content and delegates
+(`SafetensorsLoader` now); registry machinery deferred until format #3.
 
-- Factory: model path + manifest → `Model`. Scope: safetensors only.
-- Shape: a narrow entry function that sniffs format by *content* (magic
-  bytes / directory shape) and delegates to a per-format loader
-  (`SafetensorsLoader` now). Registry machinery deferred until format #3.
-  (Standard practice: sniff-then-delegate — LLVM `identify_magic`, image
-  libraries, GGUF magic. A big switch inside one function is not.)
+## 9. Memory architecture & weight loading
 
-## 8. Memory architecture
+- No allocation during `forward`; everything is sized at load.
+- Private buffers per component — device allocations now: weights,
+  state, transients.
+- The shared stream buffers (residual, io) are device allocations owned
+  by the Trunk, `[max_prefill_chunk, d]` fp32 — the only cross-block
+  scratch sharing.
+- Load flow, per block in order: `pread` shard bytes → pinned host
+  staging → H2D → staging freed. Peak host RAM ≈ one block's staging.
+  Pinned staging is mandatory (pageable H2D runs a driver-staged path,
+  measured 2.2 vs 28.5 GB/s); the pinning API lives inside the GPU
+  platform module, not in core code.
+- **No mmap anywhere.** Weight streaming is one-time, not re-read; the
+  page cache would duplicate data and add RSS/reclaim pathologies. If
+  the SSD-resident regime ever arrives, the answer is an explicit
+  user-space cache (the Colibri playbook), designed then.
+- Multi-die: the 70B needs ≥3 GCDs. Blocks get a placement; the stream
+  crosses between devices by peer-to-peer copy at placement boundaries.
+  A named seam, built when 70B tuning demands it.
 
-- **No allocation during `forward`.** All buffers are acquired at
-  construction time.
-- **Private buffers.** Every Block/Trunk/component allocates its own weight,
-  transient, and state buffers in its constructor, in whatever dtype/layout/
-  location it wants. Transients are private *for now* — revisited if memory
-  pressure demands (documented option: shared scratch with static offset
-  reuse across sequential Blocks, ~100 GB → ~2–3 GB at 8K prefill for the
-  70B; and per-block internal reuse patterns like chunked FFN, §7.1).
-- **Static boundary buffers.** The Trunk owns the residual stream and the
-  single static io buffer `[max_prefill_chunk, d]` FP32 — the purely static
-  form of scratch sharing, applied exactly where we have control: Block
-  boundaries. Ownership caveat: the io buffer must be handed from the Trunk
-  to Embedder/LmHead/Blocks; if that plumbing proves awkward, ownership
-  moves to `Model` (flagged, not decided).
-- **Load flow**: per Block, in order — `pread` its tensors from shard files
-  into staging RAM → constructor copies/converts/packs into private buffers →
-  staging freed immediately. Peak load RAM ≈ resident weights + one Block's
-  staging. Audit = load-time report of component-reported buffer sizes.
-- **No mmap residency** (see §9).
+## 10. Numerics, determinism, threading
 
-## 9. Weight loading & the mmap decision
-
-- Weights are loaded with `pread` into staging, then privately owned by
-  components. mmap appears nowhere in the steady state.
-- Rationale (aligned with Colibri's findings — github.com/JustVugg/colibri):
-  mmap assumes *re-read*; one-time streaming of 141 GB is the opposite.
-  Mapped pages count in RSS/cgroup accounting (fat OOM target), reclaim
-  evicts workload-blind, cgroup page-cache charging can OOM-kill when reclaim
-  lags, demand faults stall the hot path and serialize on `mmap_lock`, and
-  the page cache duplicates data the engine never reuses. If the SSD-
-  resident regime ever arrives (models ≫ RAM), the answer is Colibri's
-  playbook: explicit user-space cache + async pread pool + io_uring +
-  measured O_DIRECT — which fits this design as just another hardware-class
-  implementation whose "private buffers" are a cache.
-- Safetensors specifics: shards discovered by directory scan; duplicate
-  tensor names across shards = error; rank ≤ 2 enforced; headers read for
-  manifest validation; manifest-driven assembly.
-- **Multi-shard status (implemented)**: `safetensors::Files` is the
-  multi-shard weight source — an ordered set of opened `File`s probed
-  linearly per lookup against their RESIDENT header maps. No centralized
-  catalog is built or retained (each tensor is resolved exactly once at
-  load; ~722 tensors x <= 17 in-RAM hash probes is negligible), and HF's
-  model.safetensors.index.json is deliberately ignored — probing is
-  authoritative and self-validating via the two-way audit, keeping the
-  manifest the sole external contract. The manifest format is unchanged:
-  sharding is physical packaging, not part of the logical contract.
-  Cross-shard duplicate names are rejected at open; the unclaimed-tensor
-  audit is global across shards. Manifests for llama-family models are
-  authored by tools/gen_manifest.py (config.json -> explicit manifest).
-  Validated with DeepSeek-R1-Distill-Llama-8B (2 shards, 15 GB,
-  /opt/models/deepseek-ai/deepseek-r1-distill-llama-8b): loads and
-  generates coherently (48T cpu_avx2: ~190 ms/tok prefill, ~105 ms/tok
-  decode — the 1B-tuned chunk/tile constants and the NUMA story are the
-  known next steps before the 70B).
-  70B smoke-verified end to end (17 shards, 141 GB, zero code changes —
-  one manifest): ~2 min load, coherent generation. Untuned placement
-  baseline (48T): prefill node0 2.1 / interleave 1.9 / spread 0.6 tok/s
-  (locality worth ~4x, same as 1B); decode spread 1.0 / node0 0.8 /
-  interleave 0.8 tok/s — spread = 137 GB/s effective vs node0 = 117
-  GB/s, BOTH near their memory envelopes: decode placement buys <= 20%,
-  so decode wins must come from byte reduction, not placement; prefill
-  has large structural headroom (naive attention, 1B-tuned constants).
-  Load itself is also fastest node0-bound (~120 s).
-
-## 10. Kernels & backends
-
-- BLAS wrapper lives in code: self-declared `extern "C"` prototypes
-  (OpenBLAS `cblas_sbgemm` vs MKL `cblas_gemm_bf16bf16f32`); CMake only finds
-  BLAS and defines `ALICE_BLAS_BACKEND_*`.
-  BLAS SCOUTING VERDICT (2026-07, alice_bench_lmhead, lm_head shape
-  V=128256 x d=2048, 48T node0): no obtainable BLAS build ships a bf16
-  GEMM (scipy wheel and Debian/Ubuntu OpenBLAS both disable cblas_sbgemm;
-  a source build's sbgemm is a convert-to-fp32 fallback on Zen3 anyway),
-  so the test was fp32 cblas_sgemm vs the production bf16 oracle:
-  S=1 14.4 ms vs 4.9 ms oracle (3x WORSE — 2x traffic, GEMV is
-  bandwidth-bound); S=8 cached 17.0 ms (3.6x better) but 130 ms with
-  per-call conversion; S=128 cached 55.8 ms = 1.2 TFLOP/s (11x the
-  oracle) — the SAME 1.2 TFLOP/s our hand-rolled gemm_tile achieves
-  reading bf16 natively with half the memory traffic and no 2x fp32
-  weight copy. Conclusion: BLAS matches but does not beat our step-4
-  kernel, loses at S=1, and costs either 2x weight memory (cached) or a
-  ~100 ms conversion (per-call). NO BLAS integration; bf16-native
-  hand-rolled kernels are the path. Side benefit: an independent
-  calibration that gemm_tile sits at mature-library level.
-  GPU SCOUT (2026-07, alice_bench_lmhead_gpu, rocBLAS 5.1 gemm_ex
-  bf16->fp32-HPA on ONE gfx90a die of the 4x MI250X (8 GCDs x 64 GB
-  HBM2e ~1.6 TB/s each), pinned host buffers): S=1 1.00 ms vs 4.87 ms
-  CPU oracle (4.9x; gemm phase 0.60 ms = 853 GB/s HBM — Tensile n=1
-  GEMM, no bf16 gemv in rocBLAS 5.1; custom GEMV could approach HBM
-  peak), S=8 0.79 ms (77x), S=128 3.72 ms (168x; gemm 0.99 ms = 68
-  TFLOP/s matrix-core). Lessons: (a) pageable D2H runs a ~1 GB/s staged
-  path — pinned buffers mandatory; (b) logits D2H is the offload tax
-  (512 KB at S=1 fine; 65 MB at S=128 = 2.3 ms) — a GPU lm_head wants
-  the SAMPLER on-device (copy back 4 bytes, not 512 KB); (c) bf16-x
-  rounding costs max|d| 0.125 vs fp32-x oracle at synthetic magnitudes
-  — bf16 epsilon, HF-reference-flavored, tolerance-covered; (d) build
-  needs no hipcc: host-only C API, pre-compiled Tensile gfx90a code
-  objects, __HIP_PLATFORM_AMD__ define for g++.
-  GPU_ROCBLAS HARDWARE CLASS (2026-07, first GPU resident): dense FFN
-  on device 0 (interim auto-select: EngineConfig default AUTO = GPU
-  when present, per-block-type fallback chains — attention stays CPU;
-  the loader overhaul is pending). Weights staged to device at
-  construction; per forward: host bf16 convert (pinned) -> H2D ->
-  FUSED gate/up GEMM ([Wg;Wu] one [2I,d] matrix, one launch) ->
-  hipRTC-compiled silu-mul elementwise (no hipcc in the build; RTC
-  source lives inside the impl, truncating bf16 conversion matches
-  host from_f32) -> down GEMM -> D2H. All GEMMs rocblas_gemm_ex
-  bf16->fp32-HPA. Validated: block tests (7e-4 vs oracle, bit-exact
-  batched==incremental at toy values), canonical teacher-forced with
-  GPU FFN auto-selected: 1B max|d| 0.33, 8B 0.38 (CPU-only: 0.22/
-  0.28; gate 0.75) — bf16-x/act rounding adds marginally to drift.
-  E2E (long prompt, 48T): 1B decode 43.6 -> 52.9 tok/s, prefill ~tied
-  (157 vs 154 — naive CPU attention now dominates prefill); 8B decode
-  9.5 -> 14.5 tok/s, prefill ~3-5x at short prompts. 8B FFN weights
-  resident: ~13 GB of the 64 GB die.
-- Threading model: the model loop is strictly sequential; intra-op
-  parallelism (threads, BLAS) is each implementation's private business.
-  OpenMP and OpenBLAS both keep persistent worker pools (created at the
-  first parallel region / first call, reused thereafter — no per-call
-  spawn), and neither accepts an injected external pool, so an engine-wide
-  thread pool is neither needed nor possible; the real knobs are thread
-  count, affinity, and spin policy (`OMP_WAIT_POLICY=active`; cf. Colibri's
-  hot-thread tuning). The sequential loop avoids nested oversubscription.
-  CPU_GENERIC kernels parallelize with OpenMP over OUTPUT ELEMENTS ONLY —
-  every reduction stays sequential within a thread, so results are
-  bit-identical to the naive oracle and `OMP_NUM_THREADS=1` reproduces the
-  sequential baseline with the same binary. Thread-count sweep
-  (tools/omp_sweep.sh) on the EPYC box: decode peaks at one thread per
-  physical core — 48 threads ≈ 28.5 tok/s, stable; all 96 ≈ 11–18 tok/s
-  and unstable (memory-bound GEMV: SMT siblings only contend). Prefill is
-  compute-bound and prefers ~80 threads (≈ 75 tok/s). Tests run with
-  OMP_NUM_THREADS=48 via the gtest_discover_tests ENVIRONMENT property in
-  CMakeLists.txt (the single discoverable place).
-- **Numerics-equivalence policy** (user-signed-off 2026-07): bit-exactness
-  is scoped to (a) within-impl determinism per fixed schedule (including
-  incremental==batched and thread-count independence) and (b) the oracle's
-  own OpenMP parallelization. CROSS-impl equivalence is tolerance-based —
-  optimized impls may reorder FP sums; the teacher-forced canonical test is
-  the equivalence gate. Rationale: disassembly shows the oracle's decode is
-  reduction-LATENCY-bound (~29 tok/s predicted from the scalar `addss`
-  chain vs 28.5 measured, NOT bandwidth-bound), and IEEE non-associativity
-  forbids the compiler from fixing it; breaking the chain requires
-  reordering, which is ours to allow, not the compiler's.
-- **CPU_AVX2 status** (first custom+optimized operator, dense FFN only;
-  factory chain CPU_AVX2→CPU_GENERIC resolves per block type, cpuid-
-  guarded): fully private storage and math (no shared toolbox), per-TU
-  `-mavx2 -mfma`. Step 2 (structure, scalar inner loops) landed: aligned
-  64B storage with parallel first-touch (NUMA-local residency without
-  mbind); **S-dispatch on schedule, never on arithmetic order** — S==1
-  uses dot-form with contiguous row streaming (a column-block-parallel
-  down-pass measured ~3.5x WORSE at 48T: 64B slices at 4KB stride destroy
-  DRAM row-buffer efficiency); S>1 uses the fused gate/up/down chunk loop
-  with transposed w_down and a private [S,d] accumulator. Both paths
-  accumulate per element in ascending-j order → incremental==batched stays
-  bit-exact. w_down kept in both layouts (+50% FFN weight storage, flagged
-  for memory audit). Measured (1B, Release): decode 26.7→32.6 tok/s
-  (+22%) at 48T; prefill 50.3→30.8 (regression from the column-block
-  pattern — accepted, blocked layout / step-3 intrinsics are the fix);
-  ~+30% structure win at 1T.
-  Step 3 (AVX2+FMA intrinsics) landed: dot = 4 vector accumulators +
-  FMA (breaks the scalar chain), axpy vectorized, bf16->fp32 via the
-  shift trick (Zen3 has no native bf16); scalar fallback kept in #else.
-  NUMERICS: multi-accumulator dot sums in lane-group order, so the S==1
-  dot-form and S>1 chunked-axpy down-passes no longer agree bit-exactly —
-  within-impl incremental==batched is now TOLERANCE-based for this impl
-  (row independence unaffected; determinism per (impl, S, threads)
-  stands). alice_bench_ffn gives per-block numbers (S=1: 0.94 ->
-  0.22 ms/call = 4.2x; S=128: 104 -> 31.6 ms = 3.3x; same-block bench
-  keeps weights largely L3-resident — use for deltas). E2E (1B, 48T):
-  prefill 50.9 -> 108.6 tok/s (node0), decode 33.6 -> 42.2 (spread —
-  decode now seeks BOTH memory controllers; first-touch spread beats
-  interleave). With FFN 4x faster, the still-naive attention + lm_head
-  (0.85 GB of the 2.5 GB/token) now dominate decode — their turn next.
-  Chunk/tile constants are 1B-tuned: revisit cache-fit assumptions for
-  the 70B shapes (d=8192: X[512,d] alone is 16 MB ~ one CCD's L3).
-  Step 4 (tinyBLAS-style register tile, lessons from llamafile sgemm.cpp
-  — local copy in ~/projects/inference/reference/): gemm_bloc<RM,RN>
-  computes an RMxRN tile (4x3 on AVX2: 12 independent dot accumulators =
-  16 vector regs with 3 B + 1 A) of C = A.B^T with BOTH operands
-  k-contiguous; weights are consumed ROW BY ROW so output-tile
-  parallelism = contiguous per-thread streams. The transposed w_down,
-  the column-block pattern, and the +50% dual-layout storage are all
-  RETIRED (the transpose was a workaround for not having a real
-  microkernel). Edge tiles RM 1..4 x RN 1..3 handle arbitrary S and
-  non-divisible dims (tinyBLAS instead cascades divisibility and falls
-  back; we must serve all S). Static omp for only, by user decision.
-  Measured: S=128 block bench 31.6 -> 10.7 ms/call (1.2 TFLOP/s, ~50%
-  of Zen3 AVX2 peak; 11x oracle); E2E prefill 108.6 -> 153.5 tok/s
-  (interleave now beats node0 — prefill turned bandwidth-hungry as
-  predicted); decode unchanged (43.6 spread, GEMV path untouched).
-  One real bug caught by tests: the combine pass flat-indexed the
-  [S][kChunk] chunk buffers, breaking on tail chunks (cn < kChunk).
-- **NUMA probes** (zero-code, numactl; sweep script takes a numa_mode):
-  at 48T the avx2 prefill/decode measured 30.9/32.5 baseline first-touch,
-  50.2/35.0 under --interleave=all (+bind), and 55.1/34.2 pinned to node0
-  only (--cpunodebind=0 --membind=0). Conclusions: (a) the prefill
-  "regression" was placement, not structure — under node0 pinning avx2
-  beats the oracle in BOTH phases (55.1 vs 47.3, 34.2 vs 33.6);
-  (b) scaling on one node is monotonic to SMT-saturated T=48 — no T=24
-  peak, because the kernel is still latency-chain-bound (SMT hides the
-  scalar stalls) and ~85 GB/s is far under one node's streaming capacity;
-  (c) decode marginally prefers dual-node interleave (35.0), prefill
-  prefers single-node locality (55.1). Baked-in mbind interleave
-  (Tier-1, ~100 lines via raw syscall) is priced and deferred until
-  step-3 kernels change the bandwidth picture; pinning stays an env knob
-  deliberately.
-- Kernel workspaces (tiled/swizzled layouts, device buffers) are private
-  buffers allocated at construction.
+- Numerics policy (user-signed): cross-implementation equivalence is
+  **tolerance-based**; within-impl determinism holds per (impl, S,
+  kernel schedule). The teacher-forced canonical test vs HF is the
+  equivalence gate.
+- Device-side determinism: fixed kernel schedules; vendor BLAS invoked
+  with fixed algorithms (no run-to-run autotuning).
+- The model loop is strictly sequential; intra-op parallelism is each
+  implementation's private business. Host threading (OpenMP, static
+  scheduling only) is confined to the load path and host glue.
 
 ## 11. Extensibility targets (designed for, not built)
 
-- GLM-5.3 Flash: mHC trunk scheme; hybrid KDA (fixed recurrent state) + full
-  attention (growing cache).
-- Kimi K3: attention residuals (trunk history + gather weights).
-- MoE Blocks: many small expert weights behind one Block interface.
-
-- Quantized weight formats (MXFP4, NVFP4, FP8_E4M3 with 128×128 FP32 block
-  scales, …). A quantized matrix is a FORMAT (a bundle of tensors + compute
-  semantics), not a dtype; each piece lands on an existing layer:
-  1. **File reality** — `DType` gains storage dtypes (F8_E4M3, U8, …);
-     safetensors parser accepts them. (Today it rejects.)
-  2. **Contract** — `WeightSpec` gains a composite variant (format tag,
-     logical shape, component sub-specs: data + scales [+ global scale]);
-     `validate()` learns format-specific shape relations (e.g. scales
-     `[M, ⌈N/32⌉]` for MXFP4, `[⌈M/128⌉, ⌈N/128⌉]` for FP8-B128).
-     Two-way audit totality is preserved.
-  3. **Semantics** — new abstract block classes per format (the block-type ×
-     dtype axis simply gains values). Fallback implementations may legally
-     dequantize at load (constructor contract: "copies/converts/packs");
-     native implementations keep packed data + scales and compute from them.
-  Boundary (FP32 io), Trunk, state, and loader flow are all unchanged;
-  mixed-format models fall out naturally since format is per-block-type.
-  Testing: per-format tolerance policy (scale-after-accumulate vs
-  scale-before) instead of bit-exactness; §4's "bf16 baked in" line and §13
-  get amended when the first format lands.
-
-Extension points: Trunk polymorphism; Block type registry in the manifest;
-opaque per-Block state layouts; snapshot/stash interface on StatefulBlock.
+- Quantized weight formats (MXFP4, NVFP4, FP8-B128): a format is a
+  bundle of tensors plus compute semantics, landing as new values on the
+  block-type × dtype axis — with per-arch native implementations (NVFP4
+  native on sm_100, emulated elsewhere; exactly why Blocks carry no
+  shim). The constructor contract already permits dequantize-at-load
+  fallbacks; the two-way audit gains format-specific shape relations.
+- New block types: MoE, linear/hybrid attention (KDA/FLA — expect the
+  CPU-reference-block workflow of §3 to be the bring-up path), SSM.
+- New trunk schemes: mHC (GLM), attention residuals (Kimi).
+- Multi-die placement (§9). CUDA/HIP graph capture when decode
+  approaches the kernel-launch-latency floor (~150–200 launches/token).
 
 ## 12. Non-goals
 
-- Tokenizer / chat template / detokenizer inside `Model` (frontend's job —
-  the CLI/server will own one eventually; the engine repo boundary is ids).
-- The generation loop and stop conditions (EOS — the bring-up model has
-  three EOS ids — max_tokens) live in the frontend; `Model` provides the
-  token-level step. Long-term one frontend serves both CLI and API server;
-  for the first PoC the CLI simply owns the entire REPL (accepted
-  simplification).
-- GGUF (for now). Multi-request scheduling. Fork/beam/speculative state ops.
-- Python inside the engine core.
+- CPU-only operation (abandoned 2026-09).
+- A vendor-abstraction layer inside Blocks (§3).
+- Tokenizer / chat template / generation loop inside `Model` (frontend).
+- GGUF. Multi-request scheduling. Fork/beam/speculative state ops.
+  Python in the engine core.
 
 ## 13. Testing strategy
 
-- GoogleTest. Naive-vs-optimized kernel equivalence as the core property
-  (`CPU_GENERIC` is always available as the oracle).
-- Synthetic safetensors fixtures (incl. corruption cases). Manifest
-  validation against the real 1B source (later the 70B).
-- Determinism: same tokens + fresh state + temperature 0 → identical output.
-- Teacher-forced canonical logits vs HF, per model (tests/canonical*/,
-  dump_canonical.py --model/--out/--skip-battery): 1B max|Δ| 0.22 and 8B
-  max|Δ| 0.28 (same bf16-reference vs fp32-compute magnitude, gate 0.75).
-  The 8B run formally validates the multi-shard loader + a second model
-  family instance end to end. For the 70B, tools/check_manifest.py gives
-  the cheap header-level pre-flight (723/723 tensors, no 141 GB pread).
-  Ad-hoc models validate with zero recompile via CanonicalEnv
-  (ALICE_CANONICAL_{MODEL_DIR,MANIFEST,FIXTURES}[,CHUNK]). 70B validated
-  this way: max|d| 0.30/0.33/0.68 per case (gate 0.75). WATCH ITEM: max
-  drift grows with depth (16L 0.22 / 32L 0.28 / 80L 0.68, worst at the
-  final position, mean stays ~0.03) — expected bf16-vs-fp32 accumulation
-  over 80 layers, but if a future model breaches 0.75, investigate per-
-  position drift shape before widening the gate.
+- The equivalence gate: teacher-forced canonical logits vs HF per model
+  (`tests/canonical*/`, gate max|Δlogit| < 0.75). Watch item: max drift
+  grows with depth (0.22 / 0.28 / 0.68 at 16 / 32 / 80 layers, worst at
+  the final position, mean ~0.03) — if a future model breaches the gate,
+  investigate per-position drift shape before widening it.
+- Per-block: CPU reference block (§3) vs device implementation on toy
+  weights, tolerance-based; incremental == batched.
+- Determinism: same tokens + fresh state + temperature 0 → identical
+  output.
+- Loader: synthetic safetensors fixtures incl. corruption cases;
+  multi-shard probing; the real manifests as fixtures. Ad-hoc models
+  validate with zero recompile via `CanonicalEnv` env vars.
+- Tests require a GPU, as the engine does.
 
-## 14. Open questions & reminders
+## 14. Open questions
 
-- **Prefill/decode separation** — whether the interface explicitly separates
-  decode from prefill (beyond shape dispatch). CIRCLE BACK when designing
-  SSM/linear attention blocks, whose prefill (chunkwise-parallel) and decode
-  (recurrent-step) forms differ far more than attention's. Related:
-  speculative decoding blurs the line further — decode becomes 'short
-  prefill with frequent rollbacks' needing multiple logits per step; likely
-  a new interface when the time comes.
-- **Transient sharing** — private now; revisit if memory pressure demands
-  (§8).
-- **Trunk/norm merge** — revisit triggers in §7.2.
-- **FP32 CPU boundary** — review if benchmarks show boundary costs (mHC/
-  AttnRes math, H2D/D2H latency) are significant.
-- **Model/Embedder/LmHead naming** — LmHead name provisional
-  ("de-embedder" candidate); `lm_head` matches weight files.
+- Prefill/decode interface separation beyond shape dispatch — circle
+  back for SSM/linear-attention blocks (chunkwise-parallel prefill vs
+  recurrent decode) and speculative decoding (short-prefill-with-
+  rollbacks; likely a new interface).
+- Device transient sharing / scratch pool (private now; revisit under
+  memory pressure).
+- Trunk/norm merge: revisit triggers in §8.2.
+- Naming: LmHead ("de-embedder" candidate; `lm_head` matches files).
+
+## Retired decisions (kept so they are not re-litigated)
+
+- **CPU-first bring-up** with hand-rolled AVX2 kernels and NUMA tuning:
+  served bring-up well (matched OpenBLAS sgemm at 1.2 TFLOP/s); retired
+  with CPU-only builds. In git history.
+- **No-BLAS verdict**: scoped to CPU BLAS on Zen3; stands there and is
+  irrelevant to the device path (vendor BLAS is used where it fits).
+- **hipRTC string kernels**: a workaround for avoiding hipcc; retired.
+- **Hardware-class fallback chains** ending in a CPU oracle: replaced by
+  per-arch selection with loud failure, plus dev-only CPU reference
+  blocks.
+- **FP32 host io boundary**: the fp32 boundary moved to the device;
+  precision unchanged, address space changed.

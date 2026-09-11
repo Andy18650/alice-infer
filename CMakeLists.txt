@@ -60,12 +60,14 @@ else()
 endif()
 
 # ROCm GPU (GPU_ROCBLAS hardware class; auto-selected when present, interim
-# until the loader overhaul). Host-only C++ against the C APIs — no hipcc;
-# custom device kernels compile at runtime via hipRTC. When absent, the
-# factories' fallback chains simply resolve to the CPU implementations.
+# until the loader overhaul). Host-only C++ against the C APIs for the
+# pre-migration host-io blocks; the GPU-resident model (design §3, the
+# migration target) additionally needs hipcc for its SIMT kernel TU.
 find_library(ALICE_ROCBLAS_LIB rocblas)
 find_library(ALICE_HIP_LIB amdhip64)
 find_library(ALICE_HIPRTC_LIB hiprtc)
+find_program(ALICE_HIPCC hipcc)
+set(ALICE_GPU_ARCH "gfx90a" CACHE STRING "--offload-arch for the SIMT kernel TU")
 if(ALICE_ROCBLAS_LIB AND ALICE_HIP_LIB AND ALICE_HIPRTC_LIB AND
    EXISTS "/usr/include/rocblas/rocblas.h")
   target_sources(alice PRIVATE src/blocks/gpu_rocblas/platform.cpp
@@ -79,9 +81,34 @@ else()
   message(STATUS "alice: ROCm not found, GPU_ROCBLAS hardware class disabled")
 endif()
 
+# GPU-resident execution (design §3): device stream, SIMT kernels (hipcc),
+# device blocks, device trunk/model. The old host-io path stays until the
+# retirement step.
+if(ALICE_HAVE_ROCBLAS AND ALICE_HIPCC)
+  add_custom_command(
+      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/alice_gpu_kernels.o
+      COMMAND ${ALICE_HIPCC} -O3 -std=c++17 --offload-arch=${ALICE_GPU_ARCH}
+              -c ${CMAKE_CURRENT_SOURCE_DIR}/src/gpu/kernels.hip
+              -o ${CMAKE_CURRENT_BINARY_DIR}/alice_gpu_kernels.o
+      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/gpu/kernels.hip
+              ${CMAKE_CURRENT_SOURCE_DIR}/src/gpu/kernels.hpp)
+  target_sources(alice PRIVATE
+      src/gpu/dense_ffn.cpp src/gpu/gqa_attention.cpp src/gpu/trunk.cpp
+      src/gpu/embedder.cpp src/gpu/lm_head.cpp src/gpu/sampler.cpp
+      src/gpu/model.cpp
+      ${CMAKE_CURRENT_BINARY_DIR}/alice_gpu_kernels.o)
+  target_compile_definitions(alice PRIVATE ALICE_GPU_RESIDENT)
+  message(STATUS "alice: hipcc found (${ALICE_HIPCC}), GPU-resident model enabled (${ALICE_GPU_ARCH})")
+else()
+  message(STATUS "alice: hipcc not found, GPU-resident model disabled")
+endif()
+
 # Minimal REPL PoC (design §12: the CLI owns the whole loop for now)
 add_executable(alice_repl src/frontend/repl.cpp)
 target_link_libraries(alice_repl PRIVATE alice)
+if(ALICE_HAVE_ROCBLAS AND ALICE_HIPCC)
+  target_compile_definitions(alice_repl PRIVATE ALICE_GPU_RESIDENT)
+endif()
 
 # Per-block microbenchmark (dense FFN; pattern for future per-operator benches)
 add_executable(alice_bench_ffn src/frontend/bench_ffn.cpp)
@@ -130,6 +157,13 @@ if(ALICE_BUILD_TESTS)
     tests/test_tokenizer.cpp
     tests/test_canonical.cpp
   )
+  if(ALICE_HAVE_ROCBLAS AND ALICE_HIPCC)
+    target_sources(alice_tests PRIVATE tests/test_gpu_kernels.cpp
+                                       tests/test_gpu_blocks.cpp
+                                       tests/test_gpu_model.cpp)
+    target_compile_definitions(alice_tests PRIVATE __HIP_PLATFORM_AMD__)
+    target_link_libraries(alice_tests PRIVATE "${ALICE_HIP_LIB}")
+  endif()
   target_link_libraries(alice_tests PRIVATE alice GTest::gtest_main nlohmann_json::nlohmann_json)
   target_compile_definitions(alice_tests PRIVATE ALICE_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
   include(GoogleTest)

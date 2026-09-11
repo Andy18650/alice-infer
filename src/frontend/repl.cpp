@@ -15,6 +15,9 @@
 
 #include "alice/manifest.hpp"
 #include "alice/model.hpp"
+#if defined(ALICE_GPU_RESIDENT)
+#include "alice/gpu_model.hpp"
+#endif
 #include "tokenizer.hpp"
 
 namespace {
@@ -59,6 +62,65 @@ void print_stats(const char* phase, size_t tokens, double seconds) {
                double(tokens) / seconds);
 }
 
+// The REPL round loop, generic over the model type (host Model and
+// gpu::Model share the forward/reset/vocab_size surface used here).
+template <typename ModelT>
+int run_rounds(const alice::Manifest& manifest, alice::frontend::Tokenizer& tokenizer,
+               ModelT& model, int max_new, uint32_t max_seq, const char* prompt,
+               uint32_t chunk) {
+  std::string line;
+  for (;;) {
+    std::fprintf(stderr, "\n>> ");
+    std::cout.flush();
+    if (prompt) line = prompt;  // If prompt is supplied then skip user input
+    else if (!std::getline(std::cin, line)) break;
+    if (line == "/quit") break;
+    if (line.empty()) continue;
+
+    model.reset();  // PoC: every line is a fresh session
+
+    // session policy: sequence starts at BOS; encode() is a pure text->ids function
+    auto ids = tokenizer.encode(line);
+    ids.insert(ids.begin(), int32_t(manifest.config.bos_token_id));
+    if (ids.size() >= max_seq) {
+      std::fprintf(stderr, "[prompt too long for max_seq]\n");
+      continue;
+    }
+
+    // chunked prefill
+    std::fprintf(stderr, "prefilling...\n");
+    const auto prefill_t0 = Clock::now();
+    int32_t t = -1;
+    for (size_t off = 0; off < ids.size(); off += chunk) {
+      const size_t n = std::min<size_t>(chunk, ids.size() - off);
+      t = model.forward(std::span<const int32_t>(ids.data() + off, n));
+    }
+    print_stats("prefill", ids.size(), elapsed_s(prefill_t0));
+
+    // decode, streaming only complete-UTF-8 suffixes
+    const auto& eos_ids = manifest.config.eos_token_ids;
+    const auto is_eos = [&](int32_t id) {  // C++20: ranges::contains is C++23
+      return std::ranges::find(eos_ids, id) != eos_ids.end();
+    };
+    std::fprintf(stderr, "decoding...\n");
+    const auto decode_t0 = Clock::now();
+    size_t shown = 0;
+    std::vector<int32_t> gen;
+    for (int step = 0; step < max_new; ++step) {
+      if (is_eos(t)) break;
+      gen.push_back(t);
+      print_new_utf8_suffix(tokenizer.decode(gen), &shown);
+      const int32_t cur = t;
+      t = model.forward(std::span<const int32_t>(&cur, 1));
+    }
+    std::printf("\n");
+    std::fflush(stdout);  // keep stdout/stderr ordering sane for the stats line
+    print_stats("decode", gen.size(), elapsed_s(decode_t0));
+    if (prompt) break;  // prompt was supplied: no interactive mode
+  }
+  return 0;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -91,60 +153,25 @@ int main(int argc, char** argv) {
     cfg.max_prefill_chunk = 512;
     cfg.hardware = hw;
     cfg.sampling.temperature = 0.0f;  // greedy
+#if defined(ALICE_GPU_RESIDENT)
+    // GPU-resident path (design §3): auto/explicit-gpu selects it when a
+    // device is present; cpu_* forces the host model.
+    const bool gpu_path =
+        (hw == alice::HardwareClass::AUTO || hw == alice::HardwareClass::GPU_ROCBLAS) &&
+        alice::gpu::resident_available();
+    if (gpu_path) {
+      auto model = alice::gpu::Model::load(model_dir, manifest_path, cfg);
+      std::fprintf(stderr, "[alice] model loaded (vocab %u, GPU-resident). /quit to exit, session cleared on every round.\n",
+                   model->vocab_size());
+      return run_rounds(manifest, tokenizer, *model, max_new, max_seq,
+                        argc > 5 ? argv[5] : nullptr, cfg.max_prefill_chunk);
+    }
+#endif
     auto model = alice::ModelLoader::load(model_dir, manifest_path, cfg);
     std::fprintf(stderr, "[alice] model loaded (vocab %u, hardware %s). /quit to exit, session cleared on every round.\n",
                  model->vocab_size(), hw_arg.c_str());
-
-    std::string line;
-    for (;;) {
-      std::fprintf(stderr, "\n>> ");
-      std::cout.flush();
-      if (argc > 5) line = argv[5];   // If prompt is supplied then skip user input
-      else if (!std::getline(std::cin, line)) break;
-      if (line == "/quit") break;
-      if (line.empty()) continue;
-
-      model->reset();  // PoC: every line is a fresh session
-
-      // session policy: sequence starts at BOS; encode() is a pure text->ids function
-      auto ids = tokenizer.encode(line);
-      ids.insert(ids.begin(), int32_t(manifest.config.bos_token_id));
-      if (ids.size() >= max_seq) {
-        std::fprintf(stderr, "[prompt too long for max_seq]\n");
-        continue;
-      }
-
-      // chunked prefill
-      std::fprintf(stderr, "prefilling...\n");
-      const auto prefill_t0 = Clock::now();
-      int32_t t = -1;
-      for (size_t off = 0; off < ids.size(); off += cfg.max_prefill_chunk) {
-        const size_t n = std::min<size_t>(cfg.max_prefill_chunk, ids.size() - off);
-        t = model->forward(std::span<const int32_t>(ids.data() + off, n));
-      }
-      print_stats("prefill", ids.size(), elapsed_s(prefill_t0));
-
-      // decode, streaming only complete-UTF-8 suffixes
-      const auto& eos_ids = manifest.config.eos_token_ids;
-      const auto is_eos = [&](int32_t id) {  // C++20: ranges::contains is C++23
-        return std::ranges::find(eos_ids, id) != eos_ids.end();
-      };
-      std::fprintf(stderr, "decoding...\n");
-      const auto decode_t0 = Clock::now();
-      size_t shown = 0;
-      std::vector<int32_t> gen;
-      for (int step = 0; step < max_new; ++step) {
-        if (is_eos(t)) break;
-        gen.push_back(t);
-        print_new_utf8_suffix(tokenizer.decode(gen), &shown);
-        const int32_t cur = t;
-        t = model->forward(std::span<const int32_t>(&cur, 1));
-      }
-      std::printf("\n");
-      std::fflush(stdout);  // keep stdout/stderr ordering sane for the stats line
-      print_stats("decode", gen.size(), elapsed_s(decode_t0));
-      if (argc > 5) break;  // prompt was supplied: no interactive mode
-    }
+    return run_rounds(manifest, tokenizer, *model, max_new, max_seq,
+                      argc > 5 ? argv[5] : nullptr, cfg.max_prefill_chunk);
   } catch (const std::exception& e) {
     std::fprintf(stderr, "fatal: %s\n", e.what());
     return 1;

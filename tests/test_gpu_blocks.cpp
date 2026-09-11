@@ -1,0 +1,176 @@
+// GPU-resident block tests (design §13): device blocks vs the CPU_GENERIC
+// oracle blocks on toy shapes, plus incremental == batched state behavior.
+
+#include <cmath>
+#include <cstring>
+#include <vector>
+
+#include <gtest/gtest.h>
+#include <hip/hip_runtime_api.h>
+
+#include "../src/blocks/cpu_generic/dense_ffn.hpp"
+#include "../src/blocks/cpu_generic/gqa_attention.hpp"
+#include "../src/gpu/dense_ffn.hpp"
+#include "../src/gpu/gqa_attention.hpp"
+#include "alice/block.hpp"  // gpu_available()
+
+namespace {
+
+using alice::bf16;
+using alice::BF16View;
+using alice::EngineConfig;
+using alice::F32View;
+using alice::ModelConfig;
+
+void require_gpu() {
+  if (!alice::gpu_available()) GTEST_SKIP() << "no ROCm GPU";
+}
+
+struct Bf16Mat {
+  std::vector<bf16> data;
+  BF16View view;
+  Bf16Mat(uint32_t r, uint32_t c, const std::vector<float>& vals)
+      : data(vals.size()), view{nullptr, r, c, 0} {
+    for (size_t i = 0; i < vals.size(); ++i) data[i] = bf16::from_f32(vals[i]);
+    view.data = data.data();
+  }
+};
+
+float pat(size_t r, size_t c) { return float((int((r * 7 + c * 13) % 17) - 8)) / 8.0f; }
+
+std::vector<float> mat_vals(uint32_t r, uint32_t c) {
+  std::vector<float> v(size_t(r) * c);
+  for (uint32_t i = 0; i < r; ++i)
+    for (uint32_t j = 0; j < c; ++j) v[i * c + j] = pat(i, j);
+  return v;
+}
+
+// Run a gpu::Block on host-staged io: H2D -> forward -> D2H.
+std::vector<float> run_gpu_block(alice::gpu::Block& b, const std::vector<float>& io,
+                                 uint32_t S, uint32_t d) {
+  float* d_io = nullptr;
+  if (hipMalloc(&d_io, io.size() * 4) != hipSuccess) throw std::bad_alloc();
+  if (hipMemcpy(d_io, io.data(), io.size() * 4, hipMemcpyHostToDevice) != hipSuccess)
+    throw std::runtime_error("H2D failed");
+  b.forward(d_io, S);
+  std::vector<float> out(io.size());
+  if (hipMemcpy(out.data(), d_io, io.size() * 4, hipMemcpyDeviceToHost) != hipSuccess)
+    throw std::runtime_error("D2H failed");
+  (void)hipFree(d_io);
+  return out;
+}
+
+float max_abs_diff(const std::vector<float>& a, const std::vector<float>& b) {
+  float m = 0.0f;
+  for (size_t i = 0; i < a.size(); ++i) m = std::max(m, std::fabs(a[i] - b[i]));
+  return m;
+}
+
+TEST(GpuBlocks, DenseFfnApproxVsGeneric) {
+  require_gpu();
+  ModelConfig mc;
+  mc.hidden_size = 8;
+  mc.intermediate_size = 600;
+  EngineConfig ec;
+  ec.max_prefill_chunk = 8;
+  Bf16Mat g1(600, 8, mat_vals(600, 8)), u1(600, 8, mat_vals(601, 9)),
+      d1(8, 600, mat_vals(602, 10));
+  alice::cpu_generic::DenseFfnBF16CpuGeneric oracle(g1.view, u1.view, d1.view, mc, ec);
+  Bf16Mat g2(600, 8, mat_vals(600, 8)), u2(600, 8, mat_vals(601, 9)),
+      d2(8, 600, mat_vals(602, 10));
+  alice::gpu::DenseFfnBF16 gpu(g2.view, u2.view, d2.view, mc, ec);
+
+  std::vector<float> io = mat_vals(5, 8);
+  oracle.forward(F32View{io.data(), 5, 8, 0});
+  auto got = run_gpu_block(gpu, mat_vals(5, 8), 5, 8);
+  // bf16 rounding of x and the SiLU intermediate; observed ~0.096 at these
+  // magnitudes (600-wide reductions of O(1) pattern values).
+  EXPECT_LT(max_abs_diff(io, got), 0.15f) << "max|generic - gpu|";
+}
+
+TEST(GpuBlocks, AttentionApproxVsGeneric) {
+  require_gpu();
+  ModelConfig mc;
+  mc.num_heads = 2;
+  mc.num_kv_heads = 1;
+  mc.head_dim = 4;
+  mc.hidden_size = 8;
+  mc.rope_theta = 10000.0f;
+  mc.has_rope_scaling = false;
+  EngineConfig ec;
+  ec.max_seq_len = 8;
+  ec.max_prefill_chunk = 4;
+  Bf16Mat wq1(8, 8, mat_vals(8, 8)), wk1(4, 8, mat_vals(9, 9)), wv1(4, 8, mat_vals(10, 10)),
+      wo1(8, 8, mat_vals(11, 11));
+  alice::cpu_generic::GqaAttentionBF16CpuGeneric oracle(wq1.view, wk1.view, wv1.view,
+                                                        wo1.view, mc, ec);
+  Bf16Mat wq2(8, 8, mat_vals(8, 8)), wk2(4, 8, mat_vals(9, 9)), wv2(4, 8, mat_vals(10, 10)),
+      wo2(8, 8, mat_vals(11, 11));
+  alice::gpu::GqaAttentionBF16 gpu(wq2.view, wk2.view, wv2.view, wo2.view, mc, ec);
+
+  std::vector<float> io = mat_vals(3, 8);
+  oracle.forward(F32View{io.data(), 3, 8, 0});
+  auto got = run_gpu_block(gpu, mat_vals(3, 8), 3, 8);
+  // bf16 projections + online softmax; observed ~1e-3.
+  EXPECT_LT(max_abs_diff(io, got), 0.05f) << "max|generic - gpu|";
+}
+
+TEST(GpuBlocks, AttentionIncrementalEqualsBatched) {
+  require_gpu();
+  ModelConfig mc;
+  mc.num_heads = 2;
+  mc.num_kv_heads = 1;
+  mc.head_dim = 4;
+  mc.hidden_size = 8;
+  mc.rope_theta = 10000.0f;
+  EngineConfig ec;
+  ec.max_seq_len = 8;
+  ec.max_prefill_chunk = 4;
+  auto mk = [&]() {
+    Bf16Mat* wq = new Bf16Mat(8, 8, mat_vals(8, 8));
+    Bf16Mat* wk = new Bf16Mat(4, 8, mat_vals(9, 9));
+    Bf16Mat* wv = new Bf16Mat(4, 8, mat_vals(10, 10));
+    Bf16Mat* wo = new Bf16Mat(8, 8, mat_vals(11, 11));
+    auto b = std::make_unique<alice::gpu::GqaAttentionBF16>(wq->view, wk->view, wv->view,
+                                                            wo->view, mc, ec);
+    return std::tuple{
+        std::unique_ptr<Bf16Mat>(wq), std::unique_ptr<Bf16Mat>(wk),
+        std::unique_ptr<Bf16Mat>(wv), std::unique_ptr<Bf16Mat>(wo), std::move(b)};
+  };
+  auto [wq1, wk1, wv1, wo1, a] = mk();
+  auto batched = run_gpu_block(*a, mat_vals(3, 8), 3, 8);
+
+  auto [wq2, wk2, wv2, wo2, b] = mk();
+  auto part1 = run_gpu_block(*b, mat_vals(2, 8), 2, 8);
+  auto row2src = mat_vals(3, 8);
+  std::vector<float> row2(row2src.begin() + 2 * 8, row2src.end());
+  auto part2 = run_gpu_block(*b, row2, 1, 8);
+
+  part1.insert(part1.end(), part2.begin(), part2.end());
+  // Deterministic kernels: batched == incremental bit-exact.
+  EXPECT_EQ(0.0f, max_abs_diff(batched, part1)) << "batched diverged from incremental";
+}
+
+TEST(GpuBlocks, AttentionResetRestartsPosition) {
+  require_gpu();
+  ModelConfig mc;
+  mc.num_heads = 2;
+  mc.num_kv_heads = 1;
+  mc.head_dim = 4;
+  mc.hidden_size = 8;
+  mc.rope_theta = 10000.0f;
+  EngineConfig ec;
+  ec.max_seq_len = 8;
+  ec.max_prefill_chunk = 4;
+  Bf16Mat wq(8, 8, mat_vals(8, 8)), wk(4, 8, mat_vals(9, 9)), wv(4, 8, mat_vals(10, 10)),
+      wo(8, 8, mat_vals(11, 11));
+  alice::gpu::GqaAttentionBF16 b(wq.view, wk.view, wv.view, wo.view, mc, ec);
+  auto first = run_gpu_block(b, mat_vals(3, 8), 3, 8);
+  EXPECT_EQ(b.position(), 3u);
+  b.reset_state();
+  EXPECT_EQ(b.position(), 0u);
+  auto again = run_gpu_block(b, mat_vals(3, 8), 3, 8);
+  EXPECT_EQ(0.0f, max_abs_diff(first, again)) << "reset did not restore initial state";
+}
+
+}  // namespace

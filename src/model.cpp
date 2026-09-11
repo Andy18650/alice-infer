@@ -1,13 +1,12 @@
 #include "alice/model.hpp"
 
-#include <algorithm>
-#include <filesystem>
 #include <stdexcept>
 
 #include "alice/dense_ffn_bf16.hpp"
 #include "alice/gqa_attention_bf16.hpp"
 #include "alice/manifest.hpp"
 #include "alice/safetensors.hpp"
+#include "loader_staging.hpp"
 
 namespace alice {
 
@@ -47,40 +46,9 @@ void Model::reset() {
     if (auto* sb = dynamic_cast<StatefulBlock*>(b.get())) sb->reset_state();
 }
 
-namespace {
-
-template <typename T>
-struct Staging {
-  std::unique_ptr<T[]> buf;
-  TView<T> view;
-};
-
-// pread a (possibly aliased) weight into staging RAM (design §8 load flow).
-// view_as<T> is the single checked runtime->static dtype conversion at the
-// load boundary (the manifest audit already validated it).
-template <typename T>
-Staging<T> stage(const safetensors::Files& f, const WeightSpec& w) {
-  const auto& info = f.at(w.is_alias() ? w.alias_of : w.name);
-  Staging<T> s;
-  s.buf = std::make_unique<T[]>(info.numel());
-  f.read(info, s.buf.get());
-  s.view = safetensors::File::view_as<T>(info, s.buf.get());
-  return s;
-}
-
-// All .safetensors shards in the directory, lexically sorted (HF shard
-// names are zero-padded, so lexical order == shard order; probe order is
-// semantically irrelevant but deterministic error messages are nice).
-std::vector<std::string> find_safetensors(const std::string& dir) {
-  std::vector<std::string> files;
-  for (const auto& e : std::filesystem::directory_iterator(dir))
-    if (e.path().extension() == ".safetensors") files.push_back(e.path().string());
-  std::sort(files.begin(), files.end());
-  if (files.empty()) throw std::runtime_error("ModelLoader: no .safetensors in " + dir);
-  return files;
-}
-
-}  // namespace
+using loader::find_safetensors;
+using loader::stage;
+using loader::Staging;
 
 std::unique_ptr<Model> ModelLoader::load(const std::string& model_dir,
                                          const std::string& manifest_path,

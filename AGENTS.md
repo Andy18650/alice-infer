@@ -17,10 +17,12 @@ Llama-3.2-1B-Instruct, DeepSeek-R1-Distill-Llama-8B,
 DeepSeek-R1-Distill-Llama-70B (under `/opt/models`, manifests in
 `models/`).
 
-**Migration state (2026-09):** the docs describe the committed
-GPU-resident architecture; the tree is pre-migration (mixed CPU/GPU:
-rocBLAS FFN, naive single-threaded CPU attention, host fp32 io). Migrate
-in green-test steps; the canonical gate must stay green at every step.
+**Migration state (2026-09):** the GPU-resident path (design §3) is
+BUILT and green for single-GCD execution: `src/gpu/` (SIMT kernels via
+hipcc, device blocks, trunk, model), canonical gate passing (1B 0.33 /
+8B 0.47). The pre-migration host path (mixed CPU/GPU, host fp32 io)
+still exists alongside for the CPU oracle and block tests — retirement
+is a later, separate step.
 
 ## How constraints work here (read first)
 
@@ -95,25 +97,26 @@ cmake --build build-release -j                     # Release: measure here
 - Questions are questions: never turn a user's design question into a
   code change unless asked.
 
-## State of play (2026-09)
+## State of play (2026-09, GPU-resident v1)
 
-- 54/54 tests. Validated end-to-end vs HF on all three models
-  (teacher-forced canonical, gate 0.75; max drift 0.22/0.28/0.68 for
-  1B/8B/70B — watch item: drift grows with depth).
-- Pre-migration perf (48T): 1B decode 52.9 tok/s short-context (GPU FFN)
-  → 26 tok/s at 630 ctx (the single-threaded CPU attention KV pass,
-  36 µs/context-token, dominates); 8B decode 14.5 short / 6.5 @630 ctx;
-  prefill attention-bound everywhere. Attention on device is the single
-  biggest lever the migration unlocks.
-- Migration sequence (per design §3/§8): device stream + Trunk SIMT
-  kernels → FFN blocks flipped to device-io → attention device kernel →
-  GPU lm_head + on-device sampler → retire CPU paths (AVX2 kernels to
-  git history; CPU_GENERIC to dev-reference role) → 70B multi-die
-  placement → §11 quantization.
-- Kernel lineage (pre-migration): FFN CPU_AVX2 = tinyBLAS-style
-  register-tile GEMM (matched OpenBLAS sgemm, 1.2 TFLOP/s, so NO CPU
-  BLAS dependency); GPU FFN = rocBLAS gemm_ex bf16→fp32-HPA + fused
-  gate/up + silu-mul.
+- 69/69 tests (54 host-path + 15 GPU-resident: kernel, block, model,
+  canonical). Canonical gate on the device path: 1B max drift 0.33,
+  8B 0.47 (gate 0.75; same bf16-GEMM family as the host path).
+- Perf (Release, single GCD, greedy): 1B prefill 3652 tok/s at 602-token
+  prompt (43× the host path), decode 110 tok/s short-ctx / 43 tok/s at
+  630 ctx; 8B decode 34.8 tok/s short-ctx. Decode is now bound by the
+  v1 attention kernel's per-cache-row block reductions (sequential in T)
+  — the flash-decoding-style rewrite is the next lever, est. several ×.
+- The v1 attention kernel is deliberately naive-SIMT (one block per
+  (query, head), online softmax); prefill is GEMM-bound and fine.
+- Next: decode attention kernel (split-T reductions / flash-decoding),
+  then retirement of the host path (CPU_AVX2 to git history, CPU_GENERIC
+  to dev-reference role), then 70B multi-die (needs ≥3 GCDs; the TP/PP
+  research is in research/rccl-single-process/), then §11 quantization.
+- RCCL on this box: Canonical build broken (any ≥2-rank collective
+  segfaults — vendor unit tests confirm); AMD-overlay RCCL validated as
+  replacement; hand-rolled P2P validated (134.7 GB/s intra-card). See
+  research/rccl-single-process/README.md and research/rocm-overlay-method.md.
 
 ## Hardware context
 

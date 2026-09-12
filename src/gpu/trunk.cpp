@@ -5,7 +5,7 @@
 
 #include <hip/hip_runtime_api.h>
 
-#include "../blocks/gpu_rocblas/platform.hpp"
+#include "../blocks/gpu_rocm/platform.hpp"
 #include "kernels.hpp"
 
 namespace alice::gpu {
@@ -31,7 +31,7 @@ void h2d_f32_from_bf16(BF16View src, float* dst_dev, uint32_t d, const char* wha
 RmsNormAddTrunk::RmsNormAddTrunk(std::vector<BF16View> pre_norms, BF16View final_norm,
                                  float eps, uint32_t hidden, uint32_t max_prefill_chunk)
     : d_(hidden), mpc_(max_prefill_chunk), eps_(eps) {
-  gpu_rocblas::Platform& p = gpu_rocblas::platform();
+  gpu_rocm::Platform& p = gpu_rocm::platform();
   HIP_CHECK(hipSetDevice(p.device));
   HIP_CHECK(hipMalloc(&residual_, size_t(mpc_) * d_ * sizeof(float)));
   HIP_CHECK(hipMalloc(&io_, size_t(mpc_) * d_ * sizeof(float)));

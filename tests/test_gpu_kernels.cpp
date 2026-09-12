@@ -9,6 +9,7 @@
 #include <hip/hip_runtime_api.h>
 
 #include "../src/blocks/cpu_generic/kernels.hpp"
+#include "../src/blocks/gpu_rocm/kernels.hpp"
 #include "../src/gpu/kernels.hpp"
 #include "alice/gpu_model.hpp"
 
@@ -17,6 +18,7 @@ namespace {
 namespace cg = alice::cpu_generic;
 using alice::F32View;
 namespace gk = alice::gpu::kernels;
+namespace gbk = alice::gpu_rocm::kernels;
 using alice::bf16;
 
 void require_gpu() {
@@ -126,7 +128,7 @@ TEST(GpuKernels, SiluMulMatchesHost) {
   float* d_gu = dev_upload(gu);
   unsigned short* d_act = nullptr;
   ASSERT_EQ(hipMalloc(&d_act, size_t(S) * I * 2), hipSuccess);
-  gk::silu_mul(d_gu, d_act, S, I);
+  gbk::silu_mul(d_gu, d_act, S, I);
   auto got = dev_download(d_act, size_t(S) * I);
   for (uint32_t s = 0; s < S; ++s)
     for (uint32_t i = 0; i < I; ++i) {
@@ -188,7 +190,7 @@ TEST(GpuKernels, RopeAppendMatchesOracle) {
   ASSERT_EQ(hipMalloc(&d_vc, ovc.size() * 4), hipSuccess);
   ASSERT_EQ(hipMemset(d_kc, 0, okc.size() * 4), hipSuccess);
   ASSERT_EQ(hipMemset(d_vc, 0, ovc.size() * 4), hipSuccess);
-  gk::rope_append(d_qkv, d_kc, d_vc, d_cos, d_sin, pos0, S, nh, nkv, hd);
+  gbk::rope_append(d_qkv, d_kc, d_vc, d_cos, d_sin, pos0, S, nh, nkv, hd);
   auto got_q = dev_download(d_qkv, qkv.size());
   auto got_kc = dev_download(d_kc, okc.size());
   auto got_vc = dev_download(d_vc, ovc.size());

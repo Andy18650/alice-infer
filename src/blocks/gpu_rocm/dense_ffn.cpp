@@ -7,10 +7,10 @@
 #include <hip/hip_runtime_api.h>
 #include <rocblas/rocblas.h>
 
-#include "../blocks/gpu_rocblas/platform.hpp"
+#include "platform.hpp"
 #include "kernels.hpp"
 
-namespace alice::gpu {
+namespace alice::gpu_rocm {
 
 namespace {
 #define HIP_CHECK(x)                                                                    \
@@ -36,7 +36,7 @@ DenseFfnBF16::DenseFfnBF16(BF16View w_gate, BF16View w_up, BF16View w_down,
       w_up.cols != d_ || w_down.rows != d_ || w_down.cols != inter_)
     throw std::invalid_argument("gpu::DenseFfnBF16: weight shape mismatch vs config");
 
-  gpu_rocblas::Platform& p = gpu_rocblas::platform();
+  Platform& p = platform();
   HIP_CHECK(hipSetDevice(p.device));
 
   // Fuse [Wg;Wu] on host, one H2D (same layout the pre-migration block used).
@@ -65,7 +65,7 @@ DenseFfnBF16::~DenseFfnBF16() {
 void DenseFfnBF16::forward(float* io, uint32_t S) {
   if (S == 0 || S > mpc_)
     throw std::runtime_error("gpu::DenseFfnBF16::forward: S out of range");
-  gpu_rocblas::Platform& p = gpu_rocblas::platform();
+  Platform& p = platform();
   HIP_CHECK(hipSetDevice(p.device));
 
   kernels::f32_to_bf16(io, dx_, size_t(S) * d_);

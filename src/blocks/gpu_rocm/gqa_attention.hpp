@@ -5,15 +5,15 @@
 // attention over the device-resident fp32 KV cache, o_proj (rocBLAS) into
 // io. State: KV cache + private position counter (StatefulBlock).
 
-#include "block.hpp"
+#include "../../gpu/block.hpp"
 
 #include "alice/engine_config.hpp"
 #include "alice/manifest.hpp"
 #include "alice/tensor.hpp"
 
-namespace alice::gpu {
+namespace alice::gpu_rocm {
 
-class GqaAttentionBF16 final : public StatefulBlock {
+class GqaAttentionBF16 final : public gpu::StatefulBlock {
  public:
   GqaAttentionBF16(BF16View wq, BF16View wk, BF16View wv, BF16View wo,
                    const ModelConfig& mc, const EngineConfig& ec);

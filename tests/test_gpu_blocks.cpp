@@ -10,8 +10,8 @@
 
 #include "../src/blocks/cpu_generic/dense_ffn.hpp"
 #include "../src/blocks/cpu_generic/gqa_attention.hpp"
-#include "../src/gpu/dense_ffn.hpp"
-#include "../src/gpu/gqa_attention.hpp"
+#include "../src/blocks/gpu_rocm/dense_ffn.hpp"
+#include "../src/blocks/gpu_rocm/gqa_attention.hpp"
 #include "alice/gpu_model.hpp"
 
 namespace {
@@ -78,7 +78,7 @@ TEST(GpuBlocks, DenseFfnApproxVsGeneric) {
   alice::cpu_generic::DenseFfnBF16CpuGeneric oracle(g1.view, u1.view, d1.view, mc, ec);
   Bf16Mat g2(600, 8, mat_vals(600, 8)), u2(600, 8, mat_vals(601, 9)),
       d2(8, 600, mat_vals(602, 10));
-  alice::gpu::DenseFfnBF16 gpu(g2.view, u2.view, d2.view, mc, ec);
+  alice::gpu_rocm::DenseFfnBF16 gpu(g2.view, u2.view, d2.view, mc, ec);
 
   std::vector<float> io = mat_vals(5, 8);
   oracle.forward(F32View{io.data(), 5, 8, 0});
@@ -106,7 +106,7 @@ TEST(GpuBlocks, AttentionApproxVsGeneric) {
                                                         wo1.view, mc, ec);
   Bf16Mat wq2(8, 8, mat_vals(8, 8)), wk2(4, 8, mat_vals(9, 9)), wv2(4, 8, mat_vals(10, 10)),
       wo2(8, 8, mat_vals(11, 11));
-  alice::gpu::GqaAttentionBF16 gpu(wq2.view, wk2.view, wv2.view, wo2.view, mc, ec);
+  alice::gpu_rocm::GqaAttentionBF16 gpu(wq2.view, wk2.view, wv2.view, wo2.view, mc, ec);
 
   std::vector<float> io = mat_vals(3, 8);
   oracle.forward(F32View{io.data(), 3, 8, 0});
@@ -131,7 +131,7 @@ TEST(GpuBlocks, AttentionIncrementalEqualsBatched) {
     Bf16Mat* wk = new Bf16Mat(4, 8, mat_vals(9, 9));
     Bf16Mat* wv = new Bf16Mat(4, 8, mat_vals(10, 10));
     Bf16Mat* wo = new Bf16Mat(8, 8, mat_vals(11, 11));
-    auto b = std::make_unique<alice::gpu::GqaAttentionBF16>(wq->view, wk->view, wv->view,
+    auto b = std::make_unique<alice::gpu_rocm::GqaAttentionBF16>(wq->view, wk->view, wv->view,
                                                             wo->view, mc, ec);
     return std::tuple{
         std::unique_ptr<Bf16Mat>(wq), std::unique_ptr<Bf16Mat>(wk),
@@ -164,7 +164,7 @@ TEST(GpuBlocks, AttentionResetRestartsPosition) {
   ec.max_prefill_chunk = 4;
   Bf16Mat wq(8, 8, mat_vals(8, 8)), wk(4, 8, mat_vals(9, 9)), wv(4, 8, mat_vals(10, 10)),
       wo(8, 8, mat_vals(11, 11));
-  alice::gpu::GqaAttentionBF16 b(wq.view, wk.view, wv.view, wo.view, mc, ec);
+  alice::gpu_rocm::GqaAttentionBF16 b(wq.view, wk.view, wv.view, wo.view, mc, ec);
   auto first = run_gpu_block(b, mat_vals(3, 8), 3, 8);
   EXPECT_EQ(b.position(), 3u);
   b.reset_state();

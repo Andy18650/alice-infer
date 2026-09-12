@@ -8,11 +8,11 @@
 #include <hip/hip_runtime_api.h>
 #include <rocblas/rocblas.h>
 
-#include "../blocks/cpu_generic/kernels.hpp"
-#include "../blocks/gpu_rocblas/platform.hpp"
+#include "../cpu_generic/kernels.hpp"
+#include "platform.hpp"
 #include "kernels.hpp"
 
-namespace alice::gpu {
+namespace alice::gpu_rocm {
 
 namespace {
 #define HIP_CHECK(x)                                                                    \
@@ -48,7 +48,7 @@ GqaAttentionBF16::GqaAttentionBF16(BF16View wq, BF16View wk, BF16View wv, BF16Vi
   if (nh_ % nkv_ != 0 || hd_ > 128)
     throw std::invalid_argument("gpu::GqaAttentionBF16: bad head config");
 
-  gpu_rocblas::Platform& p = gpu_rocblas::platform();
+  Platform& p = platform();
   HIP_CHECK(hipSetDevice(p.device));
 
   // Fuse [Wq;Wk;Wv] on host, one H2D.
@@ -98,7 +98,7 @@ void GqaAttentionBF16::forward(float* io, uint32_t S) {
     throw std::runtime_error("gpu::GqaAttentionBF16::forward: S out of range");
   if (pos_ + S > max_seq_)
     throw std::runtime_error("gpu::GqaAttentionBF16::forward: max_seq_len exceeded");
-  gpu_rocblas::Platform& p = gpu_rocblas::platform();
+  Platform& p = platform();
   HIP_CHECK(hipSetDevice(p.device));
   const uint32_t qd = nh_ * hd_, kvd = nkv_ * hd_, qkvd = qd + 2 * kvd;
 

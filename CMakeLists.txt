@@ -60,12 +60,20 @@ if(ALICE_ROCBLAS_LIB AND ALICE_HIP_LIB AND ALICE_HIPCC AND
               -o ${CMAKE_CURRENT_BINARY_DIR}/alice_gpu_kernels.o
       DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/gpu/kernels.hip
               ${CMAKE_CURRENT_SOURCE_DIR}/src/gpu/kernels.hpp)
+  add_custom_command(
+      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/gpu_rocm_kernels.o
+      COMMAND ${ALICE_HIPCC} -O3 -std=c++17 --offload-arch=${ALICE_GPU_ARCH}
+              -c ${CMAKE_CURRENT_SOURCE_DIR}/src/blocks/gpu_rocm/kernels.hip
+              -o ${CMAKE_CURRENT_BINARY_DIR}/gpu_rocm_kernels.o
+      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/blocks/gpu_rocm/kernels.hip
+              ${CMAKE_CURRENT_SOURCE_DIR}/src/blocks/gpu_rocm/kernels.hpp)
   target_sources(alice PRIVATE
-      src/blocks/gpu_rocblas/platform.cpp
-      src/gpu/dense_ffn.cpp src/gpu/gqa_attention.cpp src/gpu/trunk.cpp
-      src/gpu/embedder.cpp src/gpu/lm_head.cpp src/gpu/sampler.cpp
-      src/gpu/cpu_reference.cpp src/gpu/model.cpp
-      ${CMAKE_CURRENT_BINARY_DIR}/alice_gpu_kernels.o)
+      src/blocks/gpu_rocm/platform.cpp
+      src/blocks/gpu_rocm/dense_ffn.cpp src/blocks/gpu_rocm/gqa_attention.cpp
+      src/gpu/trunk.cpp src/gpu/embedder.cpp src/gpu/lm_head.cpp
+      src/gpu/sampler.cpp src/gpu/cpu_reference.cpp src/gpu/model.cpp
+      ${CMAKE_CURRENT_BINARY_DIR}/alice_gpu_kernels.o
+      ${CMAKE_CURRENT_BINARY_DIR}/gpu_rocm_kernels.o)
   target_compile_definitions(alice PRIVATE ALICE_GPU_RESIDENT __HIP_PLATFORM_AMD__)
   target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}" "${ALICE_HIP_LIB}")
   set(ALICE_GPU_RESIDENT TRUE)

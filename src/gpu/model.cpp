@@ -8,20 +8,20 @@
 #include <set>
 
 #include "../loader_staging.hpp"
-#include "../blocks/gpu_rocblas/platform.hpp"
+#include "../blocks/gpu_rocm/platform.hpp"
 #include "alice/manifest.hpp"
 #include "block.hpp"
 #include "cpu_reference.hpp"
-#include "dense_ffn.hpp"
+#include "../blocks/gpu_rocm/dense_ffn.hpp"
 #include "embedder.hpp"
-#include "gqa_attention.hpp"
+#include "../blocks/gpu_rocm/gqa_attention.hpp"
 #include "lm_head.hpp"
 #include "sampler.hpp"
 #include "trunk.hpp"
 
 namespace alice::gpu {
 
-bool resident_available() { return gpu_rocblas::available_impl(); }
+bool resident_available() { return gpu_rocm::available_impl(); }
 
 struct Model::Impl {
   EngineConfig cfg;
@@ -156,7 +156,7 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
                                                     cfg),
             m.config.hidden_size, cfg.max_prefill_chunk));
       else
-        model->impl_->blocks.push_back(std::make_unique<GqaAttentionBF16>(
+        model->impl_->blocks.push_back(std::make_unique<gpu_rocm::GqaAttentionBF16>(
             keep[0].view, keep[1].view, keep[2].view, keep[3].view, m.config, cfg));
     } else if (b.type == "dense_ffn_bf16") {
       std::vector<loader::Staging<bf16>> keep;
@@ -168,7 +168,7 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
                                                 m.config, cfg),
             m.config.hidden_size, cfg.max_prefill_chunk));
       else
-        model->impl_->blocks.push_back(std::make_unique<DenseFfnBF16>(
+        model->impl_->blocks.push_back(std::make_unique<gpu_rocm::DenseFfnBF16>(
             keep[0].view, keep[1].view, keep[2].view, m.config, cfg));
     } else {
       throw std::runtime_error("gpu::Model::load: unknown block type '" + b.type + "'");

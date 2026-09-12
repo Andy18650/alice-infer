@@ -71,9 +71,9 @@ H2D inside the block). Never for production.
 ## Layout
 
 - `include/alice/` — public headers (typed tensor views, manifest, gpu model)
-- `src/gpu/` — GPU-resident engine (SIMT kernels via hipcc, blocks, trunk, model)
+- `src/gpu/` — GPU-resident engine (trunk/state SIMT kernels via hipcc, trunk, model)
 - `src/blocks/cpu_generic/` — naive CPU reference implementations (test oracle)
-- `src/blocks/gpu_rocblas/` — platform plumbing (device + rocBLAS handle)
+- `src/blocks/gpu_rocm/` — ROCm block impls (rocBLAS GEMMs + private SIMT kernels) + platform plumbing (device + rocBLAS handle)
 - `src/frontend/` — REPL, tokenizer (PCRE2 via dlopen), benches
 - `models/` — manifests (the contract), one per bring-up model
 - `tests/` — GoogleTest suite + canonical teacher-forced fixtures

@@ -2,19 +2,19 @@
 
 // GPU-resident dense FFN block (design §8.1; gfx90a implementation:
 // rocBLAS gemm_ex bf16→fp32 + SIMT silu-mul). Device-io successor of the
-// pre-migration gpu_rocblas host-io block: same math (fused gate/up GEMM,
+// Device-resident dense FFN: same math as the cpu_generic oracle (fused
 // silu-mul, down GEMM into io), no host staging — the stream never leaves
 // the device.
 
-#include "block.hpp"
+#include "../../gpu/block.hpp"
 
 #include "alice/engine_config.hpp"
 #include "alice/manifest.hpp"
 #include "alice/tensor.hpp"
 
-namespace alice::gpu {
+namespace alice::gpu_rocm {
 
-class DenseFfnBF16 final : public Block {
+class DenseFfnBF16 final : public gpu::Block {
  public:
   // Weight views are validated staging buffers, considered freed on return
   // (fused/copied to the device in the constructor).

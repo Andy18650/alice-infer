@@ -5,7 +5,7 @@
 
 #include <hip/hip_runtime_api.h>
 
-#include "../blocks/gpu_rocblas/platform.hpp"
+#include "../blocks/gpu_rocm/platform.hpp"
 #include "kernels.hpp"
 
 namespace alice::gpu {
@@ -21,7 +21,7 @@ namespace {
 }  // namespace
 
 Sampler::Sampler(const SamplingConfig& cfg) : cfg_(cfg), host_sampler_(cfg) {
-  gpu_rocblas::Platform& p = gpu_rocblas::platform();
+  gpu_rocm::Platform& p = gpu_rocm::platform();
   HIP_CHECK(hipSetDevice(p.device));
   HIP_CHECK(hipMalloc(&id_dev_, sizeof(int32_t)));
 }
@@ -29,7 +29,7 @@ Sampler::Sampler(const SamplingConfig& cfg) : cfg_(cfg), host_sampler_(cfg) {
 Sampler::~Sampler() { hipFree(id_dev_); }
 
 int32_t Sampler::sample(const float* logits, uint32_t vocab) {
-  gpu_rocblas::Platform& p = gpu_rocblas::platform();
+  gpu_rocm::Platform& p = gpu_rocm::platform();
   HIP_CHECK(hipSetDevice(p.device));
   if (cfg_.temperature == 0.0f) {
     kernels::argmax(logits, vocab, id_dev_);

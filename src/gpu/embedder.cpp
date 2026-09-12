@@ -5,7 +5,7 @@
 
 #include <hip/hip_runtime_api.h>
 
-#include "../blocks/gpu_rocblas/platform.hpp"
+#include "../blocks/gpu_rocm/platform.hpp"
 #include "kernels.hpp"
 
 namespace alice::gpu {
@@ -22,7 +22,7 @@ namespace {
 
 Embedder::Embedder(BF16View table, uint32_t max_prefill_chunk)
     : vocab_(table.rows), d_(table.cols), mpc_(max_prefill_chunk) {
-  gpu_rocblas::Platform& p = gpu_rocblas::platform();
+  gpu_rocm::Platform& p = gpu_rocm::platform();
   HIP_CHECK(hipSetDevice(p.device));
   HIP_CHECK(hipMalloc(&table_, table.nbytes()));
   HIP_CHECK(hipMalloc(&ids_dev_, mpc_ * sizeof(int32_t)));

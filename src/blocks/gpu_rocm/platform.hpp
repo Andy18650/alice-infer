@@ -8,7 +8,7 @@
 #include <hip/hip_runtime_api.h>
 #include <rocblas/rocblas.h>
 
-namespace alice::gpu_rocblas {
+namespace alice::gpu_rocm {
 
 bool available_impl();  // device 0 exists; cached
 
@@ -20,4 +20,4 @@ struct Platform {
 
 Platform& platform();  // initializes on first use; throws std::runtime_error
 
-}  // namespace alice::gpu_rocblas
+}  // namespace alice::gpu_rocm

@@ -6,7 +6,7 @@
 #include <hip/hip_runtime_api.h>
 #include <rocblas/rocblas.h>
 
-#include "../blocks/gpu_rocblas/platform.hpp"
+#include "../blocks/gpu_rocm/platform.hpp"
 #include "kernels.hpp"
 
 namespace alice::gpu {
@@ -30,7 +30,7 @@ namespace {
 
 LmHead::LmHead(BF16View weight, uint32_t max_prefill_chunk)
     : vocab_(weight.rows), d_(weight.cols), mpc_(max_prefill_chunk) {
-  gpu_rocblas::Platform& p = gpu_rocblas::platform();
+  gpu_rocm::Platform& p = gpu_rocm::platform();
   HIP_CHECK(hipSetDevice(p.device));
   HIP_CHECK(hipMalloc(&w_, weight.nbytes()));
   HIP_CHECK(hipMalloc(&dx_, size_t(mpc_) * d_ * sizeof(bf16)));
@@ -46,7 +46,7 @@ LmHead::~LmHead() {
 
 const float* LmHead::project_last(const float* io, uint32_t S) {
   if (S == 0 || S > mpc_) throw std::runtime_error("gpu::LmHead: S out of range");
-  gpu_rocblas::Platform& p = gpu_rocblas::platform();
+  gpu_rocm::Platform& p = gpu_rocm::platform();
   HIP_CHECK(hipSetDevice(p.device));
   kernels::f32_to_bf16(io + size_t(S - 1) * d_, dx_, d_);
   const float alpha = 1.0f, beta = 0.0f;
@@ -62,7 +62,7 @@ const float* LmHead::project_last(const float* io, uint32_t S) {
 
 const float* LmHead::project_all(const float* io, uint32_t S) {
   if (S == 0 || S > mpc_) throw std::runtime_error("gpu::LmHead: S out of range");
-  gpu_rocblas::Platform& p = gpu_rocblas::platform();
+  gpu_rocm::Platform& p = gpu_rocm::platform();
   HIP_CHECK(hipSetDevice(p.device));
   kernels::f32_to_bf16(io, dx_, size_t(S) * d_);
   const float alpha = 1.0f, beta = 0.0f;

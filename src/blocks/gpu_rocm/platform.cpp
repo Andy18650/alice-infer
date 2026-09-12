@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-namespace alice::gpu_rocblas {
+namespace alice::gpu_rocm {
 
 namespace {
 #define HIP_CHECK(x)                                                                     \
@@ -24,7 +24,7 @@ bool available_impl() {
 
 Platform& platform() {
   static Platform p = [] {
-    if (!available_impl()) throw std::runtime_error("gpu_rocblas: no ROCm GPU present");
+    if (!available_impl()) throw std::runtime_error("gpu_rocm: no ROCm GPU present");
     Platform q;
     HIP_CHECK(hipSetDevice(q.device));
     hipDeviceProp_t prop;
@@ -32,10 +32,10 @@ Platform& platform() {
     q.arch = prop.gcnArchName;  // "gfx90a:sramecc+:xnack-" -> "gfx90a"
     q.arch = q.arch.substr(0, q.arch.find(':'));
     if (rocblas_create_handle(&q.handle) != rocblas_status_success)
-      throw std::runtime_error("gpu_rocblas: rocblas_create_handle failed");
+      throw std::runtime_error("gpu_rocm: rocblas_create_handle failed");
     return q;
   }();
   return p;
 }
 
-}  // namespace alice::gpu_rocblas
+}  // namespace alice::gpu_rocm

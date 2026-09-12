@@ -254,9 +254,20 @@ Narrow entry that sniffs format by content and delegates
 
 - The equivalence gate: teacher-forced canonical logits vs HF per model
   (`tests/canonical*/`, gate max|Δlogit| < 0.75). Watch item: max drift
-  grows with depth (0.22 / 0.28 / 0.68 at 16 / 32 / 80 layers, worst at
-  the final position, mean ~0.03) — if a future model breaches the gate,
-  investigate per-position drift shape before widening it.
+  grows with depth (0.22 / 0.28 / 0.68 at 16 / 32 / 80 layers).
+- **Reference quality (user-signed 2026-09)**: short fixtures stay bf16-
+  reference with the 0.75 max gate. Long fixtures (~1500-token WikiText
+  prompts, regenerable via `dump_canonical.py --prompt-file`, gitignored)
+  use an **fp32-ideal reference** (torch `dtype=float32` upcasts weights
+  exactly and runs the stock graph in fp32 — the mathematical ideal of
+  our fp32-stream design; measured: the CPU engine is EXACT against it,
+  max 0.0002, while PyTorch's own bf16 inference sits 15.6/1.8 max away).
+  Gates on the long case: CPU suite (temporary, dies with the host path)
+  max ≤ 0.01; GPU suite mean ≤ 0.05 AND max ≤ 2.0 (the bf16 GEMM-input
+  budget at massive-activation positions; observed 0.018 / 0.76 / 1.52).
+  Greedy decode comparison is exact-match with a coin-flip rule: a
+  divergence is a bug only if our token is ≥0.25 below the reference
+  argmax (near-ties flip legitimately within the bf16-input budget).
 - Per-block: CPU reference block (§3) vs device implementation on toy
   weights, tolerance-based; incremental == batched.
 - Determinism: same tokens + fresh state + temperature 0 → identical

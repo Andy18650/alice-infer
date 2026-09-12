@@ -28,8 +28,8 @@ std::string fixture(const std::string& dir, const std::string& name) {
 
 // fixture_dir: absolute directory holding case_<i>.{json,teacher.f32}.
 void run_teacher_forced(alice::Model& model, const std::string& fixture_dir,
-                        uint32_t chunk) {
-  for (int ci = 0; ci < kCases; ++ci) {
+                        uint32_t chunk, float gate = kMaxLogitDrift, int cases = kCases) {
+  for (int ci = 0; ci < cases; ++ci) {
     std::ifstream min(fixture_dir + "/case_" + std::to_string(ci) + ".json");
     const auto meta = nlohmann::json::parse(
         std::string((std::istreambuf_iterator<char>(min)), std::istreambuf_iterator<char>()));
@@ -74,8 +74,30 @@ void run_teacher_forced(alice::Model& model, const std::string& fixture_dir,
            fixture_dir.c_str(), ci, seq_len, max_drift, worst_pos,
            sum_drift / (double(seq_len) * vocab));
     fflush(stdout);
-    EXPECT_LT(max_drift, kMaxLogitDrift) << "case " << ci << ": logit drift beyond tolerance";
+    EXPECT_LT(max_drift, gate) << "case " << ci << ": logit drift beyond tolerance";
   }
+}
+
+// TEMPORARY suite, dies with the host path at retirement (the fp32-ideal
+// exactness proof — CPU engine 0.0002 max over 1516 x 128256 logits — is
+// recorded in the fixtures + docs). Long-case reference is fp32; the pure
+// CPU path computes fp32 activations end to end, so the gate is SHARP:
+// 0.01 max (50x the observed 0.0002). User-signed 2026-09.
+TEST(HostCanonicalLong, TeacherForcedLogitsMatchFp32Reference) {
+  const std::string model_dir = "/opt/models/Llama-3.2-1B-Instruct";
+  if (!std::filesystem::exists(model_dir + "/model.safetensors") ||
+      !std::filesystem::exists(fixture("canonical_long", "case_0.json")))
+    GTEST_SKIP() << "1B model or long fixtures not present (regenerate: "
+                    "dump_canonical.py --prompt-file --dtype fp32)";
+  alice::EngineConfig cfg;
+  cfg.max_seq_len = 8192;
+  cfg.hardware = alice::HardwareClass::CPU_AVX2;  // pure-CPU fp32 path
+  cfg.sampling.temperature = 0.0f;
+  auto model = alice::ModelLoader::load(
+      model_dir,
+      std::string(ALICE_SOURCE_DIR) + "/models/llama-3.2-1b-instruct.manifest.json", cfg);
+  run_teacher_forced(*model, fixture("canonical_long", ""), cfg.max_prefill_chunk,
+                     0.01f, 1);
 }
 
 TEST(Canonical, TeacherForcedLogitsMatchHF) {

@@ -3,3 +3,6 @@
 /compile_commands.json
 /.venv/
 .cache/
+
+# Long-sequence canonical fixtures (regenerable via dump_canonical.py --prompt-file; ~778 MB each)
+tests/canonical_long*/

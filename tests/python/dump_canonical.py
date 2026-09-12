@@ -85,6 +85,15 @@ def main():
     ap.add_argument("--skip-battery", action="store_true",
                     help="skip the tokenizer battery (same-family tokenizer "
                          "already covered by the 1B fixtures)")
+    ap.add_argument("--prompt-file",
+                    help="long-sequence mode: read raw text, tokenize, take "
+                         "--prompt-tokens tokens as the prompt (single case_0)")
+    ap.add_argument("--prompt-tokens", type=int, default=1500)
+    ap.add_argument("--gen-steps", type=int, default=GEN_STEPS)
+    ap.add_argument("--dtype", choices=["bf16", "fp32"], default="bf16",
+                    help="reference compute dtype; fp32 upcasts weights at load "
+                         "(exact) and runs the stock graph in fp32 — the "
+                         "mathematical ideal of the engine's fp32-stream design")
     args = ap.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
@@ -97,15 +106,26 @@ def main():
             json.dump(battery, f, ensure_ascii=False, indent=1)
         print(f"battery: {len(battery)} cases")
 
+    torch_dtype = torch.bfloat16 if args.dtype == "bf16" else torch.float32
     model = AutoModelForCausalLM.from_pretrained(
-        args.model, dtype=torch.bfloat16, attn_implementation="eager")
+        args.model, dtype=torch_dtype, attn_implementation="eager")
     model.eval()
 
-    for i, prompt in enumerate(PROMPTS):
-        ids = [BOS] + tok.encode(prompt, add_special_tokens=False)
+    cases = [(p, [BOS] + tok.encode(p, add_special_tokens=False)) for p in PROMPTS]
+    if args.prompt_file:
+        with open(args.prompt_file, encoding="utf-8") as f:
+            text = f.read()
+        toks = tok.encode(text, add_special_tokens=False)
+        if len(toks) < args.prompt_tokens - 1:
+            raise SystemExit(f"prompt file yields only {len(toks)} tokens "
+                             f"(< {args.prompt_tokens})")
+        cases = [(f"{args.prompt_file}[:{args.prompt_tokens - 1} tokens]",
+                  [BOS] + toks[: args.prompt_tokens - 1])]
+
+    for i, (prompt, ids) in enumerate(cases):
         with torch.no_grad():
             out = model.generate(
-                torch.tensor([ids]), max_new_tokens=GEN_STEPS, do_sample=False,
+                torch.tensor([ids]), max_new_tokens=args.gen_steps, do_sample=False,
                 num_beams=1, pad_token_id=128004)
         generated = out[0].tolist()[len(ids):]
 
@@ -122,6 +142,7 @@ def main():
             "seq_len": int(logits.shape[0]),
             "vocab": int(logits.shape[1]),
             "dtype": "float32",
+            "ref_dtype": args.dtype,
         }
         with open(os.path.join(args.out, f"case_{i}.json"), "w") as f:
             json.dump(meta, f, ensure_ascii=False, indent=1)

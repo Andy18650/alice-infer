@@ -12,7 +12,7 @@
 #include "../src/blocks/cpu_generic/gqa_attention.hpp"
 #include "../src/gpu/dense_ffn.hpp"
 #include "../src/gpu/gqa_attention.hpp"
-#include "alice/block.hpp"  // gpu_available()
+#include "alice/gpu_model.hpp"
 
 namespace {
 
@@ -23,7 +23,7 @@ using alice::F32View;
 using alice::ModelConfig;
 
 void require_gpu() {
-  if (!alice::gpu_available()) GTEST_SKIP() << "no ROCm GPU";
+  if (!alice::gpu::resident_available()) GTEST_SKIP() << "no ROCm GPU";
 }
 
 struct Bf16Mat {

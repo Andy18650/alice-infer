@@ -1,5 +1,7 @@
-// CPU_GENERIC oracle tests: naive kernels, FFN wiring, and the attention
+// CPU reference (oracle) tests: naive kernels, FFN wiring, and the attention
 // block's core properties (incremental == batched, causality, reset, bounds).
+// cpu_generic is the development-only reference implementation (design
+// §3/§8.1) — the permanent test oracle.
 
 #include <algorithm>
 #include <cmath>
@@ -8,12 +10,11 @@
 
 #include <gtest/gtest.h>
 
-#include "alice/dense_ffn_bf16.hpp"
 #include "alice/engine_config.hpp"
-#include "alice/gqa_attention_bf16.hpp"
 #include "alice/manifest.hpp"
 
-// reach into the naive kernels directly (they are the functional tier)
+#include "../src/blocks/cpu_generic/dense_ffn.hpp"
+#include "../src/blocks/cpu_generic/gqa_attention.hpp"
 #include "../src/blocks/cpu_generic/kernels.hpp"
 
 namespace {
@@ -22,7 +23,6 @@ using alice::bf16;
 using alice::BF16View;
 using alice::EngineConfig;
 using alice::F32View;
-using alice::HardwareClass;
 using alice::ModelConfig;
 namespace cg = alice::cpu_generic;
 
@@ -118,11 +118,10 @@ TEST(DenseFfn, ForwardMatchesHandCompute) {
   Bf16Mat down(2, 3, {1, 0, 1, 0, 1, 0});
   EngineConfig ec;
   ec.max_prefill_chunk = 2;
-  auto ffn = alice::DenseFfnBF16::create(HardwareClass::CPU_GENERIC, gate.view, up.view,
-                                         down.view, ffn_mc(), ec);
+  cg::DenseFfnBF16CpuGeneric ffn(gate.view, up.view, down.view, ffn_mc(), ec);
 
   F32Mat io(1, 2, {1, 2});
-  ffn->forward(io.view);
+  ffn.forward(io.view);
   // gate=[1,2,3], up=[3,2,1], act=[silu(1)*3, silu(2)*2, silu(3)*3],
   // silu(x) = x*sigmoid(x): silu(1)=0.7310586, silu(2)=1.7615942, silu(3)=2.8577223
   const float a0 = 0.7310586f * 3, a1 = 1.7615942f * 2, a2 = 2.8577223f * 1;
@@ -136,203 +135,12 @@ TEST(DenseFfn, ChunkLimitHardError) {
   Bf16Mat down(2, 3, {1, 0, 1, 0, 1, 0});
   EngineConfig ec;
   ec.max_prefill_chunk = 1;
-  auto ffn = alice::DenseFfnBF16::create(HardwareClass::CPU_GENERIC, gate.view, up.view,
-                                         down.view, ffn_mc(), ec);
+  cg::DenseFfnBF16CpuGeneric ffn(gate.view, up.view, down.view, ffn_mc(), ec);
   F32Mat io(2, 2, {1, 2, 3, 4});
-  EXPECT_THROW(ffn->forward(io.view), std::runtime_error);
+  EXPECT_THROW(ffn.forward(io.view), std::runtime_error);
 }
 
-// --- CPU_AVX2 FFN ------------------------------------------------------------
-//
-// Numerics policy (user-signed-off, design §10): cross-impl equivalence is
-// TOLERANCE-based (chunked accumulation reorders sums); within-impl
-// determinism and incremental==batched stay BIT-EXACT (one fixed loop
-// schedule for all S).
-
-#if defined(__x86_64__) && defined(__GNUC__)
-static bool HasAvx2() {
-  return __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma");
-}
-#else
-static bool HasAvx2() { return false; }
-#endif
-
-// Multi-chunk dims: I = 600 = 2*256 + 88 forces the chunk loop + tail.
-ModelConfig ffn_mc_600() {
-  ModelConfig mc;
-  mc.hidden_size = 8;
-  mc.intermediate_size = 600;
-  return mc;
-}
-
-std::vector<float> ffn_pattern(uint32_t r, uint32_t c, uint32_t seed) {
-  std::vector<float> v(size_t(r) * c);
-  for (size_t i = 0; i < v.size(); ++i)
-    v[i] = float(int((i * 7 + seed * 13) % 17) - 8) * 0.03125f;  // bf16-exact
-  return v;
-}
-
-TEST(DenseFfnAvx2, ForwardMatchesHandCompute) {
-  if (!HasAvx2()) GTEST_SKIP() << "no AVX2 on this machine";
-  Bf16Mat gate(3, 2, {1, 0, 0, 1, 1, 1});
-  Bf16Mat up(3, 2, {1, 1, 0, 1, 1, 0});
-  Bf16Mat down(2, 3, {1, 0, 1, 0, 1, 0});
-  EngineConfig ec;
-  ec.max_prefill_chunk = 2;
-  auto ffn = alice::DenseFfnBF16::create(HardwareClass::CPU_AVX2, gate.view, up.view,
-                                         down.view, ffn_mc(), ec);
-  F32Mat io(1, 2, {1, 2});
-  ffn->forward(io.view);
-  const float a0 = 0.7310586f * 3, a1 = 1.7615942f * 2, a2 = 2.8577223f * 1;
-  EXPECT_NEAR(io.data[0], a0 + a2, 1e-4);
-  EXPECT_NEAR(io.data[1], a1, 1e-4);
-}
-
-TEST(DenseFfnAvx2, ApproxVsGenericMultiChunk) {
-  if (!HasAvx2()) GTEST_SKIP() << "no AVX2 on this machine";
-  const auto mc = ffn_mc_600();
-  EngineConfig ec;
-  ec.max_prefill_chunk = 8;
-  Bf16Mat g1(600, 8, ffn_pattern(600, 8, 1)), u1(600, 8, ffn_pattern(600, 8, 2)),
-      d1(8, 600, ffn_pattern(8, 600, 3));
-  auto oracle = alice::DenseFfnBF16::create(HardwareClass::CPU_GENERIC, g1.view, u1.view,
-                                            d1.view, mc, ec);
-  Bf16Mat g2(600, 8, ffn_pattern(600, 8, 1)), u2(600, 8, ffn_pattern(600, 8, 2)),
-      d2(8, 600, ffn_pattern(8, 600, 3));
-  auto avx2 = alice::DenseFfnBF16::create(HardwareClass::CPU_AVX2, g2.view, u2.view,
-                                          d2.view, mc, ec);
-  // S = 5 exercises the tile grid's m-edge row (5 = 4 + 1); I = 600 is a
-  // multiple of 3, d = 8 exercises the n-edge tiles (8 = 3 + 3 + 2).
-  std::vector<float> input = ffn_pattern(5, 8, 4);
-  F32Mat io1(5, 8, input), io2(5, 8, input);
-  oracle->forward(io1.view);
-  avx2->forward(io2.view);
-  float max_diff = 0.0f;
-  for (size_t i = 0; i < io1.data.size(); ++i) {
-    const float d = std::fabs(io1.data[i] - io2.data[i]);
-    max_diff = d > max_diff ? d : max_diff;
-  }
-  // Observed: ~1e-6 for these magnitudes. Threshold has ~100x margin.
-  EXPECT_LT(max_diff, 1e-4f) << "max |generic - avx2| = " << max_diff;
-}
-
-// Tolerance-based, NOT bit-exact: the S==1 down-pass (multi-accumulator
-// dot) and the S>1 down-pass (chunked axpy) sum in different orders
-// (design §10 numerics note in the impl). Row INDEPENDENCE still holds —
-// this test verifies the outputs agree to FP-reorder noise.
-TEST(DenseFfnAvx2, IncrementalEqualsBatchedApprox) {
-  if (!HasAvx2()) GTEST_SKIP() << "no AVX2 on this machine";
-  const auto mc = ffn_mc_600();
-  EngineConfig ec;
-  ec.max_prefill_chunk = 4;
-  Bf16Mat g(600, 8, ffn_pattern(600, 8, 1)), u(600, 8, ffn_pattern(600, 8, 2)),
-      dn(8, 600, ffn_pattern(8, 600, 3));
-  auto ffn = alice::DenseFfnBF16::create(HardwareClass::CPU_AVX2, g.view, u.view, dn.view,
-                                         mc, ec);
-  F32Mat batched(4, 8, ffn_pattern(4, 8, 4));
-  ffn->forward(batched.view);
-  F32Mat acc(4, 8);
-  for (uint32_t s = 0; s < 4; ++s) {
-    std::vector<float> row(8);
-    for (uint32_t c = 0; c < 8; ++c)  // same formula as ffn_pattern(4, 8, 4)
-      row[c] = float(int(((s * 8 + c) * 7 + 4 * 13) % 17) - 8) * 0.03125f;
-    F32Mat one(1, 8, row);
-    ffn->forward(one.view);
-    std::copy(one.data.begin(), one.data.end(), acc.data.begin() + s * 8);
-  }
-  float max_diff = 0.0f;
-  for (size_t i = 0; i < batched.data.size(); ++i) {
-    const float d = std::fabs(batched.data[i] - acc.data[i]);
-    max_diff = d > max_diff ? d : max_diff;
-  }
-  // Observed: ~1e-6 for these magnitudes. Threshold has ~100x margin.
-  EXPECT_LT(max_diff, 1e-4f) << "max |batched - incremental| = " << max_diff;
-}
-
-TEST(DenseFfnAvx2, ChunkLimitHardError) {
-  if (!HasAvx2()) GTEST_SKIP() << "no AVX2 on this machine";
-  Bf16Mat g(600, 8, ffn_pattern(600, 8, 1)), u(600, 8, ffn_pattern(600, 8, 2)),
-      dn(8, 600, ffn_pattern(8, 600, 3));
-  EngineConfig ec;
-  ec.max_prefill_chunk = 1;
-  auto ffn = alice::DenseFfnBF16::create(HardwareClass::CPU_AVX2, g.view, u.view, dn.view,
-                                         ffn_mc_600(), ec);
-  F32Mat io(2, 8, std::vector<float>(16, 0.5f));
-  EXPECT_THROW(ffn->forward(io.view), std::runtime_error);
-}
-
-// --- GPU_ROCBLAS (auto-selected when a ROCm GPU is present) ----------------
-// Tolerances are looser than the AVX2 suite: the GPU path bf16-rounds x AND
-// the SiLU intermediate on the way in (fp32 accumulate), so drift vs the
-// fp32-x oracle is bf16-epsilon-scale, not reorder-scale.
-TEST(DenseFfnGpu, ApproxVsGenericMultiChunk) {
-  if (!alice::gpu_available()) GTEST_SKIP() << "no ROCm GPU";
-  const auto mc = ffn_mc_600();
-  EngineConfig ec;
-  ec.max_prefill_chunk = 8;
-  Bf16Mat g1(600, 8, ffn_pattern(600, 8, 1)), u1(600, 8, ffn_pattern(600, 8, 2)),
-      d1(8, 600, ffn_pattern(8, 600, 3));
-  auto oracle = alice::DenseFfnBF16::create(HardwareClass::CPU_GENERIC, g1.view, u1.view,
-                                            d1.view, mc, ec);
-  Bf16Mat g2(600, 8, ffn_pattern(600, 8, 1)), u2(600, 8, ffn_pattern(600, 8, 2)),
-      d2(8, 600, ffn_pattern(8, 600, 3));
-  auto gpu = alice::DenseFfnBF16::create(HardwareClass::GPU_ROCBLAS, g2.view, u2.view,
-                                         d2.view, mc, ec);
-  std::vector<float> input = ffn_pattern(5, 8, 4);
-  F32Mat io1(5, 8, input), io2(5, 8, input);
-  oracle->forward(io1.view);
-  gpu->forward(io2.view);
-  float max_diff = 0.0f;
-  for (size_t i = 0; i < io1.data.size(); ++i) {
-    const float d = std::fabs(io1.data[i] - io2.data[i]);
-    max_diff = d > max_diff ? d : max_diff;
-  }
-  // Observed: ~7e-4 (bf16 rounding of x and the SiLU intermediate).
-  EXPECT_LT(max_diff, 0.1f) << "max |generic - gpu| = " << max_diff;
-}
-
-TEST(DenseFfnGpu, IncrementalEqualsBatchedApprox) {
-  if (!alice::gpu_available()) GTEST_SKIP() << "no ROCm GPU";
-  const auto mc = ffn_mc_600();
-  EngineConfig ec;
-  ec.max_prefill_chunk = 4;
-  Bf16Mat g(600, 8, ffn_pattern(600, 8, 1)), u(600, 8, ffn_pattern(600, 8, 2)),
-      dn(8, 600, ffn_pattern(8, 600, 3));
-  auto ffn = alice::DenseFfnBF16::create(HardwareClass::GPU_ROCBLAS, g.view, u.view,
-                                         dn.view, mc, ec);
-  F32Mat batched(4, 8, ffn_pattern(4, 8, 4));
-  ffn->forward(batched.view);
-  F32Mat acc(4, 8);
-  for (uint32_t s = 0; s < 4; ++s) {
-    std::vector<float> row(8);
-    for (uint32_t c = 0; c < 8; ++c)
-      row[c] = float(int(((s * 8 + c) * 7 + 4 * 13) % 17) - 8) * 0.03125f;
-    F32Mat one(1, 8, row);
-    ffn->forward(one.view);
-    std::copy(one.data.begin(), one.data.end(), acc.data.begin() + s * 8);
-  }
-  float max_diff = 0.0f;
-  for (size_t i = 0; i < batched.data.size(); ++i) {
-    const float d = std::fabs(batched.data[i] - acc.data[i]);
-    max_diff = d > max_diff ? d : max_diff;
-  }
-  // Observed: 0 (bit-exact at these exact-representable values).
-  EXPECT_LT(max_diff, 0.1f) << "max |batched - incremental| = " << max_diff;
-}
-
-TEST(DenseFfnGpu, ChunkLimitHardError) {
-  if (!alice::gpu_available()) GTEST_SKIP() << "no ROCm GPU";
-  Bf16Mat g(600, 8, ffn_pattern(600, 8, 1)), u(600, 8, ffn_pattern(600, 8, 2)),
-      dn(8, 600, ffn_pattern(8, 600, 3));
-  EngineConfig ec;
-  ec.max_prefill_chunk = 1;
-  auto ffn = alice::DenseFfnBF16::create(HardwareClass::GPU_ROCBLAS, g.view, u.view,
-                                         dn.view, ffn_mc_600(), ec);
-  F32Mat io(2, 8, std::vector<float>(16, 0.5f));
-  EXPECT_THROW(ffn->forward(io.view), std::runtime_error);
-}
-
-// --- attention --------------------------------------------------------------
+// --- attention ---------------------------------------------------------------
 
 struct AttnFixture {
   ModelConfig mc;
@@ -362,10 +170,10 @@ struct AttnFixture {
       for (size_t c = 0; c < d; ++c) v[r * d + c] = pat(r0 + r, c);
     return F32Mat(S, d, v);
   }
-  std::unique_ptr<alice::GqaAttentionBF16> make(Bf16Mat& wq, Bf16Mat& wk, Bf16Mat& wv,
-                                                Bf16Mat& wo) {
-    return alice::GqaAttentionBF16::create(HardwareClass::CPU_GENERIC, wq.view, wk.view,
-                                           wv.view, wo.view, mc, ec);
+  std::unique_ptr<cg::GqaAttentionBF16CpuGeneric> make(Bf16Mat& wq, Bf16Mat& wk,
+                                                       Bf16Mat& wv, Bf16Mat& wo) {
+    return std::make_unique<cg::GqaAttentionBF16CpuGeneric>(wq.view, wk.view, wv.view,
+                                                            wo.view, mc, ec);
   }
 };
 
@@ -427,15 +235,14 @@ TEST(Attention, CausalityPrefixStability) {
 }
 
 TEST(Attention, MaxSeqHardError) {
-  AttnFixture f;
-  f.ec.max_seq_len = 2;
+  AttnFixture f;  // max_seq_len = 8
   auto wq = AttnFixture::w(8, 8), wk = AttnFixture::w(4, 8), wv = AttnFixture::w(4, 8),
        wo = AttnFixture::w(8, 8);
   auto a = f.make(wq, wk, wv, wo);
-  auto io = AttnFixture::rows(0, 2, 8);
+  auto io = AttnFixture::rows(0, 4, 8);
   a->forward(io.view);
-  auto io2 = AttnFixture::rows(2, 1, 8);
-  EXPECT_THROW(a->forward(io2.view), std::runtime_error);
+  a->forward(io.view);  // pos = 8: exactly full
+  EXPECT_THROW(a->forward(io.view), std::runtime_error);  // 9th token overflows
 }
 
 }  // namespace

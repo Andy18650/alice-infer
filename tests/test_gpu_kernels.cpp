@@ -10,7 +10,7 @@
 
 #include "../src/blocks/cpu_generic/kernels.hpp"
 #include "../src/gpu/kernels.hpp"
-#include "alice/block.hpp"  // gpu_available()
+#include "alice/gpu_model.hpp"
 
 namespace {
 
@@ -20,7 +20,7 @@ namespace gk = alice::gpu::kernels;
 using alice::bf16;
 
 void require_gpu() {
-  if (!alice::gpu_available()) GTEST_SKIP() << "no ROCm GPU";
+  if (!alice::gpu::resident_available()) GTEST_SKIP() << "no ROCm GPU";
 }
 
 template <typename T>

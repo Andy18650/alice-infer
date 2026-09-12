@@ -262,9 +262,11 @@ Narrow entry that sniffs format by content and delegates
   exactly and runs the stock graph in fp32 — the mathematical ideal of
   our fp32-stream design; measured: the CPU engine is EXACT against it,
   max 0.0002, while PyTorch's own bf16 inference sits 15.6/1.8 max away).
-  Gates on the long case: CPU suite (temporary, dies with the host path)
-  max ≤ 0.01; GPU suite mean ≤ 0.05 AND max ≤ 2.0 (the bf16 GEMM-input
-  budget at massive-activation positions; observed 0.018 / 0.76 / 1.52).
+  Gates on the long case: GPU suite mean ≤ 0.05 AND max ≤ 0.75... (the
+  bf16 GEMM-input budget at massive-activation positions; observed 0.018
+  / 0.76 / 1.52). (A temporary host-path CPU long suite gated at 0.01
+  proved the semantics exact — 0.0002 — and was retired with the host
+  path; the proof stands recorded here.)
   Greedy decode comparison is exact-match with a coin-flip rule: a
   divergence is a bug only if our token is ≥0.25 below the reference
   argmax (near-ties flip legitimately within the bf16-input budget).
@@ -290,6 +292,14 @@ Narrow entry that sniffs format by content and delegates
 
 ## Retired decisions (kept so they are not re-litigated)
 
+- **The CPU production path** (host Model/Trunk/components, CPU_AVX2
+  kernels, host-io GPU FFN + hipRTC, HardwareClass factories): deleted
+  2026-09 after the GPU-resident path passed the full gate suite,
+  including fp32-ideal long-case validation. In git history. cpu_generic
+  remains as the dev-reference oracle and the compute core of
+  `gpu::CpuReferenceBlock` (swap-in via `ALICE_CPU_REF_BLOCKS`). Note:
+  the 70B ran ONLY on the CPU path (141 GB > one GCD) — it is
+  intentionally dark until multi-die placement lands (§9).
 - **CPU-first bring-up** with hand-rolled AVX2 kernels and NUMA tuning:
   served bring-up well (matched OpenBLAS sgemm at 1.2 TFLOP/s); retired
   with CPU-only builds. In git history.

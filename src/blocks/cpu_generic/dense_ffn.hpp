@@ -1,19 +1,26 @@
 #pragma once
 
-// CPU_GENERIC (naive oracle) implementation of DenseFfnBF16.
+// CPU reference (naive oracle) dense FFN — development-only reference
+// implementation (design §3/§8.1): the test oracle for kernels/blocks and
+// the compute core of gpu::CpuReferenceBlock. Never production compute.
 // Weights kept in bf16 (storage contract), fp32 accumulation in matmul.
 
-#include "alice/dense_ffn_bf16.hpp"
+#include <memory>
+
+#include "alice/engine_config.hpp"
+#include "alice/manifest.hpp"
+#include "alice/tensor.hpp"
 
 namespace alice::cpu_generic {
 
-class DenseFfnBF16CpuGeneric final : public DenseFfnBF16 {
+class DenseFfnBF16CpuGeneric final {
  public:
-  // Implements the abstract-class constructor contract; views freed on return.
+  // Views are validated staging buffers, considered freed on return.
   DenseFfnBF16CpuGeneric(BF16View w_gate, BF16View w_up, BF16View w_down,
                          const ModelConfig& mc, const EngineConfig& ec);
 
-  void forward(F32View io) override;
+  // io: fp32 [S, d] host, in-place (block output overwrites input).
+  void forward(F32View io);
 
  private:
   uint32_t d_ = 0, inter_ = 0, mpc_ = 0;

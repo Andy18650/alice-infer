@@ -17,12 +17,13 @@ Llama-3.2-1B-Instruct, DeepSeek-R1-Distill-Llama-8B,
 DeepSeek-R1-Distill-Llama-70B (under `/opt/models`, manifests in
 `models/`).
 
-**Migration state (2026-09):** the GPU-resident path (design §3) is
-BUILT and green for single-GCD execution: `src/gpu/` (SIMT kernels via
-hipcc, device blocks, trunk, model), canonical gate passing (1B 0.33 /
-8B 0.47). The pre-migration host path (mixed CPU/GPU, host fp32 io)
-still exists alongside for the CPU oracle and block tests — retirement
-is a later, separate step.
+**Migration state (2026-09):** the GPU-resident path (design §3) is the
+ONLY execution path — the CPU production branch is RETIRED (host
+Model/Trunk, CPU_AVX2, host-io GPU FFN + hipRTC, HardwareClass
+factories all deleted to git history). cpu_generic survives as the
+dev-reference oracle + `gpu::CpuReferenceBlock` compute core (swap-in
+via `ALICE_CPU_REF_BLOCKS=<indices>`). The 70B is intentionally dark
+until multi-die (it never fit one GCD).
 
 ## How constraints work here (read first)
 
@@ -99,14 +100,15 @@ cmake --build build-release -j                     # Release: measure here
 
 ## State of play (2026-09, GPU-resident v1)
 
-- 72/72 tests (host-path + GPU-resident: kernel, block, model, canonical,
-  long-case). Canonical gate on the device path: short fixtures 1B 0.33 /
-  8B 0.47 (bf16 ref, gate 0.75); long fixtures (WikiText ~1500 tokens,
-  fp32-ideal reference, user-signed 2026-09): CPU suite exact (0.0002,
-  gate 0.01), GPU suite mean 0.018 / max 0.76 (gates 0.05 / 2.0), greedy
-  with coin-flip rule. Long fixtures are regenerable
-  (`dump_canonical.py --prompt-file <raw> --dtype fp32`), gitignored, and
-  the suite now runs ~10 min end to end (HostCanonicalLong ~6 min).
+- 60/60 tests (post-retirement: tensor/safetensors/manifest/tokenizer,
+  cpu_generic oracle kernel+block suites, GPU-resident kernel/block/
+  model/canonical suites incl. long-case). Canonical: short fixtures
+  1B 0.33 / 8B 0.47 (bf16 ref, gate 0.75); long fixtures (WikiText
+  ~1500 tokens, fp32-ideal reference, user-signed 2026-09) mean 0.018 /
+  max 0.76-1.52 (gates 0.05 / 2.0), greedy with coin-flip rule. Long
+  fixtures regenerable (`dump_canonical.py --prompt-file <raw>
+  --dtype fp32`), gitignored. The semantic-exactness proof (CPU engine
+  0.0002 vs fp32 ideal) is recorded in design §13.
 - Perf (Release, single GCD, greedy): 1B prefill 3652 tok/s at 602-token
   prompt (43× the host path), decode 110 tok/s short-ctx / 43 tok/s at
   630 ctx; 8B decode 34.8 tok/s short-ctx. Decode is now bound by the

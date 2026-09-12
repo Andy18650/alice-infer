@@ -1,19 +1,27 @@
 #pragma once
 
-// CPU_GENERIC (naive oracle) implementation of GqaAttentionBF16.
+// CPU reference (naive oracle) GQA attention — development-only reference
+// implementation (design §3/§8.1): the test oracle and the compute core of
+// gpu::CpuReferenceBlock. Never production compute.
 // Weights bf16; KV cache fp32 (oracle numerics); position = private counter.
 
-#include "alice/gqa_attention_bf16.hpp"
+#include <memory>
+
+#include "alice/engine_config.hpp"
+#include "alice/manifest.hpp"
+#include "alice/tensor.hpp"
 
 namespace alice::cpu_generic {
 
-class GqaAttentionBF16CpuGeneric final : public GqaAttentionBF16 {
+class GqaAttentionBF16CpuGeneric final {
  public:
   GqaAttentionBF16CpuGeneric(BF16View wq, BF16View wk, BF16View wv, BF16View wo,
                              const ModelConfig& mc, const EngineConfig& ec);
 
-  void forward(F32View io) override;
-  void reset_state() override { pos_ = 0; }  // allocation kept, cache invalidated
+  // io: fp32 [S, d] host, in-place (block output overwrites input).
+  void forward(F32View io);
+  void reset_state() { pos_ = 0; }  // allocation kept, cache invalidated
+  uint32_t position() const { return pos_; }
 
  private:
   uint32_t nh_ = 0, nkv_ = 0, hd_ = 0, d_ = 0, group_ = 0;
@@ -24,8 +32,7 @@ class GqaAttentionBF16CpuGeneric final : public GqaAttentionBF16 {
   BF16View wqv_, wkv_, wvv_, wov_;
 
   // State (append-only): [max_seq, nkv*hd] fp32. pos_ is both the private
-  // position counter and the cache length — plain attention never evicts
-  // (a KVPress-ing implementation would separate the two, design §6).
+  // position counter and the cache length — plain attention never evicts.
   std::unique_ptr<float[]> kcache_, vcache_;
   uint32_t pos_ = 0;
 

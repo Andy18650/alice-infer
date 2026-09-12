@@ -13,11 +13,8 @@
 #include <vector>
 #include <algorithm>  // std::min, std::ranges::find
 
-#include "alice/manifest.hpp"
-#include "alice/model.hpp"
-#if defined(ALICE_GPU_RESIDENT)
 #include "alice/gpu_model.hpp"
-#endif
+#include "alice/manifest.hpp"
 #include "tokenizer.hpp"
 
 namespace {
@@ -62,11 +59,8 @@ void print_stats(const char* phase, size_t tokens, double seconds) {
                double(tokens) / seconds);
 }
 
-// The REPL round loop, generic over the model type (host Model and
-// gpu::Model share the forward/reset/vocab_size surface used here).
-template <typename ModelT>
 int run_rounds(const alice::Manifest& manifest, alice::frontend::Tokenizer& tokenizer,
-               ModelT& model, int max_new, uint32_t max_seq, const char* prompt,
+               alice::gpu::Model& model, int max_new, uint32_t max_seq, const char* prompt,
                uint32_t chunk) {
   std::string line;
   for (;;) {
@@ -127,9 +121,8 @@ int main(int argc, char** argv) {
   if (argc < 3) {
     std::fprintf(stderr,
                  "usage: %s <model_dir> <manifest.json> [max_new_tokens=64] [max_seq=8192]\n"
-                 "       %s <model_dir> <manifest.json> <max_new_tokens> <max_seq> <prompt> [hardware]\n"
-                 "       (with a prompt argument: run once, non-interactive;\n"
-                 "        hardware: auto (default) | gpu_rocblas | cpu_avx2 | cpu_generic)\n",
+                 "       %s <model_dir> <manifest.json> <max_new_tokens> <max_seq> <prompt>\n"
+                 "       (with a prompt argument: run once, non-interactive)\n",
                  argv[0], argv[0]);
     return 1;
   }
@@ -137,12 +130,6 @@ int main(int argc, char** argv) {
   const std::string manifest_path = argv[2];
   const int max_new = argc > 3 ? std::atoi(argv[3]) : 64;
   const uint32_t max_seq = argc > 4 ? uint32_t(std::atoi(argv[4])) : 8192;
-  const std::string hw_arg = argc > 6 ? argv[6] : "auto";
-  const alice::HardwareClass hw =
-      hw_arg == "cpu_generic" ? alice::HardwareClass::CPU_GENERIC
-      : hw_arg == "cpu_avx2"  ? alice::HardwareClass::CPU_AVX2
-      : hw_arg == "gpu_rocblas" ? alice::HardwareClass::GPU_ROCBLAS
-                                : alice::HardwareClass::AUTO;
 
   try {
     const alice::Manifest manifest = alice::Manifest::parse(manifest_path);
@@ -151,25 +138,10 @@ int main(int argc, char** argv) {
     alice::EngineConfig cfg;
     cfg.max_seq_len = max_seq;
     cfg.max_prefill_chunk = 512;
-    cfg.hardware = hw;
     cfg.sampling.temperature = 0.0f;  // greedy
-#if defined(ALICE_GPU_RESIDENT)
-    // GPU-resident path (design §3): auto/explicit-gpu selects it when a
-    // device is present; cpu_* forces the host model.
-    const bool gpu_path =
-        (hw == alice::HardwareClass::AUTO || hw == alice::HardwareClass::GPU_ROCBLAS) &&
-        alice::gpu::resident_available();
-    if (gpu_path) {
-      auto model = alice::gpu::Model::load(model_dir, manifest_path, cfg);
-      std::fprintf(stderr, "[alice] model loaded (vocab %u, GPU-resident). /quit to exit, session cleared on every round.\n",
-                   model->vocab_size());
-      return run_rounds(manifest, tokenizer, *model, max_new, max_seq,
-                        argc > 5 ? argv[5] : nullptr, cfg.max_prefill_chunk);
-    }
-#endif
-    auto model = alice::ModelLoader::load(model_dir, manifest_path, cfg);
-    std::fprintf(stderr, "[alice] model loaded (vocab %u, hardware %s). /quit to exit, session cleared on every round.\n",
-                 model->vocab_size(), hw_arg.c_str());
+    auto model = alice::gpu::Model::load(model_dir, manifest_path, cfg);
+    std::fprintf(stderr, "[alice] model loaded (vocab %u, GPU-resident). /quit to exit, session cleared on every round.\n",
+                 model->vocab_size());
     return run_rounds(manifest, tokenizer, *model, max_new, max_seq,
                       argc > 5 ? argv[5] : nullptr, cfg.max_prefill_chunk);
   } catch (const std::exception& e) {

@@ -4,10 +4,14 @@
 
 #include <hip/hip_runtime_api.h>
 
+#include <cstdlib>
+#include <set>
+
 #include "../loader_staging.hpp"
 #include "../blocks/gpu_rocblas/platform.hpp"
 #include "alice/manifest.hpp"
 #include "block.hpp"
+#include "cpu_reference.hpp"
 #include "dense_ffn.hpp"
 #include "embedder.hpp"
 #include "gqa_attention.hpp"
@@ -121,19 +125,51 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
         std::move(pre_views), keep.back().view, m.config.rms_norm_eps,
         m.config.hidden_size, cfg.max_prefill_chunk);
   }
+  // Development-only fault-localization hook (design §3/§8.1): block
+  // indices listed in ALICE_CPU_REF_BLOCKS (comma-separated) are built as
+  // CpuReferenceBlock adapters (D2H -> cpu_generic compute -> H2D) instead
+  // of device blocks. Never for production.
+  std::set<size_t> cpu_ref;
+  if (const char* env = std::getenv("ALICE_CPU_REF_BLOCKS")) {
+    const std::string s(env);
+    for (size_t off = 0; off < s.size();) {
+      const size_t comma = s.find(',', off);
+      cpu_ref.insert(std::stoul(s.substr(off, comma - off)));
+      off = comma == std::string::npos ? s.size() : comma + 1;
+    }
+    std::fprintf(stderr, "[gpu::Model] ALICE_CPU_REF_BLOCKS: %zu block(s) on CPU "
+                         "reference (dev-only)\n",
+                 cpu_ref.size());
+  }
+
+  size_t block_index = 0;
   for (const auto& b : m.blocks) {
+    const bool ref = cpu_ref.contains(block_index++);
     if (b.type == "gqa_attention_bf16") {
       std::vector<loader::Staging<bf16>> keep;
       for (const char* role : {"wq", "wk", "wv", "wo"})
         keep.push_back(loader::stage<bf16>(file, b.weights.at(role)));
-      model->impl_->blocks.push_back(std::make_unique<GqaAttentionBF16>(
-          keep[0].view, keep[1].view, keep[2].view, keep[3].view, m.config, cfg));
+      if (ref)
+        model->impl_->blocks.push_back(std::make_unique<CpuReferenceBlock>(
+            cpu_generic::GqaAttentionBF16CpuGeneric(keep[0].view, keep[1].view,
+                                                    keep[2].view, keep[3].view, m.config,
+                                                    cfg),
+            m.config.hidden_size, cfg.max_prefill_chunk));
+      else
+        model->impl_->blocks.push_back(std::make_unique<GqaAttentionBF16>(
+            keep[0].view, keep[1].view, keep[2].view, keep[3].view, m.config, cfg));
     } else if (b.type == "dense_ffn_bf16") {
       std::vector<loader::Staging<bf16>> keep;
       for (const char* role : {"w_gate", "w_up", "w_down"})
         keep.push_back(loader::stage<bf16>(file, b.weights.at(role)));
-      model->impl_->blocks.push_back(std::make_unique<DenseFfnBF16>(
-          keep[0].view, keep[1].view, keep[2].view, m.config, cfg));
+      if (ref)
+        model->impl_->blocks.push_back(std::make_unique<CpuReferenceBlock>(
+            cpu_generic::DenseFfnBF16CpuGeneric(keep[0].view, keep[1].view, keep[2].view,
+                                                m.config, cfg),
+            m.config.hidden_size, cfg.max_prefill_chunk));
+      else
+        model->impl_->blocks.push_back(std::make_unique<DenseFfnBF16>(
+            keep[0].view, keep[1].view, keep[2].view, m.config, cfg));
     } else {
       throw std::runtime_error("gpu::Model::load: unknown block type '" + b.type + "'");
     }

@@ -32,11 +32,25 @@ void rope_append(float* qkv, float* kcache, float* vcache, const float* cos_t,
                  const float* sin_t, uint32_t pos0, uint32_t S, uint32_t nh, uint32_t nkv,
                  uint32_t hd);
 
+// Flash-decoding split-T tuning (v2). Decode-shaped calls (S <= kAttnSplitMaxS)
+// at long context (T >= kAttnSplitMinT) take a two-phase path: phase 1 splits
+// the cache rows into chunks of kAttnRowsPerSplit, one thread block per
+// (chunk, query, head) computing a partial online softmax; phase 2 merges the
+// partials. split_scratch must hold kAttnMaxSplits * nh * kAttnSplitMaxS *
+// (hd + 2) floats (allocated by the caller at construction).
+inline constexpr uint32_t kAttnSplitMaxS = 4;
+inline constexpr uint32_t kAttnSplitMinT = 256;
+inline constexpr uint32_t kAttnRowsPerSplit = 64;
+inline constexpr uint32_t kAttnMaxSplits = 64;
+
 // Causal attention with online softmax. Query s at absolute position pos0+s
 // attends cache rows [0, pos0+s]. GQA: q-head h reads kv-head h/(nh/nkv).
 // Output written as bf16 row-major [S, nh*hd] (o_proj GEMM consumes bf16).
+// Dispatch: decode-shaped long-context calls use the split-T path above;
+// everything else uses the one-block-per-(query,head) kernel (prefill is
+// GEMM-bound; short-context decode doesn't need the splits).
 void attention(const float* qkv, const float* kcache, const float* vcache, void* attn_bf16,
-               uint32_t pos0, uint32_t S, uint32_t nh, uint32_t nkv, uint32_t hd,
-               float scale);
+               float* split_scratch, uint32_t pos0, uint32_t S, uint32_t nh, uint32_t nkv,
+               uint32_t hd, float scale);
 
 }  // namespace alice::gpu_rocm::kernels

@@ -79,6 +79,8 @@ GqaAttentionBF16::GqaAttentionBF16(BF16View wq, BF16View wk, BF16View wv, BF16Vi
   HIP_CHECK(hipMalloc(&dx_, size_t(mpc_) * d_ * sizeof(bf16)));
   HIP_CHECK(hipMalloc(&dqkv_, size_t(mpc_) * (qd + 2 * kvd) * sizeof(float)));
   HIP_CHECK(hipMalloc(&dattn_, size_t(mpc_) * qd * sizeof(bf16)));
+  HIP_CHECK(hipMalloc(&dsplit_, size_t(kernels::kAttnMaxSplits) * nh_ *
+                                    kernels::kAttnSplitMaxS * (hd_ + 2) * sizeof(float)));
 }
 
 GqaAttentionBF16::~GqaAttentionBF16() {
@@ -91,6 +93,7 @@ GqaAttentionBF16::~GqaAttentionBF16() {
   (void)hipFree(dx_);
   (void)hipFree(dqkv_);
   (void)hipFree(dattn_);
+  (void)hipFree(dsplit_);
 }
 
 void GqaAttentionBF16::forward(float* io, uint32_t S) {
@@ -112,7 +115,8 @@ void GqaAttentionBF16::forward(float* io, uint32_t S) {
                            qkvd, rocblas_datatype_f32_r, rocblas_gemm_algo_standard, 0, 0));
   kernels::rope_append(dqkv_, dkcache_, dvcache_, drope_cos_, drope_sin_, pos_, S, nh_,
                        nkv_, hd_);
-  kernels::attention(dqkv_, dkcache_, dvcache_, dattn_, pos_, S, nh_, nkv_, hd_, scale_);
+  kernels::attention(dqkv_, dkcache_, dvcache_, dattn_, dsplit_, pos_, S, nh_, nkv_, hd_,
+                     scale_);
   // o_proj into io: C'[d, S] = Wo . attn^T
   RB_CHECK(rocblas_gemm_ex(p.handle, rocblas_operation_transpose, rocblas_operation_none,
                            d_, S, qd, &alpha, dw_o_, rocblas_datatype_bf16_r, qd, dattn_,

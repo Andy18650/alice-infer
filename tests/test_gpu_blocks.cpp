@@ -151,6 +151,53 @@ TEST(GpuBlocks, AttentionIncrementalEqualsBatched) {
   EXPECT_EQ(0.0f, max_abs_diff(batched, part1)) << "batched diverged from incremental";
 }
 
+// Flash-decoding split-T path (kernels.hip dispatch: S <= 4 and T >= 256):
+// decode steps past the split threshold must match the CPU oracle.
+TEST(GpuBlocks, AttentionSplitDecodeMatchesOracle) {
+  require_gpu();
+  ModelConfig mc;
+  mc.num_heads = 4;
+  mc.num_kv_heads = 2;
+  mc.head_dim = 128;  // exercises the 2-elements-per-lane path
+  mc.hidden_size = 256;
+  mc.rope_theta = 10000.0f;
+  mc.has_rope_scaling = false;
+  EngineConfig ec;
+  ec.max_seq_len = 512;
+  ec.max_prefill_chunk = 512;
+  const uint32_t d = 256, qd = 512, kvd = 256, T0 = 300, ND = 4;
+  // Scale weights by 2^-4 (bf16-exact): unscaled patterns would make
+  // attention scores ~+/-250, saturate softmax to near-one-hot, and amplify
+  // cross-impl fp noise into winner flips (an ill-conditioned comparison,
+  // not a correctness signal).
+  auto scaled = [](std::vector<float> v) {
+    for (auto& x : v) x *= 0.0625f;
+    return v;
+  };
+  auto wv_vals = scaled(mat_vals(kvd, d));
+  for (auto& x : wv_vals) x = -0.5f * x + 0.125f;  // distinct from wk
+  Bf16Mat wq1(qd, d, scaled(mat_vals(qd, d))), wk1(kvd, d, scaled(mat_vals(kvd, d))),
+      wv1(kvd, d, wv_vals), wo1(d, qd, scaled(mat_vals(d, qd)));
+  alice::cpu_generic::GqaAttentionBF16CpuGeneric oracle(wq1.view, wk1.view, wv1.view,
+                                                        wo1.view, mc, ec);
+  Bf16Mat wq2(qd, d, scaled(mat_vals(qd, d))), wk2(kvd, d, scaled(mat_vals(kvd, d))),
+      wv2(kvd, d, wv_vals), wo2(d, qd, scaled(mat_vals(d, qd)));
+  alice::gpu_rocm::GqaAttentionBF16 gpu(wq2.view, wk2.view, wv2.view, wo2.view, mc, ec);
+
+  const std::vector<float> rows = mat_vals(T0 + ND, d);
+  std::vector<float> ref = rows;  // oracle: one batched run over all rows
+  oracle.forward(F32View{ref.data(), T0 + ND, d, 0});
+
+  run_gpu_block(gpu, std::vector<float>(rows.begin(), rows.begin() + T0 * d), T0, d);
+  for (uint32_t k = 0; k < ND; ++k) {  // decode at pos 300..303: split-T path
+    std::vector<float> one(rows.begin() + (T0 + k) * d, rows.begin() + (T0 + k + 1) * d);
+    auto got = run_gpu_block(gpu, one, 1, d);
+    std::vector<float> want(ref.begin() + (T0 + k) * d, ref.begin() + (T0 + k + 1) * d);
+    EXPECT_LT(max_abs_diff(want, got), 0.1f)
+        << "split-T decode diverged at step " << k;
+  }
+}
+
 TEST(GpuBlocks, AttentionResetRestartsPosition) {
   require_gpu();
   ModelConfig mc;

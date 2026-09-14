@@ -37,6 +37,7 @@ class GqaAttentionBF16 final : public gpu::StatefulBlock {
   void* dx_ = nullptr;      // bf16 [mpc, d]
   float* dqkv_ = nullptr;   // fp32 [mpc, qd + 2*kvd]
   void* dattn_ = nullptr;   // bf16 [mpc, qd]
+  float* dsplit_ = nullptr;  // split-T partials [kAttnMaxSplits*nh*kAttnSplitMaxS*(hd+2)]
 };
 
 }  // namespace alice::gpu

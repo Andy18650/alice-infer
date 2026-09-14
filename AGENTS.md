@@ -110,16 +110,19 @@ cmake --build build-release -j                     # Release: measure here
   --dtype fp32`), gitignored. The semantic-exactness proof (CPU engine
   0.0002 vs fp32 ideal) is recorded in design §13.
 - Perf (Release, single GCD, greedy): 1B prefill 3652 tok/s at 602-token
-  prompt (43× the host path), decode 110 tok/s short-ctx / 43 tok/s at
-  630 ctx; 8B decode 34.8 tok/s short-ctx. Decode is now bound by the
-  v1 attention kernel's per-cache-row block reductions (sequential in T)
-  — the flash-decoding-style rewrite is the next lever, est. several ×.
-- The v1 attention kernel is deliberately naive-SIMT (one block per
-  (query, head), online softmax); prefill is GEMM-bound and fine.
-- Next: decode attention kernel (split-T reductions / flash-decoding),
-  then retirement of the host path (CPU_AVX2 to git history, CPU_GENERIC
-  to dev-reference role), then 70B multi-die (needs ≥3 GCDs; the TP/PP
-  research is in research/rccl-single-process/), then §11 quantization.
+  prompt (43× the host path); 1B decode 111 short-ctx / 108.5 at 630 ctx
+  / 85.6 at 4000 ctx (pre-v2: 43 at 630 — the context cliff is gone);
+  8B decode 34.9 short-ctx / 28.2 at 4000 ctx. Decode is now bound by
+  S=1 GEMV efficiency + per-token launch/sync overhead, not attention.
+- Attention kernels (gpu_rocm private TU): v1 one-block-per-(query,head)
+  serves prefill and short-ctx; the flash-decoding v2 (split-T partial
+  online softmax + combine, dispatch S<=4 && T>=256) serves long-ctx
+  decode. ALICE_FORCE_ATTN_V1=1 pins v1 for A/B debugging. Known limit:
+  long-context PREFILL still runs v1 (885 tok/s at 4000 ctx vs 3652 at
+  602) — a flash-prefill tiling over S is the next attention lever.
+- Next: long-ctx prefill attention (flash tiling over S), then 70B
+  multi-die (needs ≥3 GCDs; the TP/PP research is in
+  research/rccl-single-process/), then §11 quantization.
 - RCCL on this box: Canonical build broken (any ≥2-rank collective
   segfaults — vendor unit tests confirm); AMD-overlay RCCL validated as
   replacement; hand-rolled P2P validated (134.7 GB/s intra-card). See

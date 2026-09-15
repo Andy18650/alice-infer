@@ -7,15 +7,21 @@
 //
 //   v1: engine baseline. One block per (query, head), 128 threads,
 //       lane-per-element, block reduction per key row, online softmax.
-//   A:  streaming single-pass, thread-per-query. q in registers, acc in
+//   v3A:  streaming single-pass, thread-per-query. q in registers, acc in
 //       registers (hd=64) or LDS (hd=128: q+acc can't share the register
 //       file), online rescale per key. No chunk structure, no syncthreads.
-//   B:  two-phase per 64-key chunk (user's scheme). Raw score tile in LDS
+//   v3B:  two-phase per 64-key chunk (user's scheme). Raw score tile in LDS
 //       during the K phase (q row staged in regs from an LDS q tile),
 //       deferred exp(score - chunk_max) in the V phase (acc row staged in
 //       regs from an LDS acc tile) — phase-separated registers, one online
 //       rescale per chunk. Score rows are thread-private: no per-chunk
 //       __syncthreads.
+//   v4:  split-T prefill (FA-2-style split-KV). Each block owns ONE key
+//       chunk for a query tile (thread-per-query): raw scores to an LDS tile
+//       in key-major layout (bank-conflict-free in both phases), deferred exp
+//       with the single-chunk max, partials (acc, max, sum-exp) to GLOBAL
+//       memory, merged by a small combine kernel. No staged q/acc tiles, no
+//       running softmax, no __syncthreads, 16 KB LDS -> 4 blocks/CU.
 //
 // Query-tile sizes are per-scheme per-hd best-occupancy picks (documented in
 // README): A64=64, A128=32, B64=32, B128=16.
@@ -80,10 +86,10 @@ __global__ void k_v1(const float* __restrict__ q, const float* __restrict__ kc,
   if (i < HD) out[((size_t)blockIdx.y * S + s) * HD + i] = acc / l;
 }
 
-// ---------------------------------------------------------------- scheme A (streaming)
+// ---------------------------------------------------------------- scheme v3A (streaming)
 
 template <uint32_t HD, uint32_t QT, bool ACC_LDS>
-__global__ void k_A(const float* __restrict__ q, const float* __restrict__ kc,
+__global__ void k_v3a(const float* __restrict__ q, const float* __restrict__ kc,
                     const float* __restrict__ vc, float* __restrict__ out, uint32_t S,
                     uint32_t T, float scale) {
   __shared__ float sacc[ACC_LDS ? QT * HD : 1];
@@ -140,11 +146,11 @@ __global__ void k_A(const float* __restrict__ q, const float* __restrict__ kc,
     orow[i] = (ACC_LDS ? sacc[threadIdx.x * HD + i] : acc_r[i]) / l;
 }
 
-// Scheme A2 (bonus variant for hd=128): q tile in LDS, acc in registers.
-// Halves the per-key LDS traffic of A's hd=128 form (q reads instead of acc
-// read+write); acc 128 regs fits since q is not co-resident.
+// Scheme v3A2 (bonus variant for hd=128): q tile in LDS, acc in registers.
+// Halves the per-key LDS traffic of v3A's hd=128 form (q reads instead of
+// acc read+write); acc 128 regs fits since q is not co-resident.
 template <uint32_t HD, uint32_t QT>
-__global__ void k_A2(const float* __restrict__ q, const float* __restrict__ kc,
+__global__ void k_v3a2(const float* __restrict__ q, const float* __restrict__ kc,
                      const float* __restrict__ vc, float* __restrict__ out, uint32_t S,
                      uint32_t T, float scale) {
   __shared__ float sq[QT * HD];
@@ -191,10 +197,10 @@ __global__ void k_A2(const float* __restrict__ q, const float* __restrict__ kc,
   for (uint32_t i = 0; i < HD; ++i) orow[i] = acc[i] / l;
 }
 
-// ---------------------------------------------------------------- scheme B (two-phase)
+// ---------------------------------------------------------------- scheme v3B (two-phase)
 
 template <uint32_t HD, uint32_t QT, uint32_t CK>
-__global__ void k_B(const float* __restrict__ q, const float* __restrict__ kc,
+__global__ void k_v3b(const float* __restrict__ q, const float* __restrict__ kc,
                     const float* __restrict__ vc, float* __restrict__ out, uint32_t S,
                     uint32_t T, float scale) {
   __shared__ float sq[QT * HD];   // q tile, staged once (coalesced)
@@ -262,6 +268,98 @@ __global__ void k_B(const float* __restrict__ q, const float* __restrict__ kc,
   for (uint32_t i = 0; i < HD; ++i) orow[i] = sac[threadIdx.x * HD + i] / l;
 }
 
+// ---------------------------------------------------------------- v4 (split-T prefill)
+
+// Main kernel: one block per (query-tile, key-chunk, head); one thread per
+// query. Each block computes its chunk's partial softmax output with no
+// history at all: raw dots into the LDS score tile (key-major layout:
+// consecutive threads hit consecutive banks in both phases), one deferred
+// exp pass once the chunk max is known, then the partial (acc, max, sum_exp)
+// goes to global memory. Fully-masked chunk-blocks (causality) return before
+// touching K/V. Zero __syncthreads: every score row is thread-private.
+template <uint32_t HD, uint32_t QT, uint32_t CK>
+__global__ void k_v4(const float* __restrict__ q, const float* __restrict__ kc,
+                     const float* __restrict__ vc, float* __restrict__ partials,
+                     uint32_t S, uint32_t T, float scale, uint32_t max_chunks) {
+  __shared__ float scores[CK * QT];  // key-major: scores[QT * key + thread]
+  const uint32_t query = blockIdx.x * QT + threadIdx.x;
+  if (query >= S) return;
+  const uint32_t keys_for_query = T - S + query + 1;  // causal bound (exclusive)
+  const uint32_t chunk_start = blockIdx.y * CK;
+  if (chunk_start >= keys_for_query) return;  // fully-masked chunk-block
+  const uint32_t chunk_end = min(chunk_start + CK, keys_for_query);
+  const float* k_head = kc + (size_t)blockIdx.z * T * HD;
+  const float* v_head = vc + (size_t)blockIdx.z * T * HD;
+
+  // Dot phase: q row into registers, stream K rows (all lanes on the same
+  // key -> broadcast), write raw scores to the LDS tile, track the chunk max.
+  float q_reg[HD];
+  const float* q_row = q + ((size_t)blockIdx.z * S + query) * HD;
+#pragma unroll
+  for (uint32_t i = 0; i < HD; ++i) q_reg[i] = q_row[i];
+  float chunk_max = -INFINITY;
+  for (uint32_t t = chunk_start; t < chunk_end; ++t) {
+    const float* k_row = k_head + (size_t)t * HD;
+    float d0 = 0.0f, d1 = 0.0f, d2 = 0.0f, d3 = 0.0f;
+#pragma unroll
+    for (uint32_t i = 0; i < HD; i += 4) {
+      d0 += q_reg[i] * k_row[i];
+      d1 += q_reg[i + 1] * k_row[i + 1];
+      d2 += q_reg[i + 2] * k_row[i + 2];
+      d3 += q_reg[i + 3] * k_row[i + 3];
+    }
+    const float score = ((d0 + d1) + (d2 + d3)) * scale;
+    scores[QT * (t - chunk_start) + threadIdx.x] = score;
+    chunk_max = fmaxf(chunk_max, score);
+  }
+
+  // Value phase: q registers are dead (phase-separated register file).
+  // Deferred exp — every argument <= 0 because the chunk max is known.
+  float acc[HD];
+#pragma unroll
+  for (uint32_t i = 0; i < HD; ++i) acc[i] = 0.0f;
+  float sum_exp = 0.0f;
+  for (uint32_t t = chunk_start; t < chunk_end; ++t) {
+    const float p = expf(scores[QT * (t - chunk_start) + threadIdx.x] - chunk_max);
+    sum_exp += p;
+    const float* v_row = v_head + (size_t)t * HD;  // broadcast
+#pragma unroll
+    for (uint32_t i = 0; i < HD; ++i) acc[i] += p * v_row[i];
+  }
+
+  // Partial: [acc(HD), chunk_max, sum_exp]. The combine only reads the
+  // chunks valid for each query, so unwritten slots here are never touched.
+  float* out =
+      partials + (((size_t)blockIdx.z * S + query) * max_chunks + blockIdx.y) * (HD + 2);
+#pragma unroll
+  for (uint32_t i = 0; i < HD; ++i) out[i] = acc[i];
+  out[HD] = chunk_max;
+  out[HD + 1] = sum_exp;
+}
+
+// Combine: one block per (query, head); lane i owns output element i. Merge
+// the chunk partials with the usual max-rescale rule, divide once at the end.
+template <uint32_t HD, uint32_t CK>
+__global__ void k_v4_combine(const float* __restrict__ partials, float* __restrict__ out,
+                             uint32_t S, uint32_t T, uint32_t max_chunks) {
+  const uint32_t query = blockIdx.x;
+  const uint32_t num_chunks = (T - S + query + 1 + CK - 1) / CK;  // causal-valid chunks
+  const float* base = partials + ((size_t)blockIdx.y * S + query) * max_chunks * (HD + 2);
+  float max_score = -INFINITY;
+  for (uint32_t c = 0; c < num_chunks; ++c)
+    max_score = fmaxf(max_score, base[c * (HD + 2) + HD]);
+  float total_exp = 0.0f;
+  for (uint32_t c = 0; c < num_chunks; ++c)
+    total_exp += base[c * (HD + 2) + HD + 1] * expf(base[c * (HD + 2) + HD] - max_score);
+  const uint32_t i = threadIdx.x;
+  if (i < HD) {
+    float acc = 0.0f;
+    for (uint32_t c = 0; c < num_chunks; ++c)
+      acc += base[c * (HD + 2) + i] * expf(base[c * (HD + 2) + HD] - max_score);
+    out[((size_t)blockIdx.y * S + query) * HD + i] = acc / total_exp;
+  }
+}
+
 // ---------------------------------------------------------------- host harness
 
 struct Case {
@@ -304,35 +402,40 @@ using Launch = void (*)(const float*, const float*, const float*, float*, uint32
 
 template <uint32_t HD>
 void launch_one(const char* scheme, const Case& c, const float* dq, const float* dk,
-                const float* dv, float* dout) {
+                const float* dv, float* dout, float* dpart, uint32_t max_chunks) {
   const float scale = 1.0f / sqrtf(float(HD));
   const dim3 g1(c.S, c.H);
   if (std::strcmp(scheme, "v1") == 0) {
     k_v1<HD><<<g1, 128>>>(dq, dk, dv, dout, c.S, c.T, scale);
-  } else if (std::strcmp(scheme, "A") == 0) {
+  } else if (std::strcmp(scheme, "v3A") == 0) {
     if constexpr (HD == 64) {
       const dim3 g((c.S + 63) / 64, c.H);
-      k_A<64, 64, false><<<g, 64>>>(dq, dk, dv, dout, c.S, c.T, scale);
+      k_v3a<64, 64, false><<<g, 64>>>(dq, dk, dv, dout, c.S, c.T, scale);
     } else {
       const dim3 g((c.S + 63) / 64, c.H);  // sacc 32KB -> 2 blocks/CU, full wavefront
-      k_A<128, 64, true><<<g, 64>>>(dq, dk, dv, dout, c.S, c.T, scale);
+      k_v3a<128, 64, true><<<g, 64>>>(dq, dk, dv, dout, c.S, c.T, scale);
     }
-  } else if (std::strcmp(scheme, "A2") == 0) {
+  } else if (std::strcmp(scheme, "v3A2") == 0) {
     const dim3 g((c.S + 63) / 64, c.H);  // sq 32KB (hd=128) -> 2 blocks/CU
     if constexpr (HD == 64)
-      k_A2<64, 64><<<g, 64>>>(dq, dk, dv, dout, c.S, c.T, scale);
+      k_v3a2<64, 64><<<g, 64>>>(dq, dk, dv, dout, c.S, c.T, scale);
     else
-      k_A2<128, 64><<<g, 64>>>(dq, dk, dv, dout, c.S, c.T, scale);
-  } else {
+      k_v3a2<128, 64><<<g, 64>>>(dq, dk, dv, dout, c.S, c.T, scale);
+  } else if (std::strcmp(scheme, "v3B") == 0) {
     if constexpr (HD == 64) {
       const dim3 g((c.S + 63) / 64, c.H);  // LDS 48KB -> 1 block/CU, full wavefront
-      k_B<64, 64, 64><<<g, 64>>>(dq, dk, dv, dout, c.S, c.T, scale);
+      k_v3b<64, 64, 64><<<g, 64>>>(dq, dk, dv, dout, c.S, c.T, scale);
     } else {
-      // LDS 40KB -> 1 block/CU, half wavefront: B's LDS appetite (q+scores+acc)
-      // at hd=128 cannot have both full wavefronts and multi-block occupancy.
+      // LDS 40KB -> 1 block/CU, half wavefront: v3B's LDS appetite
+      // (q+scores+acc) at hd=128 can't have full wavefronts AND occupancy.
       const dim3 g((c.S + 31) / 32, c.H);
-      k_B<128, 32, 64><<<g, 64>>>(dq, dk, dv, dout, c.S, c.T, scale);
+      k_v3b<128, 32, 64><<<g, 64>>>(dq, dk, dv, dout, c.S, c.T, scale);
     }
+  } else {  // v4
+    const dim3 g((c.S + 63) / 64, max_chunks, c.H);
+    k_v4<HD, 64, 64><<<g, 64>>>(dq, dk, dv, dpart, c.S, c.T, scale, max_chunks);
+    const dim3 gc(c.S, c.H);
+    k_v4_combine<HD, 64><<<gc, 128>>>(dpart, dout, c.S, c.T, max_chunks);
   }
 }
 
@@ -358,12 +461,16 @@ int main(int argc, char** argv) {
   const double kv_bytes =
       double(c.H) * (double(c.S) * (c.T - c.S / 2.0 + 0.5)) * c.hd * 2 * 4;
 
-  for (const char* scheme : {"v1", "A", "A2", "B"}) {
+  const uint32_t max_chunks = (c.T + 63) / 64;
+  float* dpart = nullptr;  // v4 partials: H*S*max_chunks*(hd+2) floats
+  HIP_CHECK(hipMalloc(&dpart, (size_t)c.H * c.S * max_chunks * (c.hd + 2) * 4));
+
+  for (const char* scheme : {"v1", "v3A", "v3A2", "v3B", "v4"}) {
     auto run = [&] {
       if (c.hd == 64)
-        launch_one<64>(scheme, c, dq, dk, dv, dout);
+        launch_one<64>(scheme, c, dq, dk, dv, dout, dpart, max_chunks);
       else
-        launch_one<128>(scheme, c, dq, dk, dv, dout);
+        launch_one<128>(scheme, c, dq, dk, dv, dout, dpart, max_chunks);
     };
     run();  // correctness pass (also warms up)
     HIP_CHECK(hipDeviceSynchronize());

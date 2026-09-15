@@ -1,0 +1,3 @@
+# Regenerable artifacts (gen_cases.py / build.sh / running ./ab)
+cases/
+ab

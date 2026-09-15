@@ -29,7 +29,7 @@ def main() -> int:
     worst_fail = False
     for path in sys.argv[1:]:
         ref = load(path)
-        for scheme in ("v1", "v3A", "v3A2", "v3B", "v4"):
+        for scheme in ("v1", "v2", "v3A", "v3A2", "v3B", "v4"):
             out = np.fromfile(path + ".out_" + scheme, dtype="<f4").reshape(ref.shape)
             abs_diff = float(np.max(np.abs(out - ref)))
             rel_diff = float(np.max(np.abs(out - ref) / (1.0 + np.abs(ref))))

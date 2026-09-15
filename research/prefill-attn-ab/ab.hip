@@ -268,6 +268,114 @@ __global__ void k_v3b(const float* __restrict__ q, const float* __restrict__ kc,
   for (uint32_t i = 0; i < HD; ++i) orow[i] = sac[threadIdx.x * HD + i] / l;
 }
 
+// ---------------------------------------------------------------- v2 (engine flash-decode)
+
+// Engine decode kernel, ported for decode-shape timing: split-T with
+// in-warp reductions — one block per (split, query, head), 4 warps of 64
+// lanes stride the split's rows (lane-per-element dots, __shfl reduction),
+// per-split partials merged by a combine kernel. fp32 out (engine: bf16).
+template <uint32_t HD>
+__global__ void k_v2_split(const float* __restrict__ q, const float* __restrict__ kc,
+                           const float* __restrict__ vc, float* __restrict__ partials,
+                           uint32_t S, uint32_t T, float scale, uint32_t rows_per_split) {
+  __shared__ float warp_max[4], warp_sum[4], warp_acc[4][HD];
+  const uint32_t query = blockIdx.y;
+  const uint32_t keys_for_query = T - S + query + 1;
+  const uint32_t split = blockIdx.x;
+  const uint32_t row_begin = split * rows_per_split;
+  const uint32_t row_end = min(keys_for_query, row_begin + rows_per_split);
+  const float* q_head = q + ((size_t)blockIdx.z * S + query) * HD;
+  const float* k_head = kc + (size_t)blockIdx.z * T * HD;
+  const float* v_head = vc + (size_t)blockIdx.z * T * HD;
+  const uint32_t lane = threadIdx.x & 63, warp = threadIdx.x >> 6;
+  constexpr uint32_t EPL = (HD + 63) / 64;  // elements per lane (hd <= 128)
+
+  float q_reg[EPL];
+  for (uint32_t e = 0; e < EPL; ++e) {
+    const uint32_t i = lane + e * 64;
+    q_reg[e] = i < HD ? q_head[i] : 0.0f;
+  }
+  float m = -INFINITY, l = 0.0f, acc[EPL] = {0.0f};
+  for (uint32_t t = row_begin + warp; t < row_end; t += 4) {
+    const float* k_row = k_head + (size_t)t * HD;
+    float part = 0.0f;
+    for (uint32_t e = 0; e < EPL; ++e) {
+      const uint32_t i = lane + e * 64;
+      if (i < HD) part += q_reg[e] * k_row[i];
+    }
+    for (uint32_t off = 32; off > 0; off >>= 1)
+      part += __shfl_down_sync(0xffffffffffffffffULL, part, off);
+    const float dot = __shfl_sync(0xffffffffffffffffULL, part, 0);
+    const float sc = dot * scale;
+    const float nm = fmaxf(m, sc);
+    const float f = expf(m - nm), p = expf(sc - nm);
+    l = l * f + p;
+    const float* v_row = v_head + (size_t)t * HD;
+    for (uint32_t e = 0; e < EPL; ++e) {
+      const uint32_t i = lane + e * 64;
+      if (i < HD) acc[e] = acc[e] * f + p * v_row[i];
+    }
+    m = nm;
+  }
+
+  if (lane == 0) {
+    warp_max[warp] = m;
+    warp_sum[warp] = l;
+  }
+  for (uint32_t e = 0; e < EPL; ++e) {
+    const uint32_t i = lane + e * 64;
+    if (i < HD) warp_acc[warp][i] = acc[e];
+  }
+  __syncthreads();
+  if (warp != 0) return;
+  const float M = fmaxf(fmaxf(warp_max[0], warp_max[1]), fmaxf(warp_max[2], warp_max[3]));
+  float* out = partials + (((size_t)blockIdx.z * S + query) * gridDim.x + split) * (HD + 2);
+  if (M == -INFINITY) {  // empty split
+    if (lane == 0) out[HD + 1] = 0.0f;
+    return;
+  }
+  float w[4], L = 0.0f;
+  for (uint32_t j = 0; j < 4; ++j) {
+    w[j] = expf(warp_max[j] - M);
+    L += warp_sum[j] * w[j];
+  }
+  for (uint32_t e = 0; e < EPL; ++e) {
+    const uint32_t i = lane + e * 64;
+    if (i < HD)
+      out[i] = warp_acc[0][i] * w[0] + warp_acc[1][i] * w[1] + warp_acc[2][i] * w[2] +
+               warp_acc[3][i] * w[3];
+  }
+  if (lane == 0) {
+    out[HD] = M;
+    out[HD + 1] = L;
+  }
+}
+
+template <uint32_t HD>
+__global__ void k_v2_combine(const float* __restrict__ partials, float* __restrict__ out,
+                             uint32_t S, uint32_t splits) {
+  const uint32_t query = blockIdx.x;
+  const float* base = partials + ((size_t)blockIdx.y * S + query) * splits * (HD + 2);
+  float M = -INFINITY, L = 0.0f;
+  for (uint32_t sp = 0; sp < splits; ++sp) {
+    const float l = base[sp * (HD + 2) + HD + 1];
+    if (l > 0.0f) M = fmaxf(M, base[sp * (HD + 2) + HD]);
+  }
+  for (uint32_t sp = 0; sp < splits; ++sp) {
+    const float l = base[sp * (HD + 2) + HD + 1];
+    if (l > 0.0f) L += l * expf(base[sp * (HD + 2) + HD] - M);
+  }
+  const uint32_t i = threadIdx.x;
+  if (i < HD) {
+    float a = 0.0f;
+    for (uint32_t sp = 0; sp < splits; ++sp) {
+      const float l = base[sp * (HD + 2) + HD + 1];
+      if (l > 0.0f) a += base[sp * (HD + 2) + i] * expf(base[sp * (HD + 2) + HD] - M);
+    }
+    out[((size_t)blockIdx.y * S + query) * HD + i] = a / L;
+  }
+}
+
 // ---------------------------------------------------------------- v4 (split-T prefill)
 
 // Main kernel: one block per (query-tile, key-chunk, head); one thread per
@@ -431,6 +539,16 @@ void launch_one(const char* scheme, const Case& c, const float* dq, const float*
       const dim3 g((c.S + 31) / 32, c.H);
       k_v3b<128, 32, 64><<<g, 64>>>(dq, dk, dv, dout, c.S, c.T, scale);
     }
+  } else if (std::strcmp(scheme, "v2") == 0) {
+    uint32_t splits = (c.T + 63) / 64, rows_per_split = 64;
+    if (splits > 64) {  // keep full coverage of [0, T)
+      splits = 64;
+      rows_per_split = (c.T + splits - 1) / splits;
+    }
+    const dim3 g(splits, c.S, c.H);
+    k_v2_split<HD><<<g, 256>>>(dq, dk, dv, dpart, c.S, c.T, scale, rows_per_split);
+    const dim3 gc(c.S, c.H);
+    k_v2_combine<HD><<<gc, 128>>>(dpart, dout, c.S, splits);
   } else {  // v4
     const dim3 g((c.S + 63) / 64, max_chunks, c.H);
     k_v4<HD, 64, 64><<<g, 64>>>(dq, dk, dv, dpart, c.S, c.T, scale, max_chunks);
@@ -465,7 +583,7 @@ int main(int argc, char** argv) {
   float* dpart = nullptr;  // v4 partials: H*S*max_chunks*(hd+2) floats
   HIP_CHECK(hipMalloc(&dpart, (size_t)c.H * c.S * max_chunks * (c.hd + 2) * 4));
 
-  for (const char* scheme : {"v1", "v3A", "v3A2", "v3B", "v4"}) {
+  for (const char* scheme : {"v1", "v2", "v3A", "v3A2", "v3B", "v4"}) {
     auto run = [&] {
       if (c.hd == 64)
         launch_one<64>(scheme, c, dq, dk, dv, dout, dpart, max_chunks);

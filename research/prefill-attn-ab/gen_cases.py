@@ -30,6 +30,18 @@ CORRECTNESS = [  # (T, S) — includes non-full-chunk and chunk-straddling sizes
     (2048, 512),
 ]
 TIMING = [(1000, 512), (2048, 512), (4000, 512), (1000, 1000)]
+DECODE_TIMING = [  # S=1 decode across context lengths + S=4 boundary probes
+    (1, 1),
+    (8, 1),
+    (32, 1),
+    (64, 1),
+    (128, 1),
+    (256, 1),
+    (512, 1),
+    (1000, 1),
+    (512, 4),
+    (1000, 4),
+]
 HDS = [64, 128]
 
 
@@ -63,6 +75,8 @@ def main() -> None:
         for T, S in CORRECTNESS:
             print(make(out_dir, hd, T, S, H=1))
         for T, S in TIMING:
+            print(make(out_dir, hd, T, S, H=32))
+        for T, S in DECODE_TIMING:
             print(make(out_dir, hd, T, S, H=32))
 
 

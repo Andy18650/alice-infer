@@ -54,6 +54,27 @@ targeting 0.3 s/measurement; KV GB/s counts per-query bytes touched
 | T=2048 S=512 | 31.67 | 31.51 | 63.7 | 38.6 | **8.10** |
 | T=4000 S=512 | 66.6 | 61.98 | 128.3 | 85.4 | **14.63** |
 
+## Decode-shape coda (S=1/S=4): can v1 be retired?
+
+v2 = the engine's flash-decode kernel ported into this harness (split-T,
+in-warp shuffle reduction, fp32 out). Measured at decode shapes (H=32):
+
+| µs, S=1 | T=1 | T=8 | T=64 | T=128 | T=256 | T=512 | T=1000 | S=4 T=512 |
+|---|---|---|---|---|---|---|---|---|
+| hd=64 v1 | **4** | 12 | 77 | 152 | 303 | 701 | 1526 | 719 |
+| hd=64 v2 | 7 | **8** | **22** | **23** | **27** | **36** | **49** | **67** |
+| hd=64 v4 | 7 | 13 | 61 | 61 | 65 | 95 | 198 | 99 |
+| hd=128 v1 | **3** | 12 | 78 | 155 | 359 | 806 | 1550 | 804 |
+| hd=128 v2 | 7 | **8** | **23** | **24** | **32** | **40** | **53** | **76** |
+| hd=128 v4 | 12 | 33 | 206 | 212 | 327 | 343 | 669 | 345 |
+
+**v2 wins every decode shape except T=1** (1.5× at T=8 → ~30× at T=1000);
+v4 at S=1 is structurally degenerate (1 live lane of 64) and loses as
+predicted. T=1 favors v1 by ~3 µs of pure launch overhead (v2 runs two
+kernels), once per session — not worth a dispatch branch. **Engine
+dispatch therefore becomes two clauses, no v1: S>4 -> v4, S<=4 -> v2 at
+ALL T** — the T>=256 threshold was as unvalidated as the S<=4 one.
+
 ## Verdict
 
 **v4 (split-T prefill) wins everywhere, decisively.** 10–14× over v1 at

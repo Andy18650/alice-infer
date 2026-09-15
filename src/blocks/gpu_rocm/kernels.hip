@@ -3,13 +3,15 @@
 // shared-memory reductions only, no matrix intrinsics. bf16 conversions
 // truncate (__float_as_uint >> 16), bit-identical to host bf16::from_f32.
 
-#include <cstdlib>
+#include <stdexcept>
 
 #include <hip/hip_runtime.h>
 
 #include "kernels.hpp"
 
 namespace {
+
+constexpr uint32_t kCK = alice::gpu_rocm::kernels::kPrefillChunkKeys;
 
 __device__ __forceinline__ unsigned short f2b(float f) {
   return (unsigned short)(__float_as_uint(f) >> 16);
@@ -75,35 +77,6 @@ __global__ void k_rope_append(float* __restrict__ qkv, float* __restrict__ kcach
   // v: plain append
   for (uint32_t e = threadIdx.x; e < kvd; e += blockDim.x)
     vcache[(size_t)pos * kvd + e] = row[qd + kvd + e];
-}
-
-// One block per (s, h): online-softmax attention over cache rows [0, T).
-// Lane i owns output element i (i < hd <= 128); the score dot is a
-// block-wide reduction per cache row.
-__global__ void k_attention(const float* __restrict__ qkv, const float* __restrict__ kcache,
-                            const float* __restrict__ vcache,
-                            unsigned short* __restrict__ attn, uint32_t pos0, uint32_t nh,
-                            uint32_t nkv, uint32_t hd, float scale) {
-  __shared__ float shared[128];
-  const uint32_t h = blockIdx.x % nh, s = blockIdx.x / nh;
-  const uint32_t T = pos0 + s + 1, group = nh / nkv, g = h / group;
-  const uint32_t kvd = nkv * hd, qkvd = (nh + 2 * nkv) * hd, qd = nh * hd;
-  const uint32_t i = threadIdx.x;
-  const float q_i = i < hd ? qkv[(size_t)s * qkvd + h * hd + i] : 0.0f;
-  float m = -INFINITY, l = 0.0f, acc = 0.0f;
-  for (uint32_t t = 0; t < T; ++t) {
-    const float part =
-        i < hd ? q_i * kcache[(size_t)t * kvd + g * hd + i] : 0.0f;
-    const float dot = block_reduce_sum<128>(part, shared);
-    const float sc = dot * scale;
-    const float nm = fmaxf(m, sc);
-    const float f = expf(m - nm);  // first iter: exp(-inf)=0
-    const float p = expf(sc - nm);
-    l = l * f + p;
-    if (i < hd) acc = acc * f + p * vcache[(size_t)t * kvd + g * hd + i];
-    m = nm;
-  }
-  if (i < hd) attn[(size_t)s * qd + h * hd + i] = f2b(acc / l);
 }
 
 // Flash-decoding v2, phase 1: one block per (split, query, head); 4 warps of
@@ -219,18 +192,98 @@ __global__ void k_attention_combine(const float* __restrict__ partials,
   }
 }
 
+// Split-T prefill, main phase (v4 of research/prefill-attn-ab, the measured
+// winner): one block per (query-tile of 64, key-chunk of 64, q-head), one
+// thread per query. Raw scores go to the key-major LDS tile (conflict-free
+// in both phases), exp is deferred until the single-chunk max is known, and
+// the partial (acc, max, sum_exp) goes to the shared scratch. vec[] holds q
+// in the dot phase and is reused as acc in the value phase (one array, one
+// register budget); __launch_bounds__(64, 4) gives a 256-VGPR budget so
+// nothing spills at hd=128. Zero __syncthreads (score rows are
+// thread-private); fully-masked chunk-blocks return before touching K/V.
+template <uint32_t HD>
+__global__ void __launch_bounds__(64, 4)
+    k_prefill_split(const float* __restrict__ qkv, const float* __restrict__ kcache,
+                    const float* __restrict__ vcache, float* __restrict__ partials,
+                    uint32_t pos0, uint32_t S, uint32_t nh, uint32_t nkv, float scale,
+                    uint32_t max_chunks) {
+  __shared__ float scores[kCK * 64];  // scores[64 * key + thread]
+  const uint32_t query = blockIdx.x * 64 + threadIdx.x;
+  if (query >= S) return;
+  const uint32_t keys_for_query = pos0 + query + 1;  // causal bound (exclusive)
+  const uint32_t chunk_start = blockIdx.y * kCK;
+  if (chunk_start >= keys_for_query) return;  // fully-masked chunk-block
+  const uint32_t chunk_len = min(kCK, keys_for_query - chunk_start);
+  const uint32_t h = blockIdx.z, g = h / (nh / nkv);  // GQA: kv head of q-head h
+  const uint32_t kvd = nkv * HD, qkvd = (nh + 2 * nkv) * HD;
+  const float* k_base = kcache + (size_t)chunk_start * kvd + g * HD;
+  const float* v_base = vcache + (size_t)chunk_start * kvd + g * HD;
+
+  float vec[HD];  // q during the dot phase, reused as acc in the value phase
+  const float* q_row = qkv + (size_t)query * qkvd + h * HD;
+#pragma unroll
+  for (uint32_t i = 0; i < HD; ++i) vec[i] = q_row[i];
+  float chunk_max = -INFINITY;
+  for (uint32_t delta_t = 0; delta_t < chunk_len; ++delta_t) {
+    const float* k_row = k_base + (size_t)delta_t * kvd;  // broadcast
+    float d0 = 0.0f, d1 = 0.0f, d2 = 0.0f, d3 = 0.0f;
+#pragma unroll
+    for (uint32_t i = 0; i < HD; i += 4) {
+      d0 += vec[i] * k_row[i];
+      d1 += vec[i + 1] * k_row[i + 1];
+      d2 += vec[i + 2] * k_row[i + 2];
+      d3 += vec[i + 3] * k_row[i + 3];
+    }
+    const float score = ((d0 + d1) + (d2 + d3)) * scale;
+    scores[64 * delta_t + threadIdx.x] = score;
+    chunk_max = fmaxf(chunk_max, score);
+  }
+
+#pragma unroll
+  for (uint32_t i = 0; i < HD; ++i) vec[i] = 0.0f;  // q is dead; vec becomes acc
+  float sum_exp = 0.0f;
+  for (uint32_t delta_t = 0; delta_t < chunk_len; ++delta_t) {
+    const float p = expf(scores[64 * delta_t + threadIdx.x] - chunk_max);
+    sum_exp += p;
+    const float* v_row = v_base + (size_t)delta_t * kvd;  // broadcast
+#pragma unroll
+    for (uint32_t i = 0; i < HD; ++i) vec[i] += p * v_row[i];
+  }
+
+  float* out =
+      partials + (((size_t)h * S + query) * max_chunks + blockIdx.y) * (HD + 2);
+#pragma unroll
+  for (uint32_t i = 0; i < HD; ++i) out[i] = vec[i];
+  out[HD] = chunk_max;
+  out[HD + 1] = sum_exp;
+}
+
+// Combine: one block per (query, q-head), lane i owns output element i.
+// Merge the chunk partials with the max-rescale rule, divide once, bf16 out.
+template <uint32_t HD>
+__global__ void k_prefill_combine(const float* __restrict__ partials,
+                                  unsigned short* __restrict__ attn, uint32_t pos0,
+                                  uint32_t S, uint32_t nh, uint32_t max_chunks) {
+  const uint32_t s = blockIdx.x, h = blockIdx.y;
+  const uint32_t num_chunks = (pos0 + s + 1 + kCK - 1) / kCK;
+  const float* base = partials + ((size_t)h * S + s) * max_chunks * (HD + 2);
+  float max_score = -INFINITY, total_exp = 0.0f;
+  for (uint32_t c = 0; c < num_chunks; ++c)
+    max_score = fmaxf(max_score, base[c * (HD + 2) + HD]);
+  for (uint32_t c = 0; c < num_chunks; ++c)
+    total_exp += base[c * (HD + 2) + HD + 1] * expf(base[c * (HD + 2) + HD] - max_score);
+  const uint32_t i = threadIdx.x;
+  if (i < HD) {
+    float acc = 0.0f;
+    for (uint32_t c = 0; c < num_chunks; ++c)
+      acc += base[c * (HD + 2) + i] * expf(base[c * (HD + 2) + HD] - max_score);
+    attn[(size_t)s * nh * HD + h * HD + i] = f2b(acc / total_exp);
+  }
+}
+
 unsigned grid_for(size_t n, unsigned block) {
   unsigned g = (unsigned)((n + block - 1) / block);
   return g == 0 ? 1 : (g > 65535 ? 65535 : g);
-}
-
-// Dev-only A/B knob: ALICE_FORCE_ATTN_V1=1 pins attention to the v1 kernel.
-bool force_attn_v1() {
-  static const bool v1 = [] {
-    const char* e = getenv("ALICE_FORCE_ATTN_V1");
-    return e != nullptr && e[0] == '1';
-  }();
-  return v1;
 }
 
 }  // namespace
@@ -252,13 +305,34 @@ void rope_append(float* qkv, float* kcache, float* vcache, const float* cos_t,
 }
 
 void attention(const float* qkv, const float* kcache, const float* vcache, void* attn_bf16,
-               float* split_scratch, uint32_t pos0, uint32_t S, uint32_t nh, uint32_t nkv,
-               uint32_t hd, float scale) {
+               float* split_scratch, float* prefill_scratch, uint32_t pos0, uint32_t S,
+               uint32_t nh, uint32_t nkv, uint32_t hd, float scale) {
   const uint32_t T = pos0 + S;
-  if (!force_attn_v1() && S <= kAttnSplitMaxS && T >= kAttnSplitMinT) {
-    // Flash-decoding split-T path (decode at long context): the v1 kernel is
-    // sequential in T with a block reduction per cache row, so decode was
-    // reduction-latency-bound; here splits*nh*S blocks run in parallel.
+  if (S > kAttnSplitMaxS) {
+    // v4 split-T prefill (throughput-bound regime): fully independent
+    // (query-tile, key-chunk, head) blocks + combine on the shared scratch.
+    const uint32_t max_chunks = (T + kPrefillChunkKeys - 1) / kPrefillChunkKeys;
+    const dim3 g((S + 63) / 64, max_chunks, nh);
+    const dim3 gc(S, nh);
+    if (hd == 64) {
+      k_prefill_split<64><<<g, 64>>>(qkv, kcache, vcache, prefill_scratch, pos0, S, nh,
+                                     nkv, scale, max_chunks);
+      k_prefill_combine<64><<<gc, 128>>>((const float*)prefill_scratch,
+                                         (unsigned short*)attn_bf16, pos0, S, nh, max_chunks);
+    } else if (hd == 128) {
+      k_prefill_split<128><<<g, 64>>>(qkv, kcache, vcache, prefill_scratch, pos0, S, nh,
+                                      nkv, scale, max_chunks);
+      k_prefill_combine<128><<<gc, 128>>>((const float*)prefill_scratch,
+                                          (unsigned short*)attn_bf16, pos0, S, nh,
+                                          max_chunks);
+    } else {
+      throw std::runtime_error(
+          "gpu_rocm::kernels::attention: v4 prefill requires head_dim in {64, 128}");
+    }
+  } else {
+    // v2 flash-decode (all T): the machine is latency-bound here, so split
+    // the cache rows and merge partials. Measured to beat v1 at every
+    // decode shape except T=1 (by ~3us of launch overhead).
     uint32_t splits = (T + kAttnRowsPerSplit - 1) / kAttnRowsPerSplit;
     uint32_t rps = kAttnRowsPerSplit;
     if (splits > kAttnMaxSplits) {
@@ -269,9 +343,6 @@ void attention(const float* qkv, const float* kcache, const float* vcache, void*
                                                      pos0, nh, nkv, hd, scale, rps);
     k_attention_combine<<<S * nh, 128>>>((const float*)split_scratch,
                                          (unsigned short*)attn_bf16, hd, splits);
-  } else {
-    k_attention<<<S * nh, 128>>>(qkv, kcache, vcache, (unsigned short*)attn_bf16, pos0, nh,
-                                 nkv, hd, scale);
   }
 }
 

@@ -201,8 +201,12 @@ Narrow entry that sniffs format by content and delegates
 - Private buffers per component — device allocations now: weights,
   state, transients.
 - The shared stream buffers (residual, io) are device allocations owned
-  by the Trunk, `[max_prefill_chunk, d]` fp32 — the only cross-block
-  scratch sharing.
+  by the Trunk, `[max_prefill_chunk, d]` fp32. One more cross-block
+  sharing instance exists (2026-09, first §14 scratch-pool use): the v4
+  prefill attention partials buffer, loader-allocated once
+  (`nh × max_prefill_chunk × ceil(max_seq/64) × (hd+2)` fp32) and reused
+  by every attention block — each block's partials are produced and
+  consumed within its own `forward` (split → combine).
 - Load flow, per block in order: `pread` shard bytes → pinned host
   staging → H2D → staging freed. Peak host RAM ≈ one block's staging.
   Pinned staging is mandatory (pageable H2D runs a driver-staged path,
@@ -285,8 +289,9 @@ Narrow entry that sniffs format by content and delegates
   back for SSM/linear-attention blocks (chunkwise-parallel prefill vs
   recurrent decode) and speculative decoding (short-prefill-with-
   rollbacks; likely a new interface).
-- Device transient sharing / scratch pool (private now; revisit under
-  memory pressure).
+- Device transient sharing / scratch pool (first instance landed: the
+  shared v4 prefill partials buffer, loader-owned, §9; generalize under
+  memory pressure or when a second sharer appears).
 - Trunk/norm merge: revisit triggers in §8.2.
 - Naming: LmHead ("de-embedder" candidate; `lm_head` matches files).
 

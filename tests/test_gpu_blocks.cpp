@@ -45,6 +45,15 @@ std::vector<float> mat_vals(uint32_t r, uint32_t c) {
   return v;
 }
 
+// Allocate the shared v4 prefill partials scratch for a test config.
+float* alloc_prefill_scratch(const ModelConfig& mc, const EngineConfig& ec) {
+  float* p = nullptr;
+  const size_t bytes = size_t(mc.num_heads) * ec.max_prefill_chunk *
+                       ((ec.max_seq_len + 63) / 64) * (mc.head_dim + 2) * 4;
+  if (hipMalloc(&p, bytes) != hipSuccess) throw std::bad_alloc();
+  return p;
+}
+
 // Run a gpu::Block on host-staged io: H2D -> forward -> D2H.
 std::vector<float> run_gpu_block(alice::gpu::Block& b, const std::vector<float>& io,
                                  uint32_t S, uint32_t d) {
@@ -106,7 +115,8 @@ TEST(GpuBlocks, AttentionApproxVsGeneric) {
                                                         wo1.view, mc, ec);
   Bf16Mat wq2(8, 8, mat_vals(8, 8)), wk2(4, 8, mat_vals(9, 9)), wv2(4, 8, mat_vals(10, 10)),
       wo2(8, 8, mat_vals(11, 11));
-  alice::gpu_rocm::GqaAttentionBF16 gpu(wq2.view, wk2.view, wv2.view, wo2.view, mc, ec);
+  alice::gpu_rocm::GqaAttentionBF16 gpu(wq2.view, wk2.view, wv2.view, wo2.view, mc, ec,
+                                      alloc_prefill_scratch(mc, ec));
 
   std::vector<float> io = mat_vals(3, 8);
   oracle.forward(F32View{io.data(), 3, 8, 0});
@@ -131,8 +141,8 @@ TEST(GpuBlocks, AttentionIncrementalEqualsBatched) {
     Bf16Mat* wk = new Bf16Mat(4, 8, mat_vals(9, 9));
     Bf16Mat* wv = new Bf16Mat(4, 8, mat_vals(10, 10));
     Bf16Mat* wo = new Bf16Mat(8, 8, mat_vals(11, 11));
-    auto b = std::make_unique<alice::gpu_rocm::GqaAttentionBF16>(wq->view, wk->view, wv->view,
-                                                            wo->view, mc, ec);
+    auto b = std::make_unique<alice::gpu_rocm::GqaAttentionBF16>(
+        wq->view, wk->view, wv->view, wo->view, mc, ec, alloc_prefill_scratch(mc, ec));
     return std::tuple{
         std::unique_ptr<Bf16Mat>(wq), std::unique_ptr<Bf16Mat>(wk),
         std::unique_ptr<Bf16Mat>(wv), std::unique_ptr<Bf16Mat>(wo), std::move(b)};
@@ -182,7 +192,8 @@ TEST(GpuBlocks, AttentionSplitDecodeMatchesOracle) {
                                                         wo1.view, mc, ec);
   Bf16Mat wq2(qd, d, scaled(mat_vals(qd, d))), wk2(kvd, d, scaled(mat_vals(kvd, d))),
       wv2(kvd, d, wv_vals), wo2(d, qd, scaled(mat_vals(d, qd)));
-  alice::gpu_rocm::GqaAttentionBF16 gpu(wq2.view, wk2.view, wv2.view, wo2.view, mc, ec);
+  alice::gpu_rocm::GqaAttentionBF16 gpu(wq2.view, wk2.view, wv2.view, wo2.view, mc, ec,
+                                      alloc_prefill_scratch(mc, ec));
 
   const std::vector<float> rows = mat_vals(T0 + ND, d);
   std::vector<float> ref = rows;  // oracle: one batched run over all rows
@@ -198,6 +209,52 @@ TEST(GpuBlocks, AttentionSplitDecodeMatchesOracle) {
   }
 }
 
+// v4 split-T prefill path (dispatch: S > 4): chunked prefill outputs must
+// match the CPU oracle, including continuation chunks (pos0 > 0).
+TEST(GpuBlocks, AttentionPrefillSplitMatchesOracle) {
+  require_gpu();
+  ModelConfig mc;
+  mc.num_heads = 4;
+  mc.num_kv_heads = 2;
+  mc.head_dim = 128;
+  mc.hidden_size = 256;
+  mc.rope_theta = 10000.0f;
+  mc.has_rope_scaling = false;
+  EngineConfig ec;
+  ec.max_seq_len = 512;
+  ec.max_prefill_chunk = 512;
+  const uint32_t d = 256, qd = 512, kvd = 256, T0 = 300, T1 = 200;
+  auto scaled = [](std::vector<float> v) {  // bf16-exact 2^-4; see split test
+    for (auto& x : v) x *= 0.0625f;
+    return v;
+  };
+  auto wv_vals = scaled(mat_vals(kvd, d));
+  for (auto& x : wv_vals) x = -0.5f * x + 0.125f;
+  Bf16Mat wq1(qd, d, scaled(mat_vals(qd, d))), wk1(kvd, d, scaled(mat_vals(kvd, d))),
+      wv1(kvd, d, wv_vals), wo1(d, qd, scaled(mat_vals(d, qd)));
+  alice::cpu_generic::GqaAttentionBF16CpuGeneric oracle(wq1.view, wk1.view, wv1.view,
+                                                        wo1.view, mc, ec);
+  Bf16Mat wq2(qd, d, scaled(mat_vals(qd, d))), wk2(kvd, d, scaled(mat_vals(kvd, d))),
+      wv2(kvd, d, wv_vals), wo2(d, qd, scaled(mat_vals(d, qd)));
+  alice::gpu_rocm::GqaAttentionBF16 gpu(wq2.view, wk2.view, wv2.view, wo2.view, mc, ec,
+                                        alloc_prefill_scratch(mc, ec));
+
+  const std::vector<float> rows = mat_vals(T0 + T1, d);
+  std::vector<float> ref = rows;
+  oracle.forward(F32View{ref.data(), T0 + T1, d, 0});
+
+  auto got0 = run_gpu_block(
+      gpu, std::vector<float>(rows.begin(), rows.begin() + T0 * d), T0, d);
+  EXPECT_LT(max_abs_diff(std::vector<float>(ref.begin(), ref.begin() + T0 * d), got0),
+            0.1f)
+      << "v4 prefill diverged (initial chunk)";
+  auto got1 = run_gpu_block(gpu, std::vector<float>(rows.begin() + T0 * d, rows.end()),
+                            T1, d);
+  EXPECT_LT(max_abs_diff(std::vector<float>(ref.begin() + T0 * d, ref.end()), got1),
+            0.1f)
+      << "v4 prefill diverged (continuation chunk, pos0=300)";
+}
+
 TEST(GpuBlocks, AttentionResetRestartsPosition) {
   require_gpu();
   ModelConfig mc;
@@ -211,7 +268,8 @@ TEST(GpuBlocks, AttentionResetRestartsPosition) {
   ec.max_prefill_chunk = 4;
   Bf16Mat wq(8, 8, mat_vals(8, 8)), wk(4, 8, mat_vals(9, 9)), wv(4, 8, mat_vals(10, 10)),
       wo(8, 8, mat_vals(11, 11));
-  alice::gpu_rocm::GqaAttentionBF16 b(wq.view, wk.view, wv.view, wo.view, mc, ec);
+  alice::gpu_rocm::GqaAttentionBF16 b(wq.view, wk.view, wv.view, wo.view, mc, ec,
+                                    alloc_prefill_scratch(mc, ec));
   auto first = run_gpu_block(b, mat_vals(3, 8), 3, 8);
   EXPECT_EQ(b.position(), 3u);
   b.reset_state();

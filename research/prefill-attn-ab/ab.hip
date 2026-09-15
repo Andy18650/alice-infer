@@ -386,7 +386,8 @@ __global__ void k_v2_combine(const float* __restrict__ partials, float* __restri
 // goes to global memory. Fully-masked chunk-blocks (causality) return before
 // touching K/V. Zero __syncthreads: every score row is thread-private.
 template <uint32_t HD, uint32_t QT, uint32_t CK>
-__global__ void k_v4(const float* __restrict__ q, const float* __restrict__ kc,
+__global__ void __launch_bounds__(64, 4)  // 256-VGPR budget: no acc scratch spill
+    k_v4(const float* __restrict__ q, const float* __restrict__ kc,
                      const float* __restrict__ vc, float* __restrict__ partials,
                      uint32_t S, uint32_t T, float scale, uint32_t max_chunks) {
   __shared__ float scores[CK * QT];  // key-major: scores[QT * key + thread]
@@ -441,6 +442,70 @@ __global__ void k_v4(const float* __restrict__ q, const float* __restrict__ kc,
       partials + (((size_t)blockIdx.z * S + query) * max_chunks + blockIdx.y) * (HD + 2);
 #pragma unroll
   for (uint32_t i = 0; i < HD; ++i) out[i] = acc[i];
+  out[HD] = chunk_max;
+  out[HD + 1] = sum_exp;
+}
+
+// v4R variant (user's idea): score tile in per-thread REGISTERS instead of
+// LDS. scores[CK] is wavefront-uniform-indexed (all lanes iterate the same
+// delta_t), the case CDNA2 GPR index mode covers; whether LLVM selects it
+// or spills to local scratch is verified via the resource report (see
+// README). Peak register pressure: HD + CK + helpers ~= 208 (hd=128) -> 4
+// wavefronts/CU; ~150 (hd=64) -> up to 6 blocks/CU (v4-LDS was LDS-capped
+// at 4). Zero LDS, zero bank questions.
+template <uint32_t HD, uint32_t QT, uint32_t CK>
+__global__ void __launch_bounds__(64, 4)
+    k_v4r(const float* __restrict__ q, const float* __restrict__ kc,
+          const float* __restrict__ vc, float* __restrict__ partials, uint32_t S,
+          uint32_t T, float scale, uint32_t max_chunks) {
+  const uint32_t query = blockIdx.x * QT + threadIdx.x;
+  if (query >= S) return;
+  const uint32_t keys_for_query = T - S + query + 1;
+  const uint32_t chunk_start = blockIdx.y * CK;
+  if (chunk_start >= keys_for_query) return;
+  const uint32_t chunk_len = min(CK, keys_for_query - chunk_start);
+  const float* k_base = kc + ((size_t)blockIdx.z * T + chunk_start) * HD;
+  const float* v_base = vc + ((size_t)blockIdx.z * T + chunk_start) * HD;
+
+  float scores[CK];
+  float vec[HD];  // q during the dot phase, reused as acc in the value phase
+  const float* q_row = q + ((size_t)blockIdx.z * S + query) * HD;
+#pragma unroll
+  for (uint32_t i = 0; i < HD; ++i) vec[i] = q_row[i];
+  // Rolled loop, runtime bound, no unroll pragma: delta_t is a
+  // wavefront-uniform scalar, so scores[delta_t] is a candidate for
+  // CDNA2 GPR index mode (s_set_gpr_idx_on). Verified in the disassembly.
+  float chunk_max = -INFINITY;
+  for (uint32_t delta_t = 0; delta_t < chunk_len; ++delta_t) {
+    const float* k_row = k_base + (size_t)delta_t * HD;
+    float d0 = 0.0f, d1 = 0.0f, d2 = 0.0f, d3 = 0.0f;
+#pragma unroll
+    for (uint32_t i = 0; i < HD; i += 4) {
+      d0 += vec[i] * k_row[i];
+      d1 += vec[i + 1] * k_row[i + 1];
+      d2 += vec[i + 2] * k_row[i + 2];
+      d3 += vec[i + 3] * k_row[i + 3];
+    }
+    const float score = ((d0 + d1) + (d2 + d3)) * scale;
+    scores[delta_t] = score;
+    chunk_max = fmaxf(chunk_max, score);
+  }
+
+#pragma unroll
+  for (uint32_t i = 0; i < HD; ++i) vec[i] = 0.0f;  // q is dead; vec becomes acc
+  float sum_exp = 0.0f;
+  for (uint32_t delta_t = 0; delta_t < chunk_len; ++delta_t) {
+    const float p = expf(scores[delta_t] - chunk_max);
+    sum_exp += p;
+    const float* v_row = v_base + (size_t)delta_t * HD;
+#pragma unroll
+    for (uint32_t i = 0; i < HD; ++i) vec[i] += p * v_row[i];
+  }
+
+  float* out =
+      partials + (((size_t)blockIdx.z * S + query) * max_chunks + blockIdx.y) * (HD + 2);
+#pragma unroll
+  for (uint32_t i = 0; i < HD; ++i) out[i] = vec[i];
   out[HD] = chunk_max;
   out[HD + 1] = sum_exp;
 }
@@ -549,9 +614,12 @@ void launch_one(const char* scheme, const Case& c, const float* dq, const float*
     k_v2_split<HD><<<g, 256>>>(dq, dk, dv, dpart, c.S, c.T, scale, rows_per_split);
     const dim3 gc(c.S, c.H);
     k_v2_combine<HD><<<gc, 128>>>(dpart, dout, c.S, splits);
-  } else {  // v4
+  } else {  // v4 / v4R
     const dim3 g((c.S + 63) / 64, max_chunks, c.H);
-    k_v4<HD, 64, 64><<<g, 64>>>(dq, dk, dv, dpart, c.S, c.T, scale, max_chunks);
+    if (std::strcmp(scheme, "v4R") == 0)
+      k_v4r<HD, 64, 64><<<g, 64>>>(dq, dk, dv, dpart, c.S, c.T, scale, max_chunks);
+    else
+      k_v4<HD, 64, 64><<<g, 64>>>(dq, dk, dv, dpart, c.S, c.T, scale, max_chunks);
     const dim3 gc(c.S, c.H);
     k_v4_combine<HD, 64><<<gc, 128>>>(dpart, dout, c.S, c.T, max_chunks);
   }
@@ -583,7 +651,7 @@ int main(int argc, char** argv) {
   float* dpart = nullptr;  // v4 partials: H*S*max_chunks*(hd+2) floats
   HIP_CHECK(hipMalloc(&dpart, (size_t)c.H * c.S * max_chunks * (c.hd + 2) * 4));
 
-  for (const char* scheme : {"v1", "v2", "v3A", "v3A2", "v3B", "v4"}) {
+  for (const char* scheme : {"v1", "v2", "v3A", "v3A2", "v3B", "v4", "v4R"}) {
     auto run = [&] {
       if (c.hd == 64)
         launch_one<64>(scheme, c, dq, dk, dv, dout, dpart, max_chunks);

@@ -109,20 +109,22 @@ cmake --build build-release -j                     # Release: measure here
   fixtures regenerable (`dump_canonical.py --prompt-file <raw>
   --dtype fp32`), gitignored. The semantic-exactness proof (CPU engine
   0.0002 vs fp32 ideal) is recorded in design §13.
-- Perf (Release, single GCD, greedy): 1B prefill 3652 tok/s at 602-token
-  prompt (43× the host path); 1B decode 111 short-ctx / 108.5 at 630 ctx
-  / 85.6 at 4000 ctx (pre-v2: 43 at 630 — the context cliff is gone);
-  8B decode 34.9 short-ctx / 28.2 at 4000 ctx. Decode is now bound by
-  S=1 GEMV efficiency + per-token launch/sync overhead, not attention.
-- Attention kernels (gpu_rocm private TU): v1 one-block-per-(query,head)
-  serves prefill and short-ctx; the flash-decoding v2 (split-T partial
-  online softmax + combine, dispatch S<=4 && T>=256) serves long-ctx
-  decode. ALICE_FORCE_ATTN_V1=1 pins v1 for A/B debugging. Known limit:
-  long-context PREFILL still runs v1 (885 tok/s at 4000 ctx vs 3652 at
-  602) — a flash-prefill tiling over S is the next attention lever.
-- Next: long-ctx prefill attention (flash tiling over S), then 70B
-  multi-die (needs ≥3 GCDs; the TP/PP research is in
-  research/rccl-single-process/), then §11 quantization.
+- Perf (Release, single GCD, greedy): 1B prefill 7826 tok/s at 602 ctx
+  / 8589 at 4000 ctx (pre-v4: 3652 / 885); 8B prefill 2105 at 4000 ctx
+  (was 398). 1B decode 114.6 short-ctx / 108.2 at 630 / 86.1 at 4000;
+  8B decode 35.1 / 28.2. Decode is bound by S=1 GEMV efficiency +
+  per-token launch/sync overhead; prefill is GEMM-bound again.
+- Attention kernels (gpu_rocm private TU; v1 RETIRED — every dispatch
+  decision is measured in research/prefill-attn-ab): S>4 → v4 split-T
+  prefill (thread-per-query, key-major LDS score tile, deferred exp,
+  partials in a loader-allocated SHARED scratch — first §14 scratch-pool
+  instance — plus combine); S≤4 → v2 flash-decode at ALL T (split-T,
+  in-warp shuffle reductions + combine; beats v1 even at T=8). The v1
+  one-block-per-(query,head) kernel is deleted.
+- Next: 70B multi-die (needs ≥3 GCDs; the TP/PP research is in
+  research/rccl-single-process/), then §11 quantization; on the horizon:
+  MFMA variant of the v4 tile structure (hd=128), fp16/bf16 KV cache,
+  decode-overhead campaign (GEMV + launch diet).
 - RCCL on this box: Canonical build broken (any ≥2-rank collective
   segfaults — vendor unit tests confirm); AMD-overlay RCCL validated as
   replacement; hand-rolled P2P validated (134.7 GB/s intra-card). See

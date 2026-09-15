@@ -15,8 +15,12 @@ namespace alice::gpu_rocm {
 
 class GqaAttentionBF16 final : public gpu::StatefulBlock {
  public:
+  // prefill_scratch: shared device transient for the v4 prefill partials
+  // (loader-allocated, NOT owned: nh * max_prefill_chunk * ceil(max_seq/64)
+  // * (hd+2) floats; design §14 scratch pool, first instance).
   GqaAttentionBF16(BF16View wq, BF16View wk, BF16View wv, BF16View wo,
-                   const ModelConfig& mc, const EngineConfig& ec);
+                   const ModelConfig& mc, const EngineConfig& ec,
+                   float* prefill_scratch);
   ~GqaAttentionBF16() override;
 
   void forward(float* io, uint32_t S) override;
@@ -38,6 +42,7 @@ class GqaAttentionBF16 final : public gpu::StatefulBlock {
   float* dqkv_ = nullptr;   // fp32 [mpc, qd + 2*kvd]
   void* dattn_ = nullptr;   // bf16 [mpc, qd]
   float* dsplit_ = nullptr;  // split-T partials [kAttnMaxSplits*nh*kAttnSplitMaxS*(hd+2)]
+  float* prefill_scratch_ = nullptr;  // shared v4 prefill partials (not owned)
 };
 
 }  // namespace alice::gpu

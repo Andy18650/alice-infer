@@ -32,7 +32,8 @@ namespace {
 }  // namespace
 
 GqaAttentionBF16::GqaAttentionBF16(BF16View wq, BF16View wk, BF16View wv, BF16View wo,
-                                   const ModelConfig& mc, const EngineConfig& ec)
+                                   const ModelConfig& mc, const EngineConfig& ec,
+                                   float* prefill_scratch)
     : nh_(mc.num_heads),
       nkv_(mc.num_kv_heads),
       hd_(mc.head_dim),
@@ -81,6 +82,9 @@ GqaAttentionBF16::GqaAttentionBF16(BF16View wq, BF16View wk, BF16View wv, BF16Vi
   HIP_CHECK(hipMalloc(&dattn_, size_t(mpc_) * qd * sizeof(bf16)));
   HIP_CHECK(hipMalloc(&dsplit_, size_t(kernels::kAttnMaxSplits) * nh_ *
                                     kernels::kAttnSplitMaxS * (hd_ + 2) * sizeof(float)));
+  prefill_scratch_ = prefill_scratch;
+  if (prefill_scratch_ == nullptr)
+    throw std::invalid_argument("gpu_rocm::GqaAttentionBF16: null prefill scratch");
 }
 
 GqaAttentionBF16::~GqaAttentionBF16() {
@@ -115,8 +119,8 @@ void GqaAttentionBF16::forward(float* io, uint32_t S) {
                            qkvd, rocblas_datatype_f32_r, rocblas_gemm_algo_standard, 0, 0));
   kernels::rope_append(dqkv_, dkcache_, dvcache_, drope_cos_, drope_sin_, pos_, S, nh_,
                        nkv_, hd_);
-  kernels::attention(dqkv_, dkcache_, dvcache_, dattn_, dsplit_, pos_, S, nh_, nkv_, hd_,
-                     scale_);
+  kernels::attention(dqkv_, dkcache_, dvcache_, dattn_, dsplit_, prefill_scratch_, pos_,
+                     S, nh_, nkv_, hd_, scale_);
   // o_proj into io: C'[d, S] = Wo . attn^T
   RB_CHECK(rocblas_gemm_ex(p.handle, rocblas_operation_transpose, rocblas_operation_none,
                            d_, S, qd, &alpha, dw_o_, rocblas_datatype_bf16_r, qd, dattn_,

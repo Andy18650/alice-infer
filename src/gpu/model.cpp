@@ -30,6 +30,10 @@ struct Model::Impl {
   std::vector<std::unique_ptr<Block>> blocks;
   std::unique_ptr<LmHead> lm_head;
   std::unique_ptr<Sampler> sampler;
+  float* prefill_scratch = nullptr;  // shared v4 partials (design §14 scratch pool)
+  ~Impl() {
+    if (prefill_scratch) (void)hipFree(prefill_scratch);
+  }
 
   const float* run(std::span<const int32_t> tokens, bool all_positions) {
     if (tokens.empty()) throw std::runtime_error("gpu::Model: empty token span");
@@ -142,6 +146,16 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
                  cpu_ref.size());
   }
 
+  // Shared v4 prefill partials (design §14 scratch pool, first instance):
+  // one buffer reused by every attention block; each block's partials are
+  // produced and consumed within its own forward (split -> combine).
+  const uint32_t max_chunks = (cfg.max_seq_len + 63) / 64;
+  const size_t scratch_bytes = size_t(m.config.num_heads) * cfg.max_prefill_chunk *
+                               max_chunks * (m.config.head_dim + 2) * sizeof(float);
+  if (hipMalloc(&model->impl_->prefill_scratch, scratch_bytes) != hipSuccess)
+    throw std::runtime_error("gpu::Model::load: prefill scratch allocation failed (" +
+                             std::to_string(scratch_bytes >> 20) + " MiB)");
+
   size_t block_index = 0;
   for (const auto& b : m.blocks) {
     const bool ref = cpu_ref.contains(block_index++);
@@ -157,7 +171,8 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
             m.config.hidden_size, cfg.max_prefill_chunk));
       else
         model->impl_->blocks.push_back(std::make_unique<gpu_rocm::GqaAttentionBF16>(
-            keep[0].view, keep[1].view, keep[2].view, keep[3].view, m.config, cfg));
+            keep[0].view, keep[1].view, keep[2].view, keep[3].view, m.config, cfg,
+            model->impl_->prefill_scratch));
     } else if (b.type == "dense_ffn_bf16") {
       std::vector<loader::Staging<bf16>> keep;
       for (const char* role : {"w_gate", "w_up", "w_down"})

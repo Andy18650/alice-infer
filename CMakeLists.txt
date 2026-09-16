@@ -26,12 +26,18 @@ add_library(alice
   src/blocks/cpu_generic/gqa_attention.cpp
   src/sampler.cpp
   src/frontend/tokenizer.cpp
-  src/frontend/pcre2.cpp
 )
 add_library(alice::alice ALIAS alice)
 target_include_directories(alice PUBLIC include)
-target_link_libraries(alice PRIVATE nlohmann_json::nlohmann_json ${CMAKE_DL_LIBS})
+target_link_libraries(alice PRIVATE nlohmann_json::nlohmann_json)
 target_compile_options(alice PRIVATE -Wall -Wextra -Wpedantic)
+
+# PCRE2 for the frontend tokenizer (pre-tokenizer regex, UTF + UCP): system
+# package via pkg-config, required at configure time. No vendored copy, no
+# runtime dlopen — same standard-approach rule as rocBLAS/HIP.
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(PCRE2 REQUIRED IMPORTED_TARGET libpcre2-8)
+target_link_libraries(alice PRIVATE PkgConfig::PCRE2)
 
 # OpenMP for intra-op kernel parallelism (design §10: each implementation's
 # private business). Sequential fallback when unavailable (pragma macro

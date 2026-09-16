@@ -68,7 +68,8 @@ until multi-die (it never fit one GCD).
 - **Threading**: model loop strictly sequential; intra-op parallelism is
   each impl's private business; host OpenMP static only (user decision).
 - **C++20 pinned**. Minimal core deps: nlohmann/json private in .cpp
-  only; GoogleTest via FetchContent; PCRE2 via dlopen. Device TUs
+  only; GoogleTest via FetchContent; PCRE2 system package via
+  pkg-config. Device TUs
   compile with hipcc.
 - **Don't touch `docs/session-api.md`** (user-owned draft).
 

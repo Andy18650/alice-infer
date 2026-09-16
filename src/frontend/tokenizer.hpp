@@ -8,18 +8,18 @@
 // decode() maps special ids to their literal content.
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#include "pcre2.hpp"
 
 namespace alice::frontend {
 
 class Tokenizer {
  public:
-  // Throws std::runtime_error on IO/format problems (incl. missing PCRE2).
+  // Throws std::runtime_error on IO/format problems.
   explicit Tokenizer(const std::string& tokenizer_json_path);
+  ~Tokenizer();
 
   std::vector<int32_t> encode(const std::string& text) const;
   std::string decode(const std::vector<int32_t>& ids) const;
@@ -40,7 +40,7 @@ class Tokenizer {
   std::vector<std::string> id_to_token_;  // base vocab (byte-alphabet UTF-8)
   std::unordered_map<int32_t, std::string> special_id_to_content_;
   std::unordered_map<std::string, int32_t> merges_;  // "A\x01" B -> rank
-  Pcre2Regex pretok_re_;
+  std::unique_ptr<struct PretokRegex> pretok_re_;  // PCRE2 (opaque here)
 };
 
 }  // namespace alice::frontend

@@ -13,6 +13,8 @@ The full design rationale lives in `docs/engine-design.md`.
 
 - CMake, a C++20 compiler (developed with GCC 15), **ROCm (rocBLAS + HIP
   runtime) and hipcc** — required, the engine does not build without them
+- **PCRE2** (`libpcre2-dev`; discovered via pkg-config) — required, for the
+  tokenizer's pre-tokenizer regex
 - Tests: GoogleTest (fetched automatically), models under `/opt/models`
 
 ## Build
@@ -74,7 +76,7 @@ H2D inside the block). Never for production.
 - `src/gpu/` — GPU-resident engine (trunk/state SIMT kernels via hipcc, trunk, model)
 - `src/blocks/cpu_generic/` — naive CPU reference implementations (test oracle)
 - `src/blocks/gpu_rocm/` — ROCm block impls (rocBLAS GEMMs + private SIMT kernels) + platform plumbing (device + rocBLAS handle)
-- `src/frontend/` — REPL, tokenizer (PCRE2 via dlopen), benches
+- `src/frontend/` — REPL, tokenizer (system PCRE2)
 - `models/` — manifests (the contract), one per bring-up model
 - `tests/` — GoogleTest suite + canonical teacher-forced fixtures
 - `tools/` — manifest generator/auditor, sweep scripts

@@ -5,10 +5,17 @@
 
 #include <nlohmann/json.hpp>
 
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
+
 namespace alice::frontend {
 
 namespace {
 
+// Pre-tokenizer regex: PCRE2 8-bit, compiled with UTF + UCP (the Llama
+// split pattern needs Unicode property classes). Owning wrapper; the
+// match_data is per-pattern, reused across next() calls (Tokenizer is
+// const-shared across encode/decode).
 void utf8_append(uint32_t cp, std::string& out) {
   if (cp < 0x80) {
     out += char(cp);
@@ -43,6 +50,50 @@ uint32_t utf8_next(const std::string& s, size_t* i) {
 }
 
 }  // namespace
+
+struct PretokRegex {
+  pcre2_code* code = nullptr;
+  pcre2_match_data* match_data = nullptr;
+
+  explicit PretokRegex(const std::string& pattern) {
+    int err = 0;
+    PCRE2_SIZE erroff = 0;
+    code = pcre2_compile(PCRE2_SPTR(pattern.data()), pattern.size(),
+                         PCRE2_UTF | PCRE2_UCP, &err, &erroff, nullptr);
+    if (!code) {
+      PCRE2_UCHAR8 msg[256];
+      (void)pcre2_get_error_message(err, msg, sizeof(msg));
+      throw std::runtime_error("Tokenizer: pre-tokenizer regex compile failed (code " +
+                               std::to_string(err) + ") at offset " +
+                               std::to_string(erroff) + ": " +
+                               reinterpret_cast<const char*>(msg));
+    }
+    match_data = pcre2_match_data_create_from_pattern(code, nullptr);
+    if (!match_data) throw std::runtime_error("Tokenizer: match_data_create failed");
+  }
+  ~PretokRegex() {
+    pcre2_match_data_free(match_data);
+    pcre2_code_free(code);
+  }
+  PretokRegex(const PretokRegex&) = delete;
+  PretokRegex& operator=(const PretokRegex&) = delete;
+
+  // Finds the next match at or after *offset. On match: sets *begin/*end,
+  // advances *offset past the match, returns true. Returns false at NOMATCH.
+  bool next(const std::string& subject, size_t* offset, size_t* begin, size_t* end) const {
+    const int rc = pcre2_match(code, PCRE2_SPTR(subject.data()), subject.size(), *offset,
+                               0, match_data, nullptr);
+    if (rc == PCRE2_ERROR_NOMATCH) return false;
+    if (rc < 0)
+      throw std::runtime_error("Tokenizer: pre-tokenizer match error " + std::to_string(rc));
+    const PCRE2_SIZE* ov = pcre2_get_ovector_pointer(match_data);
+    *begin = ov[0];
+    *end = ov[1];
+    // guard against empty matches looping forever (pattern shouldn't produce any)
+    *offset = (*end > *begin) ? *end : *end + 1;
+    return true;
+  }
+};
 
 Tokenizer::Tokenizer(const std::string& path) {
   std::ifstream in(path);
@@ -98,8 +149,10 @@ Tokenizer::Tokenizer(const std::string& path) {
   for (const auto& pt : j.at("pre_tokenizer").at("pretokenizers"))
     if (pt.value("type", "") == "Split") pattern = pt.at("pattern").at("Regex").get<std::string>();
   if (pattern.empty()) throw std::runtime_error("Tokenizer: no Split pre-tokenizer found");
-  pretok_re_ = Pcre2Regex(pattern);
+  pretok_re_ = std::make_unique<PretokRegex>(pattern);
 }
+
+Tokenizer::~Tokenizer() = default;
 
 std::vector<int32_t> Tokenizer::bpe_encode_span(const std::string& bytes) const {
   // bytes -> alphabet symbols (single-codepoint UTF-8 strings)
@@ -139,7 +192,7 @@ std::vector<int32_t> Tokenizer::bpe_encode_span(const std::string& bytes) const 
 std::vector<int32_t> Tokenizer::encode(const std::string& text) const {
   std::vector<int32_t> ids;
   size_t offset = 0, begin = 0, end = 0;
-  while (pretok_re_.next(text, &offset, &begin, &end)) {
+  while (pretok_re_->next(text, &offset, &begin, &end)) {
     auto span_ids = bpe_encode_span(text.substr(begin, end - begin));
     ids.insert(ids.end(), span_ids.begin(), span_ids.end());
   }

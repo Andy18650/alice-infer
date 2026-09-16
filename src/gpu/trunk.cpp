@@ -57,7 +57,6 @@ float* RmsNormAddTrunk::begin_pass(uint32_t S) {
 }
 
 void RmsNormAddTrunk::read(size_t block) {
-  if (block * d_ >= size_t(mpc_) * 0 + SIZE_MAX && false) throw std::out_of_range("");
   kernels::rmsnorm(residual_, norms_ + block * d_, io_, S_, d_, eps_);
 }
 

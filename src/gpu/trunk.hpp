@@ -33,7 +33,6 @@ class RmsNormAddTrunk {
   float* io_ = nullptr;
   float* norms_ = nullptr;   // [n_blocks, d]
   float* final_ = nullptr;   // [d]
-  size_t nblocks_ = 0;
 };
 
 }  // namespace alice::gpu

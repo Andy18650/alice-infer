@@ -86,30 +86,6 @@ endif()
 add_executable(alice_repl src/frontend/repl.cpp)
 target_link_libraries(alice_repl PRIVATE alice)
 
-# BLAS scouting bench for lm_head (concluded experiment, kept as evidence;
-# builds only when ALICE_OPENBLAS_SO points at an OpenBLAS .so, e.g. the
-# system libopenblas0 package. No BLAS dependency in alice itself.)
-set(ALICE_OPENBLAS_SO "" CACHE FILEPATH
-    "path to an OpenBLAS shared object for the scout bench")
-if(EXISTS "${ALICE_OPENBLAS_SO}")
-  add_executable(alice_bench_lmhead src/frontend/bench_lmhead.cpp)
-  target_link_libraries(alice_bench_lmhead PRIVATE alice "${ALICE_OPENBLAS_SO}")
-else()
-  message(STATUS "OpenBLAS .so not found at ALICE_OPENBLAS_SO; skipping bench_lmhead")
-endif()
-
-# rocBLAS scouting bench for lm_head (GPU counterpart; host-only C++ against
-# the C APIs — no hipcc, Tensile code objects are pre-compiled).
-if(ALICE_GPU_RESIDENT)
-  add_executable(alice_bench_lmhead_gpu src/frontend/bench_lmhead_gpu.cpp)
-  # hipcc defines this implicitly; plain g++ must pick a platform explicitly.
-  target_compile_definitions(alice_bench_lmhead_gpu PRIVATE __HIP_PLATFORM_AMD__)
-  target_link_libraries(alice_bench_lmhead_gpu PRIVATE alice "${ALICE_ROCBLAS_LIB}"
-                                                       "${ALICE_HIP_LIB}")
-else()
-  message(STATUS "rocBLAS/HIP not found; skipping bench_lmhead_gpu")
-endif()
-
 if(ALICE_BUILD_TESTS)
   enable_testing()
   find_package(GTest QUIET)

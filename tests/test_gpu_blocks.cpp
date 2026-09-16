@@ -22,9 +22,6 @@ using alice::EngineConfig;
 using alice::F32View;
 using alice::ModelConfig;
 
-void require_gpu() {
-  if (!alice::gpu::resident_available()) GTEST_SKIP() << "no ROCm GPU";
-}
 
 struct Bf16Mat {
   std::vector<bf16> data;
@@ -76,7 +73,6 @@ float max_abs_diff(const std::vector<float>& a, const std::vector<float>& b) {
 }
 
 TEST(GpuBlocks, DenseFfnApproxVsGeneric) {
-  require_gpu();
   ModelConfig mc;
   mc.hidden_size = 8;
   mc.intermediate_size = 600;
@@ -98,7 +94,6 @@ TEST(GpuBlocks, DenseFfnApproxVsGeneric) {
 }
 
 TEST(GpuBlocks, AttentionApproxVsGeneric) {
-  require_gpu();
   ModelConfig mc;
   mc.num_heads = 2;
   mc.num_kv_heads = 1;
@@ -126,7 +121,6 @@ TEST(GpuBlocks, AttentionApproxVsGeneric) {
 }
 
 TEST(GpuBlocks, AttentionIncrementalEqualsBatched) {
-  require_gpu();
   ModelConfig mc;
   mc.num_heads = 2;
   mc.num_kv_heads = 1;
@@ -164,7 +158,6 @@ TEST(GpuBlocks, AttentionIncrementalEqualsBatched) {
 // Flash-decoding split-T path (kernels.hip dispatch: S <= 4 and T >= 256):
 // decode steps past the split threshold must match the CPU oracle.
 TEST(GpuBlocks, AttentionSplitDecodeMatchesOracle) {
-  require_gpu();
   ModelConfig mc;
   mc.num_heads = 4;
   mc.num_kv_heads = 2;
@@ -212,7 +205,6 @@ TEST(GpuBlocks, AttentionSplitDecodeMatchesOracle) {
 // v4 split-T prefill path (dispatch: S > 4): chunked prefill outputs must
 // match the CPU oracle, including continuation chunks (pos0 > 0).
 TEST(GpuBlocks, AttentionPrefillSplitMatchesOracle) {
-  require_gpu();
   ModelConfig mc;
   mc.num_heads = 4;
   mc.num_kv_heads = 2;
@@ -256,7 +248,6 @@ TEST(GpuBlocks, AttentionPrefillSplitMatchesOracle) {
 }
 
 TEST(GpuBlocks, AttentionResetRestartsPosition) {
-  require_gpu();
   ModelConfig mc;
   mc.num_heads = 2;
   mc.num_kv_heads = 1;

@@ -21,8 +21,6 @@
 
 namespace alice::gpu {
 
-bool resident_available() { return gpu_rocm::available_impl(); }
-
 struct Model::Impl {
   EngineConfig cfg;
   std::unique_ptr<Embedder> embedder;

@@ -10,8 +10,6 @@
 
 namespace alice::gpu_rocm {
 
-bool available_impl();  // device 0 exists; cached
-
 struct Platform {
   int device = 0;
   std::string arch;  // e.g. "gfx90a" (feature suffixes stripped)

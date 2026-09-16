@@ -21,7 +21,7 @@ std::string fixture(const std::string& dir, const std::string& name) {
 }
 
 bool have_gpu_model(const std::string& dir, const std::string& fixture_dir) {
-  return alice::gpu::resident_available() && std::filesystem::exists(dir) &&
+  return std::filesystem::exists(dir) &&
          std::filesystem::exists(fixture(fixture_dir, "case_0.json"));
 }
 
@@ -77,8 +77,8 @@ void run_teacher_forced(alice::gpu::Model& model, const std::string& fixture_dir
 
 TEST(GpuModel, DeterminismBitExact) {
   const std::string dir = "/opt/models/Llama-3.2-1B-Instruct";
-  if (!alice::gpu::resident_available() || !std::filesystem::exists(dir))
-    GTEST_SKIP() << "no GPU or 1B model";
+  if (!std::filesystem::exists(dir))
+    GTEST_SKIP() << "no 1B model";
   alice::EngineConfig cfg;
   cfg.max_seq_len = 512;
   auto model = alice::gpu::Model::load(
@@ -236,7 +236,6 @@ TEST(GpuModel, CanonicalEnvTeacherForced) {
   const char* man = getenv("ALICE_CANONICAL_MANIFEST");
   const char* fix = getenv("ALICE_CANONICAL_FIXTURES");
   if (!dir || !man || !fix) GTEST_SKIP() << "ALICE_CANONICAL_* not set";
-  if (!alice::gpu::resident_available()) GTEST_SKIP() << "no GPU";
   alice::EngineConfig cfg;
   cfg.max_seq_len = 8192;
   const char* chunk_env = getenv("ALICE_CANONICAL_CHUNK");

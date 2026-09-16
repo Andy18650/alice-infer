@@ -41,8 +41,4 @@ class Model {
   std::unique_ptr<Impl> impl_;
 };
 
-// True when the GPU-resident path was compiled in (hipcc + ROCm) AND a ROCm
-// device is present. The REPL/loader use this for selection.
-bool resident_available();
-
 }  // namespace alice::gpu

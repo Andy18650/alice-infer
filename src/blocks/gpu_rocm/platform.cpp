@@ -14,17 +14,8 @@ namespace {
   } while (0)
 }  // namespace
 
-bool available_impl() {
-  static const bool ok = [] {
-    int n = 0;
-    return hipGetDeviceCount(&n) == hipSuccess && n > 0;
-  }();
-  return ok;
-}
-
 Platform& platform() {
   static Platform p = [] {
-    if (!available_impl()) throw std::runtime_error("gpu_rocm: no ROCm GPU present");
     Platform q;
     HIP_CHECK(hipSetDevice(q.device));
     hipDeviceProp_t prop;

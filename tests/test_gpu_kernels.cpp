@@ -21,9 +21,6 @@ namespace gk = alice::gpu::kernels;
 namespace gbk = alice::gpu_rocm::kernels;
 using alice::bf16;
 
-void require_gpu() {
-  if (!alice::gpu::resident_available()) GTEST_SKIP() << "no ROCm GPU";
-}
 
 template <typename T>
 T* dev_upload(const std::vector<T>& host) {
@@ -53,7 +50,6 @@ std::vector<float> pattern(size_t n, uint32_t seed) {  // exact-representable
 }
 
 TEST(GpuKernels, F32ToBf16MatchesFromF32) {
-  require_gpu();
   auto host = pattern(1000, 1);
   float* d_in = dev_upload(host);
   unsigned short* d_out = nullptr;
@@ -67,7 +63,6 @@ TEST(GpuKernels, F32ToBf16MatchesFromF32) {
 }
 
 TEST(GpuKernels, RmsnormMatchesOracle) {
-  require_gpu();
   const uint32_t S = 5, d = 300;  // non-multiple of block size on purpose
   auto x = pattern(size_t(S) * d, 2);
   auto g = pattern(d, 3);
@@ -86,7 +81,6 @@ TEST(GpuKernels, RmsnormMatchesOracle) {
 }
 
 TEST(GpuKernels, AddRowsMatchesOracle) {
-  require_gpu();
   auto a = pattern(777, 4), b = pattern(777, 5);
   std::vector<float> oracle = a;
   cg::add_rows(F32View{oracle.data(), 1, 777, 0}, F32View{b.data(), 1, 777, 0});
@@ -100,7 +94,6 @@ TEST(GpuKernels, AddRowsMatchesOracle) {
 }
 
 TEST(GpuKernels, EmbedGatherMatchesHost) {
-  require_gpu();
   const uint32_t vocab = 50, d = 64;
   auto tab = pattern(size_t(vocab) * d, 6);
   std::vector<bf16> tab_b(tab.size());
@@ -121,7 +114,6 @@ TEST(GpuKernels, EmbedGatherMatchesHost) {
 }
 
 TEST(GpuKernels, SiluMulMatchesHost) {
-  require_gpu();
   const uint32_t S = 3, I = 100;
   // gu as the GEMM writes it: col-major [2I, S] == row-major [S, 2I].
   auto gu = pattern(size_t(2) * I * S, 7);
@@ -141,7 +133,6 @@ TEST(GpuKernels, SiluMulMatchesHost) {
 }
 
 TEST(GpuKernels, ArgmaxFindsMaxAndBreaksTiesLow) {
-  require_gpu();
   std::vector<float> x(1000, 1.0f);
   x[511] = 2.0f;
   x[13] = 2.0f;  // tie: lowest index wins
@@ -157,7 +148,6 @@ TEST(GpuKernels, ArgmaxFindsMaxAndBreaksTiesLow) {
 }
 
 TEST(GpuKernels, RopeAppendMatchesOracle) {
-  require_gpu();
   const uint32_t nh = 2, nkv = 1, hd = 4, S = 3, pos0 = 2, max_seq = 8;
   const uint32_t qd = nh * hd, kvd = nkv * hd, qkvd = qd + 2 * kvd, half = hd / 2;
   auto qkv = pattern(size_t(S) * qkvd, 8);

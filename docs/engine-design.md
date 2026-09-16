@@ -295,6 +295,76 @@ Narrow entry that sniffs format by content and delegates
 - Trunk/norm merge: revisit triggers in §8.2.
 - Naming: LmHead ("de-embedder" candidate; `lm_head` matches files).
 
+## 15. Kernel selection framework (2026-09, foundation of the next-gen loader)
+
+A kernel choice is pinpointed by, in order of when the information
+becomes available:
+
+- **Block type**, including dtype and quantization strategy.
+- **Model** (per-model shapes; 1B vs 70B can warrant different kernels).
+- **Hardware SKU**, not just ISA: same-arch parts differ in CU count,
+  clocks, L2; winners can flip between SKUs (MI210 vs MI250X).
+- **Parallel configuration** (TP degree): cuts matrices differently and
+  adds the collective itself as a selection point (hand-rolled P2P vs
+  overlay-RCCL, keyed by degree and message-size class; measurements in
+  research/rccl-single-process/).
+- **Call-time shape vector**: today `(S, T)` with T collapsed by
+  measurement (v2 wins at all T); batching or speculative decoding will
+  add B. The schema carries the full vector even when clauses ignore
+  parts of it.
+
+Deliberately excluded: **data-dependent dispatch** (e.g. MoE routing
+makes shapes value-dependent). The accepted mask-and-allreduce EP
+scheme keeps the dispatch closed — fixed expert GEMMs, masked.
+
+The selection pipeline narrows the candidate set at four times:
+
+1. **Code time** (architecture design): cull provably-inferior
+   implementations; a human act backed by harness evidence. Case study:
+   v1 attention retired after measurement falsified both of its
+   dispatch boundaries.
+2. **Compile time**: per-arch implementation TUs. Deferrable to load
+   time via fat binaries (`--offload-arch` / `-gencode` lists; the
+   driver picks the code object) so one package can serve all
+   platforms; the cost is the per-arch impl families we already accept.
+3. **Load time**: model + hardware + TP + config decisively known.
+   Narrow to a one-dimensional table over the call-time shape vector.
+   The loader orchestrates (manifest + EngineConfig + platform probe →
+   key), constructors receive their table, `forward()` does an O(1)
+   dispatch (ideal: one integer compare, e.g. `S > 4`).
+4. **Call time**: index the table; nothing else.
+
+Norms (both already emergent practice, codified here):
+
+- **Every dispatch clause cites a measurement.** Unmeasured entries are
+  allowed for bootstrapping but must be marked provisional.
+- **No entry = loud failure**, never silent substitution. A table miss
+  means "this configuration was never validated."
+
+**Measured-decision cache.** The tables are filled empirically, not by
+reasoning: key = (model, device SKU, TP, software versions — kernel
+source + compiler + flags, since codegen shifts flip winners; the
+`__launch_bounds__` spill episode is the evidence), value = the
+narrowed table plus the benchmark numbers that produced it. First load
+on a machine may run a seconds-long autotune pass over a *closed,
+precompiled* candidate set (no JIT, no runtime SDK — our answer to
+FlashInfer's precomputed cubin matrix); subsequent loads read the
+cache.
+
+**Capacity is a fit check, not a selection dimension** (user decision,
+2026-09). EngineConfig values (`max_seq_len`, `max_prefill_chunk`)
+never affect which kernel is right — they only size buffers, and a cap
+on S never changes a clause over the S axis. Since all allocation is
+load-time anyway, the loader computes the complete VRAM bill (weights +
+trunks + KV caches + scratch + lm_head, linear in the config knobs)
+before the first allocation and compares against free memory — per-GCD
+under TP, with a margin — failing with a message that names the knobs
+and the largest fitting `max_seq_len`. Explicitly NOT done: silently
+swapping to a leaner kernel under memory pressure — that would be an
+unmeasured silent regression; if a model cannot fit at any reasonable
+config, a leaner dispatch entry is a deliberate user-signed decision,
+not a runtime adaptation.
+
 ## Retired decisions (kept so they are not re-litigated)
 
 - **The CPU production path** (host Model/Trunk/components, CPU_AVX2

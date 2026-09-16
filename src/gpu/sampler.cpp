@@ -26,7 +26,7 @@ Sampler::Sampler(const SamplingConfig& cfg) : cfg_(cfg), host_sampler_(cfg) {
   HIP_CHECK(hipMalloc(&id_dev_, sizeof(int32_t)));
 }
 
-Sampler::~Sampler() { hipFree(id_dev_); }
+Sampler::~Sampler() { (void)hipFree(id_dev_); }
 
 int32_t Sampler::sample(const float* logits, uint32_t vocab) {
   gpu_rocm::Platform& p = gpu_rocm::platform();

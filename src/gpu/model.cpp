@@ -158,31 +158,31 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
   for (const auto& b : m.blocks) {
     const bool ref = cpu_ref.contains(block_index++);
     if (b.type == "gqa_attention_bf16") {
-      std::vector<loader::Staging<bf16>> keep;
-      for (const char* role : {"wq", "wk", "wv", "wo"})
-        keep.push_back(loader::stage<bf16>(file, b.weights.at(role)));
+      auto wq = loader::stage<bf16>(file, b.weights.at("wq"));
+      auto wk = loader::stage<bf16>(file, b.weights.at("wk"));
+      auto wv = loader::stage<bf16>(file, b.weights.at("wv"));
+      auto wo = loader::stage<bf16>(file, b.weights.at("wo"));
       if (ref)
         model->impl_->blocks.push_back(std::make_unique<CpuReferenceBlock>(
-            cpu_generic::GqaAttentionBF16CpuGeneric(keep[0].view, keep[1].view,
-                                                    keep[2].view, keep[3].view, m.config,
-                                                    cfg),
+            cpu_generic::GqaAttentionBF16CpuGeneric(wq.view, wk.view, wv.view, wo.view,
+                                                    m.config, cfg),
             m.config.hidden_size, cfg.max_prefill_chunk));
       else
         model->impl_->blocks.push_back(std::make_unique<gpu_rocm::GqaAttentionBF16>(
-            keep[0].view, keep[1].view, keep[2].view, keep[3].view, m.config, cfg,
+            wq.view, wk.view, wv.view, wo.view, m.config, cfg,
             model->impl_->prefill_scratch));
     } else if (b.type == "dense_ffn_bf16") {
-      std::vector<loader::Staging<bf16>> keep;
-      for (const char* role : {"w_gate", "w_up", "w_down"})
-        keep.push_back(loader::stage<bf16>(file, b.weights.at(role)));
+      auto w_gate = loader::stage<bf16>(file, b.weights.at("w_gate"));
+      auto w_up = loader::stage<bf16>(file, b.weights.at("w_up"));
+      auto w_down = loader::stage<bf16>(file, b.weights.at("w_down"));
       if (ref)
         model->impl_->blocks.push_back(std::make_unique<CpuReferenceBlock>(
-            cpu_generic::DenseFfnBF16CpuGeneric(keep[0].view, keep[1].view, keep[2].view,
+            cpu_generic::DenseFfnBF16CpuGeneric(w_gate.view, w_up.view, w_down.view,
                                                 m.config, cfg),
             m.config.hidden_size, cfg.max_prefill_chunk));
       else
         model->impl_->blocks.push_back(std::make_unique<gpu_rocm::DenseFfnBF16>(
-            keep[0].view, keep[1].view, keep[2].view, m.config, cfg));
+            w_gate.view, w_up.view, w_down.view, m.config, cfg));
     } else {
       throw std::runtime_error("gpu::Model::load: unknown block type '" + b.type + "'");
     }

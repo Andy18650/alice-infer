@@ -22,7 +22,7 @@ class DenseFfnBF16 final : public gpu::Block {
   // device in the constructor).
   DenseFfnBF16(Tensor<bf16> w_gate, Tensor<bf16> w_up, Tensor<bf16> w_down,
               const ModelConfig& mc, const EngineConfig& ec,
-              const gpu_rocm::Context& ctx);
+              const Context& ctx);
   ~DenseFfnBF16() override;
 
   void forward(float* io, uint32_t S) override;

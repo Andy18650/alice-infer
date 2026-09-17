@@ -22,7 +22,7 @@ class GqaAttentionBF16 final : public gpu::StatefulBlock {
   // * (hd+2) floats; design §14 scratch pool, first instance).
   GqaAttentionBF16(Tensor<bf16> wq, Tensor<bf16> wk, Tensor<bf16> wv, Tensor<bf16> wo,
                    const ModelConfig& mc, const EngineConfig& ec,
-                   const gpu_rocm::Context& ctx, float* prefill_scratch);
+                   const Context& ctx, float* prefill_scratch);
   ~GqaAttentionBF16() override;
 
   void forward(float* io, uint32_t S) override;

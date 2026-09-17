@@ -7,6 +7,9 @@
 #include <cstdlib>
 #include <set>
 
+#include <algorithm>
+#include <filesystem>
+
 #include "../loader_staging.hpp"
 #include "../blocks/gpu_rocm/platform.hpp"
 #include "alice/manifest.hpp"
@@ -21,6 +24,24 @@
 
 namespace alice::gpu {
 
+namespace {
+
+// All .safetensors shards in the directory, lexically sorted (HF shard
+// names are zero-padded, so lexical order == shard order; probe order is
+// semantically irrelevant but deterministic error messages are nice).
+// Discovery policy, loader-side by design (§4: sharding is physical
+// packaging, invisible to the contract) — lives here, next to its only
+// caller, until staging gets its planned rework.
+std::vector<std::string> find_safetensors(const std::string& dir) {
+  std::vector<std::string> files;
+  for (const auto& e : std::filesystem::directory_iterator(dir))
+    if (e.path().extension() == ".safetensors") files.push_back(e.path().string());
+  std::sort(files.begin(), files.end());
+  if (files.empty()) throw std::runtime_error("ModelLoader: no .safetensors in " + dir);
+  return files;
+}
+
+}  // namespace
 struct Model::Impl {
   EngineConfig cfg;
   std::unique_ptr<Embedder> embedder;
@@ -96,7 +117,7 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
                                    const std::string& manifest_path,
                                    const EngineConfig& cfg) {
   Manifest m = Manifest::parse(manifest_path);
-  auto file = safetensors::Files::open(loader::find_safetensors(model_dir));
+  auto file = safetensors::Files::open(find_safetensors(model_dir));
 
   const auto errors = validate(m, file);  // two-way audit before any compute
   if (!errors.empty()) {

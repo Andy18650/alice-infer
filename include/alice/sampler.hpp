@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "alice/engine_config.hpp"
-#include "alice/tensor.hpp"
 
 namespace alice {
 
@@ -17,8 +16,8 @@ class Sampler {
  public:
   explicit Sampler(SamplingConfig cfg) : cfg_(cfg), rng_(cfg.seed) {}
 
-  // logits: fp32 [1, vocab].
-  int32_t sample(F32View logits);
+  // logits: fp32 [vocab] (borrowed host memory).
+  int32_t sample(const float* logits, uint32_t vocab);
 
  private:
   SamplingConfig cfg_;

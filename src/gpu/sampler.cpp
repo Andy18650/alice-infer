@@ -40,7 +40,7 @@ int32_t Sampler::sample(const float* logits, uint32_t vocab) {
   logits_host_.resize(vocab);
   HIP_CHECK(hipMemcpy(logits_host_.data(), logits, vocab * sizeof(float),
                       hipMemcpyDeviceToHost));
-  return host_sampler_.sample(F32View{logits_host_.data(), 1, vocab, 0});
+  return host_sampler_.sample(logits_host_.data(), vocab);
 }
 
 }  // namespace alice::gpu

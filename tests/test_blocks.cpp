@@ -20,37 +20,37 @@
 namespace {
 
 using alice::bf16;
-using alice::BF16View;
 using alice::EngineConfig;
-using alice::F32View;
 using alice::ModelConfig;
+using alice::Tensor;
 namespace cg = alice::cpu_generic;
 
+// Host fixture data + a factory producing fresh owning Tensors per
+// construction (blocks take staged weights by value).
 struct Bf16Mat {
   std::vector<bf16> data;
-  BF16View view;
+  uint32_t rows, cols;
   Bf16Mat(uint32_t r, uint32_t c, const std::vector<float>& vals)
-      : data(vals.size()), view{nullptr, r, c, 0} {
+      : data(vals.size()), rows(r), cols(c) {
     for (size_t i = 0; i < vals.size(); ++i) data[i] = bf16::from_f32(vals[i]);
-    view.data = data.data();
   }
+  Tensor<bf16> t() const { return Tensor<bf16>::copy_of(data.data(), rows, cols); }
 };
 
 struct F32Mat {
   std::vector<float> data;
-  F32View view;
+  uint32_t rows, cols;
   F32Mat(uint32_t r, uint32_t c, std::vector<float> vals)
-      : data(std::move(vals)), view{nullptr, r, c, 0} {
-    view.data = data.data();
-  }
-  F32Mat(uint32_t r, uint32_t c) : F32Mat(r, c, std::vector<float>(size_t(r) * c, 0.0f)) {}
+      : data(std::move(vals)), rows(r), cols(c) {}
+  F32Mat(uint32_t r, uint32_t c)
+      : F32Mat(r, c, std::vector<float>(size_t(r) * c, 0.0f)) {}
 };
 
 TEST(Kernels, MatmulWt) {
   F32Mat in(2, 3, {1, 2, 3, 4, 5, 6});
   Bf16Mat w(2, 3, {1, 0, 0, 0, 1, 0});
   F32Mat out(2, 2);
-  cg::matmul_wt(in.view, w.view, out.view);
+  cg::matmul_wt(in.data.data(), w.data.data(), out.data.data(), 2, 3, 2);
   EXPECT_FLOAT_EQ(out.data[0], 1.0f);
   EXPECT_FLOAT_EQ(out.data[1], 2.0f);
   EXPECT_FLOAT_EQ(out.data[2], 4.0f);
@@ -60,7 +60,7 @@ TEST(Kernels, MatmulWt) {
 TEST(Kernels, Rmsnorm) {
   F32Mat x(1, 2, {3, 4});
   float g[2] = {1, 1};
-  cg::rmsnorm_inplace(x.view, g, 0.0f);
+  cg::rmsnorm_inplace(x.data.data(), 1, 2, g, 0.0f);
   const float rms = std::sqrt(12.5f);
   EXPECT_NEAR(x.data[0], 3.0f / rms, 1e-6);
   EXPECT_NEAR(x.data[1], 4.0f / rms, 1e-6);
@@ -118,10 +118,10 @@ TEST(DenseFfn, ForwardMatchesHandCompute) {
   Bf16Mat down(2, 3, {1, 0, 1, 0, 1, 0});
   EngineConfig ec;
   ec.max_prefill_chunk = 2;
-  cg::DenseFfnBF16CpuGeneric ffn(gate.view, up.view, down.view, ffn_mc(), ec);
+  cg::DenseFfnBF16CpuGeneric ffn(gate.t(), up.t(), down.t(), ffn_mc(), ec);
 
   F32Mat io(1, 2, {1, 2});
-  ffn.forward(io.view);
+  ffn.forward(io.data.data(), 1);
   // gate=[1,2,3], up=[3,2,1], act=[silu(1)*3, silu(2)*2, silu(3)*3],
   // silu(x) = x*sigmoid(x): silu(1)=0.7310586, silu(2)=1.7615942, silu(3)=2.8577223
   const float a0 = 0.7310586f * 3, a1 = 1.7615942f * 2, a2 = 2.8577223f * 1;
@@ -135,9 +135,9 @@ TEST(DenseFfn, ChunkLimitHardError) {
   Bf16Mat down(2, 3, {1, 0, 1, 0, 1, 0});
   EngineConfig ec;
   ec.max_prefill_chunk = 1;
-  cg::DenseFfnBF16CpuGeneric ffn(gate.view, up.view, down.view, ffn_mc(), ec);
+  cg::DenseFfnBF16CpuGeneric ffn(gate.t(), up.t(), down.t(), ffn_mc(), ec);
   F32Mat io(2, 2, {1, 2, 3, 4});
-  EXPECT_THROW(ffn.forward(io.view), std::runtime_error);
+  EXPECT_THROW(ffn.forward(io.data.data(), 2), std::runtime_error);
 }
 
 // --- attention ---------------------------------------------------------------
@@ -172,8 +172,8 @@ struct AttnFixture {
   }
   std::unique_ptr<cg::GqaAttentionBF16CpuGeneric> make(Bf16Mat& wq, Bf16Mat& wk,
                                                        Bf16Mat& wv, Bf16Mat& wo) {
-    return std::make_unique<cg::GqaAttentionBF16CpuGeneric>(wq.view, wk.view, wv.view,
-                                                            wo.view, mc, ec);
+    return std::make_unique<cg::GqaAttentionBF16CpuGeneric>(wq.t(), wk.t(), wv.t(),
+                                                            wo.t(), mc, ec);
   }
 };
 
@@ -184,13 +184,13 @@ TEST(Attention, IncrementalEqualsBatched) {
 
   auto a = f.make(wq, wk, wv, wo);
   auto io_a = AttnFixture::rows(0, 3, 8);
-  a->forward(io_a.view);
+  a->forward(io_a.data.data(), io_a.rows);
 
   auto b = f.make(wq, wk, wv, wo);
   auto io_b1 = AttnFixture::rows(0, 2, 8);
-  b->forward(io_b1.view);
+  b->forward(io_b1.data.data(), io_b1.rows);
   auto io_b2 = AttnFixture::rows(2, 1, 8);  // same absolute row 2 as the batched run
-  b->forward(io_b2.view);
+  b->forward(io_b2.data.data(), io_b2.rows);
 
   const size_t d = 8;
   EXPECT_EQ(0, std::memcmp(io_b1.data.data(), io_a.data.data(), 2 * d * sizeof(float)))
@@ -206,15 +206,15 @@ TEST(Attention, ResetRestoresFreshBehavior) {
   auto a = f.make(wq, wk, wv, wo);
 
   auto io1 = AttnFixture::rows(0, 2, 8);
-  a->forward(io1.view);
+  a->forward(io1.data.data(), io1.rows);
   const auto first = io1.data;
 
   auto io2 = AttnFixture::rows(4, 2, 8);  // dirty the state
-  a->forward(io2.view);
+  a->forward(io2.data.data(), io2.rows);
 
   a->reset_state();
   auto io3 = AttnFixture::rows(0, 2, 8);
-  a->forward(io3.view);
+  a->forward(io3.data.data(), io3.rows);
   EXPECT_EQ(0, std::memcmp(first.data(), io3.data.data(), first.size() * sizeof(float)));
 }
 
@@ -224,11 +224,11 @@ TEST(Attention, CausalityPrefixStability) {
        wo = AttnFixture::w(8, 8);
   auto a = f.make(wq, wk, wv, wo);
   auto io = AttnFixture::rows(0, 3, 8);
-  a->forward(io.view);
+  a->forward(io.data.data(), io.rows);
 
   auto b = f.make(wq, wk, wv, wo);
   auto io1 = AttnFixture::rows(0, 1, 8);
-  b->forward(io1.view);
+  b->forward(io1.data.data(), io1.rows);
 
   EXPECT_EQ(0, std::memcmp(io1.data.data(), io.data.data(), 8 * sizeof(float)))
       << "row 0 changed when future tokens were appended";
@@ -240,9 +240,9 @@ TEST(Attention, MaxSeqHardError) {
        wo = AttnFixture::w(8, 8);
   auto a = f.make(wq, wk, wv, wo);
   auto io = AttnFixture::rows(0, 4, 8);
-  a->forward(io.view);
-  a->forward(io.view);  // pos = 8: exactly full
-  EXPECT_THROW(a->forward(io.view), std::runtime_error);  // 9th token overflows
+  a->forward(io.data.data(), io.rows);
+  a->forward(io.data.data(), io.rows);  // pos = 8: exactly full
+  EXPECT_THROW(a->forward(io.data.data(), io.rows), std::runtime_error);  // 9th token overflows
 }
 
 }  // namespace

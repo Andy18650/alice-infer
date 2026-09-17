@@ -29,11 +29,11 @@ namespace {
   } while (0)
 }  // namespace
 
-DenseFfnBF16::DenseFfnBF16(BF16View w_gate, BF16View w_up, BF16View w_down,
+DenseFfnBF16::DenseFfnBF16(Tensor<bf16> w_gate, Tensor<bf16> w_up, Tensor<bf16> w_down,
                            const ModelConfig& mc, const EngineConfig& ec)
     : d_(mc.hidden_size), inter_(mc.intermediate_size), mpc_(ec.max_prefill_chunk) {
-  if (w_gate.rows != inter_ || w_gate.cols != d_ || w_up.rows != inter_ ||
-      w_up.cols != d_ || w_down.rows != d_ || w_down.cols != inter_)
+  if (w_gate.rows() != inter_ || w_gate.cols() != d_ || w_up.rows() != inter_ ||
+      w_up.cols() != d_ || w_down.rows() != d_ || w_down.cols() != inter_)
     throw std::invalid_argument("gpu::DenseFfnBF16: weight shape mismatch vs config");
 
   Platform& p = platform();
@@ -41,8 +41,8 @@ DenseFfnBF16::DenseFfnBF16(BF16View w_gate, BF16View w_up, BF16View w_down,
 
   // Fuse [Wg;Wu] on host, one H2D (same layout the pre-migration block used).
   std::vector<bf16> gup(size_t(2) * inter_ * d_);
-  std::memcpy(gup.data(), w_gate.data, size_t(inter_) * d_ * sizeof(bf16));
-  std::memcpy(gup.data() + size_t(inter_) * d_, w_up.data, size_t(inter_) * d_ * sizeof(bf16));
+  std::memcpy(gup.data(), w_gate.data(), size_t(inter_) * d_ * sizeof(bf16));
+  std::memcpy(gup.data() + size_t(inter_) * d_, w_up.data(), size_t(inter_) * d_ * sizeof(bf16));
 
   HIP_CHECK(hipMalloc(&dw_gup_, gup.size() * sizeof(bf16)));
   HIP_CHECK(hipMalloc(&dw_down_, size_t(d_) * inter_ * sizeof(bf16)));
@@ -50,7 +50,7 @@ DenseFfnBF16::DenseFfnBF16(BF16View w_gate, BF16View w_up, BF16View w_down,
   HIP_CHECK(hipMalloc(&dgu_, size_t(mpc_) * 2 * inter_ * sizeof(float)));
   HIP_CHECK(hipMalloc(&dact_, size_t(mpc_) * inter_ * sizeof(bf16)));
   HIP_CHECK(hipMemcpy(dw_gup_, gup.data(), gup.size() * sizeof(bf16), hipMemcpyHostToDevice));
-  HIP_CHECK(hipMemcpy(dw_down_, w_down.data, size_t(d_) * inter_ * sizeof(bf16),
+  HIP_CHECK(hipMemcpy(dw_down_, w_down.data(), size_t(d_) * inter_ * sizeof(bf16),
                       hipMemcpyHostToDevice));
 }
 

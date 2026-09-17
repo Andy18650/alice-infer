@@ -132,20 +132,17 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
   model->impl_->cfg = cfg;
 
   {  // embedder
-    auto s = loader::stage<bf16>(file, m.token_embedding);
-    model->impl_->embedder = std::make_unique<Embedder>(s.view, cfg.max_prefill_chunk);
+    auto table = loader::stage<bf16>(file, m.token_embedding);
+    model->impl_->embedder =
+        std::make_unique<Embedder>(std::move(table), cfg.max_prefill_chunk);
   }
-  {  // trunk
-    std::vector<loader::Staging<bf16>> keep;
-    std::vector<BF16View> pre_views;
-    keep.reserve(m.pre_norms.size() + 1);
-    for (const auto& n : m.pre_norms) {
-      keep.push_back(loader::stage<bf16>(file, n));
-      pre_views.push_back(keep.back().view);
-    }
-    keep.push_back(loader::stage<bf16>(file, m.final_norm));
+  {  // trunk: staged norms move straight in (freed on return, §8.1)
+    std::vector<Tensor<bf16>> pre_norms;
+    pre_norms.reserve(m.pre_norms.size());
+    for (const auto& n : m.pre_norms) pre_norms.push_back(loader::stage<bf16>(file, n));
+    auto final_norm = loader::stage<bf16>(file, m.final_norm);
     model->impl_->trunk = std::make_unique<RmsNormAddTrunk>(
-        std::move(pre_views), keep.back().view, m.config.rms_norm_eps,
+        std::move(pre_norms), std::move(final_norm), m.config.rms_norm_eps,
         m.config.hidden_size, cfg.max_prefill_chunk);
   }
   // Development-only fault-localization hook (design §3/§8.1): block
@@ -185,12 +182,13 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
       auto wo = loader::stage<bf16>(file, b.weights.at("wo"));
       if (ref)
         model->impl_->blocks.push_back(std::make_unique<CpuReferenceBlock>(
-            cpu_generic::GqaAttentionBF16CpuGeneric(wq.view, wk.view, wv.view, wo.view,
+            cpu_generic::GqaAttentionBF16CpuGeneric(std::move(wq), std::move(wk),
+                                                    std::move(wv), std::move(wo),
                                                     m.config, cfg),
             m.config.hidden_size, cfg.max_prefill_chunk));
       else
         model->impl_->blocks.push_back(std::make_unique<gpu_rocm::GqaAttentionBF16>(
-            wq.view, wk.view, wv.view, wo.view, m.config, cfg,
+            std::move(wq), std::move(wk), std::move(wv), std::move(wo), m.config, cfg,
             model->impl_->prefill_scratch));
     } else if (b.type == "dense_ffn_bf16") {
       auto w_gate = loader::stage<bf16>(file, b.weights.at("w_gate"));
@@ -198,19 +196,19 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
       auto w_down = loader::stage<bf16>(file, b.weights.at("w_down"));
       if (ref)
         model->impl_->blocks.push_back(std::make_unique<CpuReferenceBlock>(
-            cpu_generic::DenseFfnBF16CpuGeneric(w_gate.view, w_up.view, w_down.view,
-                                                m.config, cfg),
+            cpu_generic::DenseFfnBF16CpuGeneric(std::move(w_gate), std::move(w_up),
+                                                std::move(w_down), m.config, cfg),
             m.config.hidden_size, cfg.max_prefill_chunk));
       else
         model->impl_->blocks.push_back(std::make_unique<gpu_rocm::DenseFfnBF16>(
-            w_gate.view, w_up.view, w_down.view, m.config, cfg));
+            std::move(w_gate), std::move(w_up), std::move(w_down), m.config, cfg));
     } else {
       throw std::runtime_error("gpu::Model::load: unknown block type '" + b.type + "'");
     }
   }
   {
-    auto s = loader::stage<bf16>(file, m.lm_head);
-    model->impl_->lm_head = std::make_unique<LmHead>(s.view, cfg.max_prefill_chunk);
+    auto w = loader::stage<bf16>(file, m.lm_head);
+    model->impl_->lm_head = std::make_unique<LmHead>(std::move(w), cfg.max_prefill_chunk);
   }
   model->impl_->sampler = std::make_unique<Sampler>(cfg.sampling);
   return model;

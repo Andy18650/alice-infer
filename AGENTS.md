@@ -53,9 +53,10 @@ until multi-die (it never fit one GCD).
 - **CPU blocks are development-only reference implementations** (D2H →
   naive host compute → H2D, all inside the block). Never production
   compute, never a fallback terminus.
-- **Typed tensor system is the loading vocabulary**: `TView<T>`,
-  `File::view_as<T>()` as the one checked runtime→static conversion.
-  Device buffers are plain pointers, not views.
+- **Typed tensor is the host-side vocabulary**: move-only owning
+  `Tensor<T>` (the former TView/Staging pair merged); `File::check_as<T>()`
+  as the one checked runtime→static conversion. Device buffers are plain
+  pointers, not Tensors; borrowed host access is ptr + dims.
 - **Optimized impls are self-contained**: private weight storage, private
   math, no shared kernel toolbox across impls. Private copies at
   construction; staged views freed on return.

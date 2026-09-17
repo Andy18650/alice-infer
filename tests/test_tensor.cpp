@@ -1,17 +1,17 @@
 #include "alice/tensor.hpp"
 
 #include <cstring>
+#include <type_traits>
 
 #include <gtest/gtest.h>
 
 namespace {
 
 using alice::bf16;
-using alice::BF16View;
 using alice::DType;
 using alice::dtype_of;
 using alice::dtype_size;
-using alice::F32View;
+using alice::Tensor;
 
 TEST(Bf16, ConversionIsExactShift) {
   EXPECT_EQ(bf16::from_f32(1.0f).bits, 0x3F80);
@@ -33,41 +33,54 @@ TEST(Bf16, DtypeVocabulary) {
   EXPECT_EQ(dtype_of<float>(), DType::F32);
 }
 
-TEST(TView, Geometry) {
-  float buf[6] = {};
-  F32View v{buf, 2, 3, 0};
-  EXPECT_EQ(v.stride(), 3u);
-  EXPECT_EQ(v.numel(), 6u);
-  EXPECT_EQ(v.nbytes(), 24u);
-  EXPECT_FALSE(v.is_vector());
+TEST(Tensor, GeometryAndAccess) {
+  Tensor<float> t(2, 3);
+  EXPECT_EQ(t.rows(), 2u);
+  EXPECT_EQ(t.cols(), 3u);
+  EXPECT_EQ(t.numel(), 6u);
+  EXPECT_EQ(t.nbytes(), 24u);
 
-  F32View vec{buf, 1, 5, 0};
-  EXPECT_TRUE(vec.is_vector());
-}
+  t.data()[0] = 1.0f;
+  t.data()[5] = 2.0f;
+  EXPECT_FLOAT_EQ(t.data()[0], 1.0f);
+  EXPECT_FLOAT_EQ(t.data()[5], 2.0f);
 
-TEST(TView, StridedNbytes) {
-  float buf[16] = {};
-  F32View v{buf, 3, 4, 6};  // ld = 6 > cols
-  EXPECT_EQ(v.stride(), 6u);
-  EXPECT_EQ(v.nbytes(), (2 * 6 + 4) * sizeof(float));
-}
-
-TEST(TView, Row) {
-  float buf[6] = {0, 1, 2, 3, 4, 5};
-  F32View v{buf, 2, 3, 0};
-  const auto r1 = v.row(1);
-  EXPECT_EQ(r1.rows, 1u);
-  EXPECT_EQ(r1.cols, 3u);
-  EXPECT_EQ(r1.data, buf + 3);
-  EXPECT_THROW(v.row(2), std::out_of_range);
-}
-
-TEST(TView, TypedPointers) {
-  bf16 w[4] = {};
-  BF16View bv{w, 2, 2, 0};
-  bv.data[0] = bf16::from_f32(1.0f);
-  EXPECT_FLOAT_EQ(bv.data[0].to_f32(), 1.0f);
+  Tensor<bf16> bv(2, 2);
+  bv.data()[0] = bf16::from_f32(1.0f);
+  EXPECT_FLOAT_EQ(bv.data()[0].to_f32(), 1.0f);
   EXPECT_EQ(bv.nbytes(), 8u);
+}
+
+TEST(Tensor, MoveOnlySingleOwner) {
+  static_assert(!std::is_copy_constructible_v<Tensor<float>>);
+  static_assert(!std::is_copy_assignable_v<Tensor<float>>);
+  static_assert(std::is_nothrow_move_constructible_v<Tensor<float>>);
+
+  Tensor<float> a(2, 2);
+  a.data()[0] = 42.0f;
+  const float* pa = a.data();
+  Tensor<float> b(std::move(a));
+  EXPECT_EQ(b.data(), pa);  // ownership moved, buffer unchanged
+  EXPECT_EQ(a.data(), nullptr);  // source is empty
+  EXPECT_FLOAT_EQ(b.data()[0], 42.0f);
+
+  Tensor<float> c;
+  c = std::move(b);
+  EXPECT_EQ(c.data(), pa);
+  EXPECT_FLOAT_EQ(c.data()[0], 42.0f);
+
+  Tensor<float> empty;
+  EXPECT_EQ(empty.data(), nullptr);
+  EXPECT_EQ(empty.numel(), 0u);
+}
+
+TEST(Tensor, CopyOfCopiesSource) {
+  float src[6] = {0, 1, 2, 3, 4, 5};
+  Tensor<float> t = Tensor<float>::copy_of(src, 2, 3);
+  EXPECT_NE(t.data(), src);  // a copy, not an alias
+  EXPECT_EQ(std::memcmp(t.data(), src, sizeof(src)), 0);
+  t.data()[0] = -1.0f;
+  EXPECT_EQ(src[0], 0.0f);  // source untouched
 }
 
 }  // namespace

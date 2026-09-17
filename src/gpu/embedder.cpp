@@ -20,13 +20,13 @@ namespace {
   } while (0)
 }  // namespace
 
-Embedder::Embedder(BF16View table, uint32_t max_prefill_chunk)
-    : vocab_(table.rows), d_(table.cols), mpc_(max_prefill_chunk) {
+Embedder::Embedder(Tensor<bf16> table, uint32_t max_prefill_chunk)
+    : vocab_(table.rows()), d_(table.cols()), mpc_(max_prefill_chunk) {
   gpu_rocm::Platform& p = gpu_rocm::platform();
   HIP_CHECK(hipSetDevice(p.device));
   HIP_CHECK(hipMalloc(&table_, table.nbytes()));
   HIP_CHECK(hipMalloc(&ids_dev_, mpc_ * sizeof(int32_t)));
-  HIP_CHECK(hipMemcpy(table_, table.data, table.nbytes(), hipMemcpyHostToDevice));
+  HIP_CHECK(hipMemcpy(table_, table.data(), table.nbytes(), hipMemcpyHostToDevice));
 }
 
 Embedder::~Embedder() {

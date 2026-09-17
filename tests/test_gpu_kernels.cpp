@@ -16,7 +16,6 @@
 namespace {
 
 namespace cg = alice::cpu_generic;
-using alice::F32View;
 namespace gk = alice::gpu::kernels;
 namespace gbk = alice::gpu_rocm::kernels;
 using alice::bf16;
@@ -67,7 +66,7 @@ TEST(GpuKernels, RmsnormMatchesOracle) {
   auto x = pattern(size_t(S) * d, 2);
   auto g = pattern(d, 3);
   std::vector<float> oracle = x;
-  cg::rmsnorm_inplace(F32View{oracle.data(), S, d, 0}, g.data(), 1e-5f);
+  cg::rmsnorm_inplace(oracle.data(), S, d, g.data(), 1e-5f);
   float* d_in = dev_upload(x);
   float* d_g = dev_upload(g);
   float* d_out = nullptr;
@@ -83,7 +82,7 @@ TEST(GpuKernels, RmsnormMatchesOracle) {
 TEST(GpuKernels, AddRowsMatchesOracle) {
   auto a = pattern(777, 4), b = pattern(777, 5);
   std::vector<float> oracle = a;
-  cg::add_rows(F32View{oracle.data(), 1, 777, 0}, F32View{b.data(), 1, 777, 0});
+  cg::add_rows(oracle.data(), b.data(), 1, 777);
   float* d_a = dev_upload(a);
   float* d_b = dev_upload(b);
   gk::add_rows(d_a, d_b, 777);

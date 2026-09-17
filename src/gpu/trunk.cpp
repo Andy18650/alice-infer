@@ -19,17 +19,19 @@ namespace {
                                " failed: " + hipGetErrorString(e_));                    \
   } while (0)
 
-void h2d_f32_from_bf16(BF16View src, float* dst_dev, uint32_t d, const char* what) {
+void h2d_f32_from_bf16(const Tensor<bf16>& src, float* dst_dev, uint32_t d,
+                       const char* what) {
   if (src.numel() != d)
     throw std::invalid_argument(std::string("gpu::RmsNormAddTrunk: bad norm: ") + what);
   std::vector<float> host(d);
-  for (uint32_t i = 0; i < d; ++i) host[i] = src.data[i].to_f32();
+  for (uint32_t i = 0; i < d; ++i) host[i] = src.data()[i].to_f32();
   HIP_CHECK(hipMemcpy(dst_dev, host.data(), d * sizeof(float), hipMemcpyHostToDevice));
 }
 }  // namespace
 
-RmsNormAddTrunk::RmsNormAddTrunk(std::vector<BF16View> pre_norms, BF16View final_norm,
-                                 float eps, uint32_t hidden, uint32_t max_prefill_chunk)
+RmsNormAddTrunk::RmsNormAddTrunk(std::vector<Tensor<bf16>> pre_norms,
+                                 Tensor<bf16> final_norm, float eps, uint32_t hidden,
+                                 uint32_t max_prefill_chunk)
     : d_(hidden), mpc_(max_prefill_chunk), eps_(eps) {
   gpu_rocm::Platform& p = gpu_rocm::platform();
   HIP_CHECK(hipSetDevice(p.device));

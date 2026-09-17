@@ -31,9 +31,9 @@ namespace {
   } while (0)
 }  // namespace
 
-GqaAttentionBF16::GqaAttentionBF16(BF16View wq, BF16View wk, BF16View wv, BF16View wo,
-                                   const ModelConfig& mc, const EngineConfig& ec,
-                                   float* prefill_scratch)
+GqaAttentionBF16::GqaAttentionBF16(Tensor<bf16> wq, Tensor<bf16> wk, Tensor<bf16> wv,
+                                   Tensor<bf16> wo, const ModelConfig& mc,
+                                   const EngineConfig& ec, float* prefill_scratch)
     : nh_(mc.num_heads),
       nkv_(mc.num_kv_heads),
       hd_(mc.head_dim),
@@ -43,8 +43,8 @@ GqaAttentionBF16::GqaAttentionBF16(BF16View wq, BF16View wk, BF16View wv, BF16Vi
       mpc_(ec.max_prefill_chunk),
       scale_(1.0f / std::sqrt(float(mc.head_dim))) {
   const uint32_t qd = nh_ * hd_, kvd = nkv_ * hd_;
-  if (wq.rows != qd || wq.cols != d_ || wk.rows != kvd || wk.cols != d_ ||
-      wv.rows != kvd || wv.cols != d_ || wo.rows != d_ || wo.cols != qd)
+  if (wq.rows() != qd || wq.cols() != d_ || wk.rows() != kvd || wk.cols() != d_ ||
+      wv.rows() != kvd || wv.cols() != d_ || wo.rows() != d_ || wo.cols() != qd)
     throw std::invalid_argument("gpu::GqaAttentionBF16: weight shape mismatch vs config");
   if (nh_ % nkv_ != 0 || hd_ > 128)
     throw std::invalid_argument("gpu::GqaAttentionBF16: bad head config");
@@ -54,14 +54,14 @@ GqaAttentionBF16::GqaAttentionBF16(BF16View wq, BF16View wk, BF16View wv, BF16Vi
 
   // Fuse [Wq;Wk;Wv] on host, one H2D.
   std::vector<bf16> qkv(size_t(qd + 2 * kvd) * d_);
-  std::memcpy(qkv.data(), wq.data, size_t(qd) * d_ * sizeof(bf16));
-  std::memcpy(qkv.data() + size_t(qd) * d_, wk.data, size_t(kvd) * d_ * sizeof(bf16));
-  std::memcpy(qkv.data() + size_t(qd + kvd) * d_, wv.data, size_t(kvd) * d_ * sizeof(bf16));
+  std::memcpy(qkv.data(), wq.data(), size_t(qd) * d_ * sizeof(bf16));
+  std::memcpy(qkv.data() + size_t(qd) * d_, wk.data(), size_t(kvd) * d_ * sizeof(bf16));
+  std::memcpy(qkv.data() + size_t(qd + kvd) * d_, wv.data(), size_t(kvd) * d_ * sizeof(bf16));
 
   HIP_CHECK(hipMalloc(&dw_qkv_, qkv.size() * sizeof(bf16)));
   HIP_CHECK(hipMalloc(&dw_o_, size_t(d_) * qd * sizeof(bf16)));
   HIP_CHECK(hipMemcpy(dw_qkv_, qkv.data(), qkv.size() * sizeof(bf16), hipMemcpyHostToDevice));
-  HIP_CHECK(hipMemcpy(dw_o_, wo.data, size_t(d_) * qd * sizeof(bf16), hipMemcpyHostToDevice));
+  HIP_CHECK(hipMemcpy(dw_o_, wo.data(), size_t(d_) * qd * sizeof(bf16), hipMemcpyHostToDevice));
 
   HIP_CHECK(hipMalloc(&dkcache_, size_t(max_seq_) * kvd * sizeof(float)));
   HIP_CHECK(hipMalloc(&dvcache_, size_t(max_seq_) * kvd * sizeof(float)));

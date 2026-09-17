@@ -104,18 +104,23 @@ by `tools/check_manifest.py`.
 
 ## 5. Tensor & dtype contract
 
-The typed view system is the **loading vocabulary**: `TView<T>`
-(non-owning, rank ≤ 2, element type in the type), the strong `bf16`
-struct, and the single checked runtime→static conversion
-`File::view_as<T>()` at the load boundary. Runtime `DType` survives only
-in file-facing structs (`TensorInfo`, `WeightSpec`). Quantized formats
-get concrete composite types (data + scales), never a polymorphic view
-hierarchy.
+The typed tensor `Tensor<T>` is the **host-side vocabulary** (2026-09
+revision: the former non-owning `TView<T>` and the loader's `Staging`
+merged into one move-only owning type — exactly one owner per buffer,
+one live handle, "freed on return" is mechanical rather than a caller
+convention). Owning, rank ≤ 2, row-major, PACKED — deliberately not
+strided: transposes are explicit decisions at GEMM call sites (rocBLAS
+op flags), never metadata. The strong `bf16` struct and the single
+checked runtime→static conversion `File::check_as<T>()` at the load
+boundary. Runtime `DType` survives only in file-facing structs
+(`TensorInfo`, `WeightSpec`). Quantized formats get concrete composite
+types (data + scales), never a polymorphic hierarchy.
 
-The device-side stream and device buffers are not TViews. They are raw
+The device-side stream and device buffers are not Tensors. They are raw
 device allocations owned by components, referenced as plain pointers in
-device code. (The io buffer was never meant to be a TView; the view
-system was designed for the load path.)
+device code; borrowed host access at compute boundaries (oracle kernels,
+the host Sampler) is likewise ptr + dims, mirroring the `gpu::Block` io
+contract.
 
 ## 6. Component taxonomy
 
@@ -172,8 +177,12 @@ evict/compact its state at will — strictly its own business.
   uniform and nothing else knows they exist.
 - Self-containment, unchanged: private weight storage, private math, no
   shared kernel toolbox across impls. Constructors take already
-  validated weight views, copy/convert/pack into private layout
-  (staging H2D included), and treat the staged views as freed on return.
+  validated staged weights (`Tensor<T>`, moved in), copy/convert/pack
+  into private layout (staging H2D included); the staging dies inside
+  the constructor, so "freed on return" is mechanical. Contract
+  amendment (2026-09): few-role blocks take single staged tensors
+  positionally; the trunk — the one component whose weights are a
+  homogeneous set — takes the staging vector itself.
 
 ### 8.2 Trunk
 

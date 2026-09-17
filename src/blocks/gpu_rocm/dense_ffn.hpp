@@ -16,10 +16,10 @@ namespace alice::gpu_rocm {
 
 class DenseFfnBF16 final : public gpu::Block {
  public:
-  // Weight views are validated staging buffers, considered freed on return
-  // (fused/copied to the device in the constructor).
-  DenseFfnBF16(BF16View w_gate, BF16View w_up, BF16View w_down, const ModelConfig& mc,
-               const EngineConfig& ec);
+  // Staged weights are moved in and freed on return (fused/copied to the
+  // device in the constructor).
+  DenseFfnBF16(Tensor<bf16> w_gate, Tensor<bf16> w_up, Tensor<bf16> w_down,
+              const ModelConfig& mc, const EngineConfig& ec);
   ~DenseFfnBF16() override;
 
   void forward(float* io, uint32_t S) override;

@@ -12,8 +12,8 @@ namespace alice::gpu {
 
 class Embedder {
  public:
-  // table: validated bf16 [vocab, d] staging view, considered freed on return.
-  Embedder(BF16View table, uint32_t max_prefill_chunk);
+  // table: staged bf16 [vocab, d] weights, moved in and freed on return.
+  Embedder(Tensor<bf16> table, uint32_t max_prefill_chunk);
   ~Embedder();
 
   // residual += nothing: WRITES the gathered rows into residual [S, d] (fp32).

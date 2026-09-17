@@ -12,8 +12,8 @@ namespace alice::gpu {
 
 class LmHead {
  public:
-  // weight: validated bf16 [vocab, d] staging view, considered freed on return.
-  LmHead(BF16View weight, uint32_t max_prefill_chunk);
+  // weight: staged bf16 [vocab, d] weights, moved in and freed on return.
+  LmHead(Tensor<bf16> weight, uint32_t max_prefill_chunk);
   ~LmHead();
 
   // io: device fp32 [S, d] (the trunk's normed output).

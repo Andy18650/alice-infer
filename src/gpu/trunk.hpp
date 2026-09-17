@@ -13,7 +13,12 @@ namespace alice::gpu {
 
 class RmsNormAddTrunk {
  public:
-  RmsNormAddTrunk(std::vector<BF16View> pre_norms, BF16View final_norm, float eps,
+  // pre_norms: staged bf16 [d] weights, one per block, moved in and freed
+  // on return; final_norm likewise. (§8.1 contract amendment, 2026-09: the
+  // trunk is the one component whose weights are a homogeneous set — it
+  // takes the staging vector itself, unlike few-role blocks that take
+  // single staged tensors positionally.)
+  RmsNormAddTrunk(std::vector<Tensor<bf16>> pre_norms, Tensor<bf16> final_norm, float eps,
                   uint32_t hidden, uint32_t max_prefill_chunk);
   ~RmsNormAddTrunk();
 

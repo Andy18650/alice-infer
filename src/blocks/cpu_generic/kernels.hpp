@@ -26,13 +26,14 @@ namespace alice::cpu_generic {
 // out[s][o] = sum_i in[s][i] * float(w[o][i]).
 // in: fp32 [S, I]; w: bf16 [O, I]; out: fp32 [S, O]. fp32 accumulation.
 // `in` and `out` must not alias. OpenMP-parallel over output columns o.
-void matmul_wt(F32View in, BF16View w, F32View out);
+void matmul_wt(const float* in, const bf16* w, float* out, uint32_t S, uint32_t I,
+               uint32_t O);
 
 // x[s][:] /= rms(x[s][:]) (+eps), then *= g[:]. In-place; x is fp32 [S, d].
-void rmsnorm_inplace(F32View x, const float* g, float eps);
+void rmsnorm_inplace(float* x, uint32_t S, uint32_t d, const float* g, float eps);
 
-void copy_rows(F32View dst, F32View src);  // dst = src (same shape)
-void add_rows(F32View dst, F32View src);   // dst += src
+void copy_rows(float* dst, const float* src, uint32_t S, uint32_t d);  // dst = src
+void add_rows(float* dst, const float* src, uint32_t S, uint32_t d);   // dst += src
 
 // RoPE tables, HF/Llama convention: cos_t[p*half + i] = cos(p * inv_freq[i]),
 // inv_freq[i] = theta^(-2i/head_dim), with optional llama3 frequency scaling

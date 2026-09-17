@@ -48,13 +48,12 @@ class File {
   void read(const TensorInfo& info, void* dst) const;
 
   // The single checked runtime->static dtype conversion at the load
-  // boundary: describes a staging buffer holding `info` as a TView<T>,
-  // verifying the file dtype matches T. Throws std::invalid_argument.
+  // boundary: verifies the file dtype matches T (the caller owns the
+  // destination storage). Throws std::invalid_argument.
   template <typename T>
-  static TView<T> view_as(const TensorInfo& info, void* staging) {
+  static void check_as(const TensorInfo& info) {
     if (info.dtype != dtype_of<T>())
-      throw std::invalid_argument("safetensors: view_as type mismatch on '" + info.name + "'");
-    return TView<T>{static_cast<T*>(staging), info.rows, info.cols, 0};
+      throw std::invalid_argument("safetensors: check_as type mismatch on '" + info.name + "'");
   }
 
  private:
@@ -92,7 +91,7 @@ class Files {
   void read(const TensorInfo& info, void* dst) const;
 
   // The single checked runtime->static dtype conversion happens on the
-  // per-shard TensorInfo — reuse File::view_as<T> unchanged.
+  // per-shard TensorInfo — reuse File::check_as<T> unchanged.
 
  private:
   const File& owner_of(const std::string& name) const;  // throws out_of_range

@@ -34,8 +34,7 @@ void CpuReferenceBlock::forward(float* io, uint32_t S) {
     throw std::runtime_error("gpu::CpuReferenceBlock::forward: S out of range");
   const size_t n = size_t(S) * d_;
   HIP_CHECK(hipMemcpy(host_io_.data(), io, n * sizeof(float), hipMemcpyDeviceToHost));
-  std::visit([this, S](auto& b) { b.forward(F32View{host_io_.data(), S, d_, 0}); },
-             impl_);
+  std::visit([this, S](auto& b) { b.forward(host_io_.data(), S); }, impl_);
   HIP_CHECK(hipMemcpy(io, host_io_.data(), n * sizeof(float), hipMemcpyHostToDevice));
 }
 

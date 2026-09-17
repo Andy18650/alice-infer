@@ -7,11 +7,9 @@
 
 namespace alice {
 
-int32_t Sampler::sample(F32View logits) {
-  if (logits.rows != 1)
-    throw std::invalid_argument("Sampler: logits must be [1, vocab]");
-  const uint32_t V = logits.cols;
-  const float* in = logits.data;
+int32_t Sampler::sample(const float* logits, uint32_t vocab) {
+  const uint32_t V = vocab;
+  const float* in = logits;
 
   if (cfg_.temperature == 0.0f)  // greedy
     return int32_t(std::max_element(in, in + V) - in);

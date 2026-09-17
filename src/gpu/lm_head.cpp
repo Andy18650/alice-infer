@@ -28,14 +28,14 @@ namespace {
   } while (0)
 }  // namespace
 
-LmHead::LmHead(BF16View weight, uint32_t max_prefill_chunk)
-    : vocab_(weight.rows), d_(weight.cols), mpc_(max_prefill_chunk) {
+LmHead::LmHead(Tensor<bf16> weight, uint32_t max_prefill_chunk)
+    : vocab_(weight.rows()), d_(weight.cols()), mpc_(max_prefill_chunk) {
   gpu_rocm::Platform& p = gpu_rocm::platform();
   HIP_CHECK(hipSetDevice(p.device));
   HIP_CHECK(hipMalloc(&w_, weight.nbytes()));
   HIP_CHECK(hipMalloc(&dx_, size_t(mpc_) * d_ * sizeof(bf16)));
   HIP_CHECK(hipMalloc(&logits_, size_t(mpc_) * vocab_ * sizeof(float)));
-  HIP_CHECK(hipMemcpy(w_, weight.data, weight.nbytes(), hipMemcpyHostToDevice));
+  HIP_CHECK(hipMemcpy(w_, weight.data(), weight.nbytes(), hipMemcpyHostToDevice));
 }
 
 LmHead::~LmHead() {

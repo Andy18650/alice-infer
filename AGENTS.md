@@ -138,9 +138,10 @@ AMD EPYC 7413 (Zen3, AVX2 no AVX-512), 2×24 physical cores SMT-2,
 NUMA node0 = cpus 0-23,48-71 (257 GB), node1 = 24-47,72-95 (254 GB).
 4× MI250X = 8 GCDs × 64 GB HBM2e (~1.6 TB/s each, gfx90a:sramecc+:xnack-),
 ROCm 7.1 system packages (rocBLAS 5.1, hipcc, HIP runtime). Resizable
-BAR on (64 GB aperture/GCD); xnack off. Pinned host buffers mandatory
-for DMA speed (pageable runs a staged path: measured 2.2 GB/s vs 28.5
-GB/s pinned). No sudo for agents (sudo needs interactive auth) — ASK the
+BAR on (64 GB aperture/GCD); xnack off. Staging is THP-backed mmap
+(2026-09 revision: pageable H2D measures ~20 GB/s on this stack and
+hipHostMalloc pin/unpin costs more than it saves; the real win is
+MADV_HUGEPAGE first-touch faults — see design §9). No sudo for agents (sudo needs interactive auth) — ASK the
 user to run package installs. /tmp is a 250 GB tmpfs and NOT durable
 storage (machine reboots wipe it). Fresh configures fetch googletest +
 nlohmann_json over the network (FetchContent) unless system packages

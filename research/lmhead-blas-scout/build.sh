@@ -14,7 +14,7 @@ CXX=${CXX:-g++}
 [ -f "$LIB" ] || { echo "libalice.a not found at $LIB (build the engine first, or set ALICE_LIB)"; exit 1; }
 
 if [ "$1" ]; then
-  $CXX -O2 -std=c++20 -I"$ROOT/include" bench_lmhead.cpp "$LIB" -fopenmp \
+  $CXX -O2 -std=c++20 -D__HIP_PLATFORM_AMD__ -I"$ROOT/include" bench_lmhead.cpp "$LIB" -fopenmp \
       "$1" -lamdhip64 -lrocblas -o bench_lmhead
   echo "built ./bench_lmhead (CPU OpenBLAS scout)"
 else

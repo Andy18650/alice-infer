@@ -80,8 +80,15 @@ if(ALICE_ROCBLAS_LIB AND ALICE_HIP_LIB AND ALICE_HIPCC AND
       src/gpu/sampler.cpp src/gpu/cpu_reference.cpp src/gpu/model.cpp
       ${CMAKE_CURRENT_BINARY_DIR}/alice_gpu_kernels.o
       ${CMAKE_CURRENT_BINARY_DIR}/gpu_rocm_kernels.o)
-  target_compile_definitions(alice PRIVATE ALICE_GPU_RESIDENT __HIP_PLATFORM_AMD__)
-  target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}" "${ALICE_HIP_LIB}")
+  # __HIP_PLATFORM_AMD__ + the HIP runtime are PUBLIC: alice/tensor.hpp (a
+  # public header) allocates pinned host storage via hipHostMalloc, so every
+  # consumer of the library compiles and links against HIP (user decision
+  # 2026-09: the engine is GPU-mandatory; pinning in the type enforces §9 by
+  # construction).
+  target_compile_definitions(alice PRIVATE ALICE_GPU_RESIDENT)
+  target_compile_definitions(alice PUBLIC __HIP_PLATFORM_AMD__)
+  target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}")
+  target_link_libraries(alice PUBLIC "${ALICE_HIP_LIB}")
   set(ALICE_GPU_RESIDENT TRUE)
   message(STATUS "alice: ROCm + hipcc found, GPU-resident engine enabled (${ALICE_GPU_ARCH})")
 else()

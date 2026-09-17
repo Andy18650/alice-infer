@@ -4,6 +4,8 @@
 
 #include <hip/hip_runtime_api.h>
 
+#include <chrono>
+#include <cstdio>
 #include <cstdlib>
 #include <set>
 
@@ -40,6 +42,22 @@ std::vector<std::string> find_safetensors(const std::string& dir) {
   if (files.empty()) throw std::runtime_error("ModelLoader: no .safetensors in " + dir);
   return files;
 }
+
+using Clock = std::chrono::steady_clock;
+
+// RAII section timer for the load path: prints one line on scope exit.
+struct LoadSection {
+  const char* what;
+  Clock::time_point t0;
+  explicit LoadSection(const char* w) : what(w), t0(Clock::now()) {}
+  ~LoadSection() {
+    const double ms =
+        std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
+    std::fprintf(stderr, "[gpu::Model] %-28s %10.1f ms\n", what, ms);
+  }
+  LoadSection(const LoadSection&) = delete;
+  LoadSection& operator=(const LoadSection&) = delete;
+};
 
 }  // namespace
 struct Model::Impl {
@@ -116,31 +134,43 @@ uint32_t Model::vocab_size() const { return impl_->lm_head->vocab(); }
 std::unique_ptr<Model> Model::load(const std::string& model_dir,
                                    const std::string& manifest_path,
                                    const EngineConfig& cfg) {
-  Manifest m = Manifest::parse(manifest_path);
-  auto file = safetensors::Files::open(find_safetensors(model_dir));
+  const Clock::time_point t_start = Clock::now();
+  std::fprintf(stderr, "[gpu::Model] loading %s (manifest: %s)\n", model_dir.c_str(),
+               manifest_path.c_str());
 
-  const auto errors = validate(m, file);  // two-way audit before any compute
-  if (!errors.empty()) {
-    std::string msg = "gpu::Model::load: manifest/weight-source contract violated:";
-    for (const auto& e : errors) msg += "\n  - " + e;
-    throw std::runtime_error(msg);
+  Manifest m;
+  std::unique_ptr<safetensors::Files> file;
+  {
+    LoadSection sec("manifest + audit");
+    m = Manifest::parse(manifest_path);
+    file = std::make_unique<safetensors::Files>(
+        safetensors::Files::open(find_safetensors(model_dir)));
+
+    const auto errors = validate(m, *file);  // two-way audit before any compute
+    if (!errors.empty()) {
+      std::string msg = "gpu::Model::load: manifest/weight-source contract violated:";
+      for (const auto& e : errors) msg += "\n  - " + e;
+      throw std::runtime_error(msg);
+    }
+    if (m.pre_norms.size() != m.blocks.size())
+      throw std::runtime_error("gpu::Model::load: pre_norm count != block count");
   }
-  if (m.pre_norms.size() != m.blocks.size())
-    throw std::runtime_error("gpu::Model::load: pre_norm count != block count");
 
   auto model = std::unique_ptr<Model>(new Model());
   model->impl_->cfg = cfg;
 
   {  // embedder
-    auto table = loader::stage<bf16>(file, m.token_embedding);
+    LoadSection sec("embedder");
+    auto table = loader::stage<bf16>(*file, m.token_embedding);
     model->impl_->embedder =
         std::make_unique<Embedder>(std::move(table), cfg.max_prefill_chunk);
   }
   {  // trunk: staged norms move straight in (freed on return, §8.1)
+    LoadSection sec("trunk (norms)");
     std::vector<Tensor<bf16>> pre_norms;
     pre_norms.reserve(m.pre_norms.size());
-    for (const auto& n : m.pre_norms) pre_norms.push_back(loader::stage<bf16>(file, n));
-    auto final_norm = loader::stage<bf16>(file, m.final_norm);
+    for (const auto& n : m.pre_norms) pre_norms.push_back(loader::stage<bf16>(*file, n));
+    auto final_norm = loader::stage<bf16>(*file, m.final_norm);
     model->impl_->trunk = std::make_unique<RmsNormAddTrunk>(
         std::move(pre_norms), std::move(final_norm), m.config.rms_norm_eps,
         m.config.hidden_size, cfg.max_prefill_chunk);
@@ -165,21 +195,27 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
   // Shared v4 prefill partials (design §14 scratch pool, first instance):
   // one buffer reused by every attention block; each block's partials are
   // produced and consumed within its own forward (split -> combine).
-  const uint32_t max_chunks = (cfg.max_seq_len + 63) / 64;
-  const size_t scratch_bytes = size_t(m.config.num_heads) * cfg.max_prefill_chunk *
-                               max_chunks * (m.config.head_dim + 2) * sizeof(float);
-  if (hipMalloc(&model->impl_->prefill_scratch, scratch_bytes) != hipSuccess)
-    throw std::runtime_error("gpu::Model::load: prefill scratch allocation failed (" +
-                             std::to_string(scratch_bytes >> 20) + " MiB)");
+  {  // shared v4 prefill partials allocation (the §14 scratch instance)
+    LoadSection sec("prefill scratch");
+    const uint32_t max_chunks = (cfg.max_seq_len + 63) / 64;
+    const size_t scratch_bytes = size_t(m.config.num_heads) * cfg.max_prefill_chunk *
+                                 max_chunks * (m.config.head_dim + 2) * sizeof(float);
+    if (hipMalloc(&model->impl_->prefill_scratch, scratch_bytes) != hipSuccess)
+      throw std::runtime_error("gpu::Model::load: prefill scratch allocation failed (" +
+                               std::to_string(scratch_bytes >> 20) + " MiB)");
+  }
 
+  std::string blocks_label = "blocks (" + std::to_string(m.blocks.size()) + ")";
   size_t block_index = 0;
+  {  // blocks: stage + construct, one timer for the whole loop
+    LoadSection sec(blocks_label.c_str());
   for (const auto& b : m.blocks) {
     const bool ref = cpu_ref.contains(block_index++);
     if (b.type == "gqa_attention_bf16") {
-      auto wq = loader::stage<bf16>(file, b.weights.at("wq"));
-      auto wk = loader::stage<bf16>(file, b.weights.at("wk"));
-      auto wv = loader::stage<bf16>(file, b.weights.at("wv"));
-      auto wo = loader::stage<bf16>(file, b.weights.at("wo"));
+      auto wq = loader::stage<bf16>(*file, b.weights.at("wq"));
+      auto wk = loader::stage<bf16>(*file, b.weights.at("wk"));
+      auto wv = loader::stage<bf16>(*file, b.weights.at("wv"));
+      auto wo = loader::stage<bf16>(*file, b.weights.at("wo"));
       if (ref)
         model->impl_->blocks.push_back(std::make_unique<CpuReferenceBlock>(
             cpu_generic::GqaAttentionBF16CpuGeneric(std::move(wq), std::move(wk),
@@ -191,9 +227,9 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
             std::move(wq), std::move(wk), std::move(wv), std::move(wo), m.config, cfg,
             model->impl_->prefill_scratch));
     } else if (b.type == "dense_ffn_bf16") {
-      auto w_gate = loader::stage<bf16>(file, b.weights.at("w_gate"));
-      auto w_up = loader::stage<bf16>(file, b.weights.at("w_up"));
-      auto w_down = loader::stage<bf16>(file, b.weights.at("w_down"));
+      auto w_gate = loader::stage<bf16>(*file, b.weights.at("w_gate"));
+      auto w_up = loader::stage<bf16>(*file, b.weights.at("w_up"));
+      auto w_down = loader::stage<bf16>(*file, b.weights.at("w_down"));
       if (ref)
         model->impl_->blocks.push_back(std::make_unique<CpuReferenceBlock>(
             cpu_generic::DenseFfnBF16CpuGeneric(std::move(w_gate), std::move(w_up),
@@ -206,11 +242,18 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
       throw std::runtime_error("gpu::Model::load: unknown block type '" + b.type + "'");
     }
   }
+  }  // blocks section
   {
-    auto w = loader::stage<bf16>(file, m.lm_head);
+    LoadSection sec("lm_head");
+    auto w = loader::stage<bf16>(*file, m.lm_head);
     model->impl_->lm_head = std::make_unique<LmHead>(std::move(w), cfg.max_prefill_chunk);
   }
   model->impl_->sampler = std::make_unique<Sampler>(cfg.sampling);
+  const double total_s =
+      std::chrono::duration<double>(Clock::now() - t_start).count();
+  std::fprintf(stderr, "[gpu::Model] model loaded in %.2f s (vocab %u, %zu blocks, %s arch)\n",
+               total_s, model->vocab_size(), m.blocks.size(),
+               gpu_rocm::platform().arch.c_str());
   return model;
 }
 

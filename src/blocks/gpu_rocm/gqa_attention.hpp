@@ -7,6 +7,8 @@
 
 #include "../../gpu/block.hpp"
 
+#include "platform.hpp"
+
 #include "alice/engine_config.hpp"
 #include "alice/manifest.hpp"
 #include "alice/tensor.hpp"
@@ -20,7 +22,7 @@ class GqaAttentionBF16 final : public gpu::StatefulBlock {
   // * (hd+2) floats; design §14 scratch pool, first instance).
   GqaAttentionBF16(Tensor<bf16> wq, Tensor<bf16> wk, Tensor<bf16> wv, Tensor<bf16> wo,
                    const ModelConfig& mc, const EngineConfig& ec,
-                   float* prefill_scratch);
+                   const gpu_rocm::Context& ctx, float* prefill_scratch);
   ~GqaAttentionBF16() override;
 
   void forward(float* io, uint32_t S) override;
@@ -43,6 +45,7 @@ class GqaAttentionBF16 final : public gpu::StatefulBlock {
   void* dattn_ = nullptr;   // bf16 [mpc, qd]
   float* dsplit_ = nullptr;  // split-T partials [kAttnMaxSplits*nh*kAttnSplitMaxS*(hd+2)]
   float* prefill_scratch_ = nullptr;  // shared v4 prefill partials (not owned)
+  rocblas_handle handle_ = nullptr;   // borrowed from the Model's Context
 };
 
 }  // namespace alice::gpu

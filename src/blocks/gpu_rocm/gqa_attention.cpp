@@ -33,7 +33,8 @@ namespace {
 
 GqaAttentionBF16::GqaAttentionBF16(Tensor<bf16> wq, Tensor<bf16> wk, Tensor<bf16> wv,
                                    Tensor<bf16> wo, const ModelConfig& mc,
-                                   const EngineConfig& ec, float* prefill_scratch)
+                                   const EngineConfig& ec, const Context& ctx,
+                                   float* prefill_scratch)
     : nh_(mc.num_heads),
       nkv_(mc.num_kv_heads),
       hd_(mc.head_dim),
@@ -49,8 +50,7 @@ GqaAttentionBF16::GqaAttentionBF16(Tensor<bf16> wq, Tensor<bf16> wk, Tensor<bf16
   if (nh_ % nkv_ != 0 || hd_ > 128)
     throw std::invalid_argument("gpu::GqaAttentionBF16: bad head config");
 
-  Platform& p = platform();
-  HIP_CHECK(hipSetDevice(p.device));
+  handle_ = ctx.handle;
 
   // Fuse [Wq;Wk;Wv] on host, one H2D.
   std::vector<bf16> qkv(size_t(qd + 2 * kvd) * d_);
@@ -105,14 +105,12 @@ void GqaAttentionBF16::forward(float* io, uint32_t S) {
     throw std::runtime_error("gpu::GqaAttentionBF16::forward: S out of range");
   if (pos_ + S > max_seq_)
     throw std::runtime_error("gpu::GqaAttentionBF16::forward: max_seq_len exceeded");
-  Platform& p = platform();
-  HIP_CHECK(hipSetDevice(p.device));
   const uint32_t qd = nh_ * hd_, kvd = nkv_ * hd_, qkvd = qd + 2 * kvd;
 
   kernels::f32_to_bf16(io, dx_, size_t(S) * d_);
   const float alpha = 1.0f, beta = 0.0f;
   // fused QKV: C'[qkvd, S] = [Wq;Wk;Wv] . x^T
-  RB_CHECK(rocblas_gemm_ex(p.handle, rocblas_operation_transpose, rocblas_operation_none,
+  RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_transpose, rocblas_operation_none,
                            qkvd, S, d_, &alpha, dw_qkv_, rocblas_datatype_bf16_r, d_, dx_,
                            rocblas_datatype_bf16_r, d_, &beta, dqkv_,
                            rocblas_datatype_f32_r, qkvd, dqkv_, rocblas_datatype_f32_r,
@@ -122,7 +120,7 @@ void GqaAttentionBF16::forward(float* io, uint32_t S) {
   kernels::attention(dqkv_, dkcache_, dvcache_, dattn_, dsplit_, prefill_scratch_, pos_,
                      S, nh_, nkv_, hd_, scale_);
   // o_proj into io: C'[d, S] = Wo . attn^T
-  RB_CHECK(rocblas_gemm_ex(p.handle, rocblas_operation_transpose, rocblas_operation_none,
+  RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_transpose, rocblas_operation_none,
                            d_, S, qd, &alpha, dw_o_, rocblas_datatype_bf16_r, qd, dattn_,
                            rocblas_datatype_bf16_r, qd, &beta, io,
                            rocblas_datatype_f32_r, d_, io, rocblas_datatype_f32_r, d_,

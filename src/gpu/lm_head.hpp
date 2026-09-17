@@ -6,6 +6,7 @@
 
 #include <cstdint>
 
+#include "../blocks/gpu_rocm/platform.hpp"
 #include "alice/tensor.hpp"
 
 namespace alice::gpu {
@@ -13,7 +14,8 @@ namespace alice::gpu {
 class LmHead {
  public:
   // weight: staged bf16 [vocab, d] weights, moved in and freed on return.
-  LmHead(Tensor<bf16> weight, uint32_t max_prefill_chunk);
+  LmHead(Tensor<bf16> weight, uint32_t max_prefill_chunk,
+         rocblas_handle handle);
   ~LmHead();
 
   // io: device fp32 [S, d] (the trunk's normed output).
@@ -28,6 +30,7 @@ class LmHead {
   void* w_ = nullptr;        // bf16 [V, d]
   void* dx_ = nullptr;       // bf16 [mpc, d]
   float* logits_ = nullptr;  // fp32 [mpc, V] (row 0 reused by project_last)
+  rocblas_handle handle_ = nullptr;  // borrowed from the Model's Context
 };
 
 }  // namespace alice::gpu

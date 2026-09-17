@@ -8,6 +8,8 @@
 
 #include "../../gpu/block.hpp"
 
+#include "platform.hpp"
+
 #include "alice/engine_config.hpp"
 #include "alice/manifest.hpp"
 #include "alice/tensor.hpp"
@@ -19,7 +21,8 @@ class DenseFfnBF16 final : public gpu::Block {
   // Staged weights are moved in and freed on return (fused/copied to the
   // device in the constructor).
   DenseFfnBF16(Tensor<bf16> w_gate, Tensor<bf16> w_up, Tensor<bf16> w_down,
-              const ModelConfig& mc, const EngineConfig& ec);
+              const ModelConfig& mc, const EngineConfig& ec,
+              const gpu_rocm::Context& ctx);
   ~DenseFfnBF16() override;
 
   void forward(float* io, uint32_t S) override;
@@ -31,6 +34,7 @@ class DenseFfnBF16 final : public gpu::Block {
   void* dx_ = nullptr;       // bf16 [mpc, d]
   float* dgu_ = nullptr;     // fp32 [mpc, 2I] (col-major [2I, S] view)
   void* dact_ = nullptr;     // bf16 [mpc, I]
+  rocblas_handle handle_ = nullptr;  // borrowed from the Model's Context
 };
 
 }  // namespace alice::gpu

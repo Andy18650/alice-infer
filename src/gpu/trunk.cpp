@@ -5,7 +5,6 @@
 
 #include <hip/hip_runtime_api.h>
 
-#include "../blocks/gpu_rocm/platform.hpp"
 #include "kernels.hpp"
 
 namespace alice::gpu {
@@ -33,8 +32,6 @@ RmsNormAddTrunk::RmsNormAddTrunk(std::vector<Tensor<bf16>> pre_norms,
                                  Tensor<bf16> final_norm, float eps, uint32_t hidden,
                                  uint32_t max_prefill_chunk)
     : d_(hidden), mpc_(max_prefill_chunk), eps_(eps) {
-  gpu_rocm::Platform& p = gpu_rocm::platform();
-  HIP_CHECK(hipSetDevice(p.device));
   HIP_CHECK(hipMalloc(&residual_, size_t(mpc_) * d_ * sizeof(float)));
   HIP_CHECK(hipMalloc(&io_, size_t(mpc_) * d_ * sizeof(float)));
   HIP_CHECK(hipMalloc(&norms_, pre_norms.size() * d_ * sizeof(float)));

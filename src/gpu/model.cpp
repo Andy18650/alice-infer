@@ -62,6 +62,7 @@ struct LoadSection {
 }  // namespace
 struct Model::Impl {
   EngineConfig cfg;
+  gpu_rocm::Context ctx;  // device binding + rocBLAS handle (per-GPU, owned)
   std::unique_ptr<Embedder> embedder;
   std::unique_ptr<RmsNormAddTrunk> trunk;
   std::vector<std::unique_ptr<Block>> blocks;
@@ -159,6 +160,10 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
   auto model = std::unique_ptr<Model>(new Model());
   model->impl_->cfg = cfg;
 
+  // Acquire the GPU context first: binds the device for this thread and
+  // fails loudly if absent (the former lazy platform() singleton's job).
+  model->impl_->ctx = gpu_rocm::Context(0);
+
   {  // embedder
     LoadSection sec("embedder");
     auto table = loader::stage<bf16>(*file, m.token_embedding);
@@ -225,7 +230,7 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
       else
         model->impl_->blocks.push_back(std::make_unique<gpu_rocm::GqaAttentionBF16>(
             std::move(wq), std::move(wk), std::move(wv), std::move(wo), m.config, cfg,
-            model->impl_->prefill_scratch));
+            model->impl_->ctx, model->impl_->prefill_scratch));
     } else if (b.type == "dense_ffn_bf16") {
       auto w_gate = loader::stage<bf16>(*file, b.weights.at("w_gate"));
       auto w_up = loader::stage<bf16>(*file, b.weights.at("w_up"));
@@ -237,7 +242,8 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
             m.config.hidden_size, cfg.max_prefill_chunk));
       else
         model->impl_->blocks.push_back(std::make_unique<gpu_rocm::DenseFfnBF16>(
-            std::move(w_gate), std::move(w_up), std::move(w_down), m.config, cfg));
+            std::move(w_gate), std::move(w_up), std::move(w_down), m.config, cfg,
+            model->impl_->ctx));
     } else {
       throw std::runtime_error("gpu::Model::load: unknown block type '" + b.type + "'");
     }
@@ -246,14 +252,15 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
   {
     LoadSection sec("lm_head");
     auto w = loader::stage<bf16>(*file, m.lm_head);
-    model->impl_->lm_head = std::make_unique<LmHead>(std::move(w), cfg.max_prefill_chunk);
+    model->impl_->lm_head =
+        std::make_unique<LmHead>(std::move(w), cfg.max_prefill_chunk, model->impl_->ctx.handle);
   }
   model->impl_->sampler = std::make_unique<Sampler>(cfg.sampling);
   const double total_s =
       std::chrono::duration<double>(Clock::now() - t_start).count();
   std::fprintf(stderr, "[gpu::Model] model loaded in %.2f s (vocab %u, %zu blocks, %s arch)\n",
                total_s, model->vocab_size(), m.blocks.size(),
-               gpu_rocm::platform().arch.c_str());
+               model->impl_->ctx.arch.c_str());
   return model;
 }
 

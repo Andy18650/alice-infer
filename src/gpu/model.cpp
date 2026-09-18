@@ -60,50 +60,36 @@ struct LoadSection {
 };
 
 }  // namespace
-struct Model::Impl {
-  EngineConfig cfg;
-  gpu_rocm::Context ctx;  // device binding + rocBLAS handle (per-GPU, owned)
-  std::unique_ptr<Embedder> embedder;
-  std::unique_ptr<RmsNormAddTrunk> trunk;
-  std::vector<std::unique_ptr<Block>> blocks;
-  std::unique_ptr<LmHead> lm_head;
-  std::unique_ptr<Sampler> sampler;
-  float* prefill_scratch = nullptr;  // shared v4 partials (design §14 scratch pool)
-  ~Impl() {
-    if (prefill_scratch) (void)hipFree(prefill_scratch);
+const float* Model::run(std::span<const int32_t> tokens, bool all_positions) {
+  if (tokens.empty()) throw std::runtime_error("gpu::Model: empty token span");
+  if (tokens.size() > cfg_.max_prefill_chunk)
+    throw std::runtime_error("gpu::Model: tokens exceed max_prefill_chunk");
+  const uint32_t S = uint32_t(tokens.size());
+  float* residual = trunk_->begin_pass(S);
+  embedder_->embed(tokens, residual);
+  for (size_t i = 0; i < blocks_.size(); ++i) {
+    trunk_->read(i);
+    blocks_[i]->forward(trunk_->io(), S);
+    trunk_->write(i);
   }
+  trunk_->output();
+  return all_positions ? lm_head_->project_all(trunk_->io(), S)
+                       : lm_head_->project_last(trunk_->io(), S);
+}
 
-  const float* run(std::span<const int32_t> tokens, bool all_positions) {
-    if (tokens.empty()) throw std::runtime_error("gpu::Model: empty token span");
-    if (tokens.size() > cfg.max_prefill_chunk)
-      throw std::runtime_error("gpu::Model: tokens exceed max_prefill_chunk");
-    const uint32_t S = uint32_t(tokens.size());
-    float* residual = trunk->begin_pass(S);
-    embedder->embed(tokens, residual);
-    for (size_t i = 0; i < blocks.size(); ++i) {
-      trunk->read(i);
-      blocks[i]->forward(trunk->io(), S);
-      trunk->write(i);
-    }
-    trunk->output();
-    return all_positions ? lm_head->project_all(trunk->io(), S)
-                         : lm_head->project_last(trunk->io(), S);
-  }
-};
-
-Model::Model() : impl_(std::make_unique<Impl>()) {}
-Model::~Model() = default;
-Model::Model(Model&&) noexcept = default;
-Model& Model::operator=(Model&&) noexcept = default;
+Model::Model() = default;
+Model::~Model() {
+  if (prefill_scratch_) (void)hipFree(prefill_scratch_);
+}
 
 int32_t Model::forward(std::span<const int32_t> tokens) {
-  const float* logits = impl_->run(tokens, false);
-  return impl_->sampler->sample(logits, impl_->lm_head->vocab());
+  const float* logits = run(tokens, false);
+  return sampler_->sample(logits, lm_head_->vocab());
 }
 
 std::vector<float> Model::forward_logits(std::span<const int32_t> tokens) {
-  const float* logits = impl_->run(tokens, false);
-  const size_t v = impl_->lm_head->vocab();
+  const float* logits = run(tokens, false);
+  const size_t v = lm_head_->vocab();
   std::vector<float> out(v);
   const hipError_t e =
       hipMemcpy(out.data(), logits, v * sizeof(float), hipMemcpyDeviceToHost);
@@ -114,8 +100,8 @@ std::vector<float> Model::forward_logits(std::span<const int32_t> tokens) {
 }
 
 std::vector<float> Model::forward_logits_all(std::span<const int32_t> tokens) {
-  const float* logits = impl_->run(tokens, true);
-  const size_t n = tokens.size() * size_t(impl_->lm_head->vocab());
+  const float* logits = run(tokens, true);
+  const size_t n = tokens.size() * size_t(lm_head_->vocab());
   std::vector<float> out(n);
   const hipError_t e =
       hipMemcpy(out.data(), logits, n * sizeof(float), hipMemcpyDeviceToHost);
@@ -126,11 +112,11 @@ std::vector<float> Model::forward_logits_all(std::span<const int32_t> tokens) {
 }
 
 void Model::reset() {
-  for (auto& b : impl_->blocks)
+  for (auto& b : blocks_)
     if (auto* sb = dynamic_cast<StatefulBlock*>(b.get())) sb->reset_state();
 }
 
-uint32_t Model::vocab_size() const { return impl_->lm_head->vocab(); }
+uint32_t Model::vocab_size() const { return lm_head_->vocab(); }
 
 std::unique_ptr<Model> Model::load(const std::string& model_dir,
                                    const std::string& manifest_path,
@@ -158,16 +144,16 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
   }
 
   auto model = std::unique_ptr<Model>(new Model());
-  model->impl_->cfg = cfg;
+  model->cfg_ = cfg;
 
   // Acquire the GPU context first: binds the device for this thread and
   // fails loudly if absent (the former lazy platform() singleton's job).
-  model->impl_->ctx = gpu_rocm::Context(0);
+  model->ctx_ = std::make_unique<gpu_rocm::Context>(0);
 
   {  // embedder
     LoadSection sec("embedder");
     auto table = loader::stage<bf16>(*file, m.token_embedding);
-    model->impl_->embedder =
+    model->embedder_ =
         std::make_unique<Embedder>(std::move(table), cfg.max_prefill_chunk);
   }
   {  // trunk: staged norms move straight in (freed on return, §8.1)
@@ -176,7 +162,7 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
     pre_norms.reserve(m.pre_norms.size());
     for (const auto& n : m.pre_norms) pre_norms.push_back(loader::stage<bf16>(*file, n));
     auto final_norm = loader::stage<bf16>(*file, m.final_norm);
-    model->impl_->trunk = std::make_unique<RmsNormAddTrunk>(
+    model->trunk_ = std::make_unique<RmsNormAddTrunk>(
         std::move(pre_norms), std::move(final_norm), m.config.rms_norm_eps,
         m.config.hidden_size, cfg.max_prefill_chunk);
   }
@@ -205,7 +191,7 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
     const uint32_t max_chunks = (cfg.max_seq_len + 63) / 64;
     const size_t scratch_bytes = size_t(m.config.num_heads) * cfg.max_prefill_chunk *
                                  max_chunks * (m.config.head_dim + 2) * sizeof(float);
-    if (hipMalloc(&model->impl_->prefill_scratch, scratch_bytes) != hipSuccess)
+    if (hipMalloc(&model->prefill_scratch_, scratch_bytes) != hipSuccess)
       throw std::runtime_error("gpu::Model::load: prefill scratch allocation failed (" +
                                std::to_string(scratch_bytes >> 20) + " MiB)");
   }
@@ -222,28 +208,28 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
       auto wv = loader::stage<bf16>(*file, b.weights.at("wv"));
       auto wo = loader::stage<bf16>(*file, b.weights.at("wo"));
       if (ref)
-        model->impl_->blocks.push_back(std::make_unique<CpuReferenceBlock>(
+        model->blocks_.push_back(std::make_unique<CpuReferenceBlock>(
             cpu_generic::GqaAttentionBF16CpuGeneric(std::move(wq), std::move(wk),
                                                     std::move(wv), std::move(wo),
                                                     m.config, cfg),
             m.config.hidden_size, cfg.max_prefill_chunk));
       else
-        model->impl_->blocks.push_back(std::make_unique<gpu_rocm::GqaAttentionBF16>(
+        model->blocks_.push_back(std::make_unique<gpu_rocm::GqaAttentionBF16>(
             std::move(wq), std::move(wk), std::move(wv), std::move(wo), m.config, cfg,
-            model->impl_->ctx, model->impl_->prefill_scratch));
+            *model->ctx_, model->prefill_scratch_));
     } else if (b.type == "dense_ffn_bf16") {
       auto w_gate = loader::stage<bf16>(*file, b.weights.at("w_gate"));
       auto w_up = loader::stage<bf16>(*file, b.weights.at("w_up"));
       auto w_down = loader::stage<bf16>(*file, b.weights.at("w_down"));
       if (ref)
-        model->impl_->blocks.push_back(std::make_unique<CpuReferenceBlock>(
+        model->blocks_.push_back(std::make_unique<CpuReferenceBlock>(
             cpu_generic::DenseFfnBF16CpuGeneric(std::move(w_gate), std::move(w_up),
                                                 std::move(w_down), m.config, cfg),
             m.config.hidden_size, cfg.max_prefill_chunk));
       else
-        model->impl_->blocks.push_back(std::make_unique<gpu_rocm::DenseFfnBF16>(
+        model->blocks_.push_back(std::make_unique<gpu_rocm::DenseFfnBF16>(
             std::move(w_gate), std::move(w_up), std::move(w_down), m.config, cfg,
-            model->impl_->ctx));
+            *model->ctx_));
     } else {
       throw std::runtime_error("gpu::Model::load: unknown block type '" + b.type + "'");
     }
@@ -252,15 +238,15 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
   {
     LoadSection sec("lm_head");
     auto w = loader::stage<bf16>(*file, m.lm_head);
-    model->impl_->lm_head =
-        std::make_unique<LmHead>(std::move(w), cfg.max_prefill_chunk, model->impl_->ctx.handle);
+    model->lm_head_ =
+        std::make_unique<LmHead>(std::move(w), cfg.max_prefill_chunk, model->ctx_->handle);
   }
-  model->impl_->sampler = std::make_unique<Sampler>(cfg.sampling);
+  model->sampler_ = std::make_unique<Sampler>(cfg.sampling);
   const double total_s =
       std::chrono::duration<double>(Clock::now() - t_start).count();
   std::fprintf(stderr, "[gpu::Model] model loaded in %.2f s (vocab %u, %zu blocks, %s arch)\n",
                total_s, model->vocab_size(), m.blocks.size(),
-               model->impl_->ctx.arch.c_str());
+               model->ctx_->arch.c_str());
   return model;
 }
 

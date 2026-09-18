@@ -199,6 +199,18 @@ implementation exists. Sampler config fixed at construction (temperature
 0 = argmax for tests); the Sampler owns the RNG — acceptable mutable
 state under single-session.
 
+Model's shape (2026-09): named members over forward-declared incomplete
+types — the "exploded pimpl" (one Impl indirection was tried and
+rejected; `private:` leaking layout is solved by not including the
+component headers, not by hiding them behind a pointer). The public
+header stays free of internal- and vendor-includes (no trunk.hpp, no
+HIP/rocBLAS); their headers are included only by the implementation
+TU. Consequence, accepted deliberately: a change to the component SET
+edits the public header; a change inside a component never does. The
+GPU Context (device binding + rocBLAS handle) is owned by the Model,
+like the shared scratch — session-scoped GPU resources live under
+Model, never in process-wide state.
+
 ### 8.4 ModelLoader
 
 Narrow entry that sniffs format by content and delegates

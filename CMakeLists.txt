@@ -80,16 +80,8 @@ if(ALICE_ROCBLAS_LIB AND ALICE_HIP_LIB AND ALICE_HIPCC AND
       src/gpu/sampler.cpp src/gpu/cpu_reference.cpp src/gpu/model.cpp
       ${CMAKE_CURRENT_BINARY_DIR}/alice_gpu_kernels.o
       ${CMAKE_CURRENT_BINARY_DIR}/gpu_rocm_kernels.o)
-  # __HIP_PLATFORM_AMD__ + the HIP runtime are PUBLIC: alice/tensor.hpp (a
-  # public header) allocates pinned host storage via hipHostMalloc, so every
-  # consumer of the library compiles and links against HIP (user decision
-  # 2026-09: the engine is GPU-mandatory; pinning in the type enforces §9 by
-  # construction).
-  target_compile_definitions(alice PRIVATE ALICE_GPU_RESIDENT)
-  target_compile_definitions(alice PUBLIC __HIP_PLATFORM_AMD__)
-  target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}")
-  target_link_libraries(alice PUBLIC "${ALICE_HIP_LIB}")
-  set(ALICE_GPU_RESIDENT TRUE)
+  target_compile_definitions(alice PRIVATE __HIP_PLATFORM_AMD__)
+  target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}" "${ALICE_HIP_LIB}")
   message(STATUS "alice: ROCm + hipcc found, GPU-resident engine enabled (${ALICE_GPU_ARCH})")
 else()
   message(FATAL_ERROR "alice: ROCm + hipcc required (the engine is GPU-mandatory, design §3)")
@@ -116,13 +108,11 @@ if(ALICE_BUILD_TESTS)
     tests/test_blocks.cpp
     tests/test_tokenizer.cpp
   )
-  if(ALICE_GPU_RESIDENT)
-    target_sources(alice_tests PRIVATE tests/test_gpu_kernels.cpp
-                                       tests/test_gpu_blocks.cpp
-                                       tests/test_gpu_model.cpp)
-    target_compile_definitions(alice_tests PRIVATE __HIP_PLATFORM_AMD__)
-    target_link_libraries(alice_tests PRIVATE "${ALICE_HIP_LIB}")
-  endif()
+  target_sources(alice_tests PRIVATE tests/test_gpu_kernels.cpp
+                                     tests/test_gpu_blocks.cpp
+                                     tests/test_gpu_model.cpp)
+  target_compile_definitions(alice_tests PRIVATE __HIP_PLATFORM_AMD__)
+  target_link_libraries(alice_tests PRIVATE "${ALICE_HIP_LIB}")
   target_link_libraries(alice_tests PRIVATE alice GTest::gtest_main nlohmann_json::nlohmann_json)
   target_compile_definitions(alice_tests PRIVATE ALICE_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
   include(GoogleTest)

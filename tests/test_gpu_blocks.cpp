@@ -177,7 +177,19 @@ TEST(GpuBlocks, AttentionIncrementalEqualsBatched) {
   auto part2 = run_gpu_block(*b, row2, 1, 8);
 
   part1.insert(part1.end(), part2.begin(), part2.end());
-  // Deterministic kernels: batched == incremental bit-exact.
+  // NOTE ON BIT-EXACTNESS (2026-09, post S=1 GEMV): this crosses the
+  // decode dispatch boundary — the S=2 part runs gemm_ex, the S=1 part
+  // runs the split-K GEMV (design §15), and even two gemm_ex calls at
+  // different S have no vendor bit-stability promise. The schedules'
+  // fp32 accumulation orders happen to coincide at this toy shape (K=8,
+  // single chunk), so the bit-exact assertion passes today — but that is
+  // COINCIDENCE, not contract. The promised guarantee (design §10) is
+  // tolerance-based equivalence across schedules; bit-exactness holds
+  // only within one schedule. If this test starts failing after a kernel
+  // change with a small diff (not a gross mismatch), the assertion is
+  // probably too strict — relax it to the same tolerance-based comparison
+  // as the other cross-schedule tests (e.g. AttentionApproxVsGeneric)
+  // rather than chasing a phantom bug.
   EXPECT_EQ(0.0f, max_abs_diff(batched, part1)) << "batched diverged from incremental";
 }
 

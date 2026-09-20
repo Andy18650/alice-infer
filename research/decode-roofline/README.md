@@ -72,8 +72,35 @@ math.
 
 ## Files
 
-- `bench.cpp` — replica + decomposition (phases [1]–[5] above)
+- `bench.cpp` — replica + decomposition (phases [1]–[6])
 - `gemv_ref.hip` — read-BW ceiling + split-K reference GEMV
 - `build.sh` — links engine kernel objects from `build-release/`
 
 Rebuild: `./build.sh && ./bench_decode [device]`
+
+## Outcome (2026-09, same study, engine landed)
+
+The study's verdict drove the gpu_rocm S=1 GEMV: a family-private
+split-K GEMV in `src/blocks/gpu_rocm/kernels.hip` (warp-per-row, uint64
+bf16 loads, partials + combine, in-register operand quantization so the
+separate f32_to_bf16 launch disappears), dispatched at S==1 in both
+blocks; gemm_ex stays for S>1. CTA target swept via this bench's [6]
+section: 1024/2048/4096/8192 -> 13.37/13.37/12.99/14.44 ms/token floor
+(4096 kept: qkv 1047, o 933, gup 1258, down 1074, lm 1269 GB/s).
+
+Engine results (Release, single GCD, greedy, default host placement,
+all 62 tests green incl. canonical gates; generated text token-identical
+to the pre-change baseline on the 8B probe):
+
+| model | decode before | decode after | context |
+|---|---|---|---|
+| 8B | 34.2 tok/s | **64.9 tok/s** | ~135 |
+| 8B | 28.2 tok/s | **47.1 tok/s** | 3770 |
+| 1B | 114.6 tok/s | **261.7 tok/s** | ~135 |
+| 1B | 86.1 tok/s | **159.6 tok/s** | 3770 |
+
+Prefill unchanged (same code path for S>1): 8B 2182 tok/s at 3640 ctx,
+1B 8715. Remaining decode budget: lm_head still on gemm_ex (~1.1
+ms/token), SIMT tail ~2 ms, launch/sync overhead — the launch-diet half
+of the campaign. The honest roofline remains ~86 tok/s (8B, measured
+1290 GB/s read ceiling / 15.01 GB per token).

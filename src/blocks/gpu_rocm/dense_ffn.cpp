@@ -1,5 +1,6 @@
 #include "dense_ffn.hpp"
 
+#include <algorithm>
 #include <cstring>
 #include <stdexcept>
 #include <vector>
@@ -49,6 +50,10 @@ DenseFfnBF16::DenseFfnBF16(Tensor<bf16> w_gate, Tensor<bf16> w_up, Tensor<bf16> 
   HIP_CHECK(hipMalloc(&dx_, size_t(mpc_) * d_ * sizeof(bf16)));
   HIP_CHECK(hipMalloc(&dgu_, size_t(mpc_) * 2 * inter_ * sizeof(float)));
   HIP_CHECK(hipMalloc(&dact_, size_t(mpc_) * inter_ * sizeof(bf16)));
+  // S=1 GEMV partials: the larger of the two sites (gup / down).
+  const size_t gemv_floats = std::max(kernels::gemv_partial_floats(2 * inter_, d_),
+                                      kernels::gemv_partial_floats(d_, inter_));
+  HIP_CHECK(hipMalloc(&dgemv_, gemv_floats * sizeof(float)));
   HIP_CHECK(hipMemcpy(dw_gup_, gup.data(), gup.size() * sizeof(bf16), hipMemcpyHostToDevice));
   HIP_CHECK(hipMemcpy(dw_down_, w_down.data(), size_t(d_) * inter_ * sizeof(bf16),
                       hipMemcpyHostToDevice));
@@ -60,11 +65,23 @@ DenseFfnBF16::~DenseFfnBF16() {
   (void)hipFree(dx_);
   (void)hipFree(dgu_);
   (void)hipFree(dact_);
+  (void)hipFree(dgemv_);
 }
 
 void DenseFfnBF16::forward(float* io, uint32_t S) {
   if (S == 0 || S > mpc_)
     throw std::runtime_error("gpu::DenseFfnBF16::forward: S out of range");
+
+  if (S == 1) {
+    // Decode dispatch (design §15; measured in research/decode-roofline:
+    // gemm_ex S=1 runs gup at 727 and down at 313 GB/s; the split-K GEMV at
+    // 1265 / 1172). The fp32 stream is quantized in-register (gup site),
+    // so the f32_to_bf16 launch disappears from the decode path.
+    kernels::gemv_x_f32(dw_gup_, io, dgu_, dgemv_, 2 * inter_, d_);
+    kernels::silu_mul(dgu_, dact_, S, inter_);
+    kernels::gemv_x_bf16(dw_down_, dact_, io, dgemv_, d_, inter_);
+    return;
+  }
 
   kernels::f32_to_bf16(io, dx_, size_t(S) * d_);
   const float alpha = 1.0f, beta = 0.0f;

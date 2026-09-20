@@ -16,6 +16,9 @@ constexpr uint32_t kCK = alice::gpu_rocm::kernels::kPrefillChunkKeys;
 __device__ __forceinline__ unsigned short f2b(float f) {
   return (unsigned short)(__float_as_uint(f) >> 16);
 }
+__device__ __forceinline__ float b2f(unsigned short b) {
+  return __uint_as_float((unsigned int)b << 16);
+}
 
 // Block-wide sum over NT threads via shared memory (no shuffle tricks).
 template <unsigned NT>
@@ -281,6 +284,64 @@ __global__ void k_prefill_combine(const float* __restrict__ partials,
   }
 }
 
+// Truncate an fp32 value to bf16 precision, keeping it as fp32 (bit-
+// identical to f32_to_bf16 followed by widening: the GEMM operand-
+// quantization contract, fused into the GEMV's x loads).
+__device__ __forceinline__ float qbf16(float f) {
+  return __uint_as_float(__float_as_uint(f) & 0xffff0000u);
+}
+
+// S=1 split-K GEMV, phase 1 (design §15 dispatch; measured in
+// research/decode-roofline): one warp per output row, 8 warps per block,
+// striding the row's K-chunk with uint64 weight loads (4 bf16 per lane per
+// step). fp32 accumulation; one partial per (chunk, row) to global memory.
+template <bool kXF32>
+__global__ void k_gemv_partial(const unsigned short* __restrict__ W,
+                               const void* __restrict__ x, float* __restrict__ partials,
+                               uint32_t N, uint32_t K, uint32_t CK) {
+  const uint32_t n = blockIdx.x * 8 + (threadIdx.x >> 5);
+  if (n >= N) return;
+  const uint32_t lane = threadIdx.x & 31;
+  const uint32_t k0 = blockIdx.y * CK, k1 = min(K, k0 + CK);
+  const uint64_t* Wr = reinterpret_cast<const uint64_t*>(W + (size_t)n * K);
+  float acc = 0.0f;
+  if (kXF32) {  // fp32 stream input: quantize in-register (qbf16)
+    const float4* xr = reinterpret_cast<const float4*>(x);
+    for (uint32_t p = (k0 >> 2) + lane; p < (k1 >> 2); p += 32) {
+      const uint64_t wv = Wr[p];
+      const float4 xv = xr[p];
+      acc += b2f((unsigned short)(wv & 0xffff)) * qbf16(xv.x);
+      acc += b2f((unsigned short)((wv >> 16) & 0xffff)) * qbf16(xv.y);
+      acc += b2f((unsigned short)((wv >> 32) & 0xffff)) * qbf16(xv.z);
+      acc += b2f((unsigned short)(wv >> 48)) * qbf16(xv.w);
+    }
+  } else {  // bf16 input (attention/activation output): uint64 pairs
+    const uint64_t* xr = reinterpret_cast<const uint64_t*>(x);
+    for (uint32_t p = (k0 >> 2) + lane; p < (k1 >> 2); p += 32) {
+      const uint64_t wv = Wr[p], xv = xr[p];
+      acc += b2f((unsigned short)(wv & 0xffff)) * b2f((unsigned short)(xv & 0xffff));
+      acc += b2f((unsigned short)((wv >> 16) & 0xffff)) *
+             b2f((unsigned short)((xv >> 16) & 0xffff));
+      acc += b2f((unsigned short)((wv >> 32) & 0xffff)) *
+             b2f((unsigned short)((xv >> 32) & 0xffff));
+      acc += b2f((unsigned short)(wv >> 48)) * b2f((unsigned short)(xv >> 48));
+    }
+  }
+  for (uint32_t off = 16; off > 0; off >>= 1)
+    acc += __shfl_down_sync(0xffffffffffffffffULL, acc, off);
+  if (lane == 0) partials[(size_t)blockIdx.y * N + n] = acc;
+}
+
+// Phase 2: y[n] = sum of the chunk partials. One thread per output.
+__global__ void k_gemv_combine(const float* __restrict__ partials, float* __restrict__ y,
+                               uint32_t N, uint32_t chunks) {
+  const uint32_t n = blockIdx.x * blockDim.x + threadIdx.x;
+  if (n >= N) return;
+  float a = 0.0f;
+  for (uint32_t c = 0; c < chunks; ++c) a += partials[(size_t)c * N + n];
+  y[n] = a;
+}
+
 unsigned grid_for(size_t n, unsigned block) {
   unsigned g = (unsigned)((n + block - 1) / block);
   return g == 0 ? 1 : (g > 65535 ? 65535 : g);
@@ -344,6 +405,50 @@ void attention(const float* qkv, const float* kcache, const float* vcache, void*
     k_attention_combine<<<S * nh, 128>>>((const float*)split_scratch,
                                          (unsigned short*)attn_bf16, hd, splits);
   }
+}
+
+uint32_t gemv_chunks(uint32_t N, uint32_t K) {
+  // CTA target: enough (row-block, chunk) blocks to occupy the GCD. Swept
+  // over the 8B shapes in research/decode-roofline ([6] section): 1024 ->
+  // 13.37 ms/token floor, 2048 -> 13.37, 4096 -> 12.99 (kept), 8192 -> 14.44
+  // (gup regresses past 2 chunks). Chunk count clamped so each chunk stays
+  // >= ~1024 wide (splitting thinner only adds partials traffic).
+  constexpr uint32_t kTargetCTAs = 4096;
+  const uint32_t row_blocks = (N + 7) / 8;
+  uint32_t chunks = (kTargetCTAs + row_blocks - 1) / row_blocks;
+  const uint32_t max_chunks = K >= 1024 ? K / 1024 : 1;
+  if (chunks < 1) chunks = 1;
+  if (chunks > max_chunks) chunks = max_chunks;
+  return chunks;
+}
+
+namespace {
+void gemv_launch(const void* W, const void* x, float* y, float* partials, uint32_t N,
+                 uint32_t K, bool x_f32) {
+  if (N == 0 || K == 0) throw std::runtime_error("gpu_rocm::kernels::gemv: empty shape");
+  if (K % 4)
+    throw std::runtime_error(
+        "gpu_rocm::kernels::gemv: K must be a multiple of 4 (uint64/float4 loads)");
+  const uint32_t chunks = gemv_chunks(N, K);
+  const uint32_t CK = (((K + chunks - 1) / chunks) + 3) & ~3u;  // multiple of 4
+  const dim3 grid((N + 7) / 8, chunks);
+  if (x_f32)
+    k_gemv_partial<true><<<grid, 256>>>((const unsigned short*)W, x, partials, N, K, CK);
+  else
+    k_gemv_partial<false><<<grid, 256>>>((const unsigned short*)W, x, partials, N, K,
+                                         CK);
+  k_gemv_combine<<<grid_for(N, 256), 256>>>(partials, y, N, chunks);
+}
+}  // namespace
+
+void gemv_x_f32(const void* W, const float* x, float* y, float* partials, uint32_t N,
+                uint32_t K) {
+  gemv_launch(W, x, y, partials, N, K, true);
+}
+
+void gemv_x_bf16(const void* W, const void* x, float* y, float* partials, uint32_t N,
+                 uint32_t K) {
+  gemv_launch(W, x, y, partials, N, K, false);
 }
 
 }  // namespace alice::gpu_rocm::kernels

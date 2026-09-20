@@ -111,11 +111,16 @@ cmake --build build-release -j                     # Release: measure here
   fixtures regenerable (`dump_canonical.py --prompt-file <raw>
   --dtype fp32`), gitignored. The semantic-exactness proof (CPU engine
   0.0002 vs fp32 ideal) is recorded in design §13.
-- Perf (Release, single GCD, greedy): 1B prefill 7826 tok/s at 602 ctx
-  / 8589 at 4000 ctx (pre-v4: 3652 / 885); 8B prefill 2105 at 4000 ctx
-  (was 398). 1B decode 114.6 short-ctx / 108.2 at 630 / 86.1 at 4000;
-  8B decode 35.1 / 28.2. Decode is bound by S=1 GEMV efficiency +
-  per-token launch/sync overhead; prefill is GEMM-bound again.
+- Perf (Release, single GCD, greedy, default host placement): 1B prefill
+  7826 tok/s at 602 ctx / 8715 at 3640 ctx (pre-v4: 3652 / 885); 8B prefill
+  2182 at 3640 ctx (was 398). 1B decode 261.7 tok/s short-ctx / 159.6 at
+  3770 ctx (was 114.6 / 86.1 pre-GEMV); 8B decode 64.9 at ~135 ctx / 47.1
+  at 3770 (was 35.1 / 28.2). Decode now runs the S=1 split-K GEMV
+  (gpu_rocm family kernel, dispatched at S==1; 933-1276 GB/s per shape vs
+  the 1290 GB/s measured read ceiling — the gemm_ex path it replaced ran
+  313-1143). Remaining decode budget: lm_head still on gemm_ex (1.1
+  ms/token), the SIMT tail (~2 ms), launch/sync overhead — the launch-diet
+  half of the campaign; prefill is GEMM-bound again.
 - Attention kernels (gpu_rocm private TU; v1 RETIRED — every dispatch
   decision is measured in research/prefill-attn-ab): S>4 → v4 split-T
   prefill (thread-per-query, key-major LDS score tile, deferred exp,
@@ -123,6 +128,13 @@ cmake --build build-release -j                     # Release: measure here
   instance — plus combine); S≤4 → v2 flash-decode at ALL T (split-T,
   in-warp shuffle reductions + combine; beats v1 even at T=8). The v1
   one-block-per-(query,head) kernel is deleted.
+- S=1 GEMV (2026-09, research/decode-roofline): both gpu_rocm blocks
+  dispatch S==1 to a family-private split-K GEMV (warp-per-row, uint64
+  bf16 loads, partials + combine, in-register operand quantization so the
+  separate f32_to_bf16 launch disappears from decode); gemm_ex stays for
+  S>1. CTA target 4096, swept (1024/2048/4096/8192 -> 13.37/13.37/12.99/
+  14.44 ms/token floor). Same kernel family is the model for the lm_head
+  site (still gemm_ex, ~1.1 ms/token) when that is worth taking.
 - Next: 70B multi-die (needs ≥3 GCDs; the TP/PP research is in
   research/rccl-single-process/), then §11 quantization; on the horizon:
   MFMA variant of the v4 tile structure (hd=128), fp16/bf16 KV cache,

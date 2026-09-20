@@ -44,6 +44,7 @@ class GqaAttentionBF16 final : public gpu::StatefulBlock {
   float* dqkv_ = nullptr;   // fp32 [mpc, qd + 2*kvd]
   void* dattn_ = nullptr;   // bf16 [mpc, qd]
   float* dsplit_ = nullptr;  // split-T partials [kAttnMaxSplits*nh*kAttnSplitMaxS*(hd+2)]
+  float* dgemv_ = nullptr;   // S=1 GEMV partials (max of the two sites' needs)
   float* prefill_scratch_ = nullptr;  // shared v4 prefill partials (not owned)
   rocblas_handle handle_ = nullptr;   // borrowed from the Model's Context
 };

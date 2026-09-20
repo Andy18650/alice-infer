@@ -64,7 +64,12 @@ the points that matter. Portability is instead achieved by writing
 several native implementations of one abstract block class and selecting
 at load the one matching the device present. Vendor BLAS is used where
 it genuinely covers the problem (dense GEMM) and not where it doesn't
-(attention, fused elementwise chains, quantized formats).
+(attention, fused elementwise chains, quantized formats). Measured
+addition (2026-09, research/decode-roofline): S=1 GEMV is a "doesn't"
+— rocBLAS gemm_ex picked no-split-K kernels running the FFN shapes at
+313-727 GB/s against a 1290 GB/s read ceiling (26 of 29.6 ms/token).
+The gpu_rocm family now carries its own split-K GEMV, dispatched at
+S==1 inside both blocks; see §15.
 
 The Trunk's own operations are the deliberate exception: norms, residual
 adds, and RoPE are plain SIMT kernels — no matrix intrinsics, no warp
@@ -343,7 +348,13 @@ The selection pipeline narrows the candidate set at four times:
 1. **Code time** (architecture design): cull provably-inferior
    implementations; a human act backed by harness evidence. Case study:
    v1 attention retired after measurement falsified both of its
-   dispatch boundaries.
+   dispatch boundaries. Second case study (2026-09): at S==1 the
+   rocBLAS gemm_ex path was replaced by a family-private split-K GEMV
+   in gpu_rocm — measured 26.0 of 29.6 ms/token at 313–1143 GB/s per
+   shape vs a 1290 GB/s streaming ceiling; the GEMV lands 933–1276 GB/s
+   and the block dispatch clause is `S == 1 → GEMV, else gemm_ex`
+   (decode-roofline study: replica harness linking the engine's real
+   kernel objects, per-shape A/B, CTA-target sweep).
 2. **Compile time**: per-arch implementation TUs. Deferrable to load
    time via fat binaries (`--offload-arch` / `-gencode` lists; the
    driver picks the code object) so one package can serve all

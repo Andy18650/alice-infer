@@ -95,6 +95,28 @@ TEST(GpuBlocks, DenseFfnApproxVsGeneric) {
   EXPECT_LT(max_abs_diff(io, got), 0.15f) << "max|generic - gpu|";
 }
 
+// S=1 exercises the split-K GEMV dispatch (design §15): same tolerance as
+// the S>1 gemm_ex path, on the same toy weights.
+TEST(GpuBlocks, DenseFfnDecodeVsGeneric) {
+  ModelConfig mc;
+  mc.hidden_size = 8;
+  mc.intermediate_size = 600;
+  EngineConfig ec;
+  ec.max_prefill_chunk = 8;
+  Bf16Mat g1(600, 8, mat_vals(600, 8)), u1(600, 8, mat_vals(601, 9)),
+      d1(8, 600, mat_vals(602, 10));
+  alice::cpu_generic::DenseFfnBF16CpuGeneric oracle(g1.t(), u1.t(), d1.t(), mc, ec);
+  Bf16Mat g2(600, 8, mat_vals(600, 8)), u2(600, 8, mat_vals(601, 9)),
+      d2(8, 600, mat_vals(602, 10));
+  Context ctx(0);
+  alice::gpu_rocm::DenseFfnBF16 gpu(g2.t(), u2.t(), d2.t(), mc, ec, ctx);
+
+  std::vector<float> io = mat_vals(1, 8);
+  oracle.forward(io.data(), 1);
+  auto got = run_gpu_block(gpu, mat_vals(1, 8), 1, 8);
+  EXPECT_LT(max_abs_diff(io, got), 0.15f) << "max|generic - gpu| at S=1";
+}
+
 TEST(GpuBlocks, AttentionApproxVsGeneric) {
   ModelConfig mc;
   mc.num_heads = 2;

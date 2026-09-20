@@ -34,6 +34,7 @@ class DenseFfnBF16 final : public gpu::Block {
   void* dx_ = nullptr;       // bf16 [mpc, d]
   float* dgu_ = nullptr;     // fp32 [mpc, 2I] (col-major [2I, S] view)
   void* dact_ = nullptr;     // bf16 [mpc, I]
+  float* dgemv_ = nullptr;   // S=1 GEMV partials (max of the two sites' needs)
   rocblas_handle handle_ = nullptr;  // borrowed from the Model's Context
 };
 

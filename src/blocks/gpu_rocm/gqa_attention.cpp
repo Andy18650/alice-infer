@@ -1,5 +1,6 @@
 #include "gqa_attention.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <stdexcept>
@@ -82,6 +83,10 @@ GqaAttentionBF16::GqaAttentionBF16(Tensor<bf16> wq, Tensor<bf16> wk, Tensor<bf16
   HIP_CHECK(hipMalloc(&dattn_, size_t(mpc_) * qd * sizeof(bf16)));
   HIP_CHECK(hipMalloc(&dsplit_, size_t(kernels::kAttnMaxSplits) * nh_ *
                                     kernels::kAttnSplitMaxS * (hd_ + 2) * sizeof(float)));
+  // S=1 GEMV partials: the larger of the two sites (qkv / o_proj).
+  const size_t gemv_floats = std::max(
+      kernels::gemv_partial_floats(qd + 2 * kvd, d_), kernels::gemv_partial_floats(d_, qd));
+  HIP_CHECK(hipMalloc(&dgemv_, gemv_floats * sizeof(float)));
   prefill_scratch_ = prefill_scratch;
   if (prefill_scratch_ == nullptr)
     throw std::invalid_argument("gpu_rocm::GqaAttentionBF16: null prefill scratch");
@@ -98,6 +103,7 @@ GqaAttentionBF16::~GqaAttentionBF16() {
   (void)hipFree(dqkv_);
   (void)hipFree(dattn_);
   (void)hipFree(dsplit_);
+  (void)hipFree(dgemv_);
 }
 
 void GqaAttentionBF16::forward(float* io, uint32_t S) {
@@ -106,6 +112,21 @@ void GqaAttentionBF16::forward(float* io, uint32_t S) {
   if (pos_ + S > max_seq_)
     throw std::runtime_error("gpu::GqaAttentionBF16::forward: max_seq_len exceeded");
   const uint32_t qd = nh_ * hd_, kvd = nkv_ * hd_, qkvd = qd + 2 * kvd;
+
+  if (S == 1) {
+    // Decode dispatch (design §15; measured in research/decode-roofline:
+    // gemm_ex S=1 runs the FFN shapes at 313-727 GB/s; the split-K GEMV at
+    // 946-1265). The fp32 stream is quantized in-register (qkv site), so
+    // the f32_to_bf16 launch disappears from the decode path.
+    kernels::gemv_x_f32(dw_qkv_, io, dqkv_, dgemv_, qkvd, d_);
+    kernels::rope_append(dqkv_, dkcache_, dvcache_, drope_cos_, drope_sin_, pos_, S, nh_,
+                         nkv_, hd_);
+    kernels::attention(dqkv_, dkcache_, dvcache_, dattn_, dsplit_, prefill_scratch_,
+                       pos_, S, nh_, nkv_, hd_, scale_);
+    kernels::gemv_x_bf16(dw_o_, dattn_, io, dgemv_, d_, qd);
+    pos_ += S;
+    return;
+  }
 
   kernels::f32_to_bf16(io, dx_, size_t(S) * d_);
   const float alpha = 1.0f, beta = 0.0f;

@@ -80,13 +80,14 @@ struct Shape {
   const char* name;
   uint32_t N, K;
   uint32_t per_token;  // calls per decode token
+  bool xf32;           // engine site input: fp32 stream (qkv/gup/lm) or bf16 (o/down)
 };
 const Shape kShapes[] = {
-    {"attn qkv  [ 6144 x  4096]", kQkvN, kD, kLayers},
-    {"attn o    [ 4096 x  4096]", kD, kQd, kLayers},
-    {"ffn gup   [28672 x  4096]", 2 * kInter, kD, kLayers},
-    {"ffn down  [ 4096 x 14336]", kD, kInter, kLayers},
-    {"lm_head   [128256 x  4096]", kV, kD, 1},
+    {"attn qkv  [ 6144 x  4096]", kQkvN, kD, kLayers, true},
+    {"attn o    [ 4096 x  4096]", kD, kQd, kLayers, false},
+    {"ffn gup   [28672 x  4096]", 2 * kInter, kD, kLayers, true},
+    {"ffn down  [ 4096 x 14336]", kD, kInter, kLayers, false},
+    {"lm_head   [128256 x  4096]", kV, kD, 1, true},
 };
 
 // The engine's S=1 GEMM: rocBLAS col-major view, C'[N,1] = W.x with W
@@ -481,6 +482,43 @@ int main(int argc, char** argv) {
                 "| sum %6.2f | wall %6.2f (outside-gap %5.2f)\n",
                 attn / N, ffn / N, tail / N, (attn + ffn + tail) / N, wall,
                 wall - (attn + ffn + tail) / N);
+  }
+
+  std::printf("[6] ENGINE split-K GEMV (gpu_rocm::kernels::gemv_*) per shape\n");
+  {
+    double floor_ms = 0;
+    for (const auto& s : kShapes) {
+      const size_t wbytes = size_t(s.N) * s.K * 2;
+      unsigned short* W = (unsigned short*)dmalloc(wbytes);
+      unsigned short* xb = (unsigned short*)dmalloc(size_t(s.K) * 2);
+      float* xf = (float*)dmalloc(size_t(s.K) * 4);
+      float* y = (float*)dmalloc(size_t(s.N) * 4);
+      float* part = (float*)dmalloc(alice::gpu_rocm::kernels::gemv_partial_floats(s.N, s.K) * 4);
+      dbf16_fill(W, wbytes);
+      dbf16_fill(xb, size_t(s.K) * 2);
+      HIP_CHECK(hipMemset(xf, 0x3F, size_t(s.K) * 4));
+      const int iters = s.N > 60000 ? 30 : 100;
+      const uint32_t chunks = alice::gpu_rocm::kernels::gemv_chunks(s.N, s.K);
+      const double ms = bench_ms(
+          [&] {
+            if (s.xf32)
+              alice::gpu_rocm::kernels::gemv_x_f32(W, xf, y, part, s.N, s.K);
+            else
+              alice::gpu_rocm::kernels::gemv_x_bf16(W, xb, y, part, s.N, s.K);
+          },
+          10, iters);
+      const double gb = wbytes / 1e9;
+      std::printf("    %s  %6.3f ms = %5.0f GB/s  (chunks=%u, x %s)\n", s.name, ms,
+                  gb / (ms / 1e3), chunks, s.xf32 ? "f32" : "bf16");
+      floor_ms += ms * s.per_token;
+      HIP_CHECK(hipFree(W));
+      HIP_CHECK(hipFree(xb));
+      HIP_CHECK(hipFree(xf));
+      HIP_CHECK(hipFree(y));
+      HIP_CHECK(hipFree(part));
+    }
+    std::printf("    engine-GEMV floor/token: %6.2f ms (%5.1f tok/s)\n\n", floor_ms,
+                1e3 / floor_ms);
   }
 
   RB_CHECK(rocblas_destroy_handle(handle));

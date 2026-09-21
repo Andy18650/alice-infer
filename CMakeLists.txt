@@ -4,6 +4,8 @@ project(alice-infer VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_HIP_STANDARD 20)
+set(CMAKE_HIP_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(ALICE_BUILD_TESTS "Build unit tests" ON)
@@ -51,41 +53,42 @@ else()
 endif()
 
 # ROCm GPU (mandatory, design §3: the engine requires a GPU). Platform
-# plumbing + GPU-resident model (device stream, SIMT kernels via hipcc,
-# device blocks, device trunk/model).
+# plumbing + GPU-resident model (device stream, SIMT kernels, device
+# blocks, device trunk/model). The .hip TUs are first-class HIP sources
+# (CMake >= 3.21 language support): compiled by hipcc, offload arch from
+# ALICE_GPU_ARCH, header dependencies tracked by the build system — the
+# former add_custom_command invocation is retired.
 find_library(ALICE_ROCBLAS_LIB rocblas)
 find_library(ALICE_HIP_LIB amdhip64)
-find_program(ALICE_HIPCC hipcc)
-set(ALICE_GPU_ARCH "gfx90a" CACHE STRING "--offload-arch for the SIMT kernel TU")
-if(ALICE_ROCBLAS_LIB AND ALICE_HIP_LIB AND ALICE_HIPCC AND
-   EXISTS "/usr/include/rocblas/rocblas.h")
-  add_custom_command(
-      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/alice_gpu_kernels.o
-      COMMAND ${ALICE_HIPCC} -O3 -std=c++17 --offload-arch=${ALICE_GPU_ARCH}
-              -c ${CMAKE_CURRENT_SOURCE_DIR}/src/gpu/kernels.hip
-              -o ${CMAKE_CURRENT_BINARY_DIR}/alice_gpu_kernels.o
-      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/gpu/kernels.hip
-              ${CMAKE_CURRENT_SOURCE_DIR}/src/gpu/kernels.hpp)
-  add_custom_command(
-      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/gpu_rocm_kernels.o
-      COMMAND ${ALICE_HIPCC} -O3 -std=c++17 --offload-arch=${ALICE_GPU_ARCH}
-              -c ${CMAKE_CURRENT_SOURCE_DIR}/src/blocks/gpu_rocm/kernels.hip
-              -o ${CMAKE_CURRENT_BINARY_DIR}/gpu_rocm_kernels.o
-      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/blocks/gpu_rocm/kernels.hip
-              ${CMAKE_CURRENT_SOURCE_DIR}/src/blocks/gpu_rocm/kernels.hpp)
-  target_sources(alice PRIVATE
-      src/blocks/gpu_rocm/platform.cpp
-      src/blocks/gpu_rocm/dense_ffn.cpp src/blocks/gpu_rocm/gqa_attention.cpp
-      src/gpu/trunk.cpp src/gpu/embedder.cpp src/gpu/lm_head.cpp
-      src/gpu/sampler.cpp src/gpu/cpu_reference.cpp src/gpu/model.cpp
-      ${CMAKE_CURRENT_BINARY_DIR}/alice_gpu_kernels.o
-      ${CMAKE_CURRENT_BINARY_DIR}/gpu_rocm_kernels.o)
-  target_compile_definitions(alice PRIVATE __HIP_PLATFORM_AMD__)
-  target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}" "${ALICE_HIP_LIB}")
-  message(STATUS "alice: ROCm + hipcc found, GPU-resident engine enabled (${ALICE_GPU_ARCH})")
-else()
-  message(FATAL_ERROR "alice: ROCm + hipcc required (the engine is GPU-mandatory, design §3)")
+if(NOT ALICE_ROCBLAS_LIB OR NOT ALICE_HIP_LIB OR
+   NOT EXISTS "/usr/include/rocblas/rocblas.h")
+  message(FATAL_ERROR "alice: ROCm (rocBLAS + HIP runtime) required — the engine is GPU-mandatory (design §3)")
 endif()
+set(ALICE_GPU_ARCH "gfx90a" CACHE STRING "HIP offload architecture for the device TUs")
+set(CMAKE_HIP_ARCHITECTURES "${ALICE_GPU_ARCH}")
+# Device TUs stay optimized in every configuration: nothing source-debugs
+# the kernels, and -O0 device code only breaks things — it doubles the
+# Debug test suite (measured 92.8 s -> 176.9 s) and even defeats
+# __launch_bounds__ occupancy targets (-Wpass-failed at -O0). The old
+# hipcc custom command always passed -O3; this keeps that behavior
+# explicit. Debug info still comes along via the per-config -g.
+string(APPEND CMAKE_HIP_FLAGS " -O3")
+enable_language(HIP)  # fails loudly at configure time without hipcc
+# The target predates the language (created above, before enable_language):
+# CMAKE_HIP_ARCHITECTURES only initializes targets created AFTER the
+# language is enabled, so set the property explicitly.
+set_target_properties(alice PROPERTIES HIP_ARCHITECTURES "${ALICE_GPU_ARCH}")
+
+target_sources(alice PRIVATE
+    src/blocks/gpu_rocm/platform.cpp
+    src/blocks/gpu_rocm/dense_ffn.cpp src/blocks/gpu_rocm/gqa_attention.cpp
+    src/gpu/trunk.cpp src/gpu/embedder.cpp src/gpu/lm_head.cpp
+    src/gpu/sampler.cpp src/gpu/cpu_reference.cpp src/gpu/model.cpp
+    src/gpu/kernels.hip
+    src/blocks/gpu_rocm/kernels.hip)
+target_compile_definitions(alice PRIVATE __HIP_PLATFORM_AMD__)
+target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}" "${ALICE_HIP_LIB}")
+message(STATUS "alice: HIP language enabled (${CMAKE_HIP_COMPILER}, arch ${CMAKE_HIP_ARCHITECTURES})")
 
 # Minimal REPL PoC (design §12: the CLI owns the whole loop for now)
 add_executable(alice_repl src/frontend/repl.cpp)

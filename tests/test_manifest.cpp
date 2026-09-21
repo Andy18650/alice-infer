@@ -19,6 +19,7 @@ using alice::safetensors::Files;
 struct ToyTensor {
   std::string name;
   std::vector<uint32_t> shape;
+  std::string dtype = "BF16";  // "BF16" | "F32" (audit dtype test)
 };
 
 std::vector<ToyTensor> toy_tensors() {
@@ -45,15 +46,16 @@ std::string write_shard(const std::string& tag, const std::vector<ToyTensor>& ts
   for (size_t i = 0; i < ts.size(); ++i) {
     size_t elems = 1;
     for (auto d : ts[i].shape) elems *= d;
+    const size_t esz = ts[i].dtype == "BF16" ? 2 : 4;
     if (i) json += ",";
-    json += "\"" + ts[i].name + "\":{\"dtype\":\"BF16\",\"shape\":[";
+    json += "\"" + ts[i].name + "\":{\"dtype\":\"" + ts[i].dtype + "\",\"shape\":[";
     for (size_t d = 0; d < ts[i].shape.size(); ++d) {
       if (d) json += ",";
       json += std::to_string(ts[i].shape[d]);
     }
     json += "],\"data_offsets\":[" + std::to_string(off) + "," +
-            std::to_string(off + elems * 2) + "]}";
-    off += elems * 2;
+            std::to_string(off + elems * esz) + "]}";
+    off += elems * esz;
   }
   json += "}";
   std::ofstream out(path, std::ios::binary);
@@ -72,13 +74,13 @@ std::string toy_file(const std::vector<ToyTensor>& extra = {}) {
 }
 
 std::string spec(const std::string& name, const std::string& shape) {
-  return "{\"name\":\"" + name + "\",\"shape\":" + shape + ",\"dtype\":\"bf16\"}";
+  return "{\"name\":\"" + name + "\",\"shape\":" + shape + "}";
 }
 
 std::string toy_manifest_json() {
   return std::string(R"({
  "model": "toy",
- "config": {"hidden_size": 8, "intermediate_size": 16, "num_layers": 1,
+ "config": {"hidden_size": 8, "intermediate_size": 16,
    "num_heads": 2, "num_kv_heads": 1, "head_dim": 4, "vocab_size": 16,
    "rms_norm_eps": 1e-5, "rope_theta": 500000.0},
  "embedder": {"token_embedding": )") +
@@ -99,8 +101,8 @@ std::string toy_manifest_json() {
     "w_gate": )" + spec("model.layers.0.mlp.gate_proj.weight", "[16, 8]") + R"(,
     "w_up":   )" + spec("model.layers.0.mlp.up_proj.weight", "[16, 8]") + R"(,
     "w_down": )" + spec("model.layers.0.mlp.down_proj.weight", "[8, 16]") + R"(}}],
- "lm_head": {"weight": {"alias_of": "model.embed_tokens.weight",
-   "shape": [16, 8], "dtype": "bf16"}}
+ "lm_head": {"weight": {"name": "model.embed_tokens.weight",
+   "shape": [16, 8]}}
 })";
 }
 
@@ -122,7 +124,9 @@ TEST(Manifest, ToyContractHolds) {
   auto m = Manifest::parse_string(toy_manifest_json());
   EXPECT_EQ(m.blocks.size(), 2u);
   EXPECT_EQ(m.pre_norms.size(), 2u);
-  EXPECT_TRUE(m.lm_head.is_alias());
+  // toy lm_head is tied (names the embedder's tensor — the one legal shared
+  // claim; the alias mechanism is gone, manifest diet 2026-09)
+  EXPECT_EQ(m.lm_head.name, m.token_embedding.name);
   auto errors = validate(m, f);
   for (const auto& e : errors) ADD_FAILURE() << "unexpected: " << e;
   EXPECT_TRUE(errors.empty());
@@ -172,16 +176,17 @@ TEST(Manifest, ShapeMismatch) {
   expect_error(errors, "shape mismatch");
 }
 
+// Dtype is not declared per weight anymore (derived: all current block types
+// are bf16); the audit still checks the FILE side, so the mismatch case is an
+// F32 tensor in the weight source.
 TEST(Manifest, DtypeMismatch) {
-  auto f = Files::open({toy_file()});
-  auto j = toy_manifest_json();
-  auto pos = j.find("q_proj.weight");
-  ASSERT_NE(pos, std::string::npos);
-  auto dpos = j.find("bf16", pos);
-  ASSERT_NE(dpos, std::string::npos);
-  j.replace(dpos, 4, "f32");
-  auto errors = validate(Manifest::parse_string(j), f);
+  auto ts = toy_tensors();
+  for (auto& t : ts)
+    if (t.name.find("q_proj") != std::string::npos) t.dtype = "F32";
+  auto f = Files::open({write_shard("toy_f32", ts)});
+  auto errors = validate(Manifest::parse_string(toy_manifest_json()), f);
   expect_error(errors, "dtype mismatch");
+  expect_error(errors, "expected bf16");
 }
 
 TEST(Manifest, UnclaimedTensor) {
@@ -192,21 +197,14 @@ TEST(Manifest, UnclaimedTensor) {
 
 TEST(Manifest, DuplicateClaim) {
   auto f = Files::open({toy_file()});
-  // lm_head directly claims embed_tokens instead of aliasing it
-  auto j = replace_first(toy_manifest_json(),
-                         "{\"alias_of\": \"model.embed_tokens.weight\",",
-                         "{\"name\": \"model.embed_tokens.weight\",");
+  // two block roles claiming one tensor: wv points at q_proj's tensor
+  // (fires the duplicate-claim error; the shape mismatch also fires)
+  auto j = replace_first(
+      toy_manifest_json(),
+      "{\"name\":\"model.layers.0.self_attn.v_proj.weight\",\"shape\":[4, 8]}",
+      "{\"name\":\"model.layers.0.self_attn.q_proj.weight\",\"shape\":[4, 8]}");
   auto errors = validate(Manifest::parse_string(j), f);
   expect_error(errors, "claimed twice");
-}
-
-TEST(Manifest, BadAliasTarget) {
-  auto f = Files::open({toy_file()});
-  auto j = replace_first(toy_manifest_json(),
-                         "\"alias_of\": \"model.embed_tokens.weight\"",
-                         "\"alias_of\": \"model.nonexistent.weight\"");
-  auto errors = validate(Manifest::parse_string(j), f);
-  expect_error(errors, "alias target");
 }
 
 TEST(Manifest, ConfigInconsistency) {

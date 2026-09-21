@@ -16,14 +16,16 @@ namespace alice {
 // validate() performs the two-way audit before any compute happens.
 
 struct WeightSpec {
-  std::string name;      // safetensors tensor name (empty iff alias)
-  std::string alias_of;  // aliased tensor name (empty iff direct)
+  std::string name;  // safetensors tensor name
   uint32_t rows = 0;
   uint32_t cols = 0;
-  DType dtype = DType::BF16;
-
-  bool is_alias() const { return !alias_of.empty(); }
 };
+// Manifest diet (2026-09): no per-weight dtype (derived — block types
+// encode it, `File::check_as<T>` enforces it at the load boundary, the
+// audit checks the FILE's dtype against the derivation); no alias_of —
+// tied embeddings are expressed by naming the EMBEDDER's tensor in the
+// lm_head role, the one legal shared claim (validate() exempts exactly
+// that pair; a mistied lm_head still fails the shape check).
 
 struct RopeScaling {  // llama3-type scaling; presence flagged in ModelConfig
   float factor = 1.0f;
@@ -35,7 +37,10 @@ struct RopeScaling {  // llama3-type scaling; presence flagged in ModelConfig
 struct ModelConfig {
   uint32_t hidden_size = 0;
   uint32_t intermediate_size = 0;
-  uint32_t num_layers = 0;
+  // No num_layers field (2026-09 round 1 of the manifest diet): it was
+  // written by the generator, parsed, and consumed by nothing — the block
+  // list IS the layer composition; pre_norms count is validated against
+  // blocks.size().
   uint32_t num_heads = 0;
   uint32_t num_kv_heads = 0;
   uint32_t head_dim = 0;
@@ -72,9 +77,9 @@ struct Manifest {
 
 // Two-way audit of the manifest against an opened weight source (single- or
 // multi-shard). Returns ALL problems found (missing tensor, shape/dtype
-// mismatch, duplicate claim, unclaimed tensor — globally across shards,
-// bad alias, config inconsistency, unknown block type or role, pre_norm
-// count mismatch). Empty vector == the contract holds.
+// mismatch, duplicate claim — the tied lm_head exempt, unclaimed tensor —
+// globally across shards, config inconsistency, unknown block type or
+// role, pre_norm count mismatch). Empty vector == the contract holds.
 std::vector<std::string> validate(const Manifest& m, const safetensors::Files& f);
 
 }  // namespace alice

@@ -97,10 +97,15 @@ hipcc.
 
 The engine consumes safetensors directly (GGUF out of scope). An
 externally authored **manifest** describes model composition: per-Block
-type and weight roles `{name, shape, dtype}` or `{alias_of}`. The
-manifest is the *total contract*: `validate()` performs a two-way audit
-against the weight source (missing / shape / dtype / duplicate claim /
-unclaimed tensor / alias resolution) and reports all errors at once.
+type and weight roles `{name, shape}` (2026-09 manifest diet, rounds 1-2:
+per-weight `dtype` and config `num_layers` removed as dead — dtype is
+derived from the block type and checked against the file header by the
+audit, `num_layers` was consumed by nothing; the `alias_of` mechanism is
+gone — tied embeddings name the EMBEDDER's tensor in the lm_head role,
+the one legal shared claim, exempted by exactly that rule in validate()).
+The manifest is the *total contract*: `validate()` performs a two-way
+audit against the weight source (missing / shape / dtype / duplicate
+claim / unclaimed tensor) and reports all errors at once.
 Sharding is physical packaging, invisible to the contract: shards are
 probed via their resident headers (never HF's index.json), cross-shard
 duplicates are rejected, and the unclaimed-tensor audit is global.
@@ -118,8 +123,9 @@ strided: transposes are explicit decisions at GEMM call sites (rocBLAS
 op flags), never metadata. The strong `bf16` struct and the single
 checked runtime→static conversion `File::check_as<T>()` at the load
 boundary. Runtime `DType` survives only in file-facing structs
-(`TensorInfo`, `WeightSpec`). Quantized formats get concrete composite
-types (data + scales), never a polymorphic hierarchy.
+(`TensorInfo`); the manifest's weight specs are dtype-free, the expected
+dtype being derived from the block type. Quantized formats get concrete
+composite types (data + scales), never a polymorphic hierarchy.
 
 The device-side stream and device buffers are not Tensors. They are raw
 device allocations owned by components, referenced as plain pointers in

@@ -20,7 +20,6 @@ def read_header(path):
         h = json.loads(f.read(n))
     return {k: v for k, v in h.items() if k != "__metadata__"}
 
-
 def main():
     model_dir, manifest_path = sys.argv[1], sys.argv[2]
     errors = []
@@ -37,13 +36,17 @@ def main():
 
     m = json.load(open(manifest_path))
     claimed = set()
+    embedder_name = m["embedder"]["token_embedding"].get("name")
 
     def check(spec, what):
-        name = spec.get("alias_of") or spec.get("name")
+        name = spec["name"]
         if not name:
             errors.append(f"{what}: empty tensor name")
             return
-        if name in claimed and "alias_of" not in spec:
+        # tied embeddings: the lm_head may share the embedder's tensor —
+        # the one legal shared claim (mirrors validate())
+        tied = what == "lm_head" and name == embedder_name
+        if name in claimed and not tied:
             errors.append(f"{what}: claimed twice: {name}")
         claimed.add(name)
         if name not in tensors:
@@ -53,8 +56,11 @@ def main():
         if list(spec["shape"]) != list(shape):
             errors.append(f"{what}: shape mismatch on {name}: "
                           f"manifest {spec['shape']} vs file {shape}")
-        if spec["dtype"].upper() != dtype:
-            errors.append(f"{what}: dtype mismatch on {name}")
+        # expected dtype is derived (all current block types are bf16), not
+        # declared per weight (2026-09 manifest diet)
+        if dtype != "BF16":
+            errors.append(f"{what}: dtype mismatch on {name}: "
+                          f"expected BF16, file has {dtype}")
 
     check(m["embedder"]["token_embedding"], "embedder")
     check(m["lm_head"]["weight"], "lm_head")

@@ -3,7 +3,6 @@
  "config": {
   "hidden_size": 8192,
   "intermediate_size": 28672,
-  "num_layers": 80,
   "num_heads": 64,
   "num_kv_heads": 8,
   "head_dim": 128,
@@ -30,8 +29,7 @@
    "shape": [
     128256,
     8192
-   ],
-   "dtype": "bf16"
+   ]
   }
  },
  "trunk": {
@@ -41,1129 +39,968 @@
     "name": "model.layers.0.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.0.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.1.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.1.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.2.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.2.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.3.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.3.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.4.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.4.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.5.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.5.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.6.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.6.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.7.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.7.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.8.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.8.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.9.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.9.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.10.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.10.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.11.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.11.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.12.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.12.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.13.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.13.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.14.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.14.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.15.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.15.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.16.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.16.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.17.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.17.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.18.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.18.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.19.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.19.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.20.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.20.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.21.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.21.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.22.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.22.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.23.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.23.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.24.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.24.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.25.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.25.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.26.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.26.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.27.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.27.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.28.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.28.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.29.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.29.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.30.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.30.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.31.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.31.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.32.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.32.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.33.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.33.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.34.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.34.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.35.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.35.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.36.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.36.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.37.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.37.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.38.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.38.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.39.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.39.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.40.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.40.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.41.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.41.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.42.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.42.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.43.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.43.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.44.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.44.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.45.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.45.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.46.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.46.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.47.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.47.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.48.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.48.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.49.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.49.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.50.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.50.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.51.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.51.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.52.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.52.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.53.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.53.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.54.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.54.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.55.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.55.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.56.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.56.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.57.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.57.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.58.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.58.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.59.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.59.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.60.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.60.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.61.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.61.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.62.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.62.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.63.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.63.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.64.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.64.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.65.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.65.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.66.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.66.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.67.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.67.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.68.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.68.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.69.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.69.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.70.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.70.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.71.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.71.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.72.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.72.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.73.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.73.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.74.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.74.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.75.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.75.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.76.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.76.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.77.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.77.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.78.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.78.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.79.input_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    },
    {
     "name": "model.layers.79.post_attention_layernorm.weight",
     "shape": [
      8192
-    ],
-    "dtype": "bf16"
+    ]
    }
   ],
   "final_norm": {
    "name": "model.norm.weight",
    "shape": [
     8192
-   ],
-   "dtype": "bf16"
+   ]
   }
  },
  "blocks": [
@@ -1175,32 +1012,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.0.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.0.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.0.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1212,24 +1045,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.0.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.0.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1241,32 +1071,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.1.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.1.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.1.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1278,24 +1104,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.1.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.1.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1307,32 +1130,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.2.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.2.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.2.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1344,24 +1163,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.2.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.2.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1373,32 +1189,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.3.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.3.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.3.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1410,24 +1222,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.3.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.3.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1439,32 +1248,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.4.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.4.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.4.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1476,24 +1281,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.4.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.4.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1505,32 +1307,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.5.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.5.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.5.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1542,24 +1340,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.5.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.5.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1571,32 +1366,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.6.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.6.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.6.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1608,24 +1399,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.6.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.6.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1637,32 +1425,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.7.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.7.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.7.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1674,24 +1458,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.7.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.7.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1703,32 +1484,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.8.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.8.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.8.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1740,24 +1517,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.8.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.8.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1769,32 +1543,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.9.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.9.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.9.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1806,24 +1576,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.9.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.9.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1835,32 +1602,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.10.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.10.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.10.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1872,24 +1635,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.10.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.10.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1901,32 +1661,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.11.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.11.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.11.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1938,24 +1694,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.11.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.11.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -1967,32 +1720,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.12.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.12.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.12.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2004,24 +1753,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.12.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.12.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2033,32 +1779,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.13.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.13.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.13.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2070,24 +1812,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.13.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.13.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2099,32 +1838,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.14.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.14.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.14.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2136,24 +1871,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.14.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.14.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2165,32 +1897,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.15.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.15.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.15.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2202,24 +1930,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.15.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.15.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2231,32 +1956,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.16.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.16.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.16.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2268,24 +1989,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.16.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.16.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2297,32 +2015,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.17.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.17.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.17.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2334,24 +2048,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.17.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.17.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2363,32 +2074,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.18.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.18.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.18.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2400,24 +2107,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.18.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.18.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2429,32 +2133,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.19.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.19.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.19.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2466,24 +2166,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.19.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.19.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2495,32 +2192,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.20.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.20.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.20.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2532,24 +2225,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.20.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.20.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2561,32 +2251,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.21.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.21.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.21.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2598,24 +2284,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.21.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.21.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2627,32 +2310,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.22.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.22.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.22.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2664,24 +2343,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.22.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.22.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2693,32 +2369,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.23.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.23.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.23.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2730,24 +2402,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.23.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.23.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2759,32 +2428,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.24.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.24.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.24.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2796,24 +2461,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.24.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.24.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2825,32 +2487,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.25.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.25.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.25.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2862,24 +2520,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.25.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.25.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2891,32 +2546,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.26.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.26.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.26.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2928,24 +2579,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.26.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.26.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2957,32 +2605,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.27.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.27.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.27.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -2994,24 +2638,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.27.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.27.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3023,32 +2664,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.28.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.28.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.28.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3060,24 +2697,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.28.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.28.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3089,32 +2723,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.29.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.29.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.29.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3126,24 +2756,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.29.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.29.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3155,32 +2782,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.30.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.30.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.30.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3192,24 +2815,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.30.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.30.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3221,32 +2841,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.31.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.31.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.31.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3258,24 +2874,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.31.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.31.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3287,32 +2900,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.32.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.32.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.32.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3324,24 +2933,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.32.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.32.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3353,32 +2959,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.33.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.33.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.33.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3390,24 +2992,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.33.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.33.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3419,32 +3018,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.34.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.34.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.34.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3456,24 +3051,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.34.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.34.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3485,32 +3077,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.35.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.35.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.35.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3522,24 +3110,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.35.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.35.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3551,32 +3136,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.36.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.36.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.36.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3588,24 +3169,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.36.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.36.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3617,32 +3195,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.37.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.37.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.37.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3654,24 +3228,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.37.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.37.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3683,32 +3254,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.38.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.38.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.38.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3720,24 +3287,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.38.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.38.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3749,32 +3313,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.39.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.39.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.39.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3786,24 +3346,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.39.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.39.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3815,32 +3372,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.40.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.40.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.40.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3852,24 +3405,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.40.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.40.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3881,32 +3431,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.41.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.41.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.41.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3918,24 +3464,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.41.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.41.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3947,32 +3490,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.42.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.42.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.42.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -3984,24 +3523,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.42.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.42.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4013,32 +3549,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.43.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.43.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.43.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4050,24 +3582,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.43.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.43.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4079,32 +3608,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.44.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.44.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.44.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4116,24 +3641,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.44.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.44.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4145,32 +3667,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.45.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.45.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.45.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4182,24 +3700,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.45.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.45.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4211,32 +3726,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.46.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.46.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.46.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4248,24 +3759,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.46.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.46.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4277,32 +3785,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.47.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.47.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.47.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4314,24 +3818,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.47.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.47.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4343,32 +3844,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.48.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.48.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.48.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4380,24 +3877,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.48.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.48.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4409,32 +3903,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.49.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.49.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.49.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4446,24 +3936,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.49.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.49.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4475,32 +3962,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.50.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.50.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.50.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4512,24 +3995,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.50.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.50.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4541,32 +4021,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.51.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.51.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.51.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4578,24 +4054,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.51.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.51.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4607,32 +4080,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.52.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.52.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.52.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4644,24 +4113,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.52.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.52.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4673,32 +4139,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.53.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.53.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.53.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4710,24 +4172,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.53.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.53.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4739,32 +4198,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.54.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.54.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.54.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4776,24 +4231,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.54.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.54.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4805,32 +4257,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.55.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.55.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.55.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4842,24 +4290,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.55.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.55.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4871,32 +4316,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.56.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.56.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.56.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4908,24 +4349,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.56.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.56.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4937,32 +4375,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.57.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.57.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.57.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -4974,24 +4408,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.57.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.57.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5003,32 +4434,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.58.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.58.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.58.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5040,24 +4467,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.58.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.58.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5069,32 +4493,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.59.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.59.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.59.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5106,24 +4526,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.59.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.59.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5135,32 +4552,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.60.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.60.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.60.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5172,24 +4585,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.60.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.60.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5201,32 +4611,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.61.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.61.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.61.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5238,24 +4644,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.61.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.61.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5267,32 +4670,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.62.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.62.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.62.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5304,24 +4703,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.62.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.62.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5333,32 +4729,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.63.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.63.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.63.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5370,24 +4762,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.63.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.63.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5399,32 +4788,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.64.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.64.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.64.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5436,24 +4821,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.64.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.64.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5465,32 +4847,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.65.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.65.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.65.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5502,24 +4880,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.65.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.65.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5531,32 +4906,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.66.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.66.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.66.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5568,24 +4939,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.66.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.66.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5597,32 +4965,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.67.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.67.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.67.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5634,24 +4998,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.67.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.67.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5663,32 +5024,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.68.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.68.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.68.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5700,24 +5057,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.68.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.68.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5729,32 +5083,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.69.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.69.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.69.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5766,24 +5116,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.69.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.69.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5795,32 +5142,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.70.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.70.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.70.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5832,24 +5175,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.70.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.70.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5861,32 +5201,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.71.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.71.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.71.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5898,24 +5234,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.71.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.71.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5927,32 +5260,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.72.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.72.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.72.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5964,24 +5293,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.72.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.72.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -5993,32 +5319,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.73.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.73.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.73.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -6030,24 +5352,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.73.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.73.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -6059,32 +5378,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.74.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.74.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.74.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -6096,24 +5411,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.74.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.74.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -6125,32 +5437,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.75.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.75.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.75.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -6162,24 +5470,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.75.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.75.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -6191,32 +5496,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.76.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.76.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.76.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -6228,24 +5529,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.76.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.76.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -6257,32 +5555,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.77.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.77.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.77.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -6294,24 +5588,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.77.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.77.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -6323,32 +5614,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.78.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.78.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.78.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -6360,24 +5647,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.78.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.78.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -6389,32 +5673,28 @@
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wk": {
      "name": "model.layers.79.self_attn.k_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wv": {
      "name": "model.layers.79.self_attn.v_proj.weight",
      "shape": [
       1024,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "wo": {
      "name": "model.layers.79.self_attn.o_proj.weight",
      "shape": [
       8192,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   },
@@ -6426,24 +5706,21 @@
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_up": {
      "name": "model.layers.79.mlp.up_proj.weight",
      "shape": [
       28672,
       8192
-     ],
-     "dtype": "bf16"
+     ]
     },
     "w_down": {
      "name": "model.layers.79.mlp.down_proj.weight",
      "shape": [
       8192,
       28672
-     ],
-     "dtype": "bf16"
+     ]
     }
    }
   }
@@ -6454,8 +5731,7 @@
    "shape": [
     128256,
     8192
-   ],
-   "dtype": "bf16"
+   ]
   }
  }
 }

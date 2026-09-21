@@ -13,8 +13,11 @@ import json
 import sys
 
 
-def spec(name, shape, dtype="bf16"):
-    return {"name": name, "shape": shape, "dtype": dtype}
+def spec(name, shape):
+    # no per-weight dtype (2026-09 manifest diet): derived from block type
+    # (`*_bf16`) and enforced at the load boundary; no num_layers in config —
+    # the block list is the layer composition
+    return {"name": name, "shape": shape}
 
 
 def main():
@@ -32,7 +35,6 @@ def main():
     cfg = {
         "hidden_size": d,
         "intermediate_size": inter,
-        "num_layers": L,
         "num_heads": nh,
         "num_kv_heads": nkv,
         "head_dim": hd,
@@ -78,8 +80,9 @@ def main():
         pre_norms.append(spec(f"{p}.post_attention_layernorm.weight", [d]))
 
     if c.get("tie_word_embeddings", False):
-        lm_head = {"alias_of": "model.embed_tokens.weight",
-                   "shape": [vocab, d], "dtype": "bf16"}
+        # tied embeddings: name the EMBEDDER's tensor in the lm_head role —
+        # the one legal shared claim (validate() exempts that pair)
+        lm_head = spec("model.embed_tokens.weight", [vocab, d])
     else:
         lm_head = spec("lm_head.weight", [vocab, d])
 
@@ -99,7 +102,7 @@ def main():
         json.dump(manifest, f, indent=1)
         f.write("\n")
     print(f"wrote {out_path}: {L} layers, {len(blocks)} blocks, "
-          f"lm_head {'tied' if 'alias_of' in lm_head else 'untied'}")
+          f"lm_head {'tied' if c.get('tie_word_embeddings', False) else 'untied'}")
 
 
 if __name__ == "__main__":

@@ -12,20 +12,9 @@ namespace {
 
 using nlohmann::json;
 
-DType parse_dtype(const std::string& s, const std::string& ctx) {
-  if (s == "bf16") return DType::BF16;
-  if (s == "f32") return DType::F32;
-  throw std::runtime_error("manifest: " + ctx + ": unknown dtype '" + s +
-                           "' (expected bf16|f32)");
-}
-
 WeightSpec parse_spec(const json& j, const std::string& ctx) {
   WeightSpec w;
-  if (j.contains("alias_of")) {
-    w.alias_of = j.at("alias_of").get<std::string>();
-  } else {
-    w.name = j.at("name").get<std::string>();
-  }
+  w.name = j.at("name").get<std::string>();
   const auto& shape = j.at("shape");
   if (!shape.is_array() || shape.size() < 1 || shape.size() > 2)
     throw std::runtime_error("manifest: " + ctx + ": shape must have rank 1-2");
@@ -36,7 +25,6 @@ WeightSpec parse_spec(const json& j, const std::string& ctx) {
     w.rows = shape[0].get<uint32_t>();
     w.cols = shape[1].get<uint32_t>();
   }
-  w.dtype = parse_dtype(j.at("dtype").get<std::string>(), ctx);
   return w;
 }
 
@@ -48,7 +36,6 @@ Manifest from_json(const json& j) {
   auto& mc = m.config;
   mc.hidden_size = c.at("hidden_size").get<uint32_t>();
   mc.intermediate_size = c.at("intermediate_size").get<uint32_t>();
-  mc.num_layers = c.at("num_layers").get<uint32_t>();
   mc.num_heads = c.at("num_heads").get<uint32_t>();
   mc.num_kv_heads = c.at("num_kv_heads").get<uint32_t>();
   mc.head_dim = c.at("head_dim").get<uint32_t>();
@@ -125,25 +112,37 @@ std::vector<std::string> validate(const Manifest& m, const safetensors::Files& f
   const ModelConfig& c = m.config;
 
   auto check = [&](const WeightSpec& w, const std::string& what) {
-    const std::string& resolved = w.is_alias() ? w.alias_of : w.name;
-    if (resolved.empty()) {
+    if (w.name.empty()) {
       errors.push_back(what + ": empty tensor name");
       return;
     }
-    if (!w.is_alias() && !direct_claims.insert(resolved).second)
-      errors.push_back(what + ": tensor '" + resolved + "' claimed twice");
-    all_claims.insert(resolved);
-    if (!f.contains(resolved)) {
-      errors.push_back(what + ": tensor '" + resolved + "'" +
-                       (w.is_alias() ? " (alias target)" : "") + " not found in weight source");
+    // Tied embeddings: the lm_head may claim the SAME tensor as the
+    // embedder — the one legal shared claim (manifest diet 2026-09: this
+    // rule replaces the former alias_of mechanism). Anything else claiming
+    // a tensor twice is an error; a mistied lm_head still fails the shape
+    // check below (only a [vocab, d] tensor passes).
+    const bool tied_embedding =
+        what == "lm_head.weight" && w.name == m.token_embedding.name;
+    if (!tied_embedding && !direct_claims.insert(w.name).second)
+      errors.push_back(what + ": tensor '" + w.name + "' claimed twice");
+    all_claims.insert(w.name);
+    if (!f.contains(w.name)) {
+      errors.push_back(what + ": tensor '" + w.name + "' not found in weight source");
       return;
     }
-    const auto& t = f.at(resolved);
+    const auto& t = f.at(w.name);
     if (t.rows != w.rows || t.cols != w.cols)
-      errors.push_back(what + ": shape mismatch on '" + resolved + "': manifest " +
+      errors.push_back(what + ": shape mismatch on '" + w.name + "': manifest " +
                        dims(w.rows, w.cols) + " vs file " + dims(t.rows, t.cols));
-    if (t.dtype != w.dtype)
-      errors.push_back(what + ": dtype mismatch on '" + resolved + "'");
+    // Expected dtype is DERIVED, not declared (2026-09 manifest diet): every
+    // weightful component today is bf16 (the block types say so), and the
+    // load boundary enforces it via File::check_as<T>. The audit keeps the
+    // file-side check so a wrong-dtype checkpoint fails all-errors-at-once
+    // instead of on the first stage(). When a non-bf16 block type lands,
+    // this becomes a per-type lookup.
+    if (t.dtype != DType::BF16)
+      errors.push_back(what + ": dtype mismatch on '" + w.name +
+                       "': expected bf16 (all current block types are bf16)");
   };
 
   auto expect = [&](const WeightSpec& w, const std::string& what, uint32_t r, uint32_t cl) {

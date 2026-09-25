@@ -1,5 +1,6 @@
 #include "alice/manifest.hpp"
 
+#include <filesystem>
 #include <fstream>
 #include <set>
 #include <stdexcept>
@@ -11,6 +12,128 @@ namespace alice {
 namespace {
 
 using nlohmann::json;
+
+// ===========================================================================
+// HF config.json synthesis (EXPERIMENTAL, pending design review)
+// ===========================================================================
+// Mirrors tools/gen_manifest.py field for field, so an engine-synthesized
+// manifest and a generator-authored one are the same document. Known
+// divergence from the runtime-trust design decision: HF config.json was
+// deliberately NOT a runtime input — no schema stability, the wrong
+// vocabulary (no role mapping or block composition), and a second input
+// channel would break the audit's independence. This path is here to be
+// judged as code, not to quietly amend the design.
+
+WeightSpec hf_spec(std::string name, uint32_t rows, uint32_t cols) {
+  return WeightSpec{std::move(name), rows, cols};
+}
+
+Manifest from_hf_llama_config(const json& c, const std::filesystem::path& dir) {
+  // Insufficiency report: everything the Llama format needs, all at once
+  // (the audit reports all problems in one pass; this matches it).
+  static const char* kRequired[] = {
+      "hidden_size", "intermediate_size", "num_hidden_layers",
+      "num_attention_heads", "num_key_value_heads", "vocab_size",
+      "rms_norm_eps", "rope_theta"};
+  std::string missing;
+  for (const char* k : kRequired)
+    if (!c.contains(k))
+      missing += std::string(missing.empty() ? "" : ", ") + k;
+  if (!missing.empty())
+    throw std::runtime_error(
+        "manifest: config.json has insufficient information for "
+        "LlamaForCausalLM, missing: " + missing);
+
+  const uint32_t d = c.at("hidden_size").get<uint32_t>();
+  const uint32_t inter = c.at("intermediate_size").get<uint32_t>();
+  const uint32_t L = c.at("num_hidden_layers").get<uint32_t>();
+  const uint32_t nh = c.at("num_attention_heads").get<uint32_t>();
+  const uint32_t nkv = c.at("num_key_value_heads").get<uint32_t>();
+  const uint32_t hd =
+      c.contains("head_dim") ? c.at("head_dim").get<uint32_t>() : d / nh;
+
+  Manifest m;
+  m.model_name = c.value("_name_or_path", std::string{});
+  if (m.model_name.empty()) {
+    m.model_name = dir.filename().string();
+  } else {
+    // basename (gen_manifest.py: rstrip('/').split('/')[-1])
+    while (m.model_name.size() > 1 && m.model_name.back() == '/')
+      m.model_name.pop_back();
+    m.model_name = m.model_name.substr(m.model_name.find_last_of('/') + 1);
+  }
+
+  ModelConfig& mc = m.config;
+  mc.hidden_size = d;
+  mc.intermediate_size = inter;
+  mc.num_heads = nh;
+  mc.num_kv_heads = nkv;
+  mc.head_dim = hd;
+  mc.vocab_size = c.at("vocab_size").get<uint32_t>();
+  mc.rms_norm_eps = c.at("rms_norm_eps").get<float>();
+  mc.rope_theta = c.at("rope_theta").get<float>();
+  if (c.contains("rope_scaling")) {
+    const auto& rs = c.at("rope_scaling");
+    // HF renamed "type" to "rope_type" in the llama3 era; accept either.
+    const std::string type = rs.value("rope_type", rs.value("type", ""));
+    if (type != "llama3")
+      throw std::runtime_error(
+          "manifest: config.json: unsupported rope_scaling type '" + type +
+          "' (only llama3)");
+    mc.has_rope_scaling = true;
+    mc.rope_scaling.factor = rs.at("factor").get<float>();
+    mc.rope_scaling.low_freq_factor = rs.at("low_freq_factor").get<float>();
+    mc.rope_scaling.high_freq_factor = rs.at("high_freq_factor").get<float>();
+    mc.rope_scaling.original_max_position_embeddings =
+        rs.at("original_max_position_embeddings").get<uint32_t>();
+  }
+  mc.bos_token_id = c.value("bos_token_id", 128000u);
+  // HF writes eos as a scalar or a list; the engine wants the list.
+  const json eos = c.contains("eos_token_id") ? c.at("eos_token_id")
+                                              : json(128001);
+  if (eos.is_array())
+    for (const auto& e : eos) mc.eos_token_ids.push_back(e.get<uint32_t>());
+  else
+    mc.eos_token_ids.push_back(eos.get<uint32_t>());
+
+  m.token_embedding = hf_spec("model.embed_tokens.weight", mc.vocab_size, d);
+
+  m.trunk_type = "rmsnorm_add";
+  for (uint32_t i = 0; i < L; ++i) {
+    const std::string p = "model.layers." + std::to_string(i);
+    m.pre_norms.push_back(hf_spec(p + ".input_layernorm.weight", 1, d));
+    m.pre_norms.push_back(
+        hf_spec(p + ".post_attention_layernorm.weight", 1, d));
+
+    BlockSpec attn;
+    attn.type = "gqa_attention_bf16";
+    attn.weights["wq"] = hf_spec(p + ".self_attn.q_proj.weight", nh * hd, d);
+    attn.weights["wk"] = hf_spec(p + ".self_attn.k_proj.weight", nkv * hd, d);
+    attn.weights["wv"] = hf_spec(p + ".self_attn.v_proj.weight", nkv * hd, d);
+    attn.weights["wo"] = hf_spec(p + ".self_attn.o_proj.weight", d, nh * hd);
+    m.blocks.push_back(std::move(attn));
+
+    BlockSpec ffn;
+    ffn.type = "dense_ffn_bf16";
+    ffn.weights["w_gate"] = hf_spec(p + ".mlp.gate_proj.weight", inter, d);
+    ffn.weights["w_up"] = hf_spec(p + ".mlp.up_proj.weight", inter, d);
+    ffn.weights["w_down"] = hf_spec(p + ".mlp.down_proj.weight", d, inter);
+    m.blocks.push_back(std::move(ffn));
+  }
+  m.final_norm = hf_spec("model.norm.weight", 1, d);
+
+  // Tied embeddings: name the EMBEDDER's tensor in the lm_head role — the one
+  // legal shared claim (validate() exempts that pair). Same rule as
+  // gen_manifest.py.
+  m.lm_head = c.value("tie_word_embeddings", false)
+                  ? hf_spec("model.embed_tokens.weight", mc.vocab_size, d)
+                  : hf_spec("lm_head.weight", mc.vocab_size, d);
+  return m;
+}
+
+// ===========================================================================
+// Manifest JSON parsing (the engine's own vocabulary)
+// ===========================================================================
 
 WeightSpec parse_spec(const json& j, const std::string& ctx) {
   WeightSpec w;
@@ -90,9 +213,48 @@ std::string dims(uint32_t r, uint32_t c) {
 
 }  // namespace
 
-Manifest Manifest::parse(const std::string& path) {
+Manifest Manifest::parse(const std::filesystem::path& path) {
+  // Directory => HF model directory: synthesize the manifest from config.json
+  // (EXPERIMENTAL path — see from_hf_llama_config above).
+  std::error_code ec;
+  if (std::filesystem::is_directory(path, ec)) {
+    const std::filesystem::path cfg_path = path / "config.json";
+    std::ifstream in(cfg_path);
+    if (!in)
+      throw std::runtime_error("manifest: no config.json under " +
+                               path.string());
+    std::string text((std::istreambuf_iterator<char>(in)),
+                     std::istreambuf_iterator<char>());
+    json c;
+    try {
+      c = json::parse(text);
+    } catch (const json::exception& e) {
+      throw std::runtime_error(std::string("manifest: config.json: ") +
+                               e.what());
+    }
+    if (!c.contains("architectures") || !c.at("architectures").is_array())
+      throw std::runtime_error(
+          "manifest: config.json has no architectures list");
+    std::string found;
+    bool llama = false;
+    for (const auto& a : c.at("architectures")) {
+      const std::string arch = a.get<std::string>();
+      found += (found.empty() ? "" : ", ") + arch;
+      if (arch == "LlamaForCausalLM") llama = true;
+    }
+    if (!llama)
+      throw std::runtime_error(
+          "manifest: config.json architecture(s) [" + found +
+          "] cannot be synthesized from a model directory "
+          "(only LlamaForCausalLM)");
+    return from_hf_llama_config(c, path);
+  }
+  if (ec)
+    throw std::runtime_error("manifest: cannot open " + path.string() +
+                             ": " + ec.message());
+
   std::ifstream in(path);
-  if (!in) throw std::runtime_error("manifest: cannot open " + path);
+  if (!in) throw std::runtime_error("manifest: cannot open " + path.string());
   std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
   return parse_string(text);
 }

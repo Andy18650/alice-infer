@@ -269,4 +269,111 @@ TEST(Manifest, RealBringUpModel) {
   EXPECT_NO_THROW(f.read(norm, buf.data()));
 }
 
+// --- HF model directory: config.json synthesis (EXPERIMENTAL path) --------
+
+// Writes an HF-style config.json under a fresh temp dir; returns the dir.
+std::filesystem::path write_hf_config(const std::string& json_text) {
+  static int n = 0;
+  const auto dir = std::filesystem::temp_directory_path() /
+      ("alice_hf_cfg_" + std::to_string(::getpid()) + "_" + std::to_string(n++));
+  std::filesystem::create_directories(dir);
+  { std::ofstream(dir / "config.json") << json_text; }
+  return dir;
+}
+
+TEST(Manifest, DirectorySynthesizesLlamaManifest) {
+  // Minimal LlamaForCausalLM config: 1 layer, tied embeddings, llama3 rope.
+  const auto dir = write_hf_config(R"({
+    "architectures": ["LlamaForCausalLM"],
+    "hidden_size": 64, "intermediate_size": 128, "num_hidden_layers": 1,
+    "num_attention_heads": 4, "num_key_value_heads": 2, "vocab_size": 100,
+    "rms_norm_eps": 1e-05, "rope_theta": 500000.0,
+    "tie_word_embeddings": true,
+    "rope_scaling": {"rope_type": "llama3", "factor": 32.0,
+      "low_freq_factor": 1.0, "high_freq_factor": 4.0,
+      "original_max_position_embeddings": 8192}
+  })");
+  auto m = Manifest::parse(dir);
+  EXPECT_EQ(m.model_name, dir.filename().string());
+  EXPECT_EQ(m.config.hidden_size, 64u);
+  EXPECT_EQ(m.config.head_dim, 16u);            // defaulted: d / nh
+  EXPECT_EQ(m.config.num_kv_heads, 2u);
+  EXPECT_TRUE(m.config.has_rope_scaling);       // accepted "rope_type" spelling
+  EXPECT_EQ(m.config.rope_scaling.factor, 32.0f);
+  EXPECT_EQ(m.blocks.size(), 2u);               // attn + ffn per layer
+  EXPECT_EQ(m.pre_norms.size(), 2u);
+  EXPECT_EQ(m.blocks[0].type, "gqa_attention_bf16");
+  EXPECT_EQ(m.blocks[0].weights.at("wq").rows, 64u);      // nh * hd
+  EXPECT_EQ(m.blocks[0].weights.at("wk").rows, 32u);      // nkv * hd
+  EXPECT_EQ(m.blocks[1].type, "dense_ffn_bf16");
+  EXPECT_EQ(m.blocks[1].weights.at("w_down").cols, 128u); // intermediate
+  // tied: the lm_head role names the embedder's tensor
+  EXPECT_EQ(m.lm_head.name, m.token_embedding.name);
+  EXPECT_EQ(m.lm_head.rows, 100u);
+}
+
+TEST(Manifest, DirectoryConfigInsufficientReportsAllMissing) {
+  const auto dir = write_hf_config(
+      R"({"architectures": ["LlamaForCausalLM"], "hidden_size": 64})");
+  try {
+    Manifest::parse(dir);
+    FAIL() << "parse should have thrown";
+  } catch (const std::runtime_error& e) {
+    // every missing field named at once, not first-miss aborts
+    EXPECT_NE(std::string(e.what()).find("intermediate_size"), std::string::npos);
+    EXPECT_NE(std::string(e.what()).find("num_key_value_heads"), std::string::npos);
+    EXPECT_NE(std::string(e.what()).find("rope_theta"), std::string::npos);
+  }
+}
+
+TEST(Manifest, DirectoryRejectsNonLlamaArchitecture) {
+  const auto dir = write_hf_config(
+      R"({"architectures": ["Qwen2ForCausalLM"], "hidden_size": 64})");
+  try {
+    Manifest::parse(dir);
+    FAIL() << "parse should have thrown";
+  } catch (const std::runtime_error& e) {
+    EXPECT_NE(std::string(e.what()).find("Qwen2ForCausalLM"), std::string::npos);
+    EXPECT_NE(std::string(e.what()).find("only LlamaForCausalLM"), std::string::npos);
+  }
+}
+
+TEST(Manifest, DirectoryMatchesAuthoredManifest) {
+  // The synthesis must be the generator's document: parsing the real 1B
+  // model directory must equal parsing the committed gen_manifest.py output.
+  const std::string weights =
+      "/opt/models/Llama-3.2-1B-Instruct/model.safetensors";
+  const std::string manifest =
+      std::string(ALICE_SOURCE_DIR) +
+      "/models/llama-3.2-1b-instruct.manifest.json";
+  const std::string dir = "/opt/models/Llama-3.2-1B-Instruct";
+  if (!std::filesystem::exists(weights) || !std::filesystem::exists(manifest))
+    GTEST_SKIP() << "bring-up model or manifest not present";
+
+  auto authored = Manifest::parse(manifest);
+  auto synth = Manifest::parse(dir);
+  EXPECT_EQ(synth.model_name, authored.model_name);
+  EXPECT_EQ(synth.config.vocab_size, authored.config.vocab_size);
+  EXPECT_EQ(synth.config.head_dim, authored.config.head_dim);
+  EXPECT_EQ(synth.config.rms_norm_eps, authored.config.rms_norm_eps);
+  EXPECT_EQ(synth.config.rope_theta, authored.config.rope_theta);
+  EXPECT_EQ(synth.config.has_rope_scaling, authored.config.has_rope_scaling);
+  EXPECT_EQ(synth.blocks.size(), authored.blocks.size());
+  EXPECT_EQ(synth.pre_norms.size(), authored.pre_norms.size());
+  EXPECT_EQ(synth.lm_head.name, authored.lm_head.name);  // both tied
+  for (size_t i = 0; i < synth.blocks.size(); ++i) {
+    EXPECT_EQ(synth.blocks[i].type, authored.blocks[i].type);
+    for (const auto& [role, w] : authored.blocks[i].weights) {
+      EXPECT_EQ(synth.blocks[i].weights.at(role).name, w.name);
+      EXPECT_EQ(synth.blocks[i].weights.at(role).rows, w.rows);
+      EXPECT_EQ(synth.blocks[i].weights.at(role).cols, w.cols);
+    }
+  }
+
+  // and the synthesized contract holds against the real weights
+  auto f = Files::open({weights});
+  auto errors = validate(synth, f);
+  for (const auto& e : errors) ADD_FAILURE() << e;
+}
+
 }  // namespace

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <string>
 #include <vector>
@@ -70,8 +71,20 @@ struct Manifest {
   std::vector<BlockSpec> blocks;  // execution order
   WeightSpec lm_head;
 
-  // Both throw std::runtime_error on malformed input.
-  static Manifest parse(const std::string& path);
+  // Parses an engine manifest JSON file.
+  //
+  // EXPERIMENTAL (pending design review): if the path is a DIRECTORY, it is
+  // treated as a Hugging Face model directory — config.json is read and, when
+  // "architectures" names "LlamaForCausalLM", the manifest is synthesized
+  // from the Llama config format (the same vocabulary as tools/gen_manifest.py,
+  // in-engine). This deliberately bypasses the externally-authored-manifest
+  // contract (design §3) so the design question can be judged on running code;
+  // see the synthesis notes in manifest.cpp.
+  //
+  // Throws std::runtime_error on: malformed JSON, unopenable path, a directory
+  // without config.json, an unsupported architecture, or a config.json with
+  // insufficient information (all missing fields reported in one message).
+  static Manifest parse(const std::filesystem::path& path);
   static Manifest parse_string(const std::string& json_text);
 };
 

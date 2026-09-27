@@ -665,7 +665,7 @@ LoadedBlocks load_blocks(const std::filesystem::path& model_file,
     out.stats.bytes_read += r->size;
 
     t = Timer{};
-    if (blake3::hash_parallel(chunk.data(), chunk.size()) != r->hash)
+    if (blake3::hash(chunk.data(), chunk.size()) != r->hash)
       fail(where + ": BLAKE3 mismatch — record is corrupt or tampered");
     out.stats.hash_ms += t.ms();
     ++out.stats.hash_verifications;

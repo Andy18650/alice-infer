@@ -58,10 +58,12 @@ endif()
 # (CMake >= 3.21 language support): compiled by hipcc, offload arch from
 # ALICE_GPU_ARCH, header dependencies tracked by the build system — the
 # former add_custom_command invocation is retired.
+find_library(ALICE_BLAKE3_LIB blake3)
 find_library(ALICE_ROCBLAS_LIB rocblas)
 find_library(ALICE_HIP_LIB amdhip64)
-if(NOT ALICE_ROCBLAS_LIB OR NOT ALICE_HIP_LIB OR
-   NOT EXISTS "/usr/include/rocblas/rocblas.h")
+if(NOT ALICE_ROCBLAS_LIB OR NOT ALICE_HIP_LIB OR NOT ALICE_BLAKE3_LIB OR
+   NOT EXISTS "/usr/include/rocblas/rocblas.h" OR
+   NOT EXISTS "/usr/include/blake3.h")
   message(FATAL_ERROR "alice: ROCm (rocBLAS + HIP runtime) required — the engine is GPU-mandatory (design §3)")
 endif()
 set(ALICE_GPU_ARCH "gfx90a" CACHE STRING "HIP offload architecture for the device TUs")
@@ -89,7 +91,7 @@ target_sources(alice PRIVATE
     src/blake3.cpp
     src/model_format.cpp)
 target_compile_definitions(alice PRIVATE __HIP_PLATFORM_AMD__)
-target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}" "${ALICE_HIP_LIB}")
+target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}" "${ALICE_HIP_LIB}" "${ALICE_BLAKE3_LIB}")
 message(STATUS "alice: HIP language enabled (${CMAKE_HIP_COMPILER}, arch ${CMAKE_HIP_ARCHITECTURES})")
 
 # Minimal REPL PoC (design §12: the CLI owns the whole loop for now)

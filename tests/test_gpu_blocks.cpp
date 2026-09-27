@@ -21,6 +21,7 @@ using alice::EngineConfig;
 using alice::gpu_rocm::Context;
 using alice::ModelConfig;
 using alice::Tensor;
+using alice::TensorView;
 
 // Host fixture data + a factory producing fresh owning Tensors per
 // construction (blocks take staged weights by value).
@@ -32,6 +33,9 @@ struct Bf16Mat {
     for (size_t i = 0; i < vals.size(); ++i) data[i] = bf16::from_f32(vals[i]);
   }
   Tensor<bf16> t() const { return Tensor<bf16>::copy_of(data.data(), rows, cols); }
+  // Borrowed view for the device blocks (constructors read during
+  // construction only; the fixture outlives the call).
+  TensorView<bf16> v() const { return TensorView<bf16>(data.data(), rows, cols); }
 };
 
 float pat(size_t r, size_t c) { return float((int((r * 7 + c * 13) % 17) - 8)) / 8.0f; }
@@ -85,7 +89,7 @@ TEST(GpuBlocks, DenseFfnApproxVsGeneric) {
   Bf16Mat g2(600, 8, mat_vals(600, 8)), u2(600, 8, mat_vals(601, 9)),
       d2(8, 600, mat_vals(602, 10));
   Context ctx(0);
-  alice::gpu_rocm::DenseFfnBF16 gpu(g2.t(), u2.t(), d2.t(), mc, ec, ctx);
+  alice::gpu_rocm::DenseFfnBF16 gpu(g2.v(), u2.v(), d2.v(), mc, ec, ctx);
 
   std::vector<float> io = mat_vals(5, 8);
   oracle.forward(io.data(), 5);
@@ -109,7 +113,7 @@ TEST(GpuBlocks, DenseFfnDecodeVsGeneric) {
   Bf16Mat g2(600, 8, mat_vals(600, 8)), u2(600, 8, mat_vals(601, 9)),
       d2(8, 600, mat_vals(602, 10));
   Context ctx(0);
-  alice::gpu_rocm::DenseFfnBF16 gpu(g2.t(), u2.t(), d2.t(), mc, ec, ctx);
+  alice::gpu_rocm::DenseFfnBF16 gpu(g2.v(), u2.v(), d2.v(), mc, ec, ctx);
 
   std::vector<float> io = mat_vals(1, 8);
   oracle.forward(io.data(), 1);
@@ -135,7 +139,7 @@ TEST(GpuBlocks, AttentionApproxVsGeneric) {
   Bf16Mat wq2(8, 8, mat_vals(8, 8)), wk2(4, 8, mat_vals(9, 9)), wv2(4, 8, mat_vals(10, 10)),
       wo2(8, 8, mat_vals(11, 11));
   Context ctx(0);
-  alice::gpu_rocm::GqaAttentionBF16 gpu(wq2.t(), wk2.t(), wv2.t(), wo2.t(), mc, ec, ctx,
+  alice::gpu_rocm::GqaAttentionBF16 gpu(wq2.v(), wk2.v(), wv2.v(), wo2.v(), mc, ec, ctx,
                                       alloc_prefill_scratch(mc, ec));
 
   std::vector<float> io = mat_vals(3, 8);
@@ -162,7 +166,7 @@ TEST(GpuBlocks, AttentionIncrementalEqualsBatched) {
     Bf16Mat* wv = new Bf16Mat(4, 8, mat_vals(10, 10));
     Bf16Mat* wo = new Bf16Mat(8, 8, mat_vals(11, 11));
     auto b = std::make_unique<alice::gpu_rocm::GqaAttentionBF16>(
-        wq->t(), wk->t(), wv->t(), wo->t(), mc, ec, ctx, alloc_prefill_scratch(mc, ec));
+        wq->v(), wk->v(), wv->v(), wo->v(), mc, ec, ctx, alloc_prefill_scratch(mc, ec));
     return std::tuple{
         std::unique_ptr<Bf16Mat>(wq), std::unique_ptr<Bf16Mat>(wk),
         std::unique_ptr<Bf16Mat>(wv), std::unique_ptr<Bf16Mat>(wo), std::move(b)};
@@ -224,7 +228,7 @@ TEST(GpuBlocks, AttentionSplitDecodeMatchesOracle) {
   Bf16Mat wq2(qd, d, scaled(mat_vals(qd, d))), wk2(kvd, d, scaled(mat_vals(kvd, d))),
       wv2(kvd, d, wv_vals), wo2(d, qd, scaled(mat_vals(d, qd)));
   Context ctx(0);
-  alice::gpu_rocm::GqaAttentionBF16 gpu(wq2.t(), wk2.t(), wv2.t(), wo2.t(), mc, ec, ctx,
+  alice::gpu_rocm::GqaAttentionBF16 gpu(wq2.v(), wk2.v(), wv2.v(), wo2.v(), mc, ec, ctx,
                                       alloc_prefill_scratch(mc, ec));
 
   const std::vector<float> rows = mat_vals(T0 + ND, d);
@@ -268,7 +272,7 @@ TEST(GpuBlocks, AttentionPrefillSplitMatchesOracle) {
   Bf16Mat wq2(qd, d, scaled(mat_vals(qd, d))), wk2(kvd, d, scaled(mat_vals(kvd, d))),
       wv2(kvd, d, wv_vals), wo2(d, qd, scaled(mat_vals(d, qd)));
   Context ctx(0);
-  alice::gpu_rocm::GqaAttentionBF16 gpu(wq2.t(), wk2.t(), wv2.t(), wo2.t(), mc, ec, ctx,
+  alice::gpu_rocm::GqaAttentionBF16 gpu(wq2.v(), wk2.v(), wv2.v(), wo2.v(), mc, ec, ctx,
                                         alloc_prefill_scratch(mc, ec));
 
   const std::vector<float> rows = mat_vals(T0 + T1, d);
@@ -300,7 +304,7 @@ TEST(GpuBlocks, AttentionResetRestartsPosition) {
   Bf16Mat wq(8, 8, mat_vals(8, 8)), wk(4, 8, mat_vals(9, 9)), wv(4, 8, mat_vals(10, 10)),
       wo(8, 8, mat_vals(11, 11));
   Context ctx(0);
-  alice::gpu_rocm::GqaAttentionBF16 b(wq.t(), wk.t(), wv.t(), wo.t(), mc, ec, ctx,
+  alice::gpu_rocm::GqaAttentionBF16 b(wq.v(), wk.v(), wv.v(), wo.v(), mc, ec, ctx,
                                     alloc_prefill_scratch(mc, ec));
   auto first = run_gpu_block(b, mat_vals(3, 8), 3, 8);
   EXPECT_EQ(b.position(), 3u);

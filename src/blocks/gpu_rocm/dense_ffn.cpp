@@ -30,7 +30,7 @@ namespace {
   } while (0)
 }  // namespace
 
-DenseFfnBF16::DenseFfnBF16(Tensor<bf16> w_gate, Tensor<bf16> w_up, Tensor<bf16> w_down,
+DenseFfnBF16::DenseFfnBF16(TensorView<bf16> w_gate, TensorView<bf16> w_up, TensorView<bf16> w_down,
                            const ModelConfig& mc, const EngineConfig& ec,
                            const Context& ctx)
     : d_(mc.hidden_size), inter_(mc.intermediate_size), mpc_(ec.max_prefill_chunk) {

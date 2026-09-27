@@ -32,8 +32,8 @@ namespace {
   } while (0)
 }  // namespace
 
-GqaAttentionBF16::GqaAttentionBF16(Tensor<bf16> wq, Tensor<bf16> wk, Tensor<bf16> wv,
-                                   Tensor<bf16> wo, const ModelConfig& mc,
+GqaAttentionBF16::GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, TensorView<bf16> wv,
+                                   TensorView<bf16> wo, const ModelConfig& mc,
                                    const EngineConfig& ec, const Context& ctx,
                                    float* prefill_scratch)
     : nh_(mc.num_heads),

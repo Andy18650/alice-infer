@@ -85,7 +85,9 @@ target_sources(alice PRIVATE
     src/gpu/trunk.cpp src/gpu/embedder.cpp src/gpu/lm_head.cpp
     src/gpu/sampler.cpp src/gpu/cpu_reference.cpp src/gpu/model.cpp
     src/gpu/kernels.hip
-    src/blocks/gpu_rocm/kernels.hip)
+    src/blocks/gpu_rocm/kernels.hip
+    src/blake3.cpp
+    src/model_format.cpp)
 target_compile_definitions(alice PRIVATE __HIP_PLATFORM_AMD__)
 target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}" "${ALICE_HIP_LIB}")
 message(STATUS "alice: HIP language enabled (${CMAKE_HIP_COMPILER}, arch ${CMAKE_HIP_ARCHITECTURES})")

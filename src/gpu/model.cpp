@@ -215,7 +215,7 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
             m.config.hidden_size, cfg.max_prefill_chunk));
       else
         model->blocks_.push_back(std::make_unique<gpu_rocm::GqaAttentionBF16>(
-            std::move(wq), std::move(wk), std::move(wv), std::move(wo), m.config, cfg,
+            wq.view(), wk.view(), wv.view(), wo.view(), m.config, cfg,
             *model->ctx_, model->prefill_scratch_));
     } else if (b.type == "dense_ffn_bf16") {
       auto w_gate = loader::stage<bf16>(*file, b.weights.at("w_gate"));
@@ -228,7 +228,7 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
             m.config.hidden_size, cfg.max_prefill_chunk));
       else
         model->blocks_.push_back(std::make_unique<gpu_rocm::DenseFfnBF16>(
-            std::move(w_gate), std::move(w_up), std::move(w_down), m.config, cfg,
+            w_gate.view(), w_up.view(), w_down.view(), m.config, cfg,
             *model->ctx_));
     } else {
       throw std::runtime_error("gpu::Model::load: unknown block type '" + b.type + "'");

@@ -20,7 +20,7 @@ class GqaAttentionBF16 final : public gpu::StatefulBlock {
   // prefill_scratch: shared device transient for the v4 prefill partials
   // (loader-allocated, NOT owned: nh * max_prefill_chunk * ceil(max_seq/64)
   // * (hd+2) floats; design §14 scratch pool, first instance).
-  GqaAttentionBF16(Tensor<bf16> wq, Tensor<bf16> wk, Tensor<bf16> wv, Tensor<bf16> wo,
+  GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, TensorView<bf16> wv, TensorView<bf16> wo,
                    const ModelConfig& mc, const EngineConfig& ec,
                    const Context& ctx, float* prefill_scratch);
   ~GqaAttentionBF16() override;

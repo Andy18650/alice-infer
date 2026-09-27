@@ -20,7 +20,7 @@ class DenseFfnBF16 final : public gpu::Block {
  public:
   // Staged weights are moved in and freed on return (fused/copied to the
   // device in the constructor).
-  DenseFfnBF16(Tensor<bf16> w_gate, Tensor<bf16> w_up, Tensor<bf16> w_down,
+  DenseFfnBF16(TensorView<bf16> w_gate, TensorView<bf16> w_up, TensorView<bf16> w_down,
               const ModelConfig& mc, const EngineConfig& ec,
               const Context& ctx);
   ~DenseFfnBF16() override;

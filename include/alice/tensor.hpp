@@ -58,6 +58,32 @@ template <typename T> constexpr DType dtype_of();
 template <> constexpr DType dtype_of<bf16>() { return DType::BF16; }
 template <> constexpr DType dtype_of<float>() { return DType::F32; }
 
+// --- borrowed tensor view ----------------------------------------------------
+
+// Non-owning view of packed host storage: ptr + dims, the documented
+// vocabulary for borrowed host access at compute boundaries. Device-block
+// constructors take TensorView (not Tensor): they only READ weights during
+// construction (private H2D, then done) — ownership stays with the loader
+// (the model-format factory owns the decoded chunk and frees it when the
+// constructor returns; docs/model-loader.md §2). Tensor::view() is the
+// adapter for the safetensors path, where staged Tensors outlive the call.
+template <typename T>
+struct TensorView {
+  TensorView() = default;
+  TensorView(const T* data, uint32_t rows, uint32_t cols)
+      : data_(data), rows_(rows), cols_(cols) {}
+
+  const T* data() const { return data_; }
+  uint32_t rows() const { return rows_; }
+  uint32_t cols() const { return cols_; }
+  size_t numel() const { return size_t(rows_) * cols_; }
+  size_t nbytes() const { return numel() * sizeof(T); }
+
+ private:
+  const T* data_ = nullptr;
+  uint32_t rows_ = 0, cols_ = 0;
+};
+
 // --- typed tensor -----------------------------------------------------------
 
 // Owning, rank <= 2, row-major, PACKED host tensor with the element type in
@@ -145,6 +171,8 @@ class Tensor {
   uint32_t cols() const { return cols_; }
   size_t numel() const { return size_t(rows_) * cols_; }
   size_t nbytes() const { return numel() * sizeof(T); }
+
+  TensorView<T> view() const { return TensorView<T>(data_, rows_, cols_); }
 
  private:
   void destroy() noexcept {

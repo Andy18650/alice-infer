@@ -1,0 +1,186 @@
+# The Alice Model Loader — design (v0, with the format at RC1)
+
+Status: design settled 2026-09 (sessions captured in `docs/model-format.md`,
+this file records the loader/allocator layer). First implementation round
+follows; the format's breaking-change window stays open until the loader
+survives real models.
+
+---
+
+## 1. The load pipeline
+
+```
+.model file ──► framing (magic {"Alice", \n\0 gate)
+            ──► envelope (signature block; see model-format.md §7)
+            ──► descriptor parse (canonical JSON)
+            ──► PRE-READ VALIDATION   (everything derivable without data files)
+            │     • every spec's (type, version) in the registry
+            │     • every config parsed AND fully consumed (see §3)
+            │     • layout-derived bytes == record `size` (codec raw)
+            │     • composition invariants (io dims agree across specs)
+            │     • codec ∈ {raw}
+            ──► ALLOCATOR SETUP       (§5: scratch sized via registry query)
+            ──► BLOCK LOOP, per block (purely mechanical):
+            │     pread [offset, offset+size) → BLAKE3 verify → codec decode
+            │     → factory(std::move(chunk)) → construct → free chunk
+            ──► done (RAII teardown on any throw; see §4)
+```
+
+Non-block members (embedder/trunk/language_head/tokenizer) are **set
+aside** for this round: parsed structurally, not interpreted.
+
+Pre-read validation is scoped to what is derivable *without* the data
+files. Post-decode checks (hash, decoded length) require reading; a
+corruption failure 10 GB into staging is an accepted cost — corrupted
+data is the rare event, descriptor typos are not (models are machine-
+packed), and the hash is the guarantee against the former.
+
+## 2. The three ownership layers
+
+Per-block, the bytes pass through exactly one seam with a move, and one
+seam with borrows:
+
+- **Loader owns bytes**: preads the record extent into a THP-backed
+  (mmap + `MADV_HUGEPAGE`, design §9) chunk, hashes it, decodes it
+  (identity for `raw`), and hands the chunk to the factory **moved**.
+- **Factory owns layout**: the per-type factory is the embodiment of
+  the format's layout function (`config → [(role, dtype, shape, offset)]`).
+  It slices the chunk into **borrowed** tensor views and frees the chunk
+  when the constructor returns. One chunk per block; no per-tensor
+  staging, no streaming — per-block granularity is the validated unit.
+- **Constructor owns math**: the block constructor receives borrowed
+  tensor views (ptr + dims, the house vocabulary for borrowed host
+  access), performs its own H2D into private device storage, and never
+  frees host memory. This is why device-block constructors take
+  `TensorView<T>` rather than owning `Tensor<T>`: they only *read*
+  weights during construction. (The cpu_generic oracle keeps owning
+  `Tensor<T>` — it retains weights host-side for compute. Owning is
+  correct there; borrowing is correct here.)
+
+The uniform factory signature enables the registration pattern when the
+type zoo grows:
+
+```
+factory(chunk: bytes──moved──►, spec: ResolvedSpec, allocator,
+        context, engine_config) → unique_ptr<gpu::Block>
+```
+
+All factories share it; all constructors of implementations of one type
+share that type's tensor-typed signature. Implementation selection
+(env/CLI knobs, per-arch impls, the CPU-reference escape hatch) is the
+factory's private business, later.
+
+## 3. Config: parsed once per spec, fully consumed
+
+Specs are pre-resolved before the block loop: name → parsed config +
+derived facts (layout bytes, scratch bytes), computed once, shared by
+all blocks referencing the spec.
+
+`BlockConfig` is a flat map with type-checked accessors that **record
+which keys were read**. After a factory/resolve function runs, the
+loader checks read-set == present-set: an unread field or an unknown
+field is a load error. "Fully consumed" is mechanical, not conventional.
+
+Config values are scalars only (ints, floats, strings, bools) — the
+descriptor keeps rope parameters flattened, no nested objects.
+
+## 4. Teardown: RAII or nothing
+
+No bespoke teardown code. Blocks live in `std::vector<std::unique_ptr<
+Block>>`; staging is RAII; therefore a throw anywhere in the load loop
+(hash mismatch at block 17 included) unwinds the vector and destroys
+each block in reverse — every block destructor releasing its private
+device memory is a hard obligation of the self-contained-impls
+invariant. Known non-C++ hazards deferred with this decision: HIP's
+sticky error state after a failed H2D (matters only for retry-in-
+process, i.e. the library era).
+
+## 5. The allocator
+
+A per-context object (one per device/thread context; multi-GPU later)
+passed down through the factories. Two facilities:
+
+**Named buffers** — `named(name, bytes) → device ptr`: an interner
+(workspace pattern). Same name + same size → same pointer (intended
+sharing; the strictly-sequential model loop makes time-sharing safe).
+Same name + different size → loud load failure. **The name is the
+sharing contract**: a collision is always intended aliasing, never an
+accident to disambiguate.
+
+**The scratch buffer** — one anonymous per-GPU buffer, assumed fully
+overwritten during each block's `forward()`. Sizing is **max over
+per-block scratch requirements**, and the requirement is a **pure
+function of (type, version, config, load knobs)** — a registry query
+beside the layout function, evaluated during spec pre-resolution. The
+allocator then `hipMalloc`s once, **before** the construction loop, and
+the pointer is passed as a constructor argument (borrowed, non-owned
+member — the same plumbing the v4 prefill partials use today). No
+pointer patching, no accept-callbacks: the pointer is valid at the
+moment of binding, so there is no temporal window to defend.
+
+The fully-overwritten assumption is testable: the allocator poison-
+fills the scratch once at init (NaN pattern), catching read-before-
+first-write in the test suite for free.
+
+**Weights are NOT allocated through the allocator** in v1 — blocks
+`hipMalloc` their own (immediate allocation for upload). The allocator
+already flows into factories, so routing weights through it later
+(accounting, OOM context, multi-die placement) needs no signature
+change.
+
+**The io buffer is NOT folded into this scheme.** Scratch is capacity
+(load-time, fixed); the io stream is execution state (runtime-sized,
+flows through `forward(io, S)`). Folding would save nothing — every
+block would alias one pointer — while hiding the engine's central
+dataflow invariant ("blocks operate on the stream in place") inside
+private state. The stream stays Model/trunk-owned and forward-passed.
+
+## 6. Verification at the seam
+
+- **BLAKE3 over stored bytes** `[offset, offset+size)` — verified per
+  block during staging, before decode.
+- **Exact length reconciliation**: decoded length (concluded by the
+  codec from its own data) must **equal** the layout-derived length
+  (from the registry) — not greater, not less. Neither is canonical;
+  both are independently derived and their agreement is the evidence
+  (two-watches, same epistemology as the manifest audit). For `raw`,
+  decoded = stored = record size, and the pre-read check
+  (`derived == declared`) is the same watch checked earlier.
+- **Signature**: framing/envelope handled per `model-format.md` §7.
+  Ed25519 verification is deferred with the chain of trust (bring the
+  model up first); the loader this round declares signature state
+  loudly (present/absent, unverified) and proceeds.
+
+## 7. Deferred (recorded, not forgotten)
+
+- Member loading (embedder/trunk/language_head/tokenizer) and the
+  model-level assembly (a new `Model::load` variant for `.model`
+  files).
+- Implementation selection knobs in factories (incl. any loud/explicit
+  storage-cast fallback).
+- Multi-GPU: per-thread `hipSetDevice`, device-aware factories (which
+  shard of which tensor), placement-aware allocator.
+- Prefetch pipeline (read block *i+1* during block *i*'s H2D) — the
+  record structure makes double-buffering natural.
+- Footprint pre-pass (registry query for device bytes; multi-die
+  placement input).
+- Ed25519 + keyring; canonical-JSON (JCS) enforcement on the signed
+  bytes; signature encodings (hex vs base64 — loader currently parses
+  hex hash fields).
+
+## 8. This implementation round (scope)
+
+- BLAKE3 (portable, in-tree, verified against reference vectors).
+- Framing + envelope + descriptor parse (blocks + structural members).
+- Spec pre-resolution with full-consumption config checks.
+- Allocator (named buffers + registry-sized scratch + poison fill).
+- Factories + registry entries for `dense_ffn_bf16` v1 and
+  `gqa_attention_bf16` v1; the two gpu_rocm constructors migrate to
+  borrowed `TensorView<T>` (the old safetensors path wraps staged
+  tensors with `.view()`, no behavior change).
+- A Python packer (`tools/pack_model.py`) to break the chicken-and-egg
+  (no packer, no test model); a smoke harness under
+  `research/model-format/` verifying packed bytes == safetensors bytes
+  and every block constructs and forwards.
+- Not this round: members, model assembly, signing, tests in ctest
+  (manual review first, per the standing decision).

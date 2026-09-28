@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <fstream>
 #include <cstdio>
 #include <cstring>
 #include <stdexcept>
@@ -440,27 +441,24 @@ class Fd {
 
 // Reads the text region: everything before the first NUL, which must be
 // terminated by \n (optionally \r\n). The NUL gates any binary tail
-// (single-file models append block data after it).
+// (single-file models append block data after it), so the file cannot be
+// read whole — the scan stops at the sentinel. ifstream (the text side of
+// the streams-for-text/syscalls-for-bulk-bytes split): the descriptor is
+// small and the RAII close replaces manual fd bookkeeping on every exit.
 std::string read_text_region(const std::filesystem::path& file) {
-  int fd = ::open(file.c_str(), O_RDONLY);
-  if (fd < 0)
-    fail("cannot open '" + file.string() + "': " + std::strerror(errno));
+  std::ifstream in(file, std::ios::binary);
+  if (!in)
+    fail("cannot open '" + file.string() + "'");
   std::string text;
   char buf[65536];
   for (;;) {
-    const ssize_t n = ::read(fd, buf, sizeof(buf));
-    if (n < 0) {
-      (void)close(fd);
-      fail("read error on '" + file.string() + "': " + std::strerror(errno));
-    }
-    if (n == 0) {
-      (void)close(fd);
+    in.read(buf, sizeof(buf));
+    const std::streamsize got = in.gcount();  // >0 even when failbit set at EOF
+    if (got <= 0)
       fail("'" + file.string() + "' has no NUL terminator — not a .model file?");
-    }
-    const void* nul = std::memchr(buf, '\0', size_t(n));
-    text.append(buf, nul ? size_t(static_cast<const char*>(nul) - buf) : size_t(n));
+    const void* nul = std::memchr(buf, '\0', size_t(got));
+    text.append(buf, nul ? size_t(static_cast<const char*>(nul) - buf) : size_t(got));
     if (nul) {
-      (void)close(fd);
       if (text.empty() || text.back() != '\n')
         fail("text region must end with \\n before the NUL gate");
       text.pop_back();
@@ -469,10 +467,8 @@ std::string read_text_region(const std::filesystem::path& file) {
         fail("text region exceeds 64 MiB — not a descriptor?");
       return text;
     }
-    if (text.size() > (64u << 20)) {
-      (void)close(fd);
+    if (text.size() > (64u << 20))
       fail("no NUL within 64 MiB — not a .model file?");
-    }
   }
 }
 

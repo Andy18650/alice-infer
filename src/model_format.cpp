@@ -72,36 +72,8 @@ std::string get_s(const json& j, const char* key, const std::string& where) {
   return j.at(key).get<std::string>();
 }
 
-// --- json -> BlockConfig -----------------------------------------------------
-BlockConfig parse_config(const json& j, const std::string& where) {
-  if (!j.is_object()) fail(where + ": config must be an object");
-  BlockConfig c;
-  for (auto it = j.begin(); it != j.end(); ++it) {
-    const json& v = it.value();
-    if (v.is_boolean())
-      c.put(it.key(), v.get<bool>());
-    else if (v.is_number_integer()) {
-      const int64_t n = v.get<int64_t>();
-      if (n < 0) fail(where + ": config field '" + it.key() + "' must be non-negative");
-      c.put(it.key(), n);
-    } else if (v.is_number_float())
-      c.put(it.key(), v.get<double>());
-    else if (v.is_string())
-      c.put(it.key(), v.get<std::string>());
-    else if (v.is_array() && std::all_of(v.begin(), v.end(),
-                                         [](const json& e) {
-                                           return e.is_number_integer() &&
-                                                  e.get<int64_t>() >= 0;
-                                         })) {
-      std::vector<uint64_t> l;
-      for (const auto& e : v) l.push_back(e.get<uint64_t>());
-      c.put(it.key(), std::move(l));
-    } else
-      fail(where + ": config field '" + it.key() +
-           "' must be bool/int/float/string/list-of-int");
-  }
-  return c;
-}
+// --- config: stored raw; types parse their own (struct +
+// NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE) -------------------------------------------------
 
 // --- record (fields inline in the owning object, per the v0.2 example;
 // the OWNING object's expect_keys enforces the full key set, so this only
@@ -124,7 +96,7 @@ MemberDecl parse_member(const json& j, const std::string& where) {
   m.type = get_s(j, "type", where);
   m.version = uint32_t(get_u(j, "version", where));
   if (!j.contains("config")) fail(where + ": missing 'config'");
-  m.config = parse_config(j.at("config"), where + ".config");
+  m.config = j.at("config");
   m.record = parse_record(j, where);
   return m;
 }
@@ -135,7 +107,7 @@ BlockSpecDecl parse_spec(const json& j, const std::string& where) {
   s.type = get_s(j, "type", where);
   s.version = uint32_t(get_u(j, "version", where));
   if (!j.contains("config")) fail(where + ": missing 'config'");
-  s.config = parse_config(j.at("config"), where + ".config");
+  s.config = j.at("config");
   return s;
 }
 
@@ -189,79 +161,24 @@ Descriptor parse_descriptor(const json& m) {
 }  // namespace
 
 // ---------------------------------------------------------------------------
-// BlockConfig accessors
+// BlockConfig accessors — REMOVED (2026-09): configs cross the handoff as raw
+// json; each type parses its own via struct + NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE
+// in its resolve function. Missing/wrong keys throw with spec context;
+// unknown keys are ignored (type-key drift is review-time business).
 // ---------------------------------------------------------------------------
-
-const BlockConfig::Value& BlockConfig::at(const std::string& key) const {
-  auto it = vals_.find(key);
-  if (it == vals_.end())
-    fail("config: missing required field '" + key + "'");
-  return it->second;
-}
-
-uint64_t BlockConfig::get_u(const std::string& key) const {
-  const Value& v = at(key);
-  if (!std::holds_alternative<int64_t>(v))
-    fail("config: field '" + key + "' must be an integer");
-  read_.insert(key);
-  return uint64_t(std::get<int64_t>(v));
-}
-
-double BlockConfig::get_f(const std::string& key) const {
-  const Value& v = at(key);
-  if (std::holds_alternative<int64_t>(v)) {
-    read_.insert(key);
-    return double(std::get<int64_t>(v));
-  }
-  if (std::holds_alternative<double>(v)) {
-    read_.insert(key);
-    return std::get<double>(v);
-  }
-  fail("config: field '" + key + "' must be a number");
-}
-
-std::string BlockConfig::get_s(const std::string& key) const {
-  const Value& v = at(key);
-  if (!std::holds_alternative<std::string>(v))
-    fail("config: field '" + key + "' must be a string");
-  read_.insert(key);
-  return std::get<std::string>(v);
-}
-
-bool BlockConfig::get_b(const std::string& key) const {
-  const Value& v = at(key);
-  if (!std::holds_alternative<bool>(v))
-    fail("config: field '" + key + "' must be a boolean");
-  read_.insert(key);
-  return std::get<bool>(v);
-}
-
-std::vector<uint64_t> BlockConfig::get_u_list(const std::string& key) const {
-  const Value& v = at(key);
-  if (!std::holds_alternative<std::vector<uint64_t>>(v))
-    fail("config: field '" + key + "' must be a list of integers");
-  read_.insert(key);
-  return std::get<std::vector<uint64_t>>(v);
-}
-
-uint64_t BlockConfig::get_u_or(const std::string& key, uint64_t def) const {
-  return has(key) ? get_u(key) : def;
-}
-double BlockConfig::get_f_or(const std::string& key, double def) const {
-  return has(key) ? get_f(key) : def;
-}
-std::string BlockConfig::get_s_or(const std::string& key, std::string def) const {
-  return has(key) ? get_s(key) : std::move(def);
-}
-bool BlockConfig::get_b_or(const std::string& key, bool def) const {
-  return has(key) ? get_b(key) : def;
-}
 
 // ---------------------------------------------------------------------------
 // Registry: the two v1 block types
 // ---------------------------------------------------------------------------
 
 namespace {
+
+// dense_ffn_bf16 v1 config (missing keys throw via the macro's from_json).
+struct DenseFfnV1Config {
+  uint32_t io_dim = 0;
+  uint32_t intermediate_dim = 0;
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DenseFfnV1Config, io_dim, intermediate_dim)
 
 // dense_ffn_bf16 v1 layout: [w_gate (inter x io)] [w_up (inter x io)]
 // [w_down (io x inter)], bf16 row-major, no padding.
@@ -302,12 +219,27 @@ std::unique_ptr<ResolvedSpec> resolve_dense_ffn(const BlockSpecDecl& d) {
   if (d.version != 1)
     fail("dense_ffn_bf16: unsupported version " + std::to_string(d.version) +
          " (registry provides version 1)");
+  const DenseFfnV1Config cfg = d.config.get<DenseFfnV1Config>();
   auto r = std::make_unique<DenseFfnResolved>();
-  r->io = uint32_t(d.config.get_u("io_dim"));
-  r->inter = uint32_t(d.config.get_u("intermediate_dim"));
+  r->io = cfg.io_dim;
+  r->inter = cfg.intermediate_dim;
   if (r->io == 0 || r->inter == 0) fail("dense_ffn_bf16: io_dim/intermediate_dim must be non-zero");
   return r;
 }
+
+// gqa_attention_bf16 v1 config: core fields via struct (missing keys
+// throw); the optional llama3 rope-scaling group is read manually because
+// it is conditional (present-type => four more required fields).
+struct GqaAttentionV1Config {
+  uint32_t io_dim = 0;
+  uint32_t qk_dim = 0;
+  uint32_t v_dim = 0;
+  uint32_t num_q_heads = 0;
+  uint32_t num_kv_heads = 0;
+  double rope_theta = 0.0;
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GqaAttentionV1Config, io_dim, qk_dim, v_dim,
+                                   num_q_heads, num_kv_heads, rope_theta)
 
 // gqa_attention_bf16 v1 layout: [wq (nh*hd x io)] [wk (nkv*hd x io)]
 // [wv (nkv*hd x io)] [wo (io x nh*hd)], bf16 row-major, no padding.
@@ -352,16 +284,15 @@ std::unique_ptr<ResolvedSpec> resolve_gqa_attention(const BlockSpecDecl& d) {
   if (d.version != 1)
     fail("gqa_attention_bf16: unsupported version " + std::to_string(d.version) +
          " (registry provides version 1)");
+  const GqaAttentionV1Config cfg = d.config.get<GqaAttentionV1Config>();
   auto r = std::make_unique<GqaAttentionResolved>();
-  const BlockConfig& c = d.config;
-  r->io = uint32_t(c.get_u("io_dim"));
-  r->nh = uint32_t(c.get_u("num_q_heads"));
-  r->nkv = uint32_t(c.get_u("num_kv_heads"));
-  const uint64_t qk = c.get_u("qk_dim"), v = c.get_u("v_dim");
-  if (qk != v)
+  r->io = cfg.io_dim;
+  r->nh = cfg.num_q_heads;
+  r->nkv = cfg.num_kv_heads;
+  if (cfg.qk_dim != cfg.v_dim)
     fail("gqa_attention_bf16: qk_dim != v_dim (v1 requires equal head dims; "
          "separate value head dim is a future version)");
-  r->hd = uint32_t(qk);
+  r->hd = cfg.qk_dim;
   if (r->io == 0 || r->nh == 0 || r->nkv == 0 || r->hd == 0 ||
       r->nh % r->nkv != 0)
     fail("gqa_attention_bf16: bad head config (io/heads/kv-heads/head-dim, "
@@ -372,24 +303,19 @@ std::unique_ptr<ResolvedSpec> resolve_gqa_attention(const BlockSpecDecl& d) {
   mc.num_heads = r->nh;
   mc.num_kv_heads = r->nkv;
   mc.head_dim = r->hd;
-  mc.rope_theta = float(c.get_f("rope_theta"));
-  if (c.has("rope_scaling_type")) {
-    const std::string type = c.get_s("rope_scaling_type");
+  mc.rope_theta = float(cfg.rope_theta);
+  if (d.config.contains("rope_scaling_type")) {
+    const std::string type = d.config.at("rope_scaling_type").get<std::string>();
     if (type != "llama3")
       fail("gqa_attention_bf16: unsupported rope_scaling_type '" + type + "'");
     mc.has_rope_scaling = true;
-    mc.rope_scaling.factor = float(c.get_f("rope_scaling_factor"));
-    mc.rope_scaling.low_freq_factor = float(c.get_f("rope_scaling_low_freq_factor"));
-    mc.rope_scaling.high_freq_factor = float(c.get_f("rope_scaling_high_freq_factor"));
+    mc.rope_scaling.factor = d.config.at("rope_scaling_factor").get<float>();
+    mc.rope_scaling.low_freq_factor =
+        d.config.at("rope_scaling_low_freq_factor").get<float>();
+    mc.rope_scaling.high_freq_factor =
+        d.config.at("rope_scaling_high_freq_factor").get<float>();
     mc.rope_scaling.original_max_position_embeddings =
-        uint32_t(c.get_u("original_max_position_embeddings"));
-  } else {
-    for (const char* k : {"rope_scaling_factor", "rope_scaling_low_freq_factor",
-                          "rope_scaling_high_freq_factor",
-                          "original_max_position_embeddings"})
-      if (c.has(k))
-        fail(std::string("gqa_attention_bf16: config field '") + k +
-             "' without rope_scaling_type (partial scaling group)");
+        d.config.at("original_max_position_embeddings").get<uint32_t>();
   }
   return r;
 }
@@ -590,7 +516,8 @@ LoadedBlocks load_blocks(const std::filesystem::path& model_file,
   out.stats.parse_ms = t.ms();
   out.stats.specs = out.descriptor.specs.size();
 
-  // --- spec pre-resolution (registry, config full-consumption) ---------------
+  // --- spec pre-resolution (registry lookup; config parse errors get spec
+  // context; no consumption check — type-key drift is review-time business)
   t = Timer{};
   std::map<std::string, std::unique_ptr<ResolvedSpec>> resolved;
   for (const auto& [name, decl] : out.descriptor.specs) {
@@ -598,13 +525,13 @@ LoadedBlocks load_blocks(const std::filesystem::path& model_file,
     const auto it = registry().find(decl.type);
     if (it == registry().end())
       fail(where + ": unknown block type '" + decl.type + "'");
-    auto rs = it->second(decl);
-    // Fully consumed: every config key present must have been read.
-    for (const auto& k : decl.config.keys())
-      if (!decl.config.read().count(k))
-        fail(where + ": config field '" + k + "' was not consumed by " +
-             decl.type + " v" + std::to_string(decl.version) +
-             " (unknown or ignored field)");
+    std::unique_ptr<ResolvedSpec> rs;
+    try {
+      rs = it->second(decl);
+    } catch (const json::exception& e) {
+      fail(where + " (" + decl.type + " v" + std::to_string(decl.version) +
+           "): config: " + e.what());
+    }
     resolved[name] = std::move(rs);
   }
 

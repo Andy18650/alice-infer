@@ -70,19 +70,31 @@ share that type's tensor-typed signature. Implementation selection
 (env/CLI knobs, per-arch impls, the CPU-reference escape hatch) is the
 factory's private business, later.
 
-## 3. Config: parsed once per spec, fully consumed
+## 3. Config: raw json at the handoff, per-type structs at the parse
 
 Specs are pre-resolved before the block loop: name → parsed config +
 derived facts (layout bytes, scratch bytes), computed once, shared by
 all blocks referencing the spec.
 
-`BlockConfig` is a flat map with type-checked accessors that **record
-which keys were read**. After a factory/resolve function runs, the
-loader checks read-set == present-set: an unread field or an unknown
-field is a load error. "Fully consumed" is mechanical, not conventional.
+The config crosses the loader→type handoff as raw `nlohmann::json`
+(dependency policy, 2026-09: industry-standard libraries when
+appropriate). Each type's resolve function declares a config struct
+(`NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE`) and parses in one
+`config.get<Struct>()` call — missing keys and wrong types throw at
+load, wrapped with spec context by the loader. Unknown extra keys are
+ignored: if the packager (human or script) inserts an entry the type
+doesn't read, that is harmless by policy; if the type's key set and
+the format drift apart, that is a code-review / GitHub-issue concern,
+not a runtime checker's (factories are authored by us or reviewed PRs —
+the keys read are known at review time).
 
-Config values are scalars only (ints, floats, strings, bools) — the
-descriptor keeps rope parameters flattened, no nested objects.
+There is deliberately no read-tracking or consumption check. The
+earlier `BlockConfig` class (flat map, typed accessors, read-set
+diffing) was removed as overengineering (user decision, 2026-09).
+
+Config values are scalars in practice (the descriptor keeps rope
+parameters flattened), but nothing forbids nesting — a future type
+that wants a sub-object simply declares one in its struct.
 
 ## 4. Teardown: RAII or nothing
 

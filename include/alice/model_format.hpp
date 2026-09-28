@@ -15,8 +15,12 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <variant>
 #include <vector>
+
+#include <nlohmann/json.hpp>  // config handoff is raw json (dependency
+                              // policy, AGENTS 2026-09: industry-standard
+                              // deps when appropriate; the CMake script is
+                              // the source of truth for links)
 
 #include "alice/engine_config.hpp"
 
@@ -28,48 +32,6 @@ struct Context;
 }
 
 namespace alice::modelfmt {
-
-// ---------------------------------------------------------------------------
-// Config: flat map, type-checked accessors, read-tracking. "Fully consumed"
-// is mechanical: after a resolve function runs, read set == key set or the
-// load fails (docs/model-loader.md §3).
-// ---------------------------------------------------------------------------
-
-class BlockConfig {
- public:
-  // Value vocabulary: scalars + integer lists (tokenizer eos ids etc.).
-  // Block-type configs are consumed via the typed accessors; the
-  // full-consumption check is the enforcement that a type read everything.
-  using Value =
-      std::variant<bool, int64_t, double, std::string, std::vector<uint64_t>>;
-  void put(const std::string& key, Value v) {
-    vals_[key] = std::move(v);
-    keys_.insert(key);
-  }
-
-  // Required accessors: missing key or wrong type = loud error naming it.
-  uint64_t get_u(const std::string& key) const;
-  double get_f(const std::string& key) const;
-  std::string get_s(const std::string& key) const;
-  bool get_b(const std::string& key) const;
-  std::vector<uint64_t> get_u_list(const std::string& key) const;
-  // Optional variants: absent key -> default; wrong type still errors.
-  uint64_t get_u_or(const std::string& key, uint64_t def) const;
-  double get_f_or(const std::string& key, double def) const;
-  std::string get_s_or(const std::string& key, std::string def) const;
-  bool get_b_or(const std::string& key, bool def) const;
-
-  bool has(const std::string& key) const { return vals_.count(key) != 0; }
-  const std::set<std::string>& keys() const { return keys_; }
-  const std::set<std::string>& read() const { return read_; }
-
- private:
-  const Value& at(const std::string& key) const;
-
-  std::map<std::string, Value> vals_;
-  std::set<std::string> keys_;
-  mutable std::set<std::string> read_;  // keys handed out by accessors
-};
 
 // ---------------------------------------------------------------------------
 // Descriptor structures (the "model" map of the envelope)
@@ -86,7 +48,12 @@ struct Record {
 struct BlockSpecDecl {
   std::string type;     // registry name, e.g. "dense_ffn_bf16"
   uint32_t version = 0; // registry-owned; pins the layout function
-  BlockConfig config;
+  nlohmann::json config;  // raw; each type parses its own (struct +
+                          // NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE in its
+                          // resolve function; missing keys throw with
+                          // spec context; unknown keys are ignored —
+                          // type-key drift is a code-review concern, not
+                          // a runtime checker's)
 };
 
 // Members are parsed structurally this round (type/version/config/record),
@@ -94,7 +61,7 @@ struct BlockSpecDecl {
 struct MemberDecl {
   std::string type;
   uint32_t version = 0;
-  BlockConfig config;
+  nlohmann::json config;
   Record record;
 };
 

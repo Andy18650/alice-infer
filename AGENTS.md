@@ -68,10 +68,14 @@ until multi-die (it never fit one GCD).
   teacher-forced canonical test (gate 0.75) is the equivalence gate.
 - **Threading**: model loop strictly sequential; intra-op parallelism is
   each impl's private business; host OpenMP static only (user decision).
-- **C++20 pinned**. Minimal core deps: nlohmann/json private in .cpp
-  only; GoogleTest via FetchContent; PCRE2 system package via
-  pkg-config. Device TUs
-  compile with hipcc.
+- **C++20 pinned**. Use industry-standard dependencies when appropriate;
+  the CMake script is the source of truth for what the project links.
+  (Rationale, user 2026-09: compile time is not a concern at this scale.
+  The engine will be library-like in the GGML/libcurl sense — consumed by
+  projects building ON it (language servers, chat frontends), not as a
+  general-purpose utility — so API/ABI churn between versions is
+  acceptable; consumers recompile. Do not re-implement what a standard
+  library provides.) Device TUs compile with the HIP toolchain.
 - **Don't touch `docs/session-api.md`** (user-owned draft).
 
 ## Workflow

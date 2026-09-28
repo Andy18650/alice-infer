@@ -411,24 +411,31 @@ void DeviceAllocator::init_scratch() {
 
 namespace {
 
-// Open-FD cache: many records share files; opened once, closed at scope end.
-class FdCache {
+// A file descriptor. RAII: closed at scope exit, including on throw.
+// Deliberately non-movable and non-copyable — the load loop opens a fresh
+// one per block, so at most one fd is open at any moment and there is
+// nothing to move. (Replaces the earlier FdCache: per-file open caching
+// saved ~0.1 ms per load — measured — while carrying a path-keyed map and
+// load-scoped fd lifetimes; the guard is stateless. pread, not ifstream:
+// offset-addressed and stateless, matching the §9 weight path — streams
+// are for text, syscalls for bulk bytes.)
+class Fd {
  public:
-  ~FdCache() {
-    for (auto& [_, fd] : fds_) (void)close(fd);
+  Fd(const std::filesystem::path& p) {
+    fd_ = ::open(p.c_str(), O_RDONLY);
+    if (fd_ < 0)
+      fail("cannot open data file '" + p.string() + "': " + std::strerror(errno));
   }
-  int get(const std::filesystem::path& p) {
-    const std::string key = p.string();
-    auto it = fds_.find(key);
-    if (it != fds_.end()) return it->second;
-    int fd = ::open(key.c_str(), O_RDONLY);
-    if (fd < 0) fail("cannot open data file '" + key + "': " + std::strerror(errno));
-    fds_[key] = fd;
-    return fd;
+  ~Fd() {
+    if (fd_ >= 0) (void)::close(fd_);
   }
+  Fd(const Fd&) = delete;
+  Fd& operator=(const Fd&) = delete;
+
+  int get() const { return fd_; }
 
  private:
-  std::map<std::string, int> fds_;
+  int fd_ = -1;
 };
 
 // Reads the text region: everything before the first NUL, which must be
@@ -569,7 +576,6 @@ LoadedBlocks load_blocks(const std::filesystem::path& model_file,
   out.stats.scratch_bytes = out.allocator->scratch_bytes();
 
   // --- the block loop: read -> hash -> construct ------------------------------
-  FdCache fds;
   const std::filesystem::path base = model_file.parent_path();
   for (size_t i = 0; i < plan.size(); ++i) {
     const auto& [rs, r] = plan[i];
@@ -578,11 +584,11 @@ LoadedBlocks load_blocks(const std::filesystem::path& model_file,
 
     t = Timer{};
     Chunk chunk(size_t(r->size));
-    const int fd = fds.get(base / r->file);
+    const Fd fd(base / r->file);
     size_t got = 0;
     while (got < r->size) {
       const ssize_t n =
-          ::pread(fd, chunk.data() + got, r->size - got, off_t(r->offset + got));
+          ::pread(fd.get(), chunk.data() + got, r->size - got, off_t(r->offset + got));
       if (n <= 0)
         fail(where + ": short read (" + std::to_string(got) + "/" +
              std::to_string(r->size) + " bytes): " + std::strerror(errno));

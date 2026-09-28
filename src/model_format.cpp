@@ -439,37 +439,45 @@ class Fd {
   int fd_ = -1;
 };
 
-// Reads the text region: everything before the first NUL, which must be
-// terminated by \n (optionally \r\n). The NUL gates any binary tail
-// (single-file models append block data after it), so the file cannot be
-// read whole — the scan stops at the sentinel. ifstream (the text side of
-// the streams-for-text/syscalls-for-bulk-bytes split): the descriptor is
-// small and the RAII close replaces manual fd bookkeeping on every exit.
-std::string read_text_region(const std::filesystem::path& file) {
+// Reads a .model descriptor file and returns the parsed envelope: text
+// region (everything before the first NUL, which must be \n- or \r\n-
+// terminated; a binary tail may follow in single-file models, so no
+// whole-file read), {"Alice" magic, then the json parse. The raw text is
+// local — only the parsed envelope crosses out (the string is freed once
+// the json is constructed). Descriptor budget: real ones measure <100 KiB
+// (the 70B-with-MoE projects to ~32 KiB); the 1 MiB read cap exists to
+// catch "wrong file pointed at the loader", not as a designed limit.
+json read_envelope(const std::filesystem::path& file) {
+  constexpr size_t kMaxDescriptor = 1 << 20;
+
   std::ifstream in(file, std::ios::binary);
-  if (!in)
-    fail("cannot open '" + file.string() + "'");
-  std::string text;
-  char buf[65536];
-  for (;;) {
-    in.read(buf, sizeof(buf));
-    const std::streamsize got = in.gcount();  // >0 even when failbit set at EOF
-    if (got <= 0)
-      fail("'" + file.string() + "' has no NUL terminator — not a .model file?");
-    const void* nul = std::memchr(buf, '\0', size_t(got));
-    text.append(buf, nul ? size_t(static_cast<const char*>(nul) - buf) : size_t(got));
-    if (nul) {
-      if (text.empty() || text.back() != '\n')
-        fail("text region must end with \\n before the NUL gate");
-      text.pop_back();
-      if (!text.empty() && text.back() == '\r') text.pop_back();
-      if (text.size() > (64u << 20))
-        fail("text region exceeds 64 MiB — not a descriptor?");
-      return text;
-    }
-    if (text.size() > (64u << 20))
-      fail("no NUL within 64 MiB — not a .model file?");
+  if (!in) fail("cannot open '" + file.string() + "'");
+  std::string text(kMaxDescriptor, '\0');
+  in.read(text.data(), kMaxDescriptor);  // partial read at EOF is fine
+  const size_t got = size_t(in.gcount());
+
+  // Magic first: a wrong file should fail HERE, not on some
+  // incidental terminator detail deeper in.
+  if (got < 8 || text.compare(0, 8, "{\"Alice\"") != 0)
+    fail("bad magic: a .model file must begin with {\"Alice\"");
+
+  const size_t nul = text.find('\0');
+  if (nul == std::string::npos || nul >= got)
+    fail("'" + file.string() + "' has no NUL within the first 1 MiB — "
+         "not a .model file?");
+  if (nul == 0 || text[nul - 1] != '\n')
+    fail("text region must end with \\n before the NUL gate");
+  size_t end = nul - 1;  // drop the \n
+  if (end > 0 && text[end - 1] == '\r') --end;  // tolerate \r\n
+  text.resize(end);
+
+  json envelope;
+  try {
+    envelope = json::parse(text);
+  } catch (const json::exception& e) {
+    fail(std::string("envelope JSON: ") + e.what());
   }
+  return envelope;
 }
 
 }  // namespace
@@ -481,16 +489,7 @@ LoadedBlocks load_blocks(const std::filesystem::path& model_file,
 
   // --- framing + envelope + descriptor --------------------------------------
   Timer t;
-  const std::string text = read_text_region(model_file);
-  if (text.rfind("{\"Alice\"", 0) != 0)
-    fail("bad magic: a .model file must begin with {\"Alice\"");
-
-  json envelope;
-  try {
-    envelope = json::parse(text);
-  } catch (const json::exception& e) {
-    fail(std::string("envelope JSON: ") + e.what());
-  }
+  const json envelope = read_envelope(model_file);
   if (!envelope.is_object()) fail("envelope must be an object");
   expect_keys(envelope, "envelope", {"Alice", "model"});
   const json& alice = envelope.at("Alice");

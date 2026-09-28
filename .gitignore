@@ -7,3 +7,9 @@
 # Long-sequence canonical fixtures (regenerable via dump_canonical.py --prompt-file; ~778 MB each)
 tests/canonical_long*/
 research/model-format/smoke_load*
+
+# Repo-local scratch space (AGENTS.md): durable across power cycles, unlike
+# /tmp (tmpfs). Packed smoke models, benchmark outputs, ad-hoc artifacts.
+# Only .gitkeep is tracked; contents are never committed.
+/temp/*
+!/temp/.gitkeep

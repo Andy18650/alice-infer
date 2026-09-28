@@ -159,6 +159,9 @@ BAR on (64 GB aperture/GCD); xnack off. Staging is THP-backed mmap
 hipHostMalloc pin/unpin costs more than it saves; the real win is
 MADV_HUGEPAGE first-touch faults — see design §9). No sudo for agents (sudo needs interactive auth) — ASK the
 user to run package installs. /tmp is a 250 GB tmpfs and NOT durable
-storage (machine reboots wipe it). Fresh configures fetch googletest +
+storage (machine reboots wipe it). For transient-but-should-survive
+artifacts (packed smoke models, benchmark outputs), use the repo-local
+`temp/` — gitignored, durable on the repo's disk, wiped only by
+explicit choice. Fresh configures fetch googletest +
 nlohmann_json over the network (FetchContent) unless system packages
 provide them.

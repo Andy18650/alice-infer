@@ -49,20 +49,6 @@ struct Timer {
   }
 };
 
-uint64_t get_u(const json& j, const char* key, const std::string& where) {
-  if (!j.contains(key) || !j.at(key).is_number_integer())
-    fail(where + ": field '" + key + "' must be an integer");
-  const int64_t v = j.at(key).get<int64_t>();
-  if (v < 0) fail(where + ": field '" + key + "' must be non-negative");
-  return uint64_t(v);
-}
-
-std::string get_s(const json& j, const char* key, const std::string& where) {
-  if (!j.contains(key) || !j.at(key).is_string())
-    fail(where + ": field '" + key + "' must be a string");
-  return j.at(key).get<std::string>();
-}
-
 // --- config: stored raw; types parse their own (struct +
 // NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE) -------------------------------------------------
 
@@ -72,70 +58,59 @@ std::string get_s(const json& j, const char* key, const std::string& where) {
 // version bump, and an old engine rejects the file on the version —
 // catching a forgotten bump is review/CI's job, not the loader's).
 
-MemberDecl parse_member(const json& j, const std::string& where) {
+// Parse functions are plain at()/get() — faults throw json exceptions
+// whose messages carry the full JSON path (JSON_DIAGNOSTICS), converted
+// once at the load_blocks boundary. Only SEMANTIC checks hand-build
+// context (unknown type/version/codec, hash mismatches): things the json
+// library cannot know.
+MemberDecl parse_member(const json& j) {
   MemberDecl m;
-  m.type = get_s(j, "type", where);
-  m.version = uint32_t(get_u(j, "version", where));
-  if (!j.contains("config")) fail(where + ": missing 'config'");
+  m.type = j.at("type").get<std::string>();
+  m.version = j.at("version").get<uint32_t>();
   m.config = j.at("config");
-  try {
-    m.record = j.get<Record>();
-  } catch (const json::exception& e) {
-    fail(where + ": " + e.what());
-  }
+  m.record = j.get<Record>();
   return m;
 }
 
-BlockSpecDecl parse_spec(const json& j, const std::string& where) {
+BlockSpecDecl parse_spec(const json& j) {
   BlockSpecDecl s;
-  s.type = get_s(j, "type", where);
-  s.version = uint32_t(get_u(j, "version", where));
-  if (!j.contains("config")) fail(where + ": missing 'config'");
+  s.type = j.at("type").get<std::string>();
+  s.version = j.at("version").get<uint32_t>();
   s.config = j.at("config");
   return s;
 }
 
 Descriptor parse_descriptor(const json& m) {
-  const std::string w = "descriptor";
   Descriptor d;
-  d.name = get_s(m, "name", w);
-  d.version = uint32_t(get_u(m, "version", w));
+  d.name = m.at("name").get<std::string>();
+  d.version = m.at("version").get<uint32_t>();
   if (d.version != 1)
-    fail(w + ": unsupported descriptor version " + std::to_string(d.version) +
+    fail("descriptor: unsupported version " + std::to_string(d.version) +
          " (this loader reads version 1)");
-  d.max_context = get_u(m, "max_context", w);
-  if (m.contains("producer")) d.producer = get_s(m, "producer", w);
-  if (m.contains("packager")) d.packager = get_s(m, "packager", w);
-  if (m.contains("license")) d.license = get_s(m, "license", w);
-  if (m.contains("license_url")) d.license_url = get_s(m, "license_url", w);
-  if (m.contains("license_text")) d.license_text = get_s(m, "license_text", w);
+  d.max_context = m.at("max_context").get<uint64_t>();
+  if (m.contains("producer")) d.producer = m.at("producer").get<std::string>();
+  if (m.contains("packager")) d.packager = m.at("packager").get<std::string>();
+  if (m.contains("license")) d.license = m.at("license").get<std::string>();
+  if (m.contains("license_url")) d.license_url = m.at("license_url").get<std::string>();
+  if (m.contains("license_text")) d.license_text = m.at("license_text").get<std::string>();
 
   // Members: parsed structurally, set aside this round (docs/model-loader.md).
   for (const char* name :
        {"chat_template", "tokenizer", "embedder", "language_head", "trunk"}) {
-    if (m.contains(name))
-      d.members[name] = parse_member(m.at(name), std::string(w) + "." + name);
+    if (m.contains(name)) d.members[name] = parse_member(m.at(name));
   }
 
-  if (!m.contains("block_specs")) fail(w + ": missing 'block_specs'");
-  if (!m.at("block_specs").is_object()) fail(w + ": block_specs must be an object");
+  if (!m.at("block_specs").is_object()) fail("descriptor: block_specs must be an object");
   for (auto it = m.at("block_specs").begin(); it != m.at("block_specs").end(); ++it)
-    d.specs[it.key()] = parse_spec(it.value(), "block_specs." + it.key());
+    d.specs[it.key()] = parse_spec(it.value());
 
-  if (!m.contains("blocks")) fail(w + ": missing 'blocks'");
-  if (!m.at("blocks").is_array() || m.at("blocks").empty())
-    fail(w + ": blocks must be a non-empty array");
-  size_t i = 0;
-  for (const auto& b : m.at("blocks")) {
-    const std::string where = "blocks[" + std::to_string(i++) + "]";
+  const json& blocks = m.at("blocks");
+  if (!blocks.is_array() || blocks.empty())
+    fail("descriptor: blocks must be a non-empty array");
+  for (const auto& b : blocks) {
     BlockEntry e;
-    e.spec = get_s(b, "spec", where);
-    Record r;
-    try {
-      r = b.get<Record>();
-    } catch (const json::exception& ex) {
-      fail(where + ": " + ex.what());
-    }
+    e.spec = b.at("spec").get<std::string>();
+    Record r = b.get<Record>();
     e.file = std::move(r.file);
     e.offset = r.offset;
     e.size = r.size;
@@ -469,8 +444,15 @@ json read_envelope(const std::filesystem::path& file) {
 
 }  // namespace
 
-LoadedBlocks load_blocks(const std::filesystem::path& model_file,
-                         const Context& ctx, const EngineConfig& ec) {
+namespace {
+
+// All json faults (missing keys, wrong types) convert here, ONCE: with
+// JSON_DIAGNOSTICS the exception message carries the full JSON pointer
+// path (e.g. "/model/block_specs/ffn/config"), replacing the hand-rolled
+// where-string plumbing. json::exception is not a runtime_error, so this
+// also keeps load_blocks' exception contract uniform.
+LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
+                              const Context& ctx, const EngineConfig& ec) {
   LoadedBlocks out;
   out.allocator = std::make_unique<DeviceAllocator>();
 
@@ -478,11 +460,9 @@ LoadedBlocks load_blocks(const std::filesystem::path& model_file,
   Timer t;
   const json envelope = read_envelope(model_file);
   if (!envelope.is_object()) fail("envelope must be an object");
-  if (!envelope.contains("Alice") || !envelope.contains("model"))
-    fail("envelope must contain 'Alice' and 'model'");
   const json& alice = envelope.at("Alice");
   if (!alice.is_object()) fail("envelope.Alice must be an object");
-  if (get_u(alice, "format_version", "envelope.Alice") != 1)
+  if (alice.at("format_version").get<uint64_t>() != 1)
     fail("envelope.Alice: unsupported format_version (this loader reads 1)");
   if (alice.contains("signature")) {
     std::string key = "?", alg = "?";
@@ -520,8 +500,12 @@ LoadedBlocks load_blocks(const std::filesystem::path& model_file,
     try {
       rs = it->second(decl);
     } catch (const json::exception& e) {
+      // BlockSpecDecl::config is a COPY of the document subtree, so the
+      // diagnostics parent chain (and JSON path) is severed — this one
+      // site re-adds its context by hand. Everything parsed in place
+      // carries its path natively.
       fail(where + " (" + decl.type + " v" + std::to_string(decl.version) +
-           "): config: " + e.what());
+           "): " + e.what());
     }
     const std::string isig = rs->interface_sig();
     if (!isig.empty()) {
@@ -589,6 +573,17 @@ LoadedBlocks load_blocks(const std::filesystem::path& model_file,
   }
   out.stats.blocks = out.blocks.size();
   return out;
+}
+
+}  // namespace
+
+LoadedBlocks load_blocks(const std::filesystem::path& model_file,
+                         const Context& ctx, const EngineConfig& ec) {
+  try {
+    return load_blocks_impl(model_file, ctx, ec);
+  } catch (const json::exception& e) {
+    fail(std::string("descriptor: ") + e.what());
+  }
 }
 
 }  // namespace alice::modelfmt

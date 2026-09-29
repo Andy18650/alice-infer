@@ -18,13 +18,13 @@
 #include <stdexcept>
 
 #include <hip/hip_runtime_api.h>
+#include <blake3.h>
 #include <nlohmann/json.hpp>
 
 #include "gpu/block.hpp"
 #include "blocks/gpu_rocm/platform.hpp"
 #include "blocks/gpu_rocm/dense_ffn.hpp"
 #include "blocks/gpu_rocm/gqa_attention.hpp"
-#include "alice/blake3.hpp"
 #include "alice/manifest.hpp"  // ModelConfig: the block constructors' vocabulary
 #include "alice/tensor.hpp"
 
@@ -38,6 +38,24 @@ namespace {
 
 [[noreturn]] void fail(const std::string& what) {
   throw std::runtime_error("model loader: " + what);
+}
+
+// BLAKE3 of a byte range as lowercase hex (the record-hash comparison
+// vocabulary — the descriptor stores hashes as text). Malformed stored
+// hashes funnel into the single mismatch error at the comparison site.
+std::string blake3_hex(const void* data, size_t len) {
+  blake3_hasher h;
+  blake3_hasher_init(&h);
+  blake3_hasher_update(&h, data, len);
+  uint8_t d[32];
+  blake3_hasher_finalize(&h, d, sizeof(d));
+  static const char* hex = "0123456789abcdef";
+  std::string s(64, '0');
+  for (size_t i = 0; i < 32; ++i) {
+    s[2 * i] = hex[d[i] >> 4];
+    s[2 * i + 1] = hex[d[i] & 0xF];
+  }
+  return s;
 }
 
 struct Timer {
@@ -526,7 +544,7 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
     out.stats.bytes_read += e.size;
 
     t = Timer{};
-    if (blake3::to_hex(blake3::hash(chunk.data(), chunk.size())) != e.hash)
+    if (blake3_hex(chunk.data(), chunk.size()) != e.hash)
       fail(where + " (" + e.file + ":" + std::to_string(e.offset) +
            "): BLAKE3 mismatch — record is corrupt or tampered");
     out.stats.hash_ms += t.ms();

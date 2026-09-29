@@ -88,7 +88,6 @@ target_sources(alice PRIVATE
     src/gpu/sampler.cpp src/gpu/cpu_reference.cpp src/gpu/model.cpp
     src/gpu/kernels.hip
     src/blocks/gpu_rocm/kernels.hip
-    src/blake3.cpp
     src/model_format.cpp)
 target_compile_definitions(alice PUBLIC JSON_DIAGNOSTICS=1)  # json exceptions carry the JSON pointer path
 target_compile_definitions(alice PRIVATE __HIP_PLATFORM_AMD__)

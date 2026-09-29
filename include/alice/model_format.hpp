@@ -39,7 +39,8 @@ namespace alice::modelfmt {
 
 // The physical record fields, inline in every member/block object (the
 // v0.2 shape — records are not nested objects). hash stays the 64-char
-// hex STRING: compared against blake3::to_hex() at verification, so any
+// hex STRING: compared against the recomputed BLAKE3 hex at verification,
+// so any
 // malformed hash (wrong length, bad chars, wrong value) funnels into the
 // single BLAKE3-mismatch error at the right place.
 #define ALICE_MODEL_FMT_RECORD_FIELDS \

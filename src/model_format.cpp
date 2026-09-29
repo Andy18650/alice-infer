@@ -76,19 +76,9 @@ std::string get_s(const json& j, const char* key, const std::string& where) {
 // --- config: stored raw; types parse their own (struct +
 // NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE) -------------------------------------------------
 
-// --- record (fields inline in the owning object, per the v0.2 example;
-// the OWNING object's expect_keys enforces the full key set, so this only
-// reads the five record fields) ----------------------------------------------
-Record parse_record(const json& j, const std::string& where) {
-  Record r;
-  r.file = get_s(j, "file", where);
-  if (r.file.empty()) fail(where + ": 'file' must be non-empty");
-  r.offset = get_u(j, "offset", where);
-  r.size = get_u(j, "size", where);
-  r.codec = get_s(j, "codec", where);
-  r.hash = blake3::from_hex(get_s(j, "hash", where));
-  return r;
-}
+// Records parse via get<Record>() (NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE in
+// the header); json exceptions carry the key name. The owning object's
+// expect_keys still enforces the full key set.
 
 MemberDecl parse_member(const json& j, const std::string& where) {
   expect_keys(j, where,
@@ -98,7 +88,11 @@ MemberDecl parse_member(const json& j, const std::string& where) {
   m.version = uint32_t(get_u(j, "version", where));
   if (!j.contains("config")) fail(where + ": missing 'config'");
   m.config = j.at("config");
-  m.record = parse_record(j, where);
+  try {
+    m.record = j.get<Record>();
+  } catch (const json::exception& e) {
+    fail(where + ": " + e.what());
+  }
   return m;
 }
 
@@ -153,12 +147,17 @@ Descriptor parse_descriptor(const json& m) {
     expect_keys(b, where, {"spec", "file", "offset", "size", "codec", "hash"});
     BlockEntry e;
     e.spec = get_s(b, "spec", where);
-    Record r = parse_record(b, where);
+    Record r;
+    try {
+      r = b.get<Record>();
+    } catch (const json::exception& ex) {
+      fail(where + ": " + ex.what());
+    }
     e.file = std::move(r.file);
     e.offset = r.offset;
     e.size = r.size;
     e.codec = std::move(r.codec);
-    e.hash = r.hash;
+    e.hash = std::move(r.hash);
     d.blocks.push_back(std::move(e));
   }
   return d;
@@ -595,7 +594,7 @@ LoadedBlocks load_blocks(const std::filesystem::path& model_file,
     out.stats.bytes_read += e.size;
 
     t = Timer{};
-    if (blake3::hash(chunk.data(), chunk.size()) != e.hash)
+    if (blake3::to_hex(blake3::hash(chunk.data(), chunk.size())) != e.hash)
       fail(where + " (" + e.file + ":" + std::to_string(e.offset) +
            "): BLAKE3 mismatch — record is corrupt or tampered");
     out.stats.hash_ms += t.ms();

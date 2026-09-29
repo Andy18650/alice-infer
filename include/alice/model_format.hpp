@@ -42,8 +42,13 @@ struct Record {
   uint64_t offset = 0;
   uint64_t size = 0;  // stored (post-codec) bytes
   std::string codec;  // "raw" is the only legal value in format v1
-  std::array<uint8_t, 32> hash{};  // BLAKE3 over [offset, offset + size)
+  std::string hash;   // 64 hex chars; BLAKE3 over [offset, offset+size).
+                      // Kept as text: compared against to_hex() at
+                      // verification, so any malformed hash (wrong length,
+                      // bad chars, wrong value) funnels into the single
+                      // BLAKE3-mismatch error at the right place.
 };
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Record, file, offset, size, codec, hash)
 
 struct BlockSpecDecl {
   std::string type;     // registry name, e.g. "dense_ffn_bf16"
@@ -74,7 +79,7 @@ struct BlockEntry {
   uint64_t offset = 0;
   uint64_t size = 0;  // stored (post-codec) bytes
   std::string codec;  // "raw" is the only legal value in format v1
-  std::array<uint8_t, 32> hash{};  // BLAKE3 over [offset, offset + size)
+  std::string hash;   // BLAKE3 hex (see Record)
 };
 
 struct Descriptor {

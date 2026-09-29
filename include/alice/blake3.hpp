@@ -37,7 +37,4 @@ class Hasher {
 Digest hash(const void* data, size_t len);
 std::string to_hex(const Digest& d);
 
-// Parses exactly 64 hex chars; throws std::runtime_error loudly otherwise.
-Digest from_hex(std::string_view hex);
-
 }  // namespace alice::blake3

@@ -573,10 +573,10 @@ LoadedBlocks load_blocks(const std::filesystem::path& model_file,
     if (e.codec != "raw")
       fail(where + ": codec '" + e.codec +
            "' is not supported (format v1 provides 'raw' only)");
-    if (rs->derived_bytes() != e.size)
-      fail(where + " (spec '" + e.spec + "'): record size " +
-           std::to_string(e.size) + " != layout-derived " +
-           std::to_string(rs->derived_bytes()) + " bytes");
+    // NOTE: no derived==e.size check here. Stored size equals the layout-
+    // derived size only as a raw-codec coincidence; the contract is the
+    // factory-side reconciliation (decoded length == derived, exactly) —
+    // which for raw checks the same mismatch, since decoded == stored.
 
     t = Timer{};
     Chunk chunk(size_t(e.size));

@@ -156,8 +156,12 @@ private state. The stream stays Model/trunk-owned and forward-passed.
   (from the registry) — not greater, not less. Neither is canonical;
   both are independently derived and their agreement is the evidence
   (two-watches, same epistemology as the manifest audit). For `raw`,
-  decoded = stored = record size, and the pre-read check
-  (`derived == declared`) is the same watch checked earlier.
+  decoded = stored, so this also catches a lying record size. There is
+  deliberately NO derived-vs-declared-size check at the record level:
+  stored size equals derived size only as a raw-codec coincidence —
+  under a real codec they legitimately differ, so treating their
+  equality as contract would reject every compressed record
+  (user decision, 2026-09).
 - **Signature**: framing/envelope handled per `model-format.md` §7.
   Ed25519 verification is deferred with the chain of trust (bring the
   model up first); the loader this round declares signature state

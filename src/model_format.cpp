@@ -49,16 +49,6 @@ struct Timer {
   }
 };
 
-void expect_keys(const json& j, const std::string& where,
-                 std::initializer_list<const char*> allowed) {
-  for (auto it = j.begin(); it != j.end(); ++it) {
-    bool ok = false;
-    for (const char* a : allowed)
-      if (it.key() == a) ok = true;
-    if (!ok) fail(where + ": unknown field '" + it.key() + "'");
-  }
-}
-
 uint64_t get_u(const json& j, const char* key, const std::string& where) {
   if (!j.contains(key) || !j.at(key).is_number_integer())
     fail(where + ": field '" + key + "' must be an integer");
@@ -77,12 +67,12 @@ std::string get_s(const json& j, const char* key, const std::string& where) {
 // NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE) -------------------------------------------------
 
 // Records parse via get<Record>() (NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE in
-// the header); json exceptions carry the key name. The owning object's
-// expect_keys still enforces the full key set.
+// the header); json exceptions carry the key name. Unknown fields are
+// ignored: schema evolution is version-governed (a field addition is a
+// version bump, and an old engine rejects the file on the version —
+// catching a forgotten bump is review/CI's job, not the loader's).
 
 MemberDecl parse_member(const json& j, const std::string& where) {
-  expect_keys(j, where,
-              {"type", "version", "config", "file", "offset", "size", "codec", "hash"});
   MemberDecl m;
   m.type = get_s(j, "type", where);
   m.version = uint32_t(get_u(j, "version", where));
@@ -97,7 +87,6 @@ MemberDecl parse_member(const json& j, const std::string& where) {
 }
 
 BlockSpecDecl parse_spec(const json& j, const std::string& where) {
-  expect_keys(j, where, {"type", "version", "config"});
   BlockSpecDecl s;
   s.type = get_s(j, "type", where);
   s.version = uint32_t(get_u(j, "version", where));
@@ -108,11 +97,6 @@ BlockSpecDecl parse_spec(const json& j, const std::string& where) {
 
 Descriptor parse_descriptor(const json& m) {
   const std::string w = "descriptor";
-  expect_keys(m, w,
-              {"name", "version", "producer", "packager", "license",
-               "license_url", "license_text", "max_context",
-               "chat_template", "tokenizer", "embedder", "language_head",
-               "trunk", "block_specs", "blocks"});
   Descriptor d;
   d.name = get_s(m, "name", w);
   d.version = uint32_t(get_u(m, "version", w));
@@ -144,7 +128,6 @@ Descriptor parse_descriptor(const json& m) {
   size_t i = 0;
   for (const auto& b : m.at("blocks")) {
     const std::string where = "blocks[" + std::to_string(i++) + "]";
-    expect_keys(b, where, {"spec", "file", "offset", "size", "codec", "hash"});
     BlockEntry e;
     e.spec = get_s(b, "spec", where);
     Record r;
@@ -495,10 +478,10 @@ LoadedBlocks load_blocks(const std::filesystem::path& model_file,
   Timer t;
   const json envelope = read_envelope(model_file);
   if (!envelope.is_object()) fail("envelope must be an object");
-  expect_keys(envelope, "envelope", {"Alice", "model"});
+  if (!envelope.contains("Alice") || !envelope.contains("model"))
+    fail("envelope must contain 'Alice' and 'model'");
   const json& alice = envelope.at("Alice");
   if (!alice.is_object()) fail("envelope.Alice must be an object");
-  expect_keys(alice, "envelope.Alice", {"format_version", "signature"});
   if (get_u(alice, "format_version", "envelope.Alice") != 1)
     fail("envelope.Alice: unsupported format_version (this loader reads 1)");
   if (alice.contains("signature")) {

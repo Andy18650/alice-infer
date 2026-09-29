@@ -153,7 +153,12 @@ Descriptor parse_descriptor(const json& m) {
     expect_keys(b, where, {"spec", "file", "offset", "size", "codec", "hash"});
     BlockEntry e;
     e.spec = get_s(b, "spec", where);
-    e.record = parse_record(b, where);
+    Record r = parse_record(b, where);
+    e.file = std::move(r.file);
+    e.offset = r.offset;
+    e.size = r.size;
+    e.codec = std::move(r.codec);
+    e.hash = r.hash;
     d.blocks.push_back(std::move(e));
   }
   return d;
@@ -519,9 +524,11 @@ LoadedBlocks load_blocks(const std::filesystem::path& model_file,
   out.stats.specs = out.descriptor.specs.size();
 
   // --- spec pre-resolution (registry lookup; config parse errors get spec
-  // context; no consumption check — type-key drift is review-time business)
+  // context; no consumption check — type-key drift is review-time business) —
+  // plus the composition check: all specs must present the same interface.
   t = Timer{};
   std::map<std::string, std::unique_ptr<ResolvedSpec>> resolved;
+  std::string iface;
   for (const auto& [name, decl] : out.descriptor.specs) {
     const std::string where = "block_specs." + name;
     const auto it = registry().find(decl.type);
@@ -534,35 +541,15 @@ LoadedBlocks load_blocks(const std::filesystem::path& model_file,
       fail(where + " (" + decl.type + " v" + std::to_string(decl.version) +
            "): config: " + e.what());
     }
-    resolved[name] = std::move(rs);
-  }
-
-  // --- block plan: resolve refs, codec/size pre-read checks, interface bind --
-  std::vector<std::pair<const ResolvedSpec*, const Record*>> plan;
-  std::string iface;
-  for (size_t i = 0; i < out.descriptor.blocks.size(); ++i) {
-    const BlockEntry& e = out.descriptor.blocks[i];
-    const std::string where = "blocks[" + std::to_string(i) + "]";
-    const auto rit = resolved.find(e.spec);
-    if (rit == resolved.end())
-      fail(where + ": references unknown spec '" + e.spec + "'");
-    const ResolvedSpec* rs = rit->second.get();
-    if (e.record.codec != "raw")
-      fail(where + ": codec '" + e.record.codec +
-           "' is not supported (format v1 provides 'raw' only)");
-    if (rs->derived_bytes() != e.record.size)
-      fail(where + " (spec '" + e.spec + "'): record size " +
-           std::to_string(e.record.size) + " != layout-derived " +
-           std::to_string(rs->derived_bytes()) + " bytes");
     const std::string isig = rs->interface_sig();
     if (!isig.empty()) {
       if (iface.empty())
         iface = isig;
       else if (iface != isig)
-        fail(where + ": interface " + isig + " disagrees with earlier blocks (" +
-             iface + ") — composition does not bind");
+        fail(where + ": interface " + isig + " disagrees with " + iface +
+             " — composition does not bind");
     }
-    plan.emplace_back(rs, &e.record);
+    resolved[name] = std::move(rs);
   }
 
   // --- scratch: max over specs, allocated once, before construction ----------
@@ -570,31 +557,47 @@ LoadedBlocks load_blocks(const std::filesystem::path& model_file,
   out.allocator->init_scratch();
   out.stats.scratch_bytes = out.allocator->scratch_bytes();
 
-  // --- the block loop: read -> hash -> construct ------------------------------
+  // --- the block loop: single pass over the composition —
+  // per block: checks, then read -> hash -> construct. (No plan vector: a
+  // bad record at block i fails after blocks < i are loaded, which is
+  // accepted — files are machine-packed, and RAII teardown handles the
+  // partial state. Nothing downstream ever consumed the plan.)
   const std::filesystem::path base = model_file.parent_path();
-  for (size_t i = 0; i < plan.size(); ++i) {
-    const auto& [rs, r] = plan[i];
-    const std::string where = "blocks[" + std::to_string(i) + "] (" + r->file +
-                              ":" + std::to_string(r->offset) + ")";
+  for (size_t i = 0; i < out.descriptor.blocks.size(); ++i) {
+    const BlockEntry& e = out.descriptor.blocks[i];
+    const std::string where = "blocks[" + std::to_string(i) + "]";
+    const auto rit = resolved.find(e.spec);
+    if (rit == resolved.end())
+      fail(where + ": references unknown spec '" + e.spec + "'");
+    const ResolvedSpec* rs = rit->second.get();
+    if (e.codec != "raw")
+      fail(where + ": codec '" + e.codec +
+           "' is not supported (format v1 provides 'raw' only)");
+    if (rs->derived_bytes() != e.size)
+      fail(where + " (spec '" + e.spec + "'): record size " +
+           std::to_string(e.size) + " != layout-derived " +
+           std::to_string(rs->derived_bytes()) + " bytes");
 
     t = Timer{};
-    Chunk chunk(size_t(r->size));
-    const Fd fd(base / r->file);
+    Chunk chunk(size_t(e.size));
+    const Fd fd(base / e.file);
     size_t got = 0;
-    while (got < r->size) {
+    while (got < e.size) {
       const ssize_t n =
-          ::pread(fd.get(), chunk.data() + got, r->size - got, off_t(r->offset + got));
+          ::pread(fd.get(), chunk.data() + got, e.size - got, off_t(e.offset + got));
       if (n <= 0)
-        fail(where + ": short read (" + std::to_string(got) + "/" +
-             std::to_string(r->size) + " bytes): " + std::strerror(errno));
+        fail(where + " (" + e.file + ":" + std::to_string(e.offset) +
+             "): short read (" + std::to_string(got) + "/" +
+             std::to_string(e.size) + " bytes): " + std::strerror(errno));
       got += size_t(n);
     }
     out.stats.read_ms += t.ms();
-    out.stats.bytes_read += r->size;
+    out.stats.bytes_read += e.size;
 
     t = Timer{};
-    if (blake3::hash(chunk.data(), chunk.size()) != r->hash)
-      fail(where + ": BLAKE3 mismatch — record is corrupt or tampered");
+    if (blake3::hash(chunk.data(), chunk.size()) != e.hash)
+      fail(where + " (" + e.file + ":" + std::to_string(e.offset) +
+           "): BLAKE3 mismatch — record is corrupt or tampered");
     out.stats.hash_ms += t.ms();
     ++out.stats.hash_verifications;
 

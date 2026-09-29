@@ -67,7 +67,14 @@ struct MemberDecl {
 
 struct BlockEntry {
   std::string spec;  // key into block_specs
-  Record record;
+  // Physical record, fields inline (per the v0.2 example — the record is
+  // not a nested object; Record remains as the parse helper's vocabulary
+  // and MemberDecl's storage).
+  std::string file;   // relative to the descriptor file's directory
+  uint64_t offset = 0;
+  uint64_t size = 0;  // stored (post-codec) bytes
+  std::string codec;  // "raw" is the only legal value in format v1
+  std::array<uint8_t, 32> hash{};  // BLAKE3 over [offset, offset + size)
 };
 
 struct Descriptor {

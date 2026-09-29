@@ -10,20 +10,20 @@ survives real models.
 ## 1. The load pipeline
 
 ```
-.model file ──► framing (magic {"Alice", \n\0 gate)
-            ──► envelope (signature block; see model-format.md §7)
+.model file ──► framing + envelope + magic (read_envelope)
             ──► descriptor parse (canonical JSON)
-            ──► PRE-READ VALIDATION   (everything derivable without data files)
-            │     • every spec's (type, version) in the registry
-            │     • every config parsed AND fully consumed (see §3)
-            │     • layout-derived bytes == record `size` (codec raw)
-            │     • composition invariants (io dims agree across specs)
-            │     • codec ∈ {raw}
-            ──► ALLOCATOR SETUP       (§5: scratch sized via registry query)
-            ──► BLOCK LOOP, per block (purely mechanical):
-            │     pread [offset, offset+size) → BLAKE3 verify → codec decode
-            │     → factory(std::move(chunk)) → construct → free chunk
-            ──► done (RAII teardown on any throw; see §4)
+            ──► SPEC PRE-RESOLUTION    (everything spec-level, before any data file)
+            │     • every spec's (type, version) in the registry; config parsed
+            │       via the type's struct (missing/wrong keys throw, wrapped
+            │       with spec context)
+            │     • composition check: all specs present the same interface
+            │     • scratch: max over specs' requirements, allocated once,
+            │       poison-filled
+            ──► BLOCK LOOP — single pass over the composition; per block:
+                  check (spec ref, codec == raw, record size == derived)
+                  → pread → BLAKE3 → construct
+                  (a bad record at block i fails after blocks < i load —
+                  accepted: machine-packed files, RAII teardown)
 ```
 
 Non-block members (embedder/trunk/language_head/tokenizer) are **set

@@ -58,28 +58,13 @@ struct Timer {
 // version bump, and an old engine rejects the file on the version —
 // catching a forgotten bump is review/CI's job, not the loader's).
 
-// Parse functions are plain at()/get() — faults throw json exceptions
-// whose messages carry the full JSON path (JSON_DIAGNOSTICS), converted
-// once at the load_blocks boundary. Only SEMANTIC checks hand-build
-// context (unknown type/version/codec, hash mismatches): things the json
-// library cannot know.
-MemberDecl parse_member(const json& j) {
-  MemberDecl m;
-  m.type = j.at("type").get<std::string>();
-  m.version = j.at("version").get<uint32_t>();
-  m.config = j.at("config");
-  m.record = j.get<Record>();
-  return m;
-}
-
-BlockSpecDecl parse_spec(const json& j) {
-  BlockSpecDecl s;
-  s.type = j.at("type").get<std::string>();
-  s.version = j.at("version").get<uint32_t>();
-  s.config = j.at("config");
-  return s;
-}
-
+// MemberDecl, BlockSpecDecl, and BlockEntry parse via their
+// NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE from_json (header) — json members and
+// nested macro-defined types compose correctly, and faults throw with the
+// full JSON path (JSON_DIAGNOSTICS), converted once at the load_blocks
+// boundary. Only SEMANTIC checks hand-build context (unknown
+// type/version/codec, hash mismatches): things the json library cannot
+// know.
 Descriptor parse_descriptor(const json& m) {
   Descriptor d;
   d.name = m.at("name").get<std::string>();
@@ -97,27 +82,18 @@ Descriptor parse_descriptor(const json& m) {
   // Members: parsed structurally, set aside this round (docs/model-loader.md).
   for (const char* name :
        {"chat_template", "tokenizer", "embedder", "language_head", "trunk"}) {
-    if (m.contains(name)) d.members[name] = parse_member(m.at(name));
+    if (m.contains(name)) d.members[name] = m.at(name).get<MemberDecl>();
   }
 
   if (!m.at("block_specs").is_object()) fail("descriptor: block_specs must be an object");
   for (auto it = m.at("block_specs").begin(); it != m.at("block_specs").end(); ++it)
-    d.specs[it.key()] = parse_spec(it.value());
+    d.specs[it.key()] = it.value().get<BlockSpecDecl>();
 
   const json& blocks = m.at("blocks");
   if (!blocks.is_array() || blocks.empty())
     fail("descriptor: blocks must be a non-empty array");
-  for (const auto& b : blocks) {
-    BlockEntry e;
-    e.spec = b.at("spec").get<std::string>();
-    Record r = b.get<Record>();
-    e.file = std::move(r.file);
-    e.offset = r.offset;
-    e.size = r.size;
-    e.codec = std::move(r.codec);
-    e.hash = std::move(r.hash);
-    d.blocks.push_back(std::move(e));
-  }
+  for (const auto& b : blocks)
+    d.blocks.push_back(b.get<BlockEntry>());
   return d;
 }
 

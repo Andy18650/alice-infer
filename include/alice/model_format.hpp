@@ -37,29 +37,30 @@ namespace alice::modelfmt {
 // Descriptor structures (the "model" map of the envelope)
 // ---------------------------------------------------------------------------
 
-struct Record {
-  std::string file;   // relative to the descriptor file's directory
-  uint64_t offset = 0;
-  uint64_t size = 0;  // stored (post-codec) bytes
-  std::string codec;  // "raw" is the only legal value in format v1
-  std::string hash;   // 64 hex chars; BLAKE3 over [offset, offset+size).
-                      // Kept as text: compared against to_hex() at
-                      // verification, so any malformed hash (wrong length,
-                      // bad chars, wrong value) funnels into the single
-                      // BLAKE3-mismatch error at the right place.
-};
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Record, file, offset, size, codec, hash)
+// The physical record fields, inline in every member/block object (the
+// v0.2 shape — records are not nested objects). hash stays the 64-char
+// hex STRING: compared against blake3::to_hex() at verification, so any
+// malformed hash (wrong length, bad chars, wrong value) funnels into the
+// single BLAKE3-mismatch error at the right place.
+// (Record as a standalone struct is gone: with the macros below, both
+// MemberDecl and BlockEntry parse their inline fields directly.)
+#define ALICE_MODEL_FMT_RECORD_FIELDS \
+  std::string file;                 /* relative to the descriptor's dir */ \
+  uint64_t offset = 0; \
+  uint64_t size = 0;                /* stored (post-codec) bytes */ \
+  std::string codec;                /* "raw" is the only legal value in v1 */ \
+  std::string hash;                 /* BLAKE3 hex over [offset, offset+size) */
 
 struct BlockSpecDecl {
   std::string type;     // registry name, e.g. "dense_ffn_bf16"
   uint32_t version = 0; // registry-owned; pins the layout function
   nlohmann::json config;  // raw; each type parses its own (struct +
                           // NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE in its
-                          // resolve function; missing keys throw with
-                          // spec context; unknown keys are ignored —
+                          // resolve function). Unknown keys are ignored —
                           // type-key drift is a code-review concern, not
-                          // a runtime checker's)
+                          // a runtime checker's.
 };
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BlockSpecDecl, type, version, config)
 
 // Members are parsed structurally this round (type/version/config/record),
 // not interpreted.
@@ -67,20 +68,17 @@ struct MemberDecl {
   std::string type;
   uint32_t version = 0;
   nlohmann::json config;
-  Record record;
+  ALICE_MODEL_FMT_RECORD_FIELDS
 };
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MemberDecl, type, version, config, file,
+                                   offset, size, codec, hash)
 
 struct BlockEntry {
   std::string spec;  // key into block_specs
-  // Physical record, fields inline (per the v0.2 example — the record is
-  // not a nested object; Record remains as the parse helper's vocabulary
-  // and MemberDecl's storage).
-  std::string file;   // relative to the descriptor file's directory
-  uint64_t offset = 0;
-  uint64_t size = 0;  // stored (post-codec) bytes
-  std::string codec;  // "raw" is the only legal value in format v1
-  std::string hash;   // BLAKE3 hex (see Record)
+  ALICE_MODEL_FMT_RECORD_FIELDS
 };
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BlockEntry, spec, file, offset, size,
+                                   codec, hash)
 
 struct Descriptor {
   std::string name;

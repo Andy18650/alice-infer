@@ -100,13 +100,6 @@ Descriptor parse_descriptor(const json& m) {
 }  // namespace
 
 // ---------------------------------------------------------------------------
-// BlockConfig accessors — REMOVED (2026-09): configs cross the handoff as raw
-// json; each type parses its own via struct + NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE
-// in its resolve function. Missing/wrong keys throw with spec context;
-// unknown keys are ignored (type-key drift is review-time business).
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
 // Registry: the two v1 block types
 // ---------------------------------------------------------------------------
 
@@ -351,13 +344,10 @@ void DeviceAllocator::init_scratch() {
 namespace {
 
 // A file descriptor. RAII: closed at scope exit, including on throw.
-// Deliberately non-movable and non-copyable — the load loop opens a fresh
-// one per block, so at most one fd is open at any moment and there is
-// nothing to move. (Replaces the earlier FdCache: per-file open caching
-// saved ~0.1 ms per load — measured — while carrying a path-keyed map and
-// load-scoped fd lifetimes; the guard is stateless. pread, not ifstream:
-// offset-addressed and stateless, matching the §9 weight path — streams
-// are for text, syscalls for bulk bytes.)
+// Non-movable and non-copyable — the load loop opens a fresh one per
+// block, so at most one fd is open at any moment. pread, not ifstream:
+// offset-addressed and stateless (prefetch-pipeline safe), matching the
+// §9 weight path — streams for text, syscalls for bulk bytes.
 class Fd {
  public:
   Fd(const std::filesystem::path& p) {
@@ -461,9 +451,9 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
   out.stats.parse_ms = t.ms();
   out.stats.specs = out.descriptor.specs.size();
 
-  // --- spec pre-resolution (registry lookup; config parse errors get spec
-  // context; no consumption check — type-key drift is review-time business) —
-  // plus the composition check: all specs must present the same interface.
+  // --- spec pre-resolution + composition check: every spec resolves
+  // against the registry (config faults carry spec context), and all
+  // specs must present the same interface.
   t = Timer{};
   std::map<std::string, std::unique_ptr<ResolvedSpec>> resolved;
   std::string iface;
@@ -499,11 +489,10 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
   out.allocator->init_scratch();
   out.stats.scratch_bytes = out.allocator->scratch_bytes();
 
-  // --- the block loop: single pass over the composition —
-  // per block: checks, then read -> hash -> construct. (No plan vector: a
-  // bad record at block i fails after blocks < i are loaded, which is
-  // accepted — files are machine-packed, and RAII teardown handles the
-  // partial state. Nothing downstream ever consumed the plan.)
+  // --- the block loop: single pass over the composition — per block,
+  // checks (spec ref, codec) then read -> hash -> construct. A bad
+  // record at block i fails after blocks < i are loaded: accepted
+  // (files are machine-packed; RAII teardown handles the partial state).
   const std::filesystem::path base = model_file.parent_path();
   for (size_t i = 0; i < out.descriptor.blocks.size(); ++i) {
     const BlockEntry& e = out.descriptor.blocks[i];

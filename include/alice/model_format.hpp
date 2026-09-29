@@ -42,8 +42,6 @@ namespace alice::modelfmt {
 // hex STRING: compared against blake3::to_hex() at verification, so any
 // malformed hash (wrong length, bad chars, wrong value) funnels into the
 // single BLAKE3-mismatch error at the right place.
-// (Record as a standalone struct is gone: with the macros below, both
-// MemberDecl and BlockEntry parse their inline fields directly.)
 #define ALICE_MODEL_FMT_RECORD_FIELDS \
   std::string file;                 /* relative to the descriptor's dir */ \
   uint64_t offset = 0; \

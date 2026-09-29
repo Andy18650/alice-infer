@@ -2,9 +2,7 @@
 
 // BLAKE3 (unkeyed, 32-byte digest) — the alice model format's record hash
 // (docs/model-format.md §4): BLAKE3 over exactly [offset, offset+size).
-// Thin wrapper over the system libblake3 (SIMD implementations included);
-// an earlier in-tree portable port served as the verification baseline and
-// was swapped out (commit history keeps it).
+// Thin wrapper over the system libblake3 (SIMD implementations included).
 
 #include <array>
 #include <cstddef>

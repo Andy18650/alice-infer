@@ -194,13 +194,18 @@ struct LoadedBlocks {
   Descriptor descriptor;  // members set aside, available to later rounds
   std::unique_ptr<DeviceAllocator> allocator;
   std::vector<std::unique_ptr<gpu::Block>> blocks;  // destroyed first
-  LoadStats stats;
 };
 
 // Loads the block list of a .model descriptor file. Throws
 // std::runtime_error loudly on any framing, parse, validation, hash, or
 // length failure (message names the file/spec/block involved).
+//
+// out_stats, if non-null, receives timing/throughput breakdown for each
+// phase (parse, read, hash, construct). Null Object pattern: the loader
+// writes to a local dummy if null, so internal code has no per-site
+// branches.
 LoadedBlocks load_blocks(const std::filesystem::path& model_file,
-                         const gpu_rocm::Context& ctx, const EngineConfig& ec);
+                         const gpu_rocm::Context& ctx, const EngineConfig& ec,
+                         LoadStats* out_stats = nullptr);
 
 }  // namespace alice::modelfmt

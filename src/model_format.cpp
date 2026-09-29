@@ -436,7 +436,8 @@ namespace {
 // where-string plumbing. json::exception is not a runtime_error, so this
 // also keeps load_blocks' exception contract uniform.
 LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
-                              const Context& ctx, const EngineConfig& ec) {
+                              const Context& ctx, const EngineConfig& ec,
+                              LoadStats& st) {
   LoadedBlocks out;
   out.allocator = std::make_unique<DeviceAllocator>();
 
@@ -466,8 +467,8 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
   const json& model = envelope.at("model");
   if (!model.is_object()) fail("envelope.model must be an object");
   out.descriptor = parse_descriptor(model);
-  out.stats.parse_ms = t.ms();
-  out.stats.specs = out.descriptor.specs.size();
+  st.parse_ms = t.ms();
+  st.specs = out.descriptor.specs.size();
 
   // --- spec pre-resolution + composition check: every spec resolves
   // against the registry (config faults carry spec context), and all
@@ -505,7 +506,7 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
   // --- scratch: max over specs, allocated once, before construction ----------
   for (const auto& [_, rs] : resolved) out.allocator->plan_scratch(rs->scratch_bytes(ec));
   out.allocator->init_scratch();
-  out.stats.scratch_bytes = out.allocator->scratch_bytes();
+  st.scratch_bytes = out.allocator->scratch_bytes();
 
   // --- the block loop: single pass over the composition — per block,
   // checks (spec ref, codec) then read -> hash -> construct. A bad
@@ -540,30 +541,32 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
              std::to_string(e.size) + " bytes): " + std::strerror(errno));
       got += size_t(n);
     }
-    out.stats.read_ms += t.ms();
-    out.stats.bytes_read += e.size;
+    st.read_ms += t.ms();
+    st.bytes_read += e.size;
 
     t = Timer{};
     if (blake3_hex(chunk.data(), chunk.size()) != e.hash)
       fail(where + " (" + e.file + ":" + std::to_string(e.offset) +
            "): BLAKE3 mismatch — record is corrupt or tampered");
-    out.stats.hash_ms += t.ms();
-    ++out.stats.hash_verifications;
+    st.hash_ms += t.ms();
+    ++st.hash_verifications;
 
     t = Timer{};
     out.blocks.push_back(rs->construct(std::move(chunk), *out.allocator, ctx, ec));
-    out.stats.construct_ms += t.ms();
+    st.construct_ms += t.ms();
   }
-  out.stats.blocks = out.blocks.size();
+  st.blocks = out.blocks.size();
   return out;
 }
 
 }  // namespace
 
 LoadedBlocks load_blocks(const std::filesystem::path& model_file,
-                         const Context& ctx, const EngineConfig& ec) {
+                         const Context& ctx, const EngineConfig& ec,
+                         LoadStats* out_stats) {
+  LoadStats dummy;
   try {
-    return load_blocks_impl(model_file, ctx, ec);
+    return load_blocks_impl(model_file, ctx, ec, out_stats ? *out_stats : dummy);
   } catch (const json::exception& e) {
     fail(std::string("descriptor: ") + e.what());
   }

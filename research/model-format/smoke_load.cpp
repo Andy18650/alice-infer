@@ -54,13 +54,12 @@ int main(int argc, char** argv) {
   auto t0 = std::chrono::steady_clock::now();
 
   // --- new path ---------------------------------------------------------------
+  modelfmt::LoadStats st;
   modelfmt::LoadedBlocks lb =
-      modelfmt::load_blocks(packed / "model.model", ctx, ec);
+      modelfmt::load_blocks(packed / "model.model", ctx, ec, &st);
   const double load_s =
       std::chrono::duration<double>(std::chrono::steady_clock::now() - t0)
           .count();
-
-  const auto& st = lb.stats;
   std::printf(
       "[smoke] loaded %zu blocks (%zu specs) from %s\n"
       "[smoke]   %.3f s total: parse %.1f ms, read %.1f ms (%.2f GB/s), "

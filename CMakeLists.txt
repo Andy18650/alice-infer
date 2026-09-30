@@ -29,7 +29,7 @@ add_library(alice
   src/frontend/tokenizer.cpp
 )
 add_library(alice::alice ALIAS alice)
-target_include_directories(alice PUBLIC include)
+target_include_directories(alice PUBLIC include PRIVATE src)
 target_link_libraries(alice PRIVATE nlohmann_json::nlohmann_json)
 target_compile_options(alice PRIVATE -Wall -Wextra -Wpedantic)
 

@@ -13,8 +13,8 @@
 #include <vector>
 #include <algorithm>  // std::min, std::ranges::find
 
-#include "alice/gpu_model.hpp"
-#include "alice/manifest.hpp"
+#include "../gpu/gpu_model.hpp"
+#include "../manifest.hpp"
 #include "tokenizer.hpp"
 
 namespace {

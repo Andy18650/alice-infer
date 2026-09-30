@@ -14,9 +14,9 @@
 
 #include <hip/hip_runtime_api.h>
 
-#include "alice/manifest.hpp"
-#include "alice/model_format.hpp"
-#include "alice/safetensors.hpp"
+#include "../../src/manifest.hpp"
+#include "../../src/model_format.hpp"
+#include "../../src/safetensors.hpp"
 #include "gpu/block.hpp"
 #include "blocks/gpu_rocm/platform.hpp"
 #include "blocks/gpu_rocm/dense_ffn.hpp"

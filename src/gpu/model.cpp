@@ -1,4 +1,4 @@
-#include "alice/gpu_model.hpp"
+#include "gpu/gpu_model.hpp"
 
 #include <stdexcept>
 
@@ -14,7 +14,7 @@
 
 #include "../loader_staging.hpp"
 #include "../blocks/gpu_rocm/platform.hpp"
-#include "alice/manifest.hpp"
+#include "manifest.hpp"
 #include "block.hpp"
 #include "cpu_reference.hpp"
 #include "../blocks/gpu_rocm/dense_ffn.hpp"

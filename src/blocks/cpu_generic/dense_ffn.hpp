@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "alice/engine_config.hpp"
-#include "alice/manifest.hpp"
+#include "../../manifest.hpp"
 #include "alice/tensor.hpp"
 
 namespace alice::cpu_generic {

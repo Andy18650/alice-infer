@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-#include "engine_config.hpp"
+#include "alice/engine_config.hpp"
 
 namespace alice {
 

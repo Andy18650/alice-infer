@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "alice/safetensors.hpp"
+#include "safetensors.hpp"
 #include "alice/tensor.hpp"
 
 namespace alice {

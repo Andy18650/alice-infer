@@ -1,4 +1,4 @@
-#include "alice/safetensors.hpp"
+#include "../src/safetensors.hpp"
 
 #include <cstdio>
 #include <cstring>

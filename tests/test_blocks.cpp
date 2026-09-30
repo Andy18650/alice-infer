@@ -11,7 +11,7 @@
 #include <gtest/gtest.h>
 
 #include "alice/engine_config.hpp"
-#include "alice/manifest.hpp"
+#include "../src/manifest.hpp"
 
 #include "../src/blocks/cpu_generic/dense_ffn.hpp"
 #include "../src/blocks/cpu_generic/gqa_attention.hpp"

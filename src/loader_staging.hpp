@@ -3,8 +3,8 @@
 // Shared loader plumbing (design §8 load flow): pread a weight into an
 // owning Tensor. Used by the GPU-resident loader.
 
-#include "alice/manifest.hpp"
-#include "alice/safetensors.hpp"
+#include "manifest.hpp"
+#include "safetensors.hpp"
 #include "alice/tensor.hpp"
 
 namespace alice::loader {

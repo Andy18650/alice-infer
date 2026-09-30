@@ -10,7 +10,7 @@
 #include <nlohmann/json.hpp>
 
 #include "alice/engine_config.hpp"
-#include "alice/gpu_model.hpp"
+#include "../src/gpu/gpu_model.hpp"
 
 namespace {
 

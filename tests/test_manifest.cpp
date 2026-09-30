@@ -1,4 +1,4 @@
-#include "alice/manifest.hpp"
+#include "../src/manifest.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "alice/safetensors.hpp"
+#include "../src/safetensors.hpp"
 
 namespace {
 

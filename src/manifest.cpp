@@ -1,4 +1,4 @@
-#include "alice/manifest.hpp"
+#include "manifest.hpp"
 
 #include <filesystem>
 #include <fstream>

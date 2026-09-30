@@ -12,7 +12,7 @@
 #include "../src/blocks/cpu_generic/gqa_attention.hpp"
 #include "../src/blocks/gpu_rocm/dense_ffn.hpp"
 #include "../src/blocks/gpu_rocm/gqa_attention.hpp"
-#include "alice/gpu_model.hpp"
+#include "../src/gpu/gpu_model.hpp"
 
 namespace {
 

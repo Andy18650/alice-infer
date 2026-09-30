@@ -11,7 +11,7 @@
 #include "../src/blocks/cpu_generic/kernels.hpp"
 #include "../src/blocks/gpu_rocm/kernels.hpp"
 #include "../src/gpu/kernels.hpp"
-#include "alice/gpu_model.hpp"
+#include "../src/gpu/gpu_model.hpp"
 
 namespace {
 

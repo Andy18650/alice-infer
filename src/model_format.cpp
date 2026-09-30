@@ -4,7 +4,7 @@
 // deferred with the chain of trust: the envelope's signature state is
 // DECLARED loudly, not checked.
 
-#include "alice/model_format.hpp"
+#include "model_format.hpp"
 
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -25,7 +25,7 @@
 #include "blocks/gpu_rocm/platform.hpp"
 #include "blocks/gpu_rocm/dense_ffn.hpp"
 #include "blocks/gpu_rocm/gqa_attention.hpp"
-#include "alice/manifest.hpp"  // ModelConfig: the block constructors' vocabulary
+#include "manifest.hpp"  // ModelConfig: the block constructors' vocabulary
 #include "alice/tensor.hpp"
 
 namespace alice::modelfmt {

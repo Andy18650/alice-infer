@@ -26,7 +26,6 @@ add_library(alice
   src/blocks/cpu_generic/kernels.cpp
   src/blocks/cpu_generic/dense_ffn.cpp
   src/blocks/cpu_generic/gqa_attention.cpp
-  src/sampler.cpp
   src/frontend/tokenizer.cpp
 )
 add_library(alice::alice ALIAS alice)
@@ -117,7 +116,8 @@ if(ALICE_BUILD_TESTS)
   )
   target_sources(alice_tests PRIVATE tests/test_gpu_kernels.cpp
                                      tests/test_gpu_blocks.cpp
-                                     tests/test_gpu_model.cpp)
+                                     tests/test_gpu_model.cpp
+                                     tests/test_gpu_sampler.cpp)
   target_compile_definitions(alice_tests PRIVATE __HIP_PLATFORM_AMD__)
   target_link_libraries(alice_tests PRIVATE "${ALICE_HIP_LIB}")
   target_link_libraries(alice_tests PRIVATE alice GTest::gtest_main nlohmann_json::nlohmann_json)

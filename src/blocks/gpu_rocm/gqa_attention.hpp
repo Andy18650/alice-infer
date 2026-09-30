@@ -5,7 +5,7 @@
 // attention over the device-resident fp32 KV cache, o_proj (rocBLAS) into
 // io. State: KV cache + private position counter (StatefulBlock).
 
-#include "../../gpu/block.hpp"
+#include "../block.hpp"
 
 #include "platform.hpp"
 
@@ -15,7 +15,7 @@
 
 namespace alice::gpu_rocm {
 
-class GqaAttentionBF16 final : public gpu::StatefulBlock {
+class GqaAttentionBF16 final : public block::StatefulBlock {
  public:
   // prefill_scratch: shared device transient for the v4 prefill partials
   // (loader-allocated, NOT owned: nh * max_prefill_chunk * ceil(max_seq/64)

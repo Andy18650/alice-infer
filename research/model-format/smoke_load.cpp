@@ -17,7 +17,7 @@
 #include "../../src/manifest.hpp"
 #include "../../src/model_format.hpp"
 #include "../../src/safetensors.hpp"
-#include "gpu/block.hpp"
+#include "blocks/block.hpp"
 #include "blocks/gpu_rocm/platform.hpp"
 #include "blocks/gpu_rocm/dense_ffn.hpp"
 #include "blocks/gpu_rocm/gqa_attention.hpp"
@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
   size_t compared = 0;
   for (size_t i = 0; i < lb.blocks.size() && i < m.blocks.size(); ++i) {
     const auto& bs = m.blocks[i];
-    std::unique_ptr<gpu::Block> ref;
+    std::unique_ptr<block::Block> ref;
     if (bs.type == "gqa_attention_bf16") {
       auto wq = loader::stage<bf16>(files, bs.weights.at("wq"));
       auto wk = loader::stage<bf16>(files, bs.weights.at("wk"));

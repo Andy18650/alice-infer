@@ -5,7 +5,7 @@
 // ALICE_CPU_REF_BLOCKS swap-in.  Never production compute.
 // Weights bf16 [inter, d] x2 + [d, inter]; SiLU-gated MLP.
 //
-// Inherits gpu::Block so it can be placed directly into the GPU-resident
+// Inherits block::Block so it can be placed directly into the GPU-resident
 // model loop; forward() does an internal D2H -> host compute -> H2D round
 // trip (the same work the former CpuReferenceBlock adapter did).
 
@@ -13,13 +13,13 @@
 #include <vector>
 
 #include "alice/engine_config.hpp"
-#include "../../gpu/block.hpp"
+#include "../block.hpp"
 #include "../../manifest.hpp"
 #include "alice/tensor.hpp"
 
 namespace alice::cpu_generic {
 
-class DenseFfnBF16 final : public gpu::Block {
+class DenseFfnBF16 final : public block::Block {
  public:
   // Takes ownership of the staged weights (moved in, shape-checked).
   DenseFfnBF16(Tensor<bf16> w_gate, Tensor<bf16> w_up, Tensor<bf16> w_down,

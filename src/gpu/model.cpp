@@ -17,7 +17,7 @@
 #include "../blocks/cpu_generic/gqa_attention.hpp"
 #include "../blocks/gpu_rocm/platform.hpp"
 #include "manifest.hpp"
-#include "block.hpp"
+#include "blocks/block.hpp"
 #include "../blocks/gpu_rocm/dense_ffn.hpp"
 #include "embedder.hpp"
 #include "../blocks/gpu_rocm/gqa_attention.hpp"
@@ -114,7 +114,7 @@ std::vector<float> Model::forward_logits_all(std::span<const int32_t> tokens) {
 
 void Model::reset() {
   for (auto& b : blocks_)
-    if (auto* sb = dynamic_cast<StatefulBlock*>(b.get())) sb->reset_state();
+    if (auto* sb = dynamic_cast<block::StatefulBlock*>(b.get())) sb->reset_state();
 }
 
 uint32_t Model::vocab_size() const { return lm_head_->vocab(); }

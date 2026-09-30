@@ -26,13 +26,16 @@ namespace gpu_rocm {
 class Context;  // device binding + rocBLAS handle (per-GPU, Model-owned)
 }
 
+namespace block {
+class Block;  // abstract block interface (src/blocks/block.hpp)
+}  // namespace block
+
 namespace gpu {
 
 class Embedder;
 class RmsNormAddTrunk;
 class LmHead;
 class Sampler;
-class Block;  // abstract block interface (src/gpu/block.hpp)
 
 class Model {
  public:
@@ -60,7 +63,7 @@ class Model {
   std::unique_ptr<gpu_rocm::Context> ctx_;      // device binding + rocBLAS handle
   std::unique_ptr<Embedder> embedder_;
   std::unique_ptr<RmsNormAddTrunk> trunk_;
-  std::vector<std::unique_ptr<Block>> blocks_;
+  std::vector<std::unique_ptr<block::Block>> blocks_;
   std::unique_ptr<LmHead> lm_head_;
   std::unique_ptr<Sampler> sampler_;
   float* prefill_scratch_ = nullptr;  // shared v4 prefill partials (§14 scratch pool)

@@ -6,7 +6,7 @@
 // silu-mul, down GEMM into io), no host staging — the stream never leaves
 // the device.
 
-#include "../../gpu/block.hpp"
+#include "../block.hpp"
 
 #include "platform.hpp"
 
@@ -16,7 +16,7 @@
 
 namespace alice::gpu_rocm {
 
-class DenseFfnBF16 final : public gpu::Block {
+class DenseFfnBF16 final : public block::Block {
  public:
   // Staged weights are moved in and freed on return (fused/copied to the
   // device in the constructor).

@@ -24,7 +24,7 @@
 
 #include "alice/engine_config.hpp"
 
-namespace alice::gpu {
+namespace alice::block {
 class Block;
 }
 namespace alice::gpu_rocm {
@@ -92,59 +92,10 @@ struct Descriptor {
   std::vector<BlockEntry> blocks;
 };
 
-// ---------------------------------------------------------------------------
-// The chunk: one decoded block extent, THP-backed, moved into the factory
-// (docs/model-loader.md §2: the loader owns bytes; the factory borrows
-// them out as tensor views and the chunk dies at factory return).
-// ---------------------------------------------------------------------------
-
-class Chunk {
- public:
-  Chunk() = default;
-  explicit Chunk(size_t bytes);  // mmap + MADV_HUGEPAGE (design §9)
-  ~Chunk();
-  Chunk(Chunk&& o) noexcept;
-  Chunk& operator=(Chunk&& o) noexcept;
-  Chunk(const Chunk&) = delete;
-  Chunk& operator=(const Chunk&) = delete;
-
-  uint8_t* data() { return data_; }
-  const uint8_t* data() const { return data_; }
-  size_t size() const { return size_; }
-
- private:
-  uint8_t* data_ = nullptr;
-  size_t size_ = 0;
-};
-
-// ---------------------------------------------------------------------------
-// Registry: (type, version) -> resolved spec. The resolved spec IS the
-// layout function's output: derived byte size, scratch requirement (pure
-// function of config + engine knobs), and the construct step.
-// ---------------------------------------------------------------------------
-
-class DeviceAllocator;
-
-struct ResolvedSpec {
-  virtual ~ResolvedSpec() = default;
-  virtual uint64_t derived_bytes() const = 0;
-  virtual size_t scratch_bytes(const EngineConfig& ec) const = 0;
-  // Composition invariant (docs/model-loader.md §1): specs may state the
-  // interface they present to the stream (e.g. "io:2048"); empty = no
-  // opinion. The loader checks all present signatures agree.
-  virtual std::string interface_sig() const { return {}; }
-  // Reconciles the chunk length against the derived length (exact), slices
-  // tensor views, runs the block constructor (private H2D), returns the
-  // block. The chunk is consumed; the caller frees it after return.
-  virtual std::unique_ptr<gpu::Block> construct(Chunk chunk, DeviceAllocator& alloc,
-                                                const gpu_rocm::Context& ctx,
-                                                const EngineConfig& ec) const = 0;
-};
-
-using ResolveFn = std::unique_ptr<ResolvedSpec>(const BlockSpecDecl& decl);
-
-// The built-in type registry. Unknown type in a file = loud load error.
-const std::map<std::string, ResolveFn*>& registry();
+// Chunk (the THP-backed staging extent) and BlockFactory (the loader's
+// block-construction seam, the former "ResolvedSpec") live with the block
+// layer — src/chunk.hpp and src/blocks/block_factory.hpp — since both are
+// shared by the loader and the block constructors, not format concepts.
 
 // ---------------------------------------------------------------------------
 // Allocator (docs/model-loader.md §5)
@@ -193,7 +144,7 @@ struct LoadStats {
 struct LoadedBlocks {
   Descriptor descriptor;  // members set aside, available to later rounds
   std::unique_ptr<DeviceAllocator> allocator;
-  std::vector<std::unique_ptr<gpu::Block>> blocks;  // destroyed first
+  std::vector<std::unique_ptr<block::Block>> blocks;  // destroyed first
 };
 
 // Loads the block list of a .model descriptor file. Throws

@@ -5,7 +5,7 @@
 // ALICE_CPU_REF_BLOCKS swap-in.  Never production compute.
 // Weights bf16; KV cache fp32 (oracle numerics); position = private counter.
 //
-// Inherits gpu::StatefulBlock so it can be placed directly into the GPU-
+// Inherits block::StatefulBlock so it can be placed directly into the GPU-
 // resident model loop; forward() does an internal D2H -> host compute ->
 // H2D round trip (the same work the former CpuReferenceBlock adapter did).
 
@@ -13,13 +13,13 @@
 #include <vector>
 
 #include "alice/engine_config.hpp"
-#include "../../gpu/block.hpp"
+#include "../block.hpp"
 #include "../../manifest.hpp"
 #include "alice/tensor.hpp"
 
 namespace alice::cpu_generic {
 
-class GqaAttentionBF16 final : public gpu::StatefulBlock {
+class GqaAttentionBF16 final : public block::StatefulBlock {
  public:
   // Takes ownership of the staged weights (moved in, shape-checked).
   GqaAttentionBF16(Tensor<bf16> wq, Tensor<bf16> wk, Tensor<bf16> wv,

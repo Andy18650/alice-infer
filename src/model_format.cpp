@@ -21,17 +21,14 @@
 #include <blake3.h>
 #include <nlohmann/json.hpp>
 
-#include "gpu/block.hpp"
+#include "blocks/block_factory.hpp"  // BlockFactory + registry() (block layer)
 #include "blocks/gpu_rocm/platform.hpp"
-#include "blocks/gpu_rocm/dense_ffn.hpp"
-#include "blocks/gpu_rocm/gqa_attention.hpp"
 #include "manifest.hpp"  // ModelConfig: the block constructors' vocabulary
 #include "alice/tensor.hpp"
 
 namespace alice::modelfmt {
 
 using nlohmann::json;
-using gpu::Block;
 using gpu_rocm::Context;
 
 namespace {
@@ -117,202 +114,11 @@ Descriptor parse_descriptor(const json& m) {
 
 }  // namespace
 
-// ---------------------------------------------------------------------------
-// Registry: the two v1 block types
-// ---------------------------------------------------------------------------
-
-namespace {
-
-// dense_ffn_bf16 v1 config (missing keys throw via the macro's from_json).
-struct DenseFfnV1Config {
-  uint32_t io_dim = 0;
-  uint32_t intermediate_dim = 0;
-};
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DenseFfnV1Config, io_dim, intermediate_dim)
-
-// dense_ffn_bf16 v1 layout: [w_gate (inter x io)] [w_up (inter x io)]
-// [w_down (io x inter)], bf16 row-major, no padding.
-struct DenseFfnResolved : ResolvedSpec {
-  uint32_t io = 0, inter = 0;
-
-  uint64_t derived_bytes() const override {
-    return 3 * uint64_t(io) * inter * sizeof(bf16);
-  }
-  size_t scratch_bytes(const EngineConfig&) const override { return 0; }
-  std::string interface_sig() const override { return "io:" + std::to_string(io); }
-
-  std::unique_ptr<Block> construct(Chunk chunk, DeviceAllocator& alloc,
-                                   const Context& ctx,
-                                   const EngineConfig& ec) const override {
-    (void)alloc;
-    if (chunk.size() != derived_bytes())
-      fail("dense_ffn_bf16: decoded chunk is " + std::to_string(chunk.size()) +
-           " bytes but the v1 layout derives " + std::to_string(derived_bytes()));
-    const bf16* base = reinterpret_cast<const bf16*>(chunk.data());
-    size_t off = 0;
-    auto take = [&](uint32_t rows, uint32_t cols) {
-      TensorView<bf16> v(base + off, rows, cols);
-      off += size_t(rows) * cols;
-      return v;
-    };
-    const auto gate = take(inter, io);
-    const auto up = take(inter, io);
-    const auto down = take(io, inter);
-    ModelConfig mc;
-    mc.hidden_size = io;
-    mc.intermediate_size = inter;
-    return std::make_unique<gpu_rocm::DenseFfnBF16>(gate, up, down, mc, ec, ctx);
-  }
-};
-
-std::unique_ptr<ResolvedSpec> resolve_dense_ffn(const BlockSpecDecl& d) {
-  if (d.version != 1)
-    fail("dense_ffn_bf16: unsupported version " + std::to_string(d.version) +
-         " (registry provides version 1)");
-  const DenseFfnV1Config cfg = d.config.get<DenseFfnV1Config>();
-  auto r = std::make_unique<DenseFfnResolved>();
-  r->io = cfg.io_dim;
-  r->inter = cfg.intermediate_dim;
-  if (r->io == 0 || r->inter == 0) fail("dense_ffn_bf16: io_dim/intermediate_dim must be non-zero");
-  return r;
-}
-
-// gqa_attention_bf16 v1 config: core fields via struct (missing keys
-// throw); the optional llama3 rope-scaling group is read manually because
-// it is conditional (present-type => four more required fields).
-struct GqaAttentionV1Config {
-  uint32_t io_dim = 0;
-  uint32_t qk_dim = 0;
-  uint32_t v_dim = 0;
-  uint32_t num_q_heads = 0;
-  uint32_t num_kv_heads = 0;
-  double rope_theta = 0.0;
-};
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GqaAttentionV1Config, io_dim, qk_dim, v_dim,
-                                   num_q_heads, num_kv_heads, rope_theta)
-
-// gqa_attention_bf16 v1 layout: [wq (nh*hd x io)] [wk (nkv*hd x io)]
-// [wv (nkv*hd x io)] [wo (io x nh*hd)], bf16 row-major, no padding.
-// v1 requires qk_dim == v_dim (the ModelConfig vocabulary has one head dim).
-struct GqaAttentionResolved : ResolvedSpec {
-  uint32_t io = 0, nh = 0, nkv = 0, hd = 0;
-  ModelConfig mc;
-
-  uint64_t derived_bytes() const override {
-    return uint64_t(2 * nh + 2 * nkv) * hd * io * sizeof(bf16);
-  }
-  size_t scratch_bytes(const EngineConfig& ec) const override {
-    // v4 prefill partials: nh * max_prefill_chunk * ceil(max_seq/64) * (hd+2)
-    const uint64_t max_chunks = (uint64_t(ec.max_seq_len) + 63) / 64;
-    return uint64_t(nh) * ec.max_prefill_chunk * max_chunks * (hd + 2) * sizeof(float);
-  }
-  std::string interface_sig() const override { return "io:" + std::to_string(io); }
-
-  std::unique_ptr<Block> construct(Chunk chunk, DeviceAllocator& alloc,
-                                   const Context& ctx,
-                                   const EngineConfig& ec) const override {
-    if (chunk.size() != derived_bytes())
-      fail("gqa_attention_bf16: decoded chunk is " + std::to_string(chunk.size()) +
-           " bytes but the v1 layout derives " + std::to_string(derived_bytes()));
-    const bf16* base = reinterpret_cast<const bf16*>(chunk.data());
-    size_t off = 0;
-    auto take = [&](uint32_t rows, uint32_t cols) {
-      TensorView<bf16> v(base + off, rows, cols);
-      off += size_t(rows) * cols;
-      return v;
-    };
-    const auto wq = take(nh * hd, io);
-    const auto wk = take(nkv * hd, io);
-    const auto wv = take(nkv * hd, io);
-    const auto wo = take(io, nh * hd);
-    return std::make_unique<gpu_rocm::GqaAttentionBF16>(wq, wk, wv, wo, mc, ec,
-                                                        ctx, alloc.scratch_ptr());
-  }
-};
-
-std::unique_ptr<ResolvedSpec> resolve_gqa_attention(const BlockSpecDecl& d) {
-  if (d.version != 1)
-    fail("gqa_attention_bf16: unsupported version " + std::to_string(d.version) +
-         " (registry provides version 1)");
-  const GqaAttentionV1Config cfg = d.config.get<GqaAttentionV1Config>();
-  auto r = std::make_unique<GqaAttentionResolved>();
-  r->io = cfg.io_dim;
-  r->nh = cfg.num_q_heads;
-  r->nkv = cfg.num_kv_heads;
-  if (cfg.qk_dim != cfg.v_dim)
-    fail("gqa_attention_bf16: qk_dim != v_dim (v1 requires equal head dims; "
-         "separate value head dim is a future version)");
-  r->hd = cfg.qk_dim;
-  if (r->io == 0 || r->nh == 0 || r->nkv == 0 || r->hd == 0 ||
-      r->nh % r->nkv != 0)
-    fail("gqa_attention_bf16: bad head config (io/heads/kv-heads/head-dim, "
-         "num_q_heads must divide num_kv_heads evenly)");
-
-  ModelConfig& mc = r->mc;
-  mc.hidden_size = r->io;
-  mc.num_heads = r->nh;
-  mc.num_kv_heads = r->nkv;
-  mc.head_dim = r->hd;
-  mc.rope_theta = float(cfg.rope_theta);
-  if (d.config.contains("rope_scaling_type")) {
-    const std::string type = d.config.at("rope_scaling_type").get<std::string>();
-    if (type != "llama3")
-      fail("gqa_attention_bf16: unsupported rope_scaling_type '" + type + "'");
-    mc.has_rope_scaling = true;
-    mc.rope_scaling.factor = d.config.at("rope_scaling_factor").get<float>();
-    mc.rope_scaling.low_freq_factor =
-        d.config.at("rope_scaling_low_freq_factor").get<float>();
-    mc.rope_scaling.high_freq_factor =
-        d.config.at("rope_scaling_high_freq_factor").get<float>();
-    mc.rope_scaling.original_max_position_embeddings =
-        d.config.at("original_max_position_embeddings").get<uint32_t>();
-  }
-  return r;
-}
-
-}  // namespace
-
-const std::map<std::string, ResolveFn*>& registry() {
-  static const std::map<std::string, ResolveFn*> r = {
-      {"dense_ffn_bf16", &resolve_dense_ffn},
-      {"gqa_attention_bf16", &resolve_gqa_attention},
-  };
-  return r;
-}
 
 // ---------------------------------------------------------------------------
-// Chunk + DeviceAllocator
+// DeviceAllocator
 // ---------------------------------------------------------------------------
 
-Chunk::Chunk(size_t bytes) : size_(bytes) {
-  if (bytes) {
-    void* p = mmap(nullptr, bytes, PROT_READ | PROT_WRITE,
-                   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (p == MAP_FAILED) throw std::bad_alloc();
-    (void)madvise(p, bytes, MADV_HUGEPAGE);  // THP staging (design §9)
-    data_ = static_cast<uint8_t*>(p);
-  }
-}
-
-Chunk::~Chunk() {
-  if (data_) (void)munmap(data_, size_);
-}
-
-Chunk::Chunk(Chunk&& o) noexcept : data_(o.data_), size_(o.size_) {
-  o.data_ = nullptr;
-  o.size_ = 0;
-}
-
-Chunk& Chunk::operator=(Chunk&& o) noexcept {
-  if (this != &o) {
-    if (data_) (void)munmap(data_, size_);
-    data_ = o.data_;
-    size_ = o.size_;
-    o.data_ = nullptr;
-    o.size_ = 0;
-  }
-  return *this;
-}
 
 DeviceAllocator::~DeviceAllocator() {
   for (auto& [name, np] : named_)
@@ -474,14 +280,14 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
   // against the registry (config faults carry spec context), and all
   // specs must present the same interface.
   t = Timer{};
-  std::map<std::string, std::unique_ptr<ResolvedSpec>> resolved;
+  std::map<std::string, std::unique_ptr<block::BlockFactory>> resolved;
   std::string iface;
   for (const auto& [name, decl] : out.descriptor.specs) {
     const std::string where = "block_specs." + name;
-    const auto it = registry().find(decl.type);
-    if (it == registry().end())
+    const auto it = block::registry().find(decl.type);
+    if (it == block::registry().end())
       fail(where + ": unknown block type '" + decl.type + "'");
-    std::unique_ptr<ResolvedSpec> rs;
+    std::unique_ptr<block::BlockFactory> rs;
     try {
       rs = it->second(decl);
     } catch (const json::exception& e) {
@@ -519,7 +325,7 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
     const auto rit = resolved.find(e.spec);
     if (rit == resolved.end())
       fail(where + ": references unknown spec '" + e.spec + "'");
-    const ResolvedSpec* rs = rit->second.get();
+    const block::BlockFactory* rs = rit->second.get();
     if (e.codec != "raw")
       fail(where + ": codec '" + e.codec +
            "' is not supported (format v1 provides 'raw' only)");

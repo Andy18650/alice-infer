@@ -83,6 +83,9 @@ set_target_properties(alice PROPERTIES HIP_ARCHITECTURES "${ALICE_GPU_ARCH}")
 target_sources(alice PRIVATE
     src/blocks/gpu_rocm/platform.cpp
     src/blocks/gpu_rocm/dense_ffn.cpp src/blocks/gpu_rocm/gqa_attention.cpp
+    src/blocks/dense_ffn_factory.cpp src/blocks/gqa_attention_factory.cpp
+    src/blocks/block_factory.cpp
+    src/chunk.cpp
     src/gpu/trunk.cpp src/gpu/embedder.cpp src/gpu/lm_head.cpp
     src/gpu/sampler.cpp src/gpu/model.cpp
     src/gpu/kernels.hip

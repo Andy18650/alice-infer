@@ -53,7 +53,7 @@ float* alloc_prefill_scratch(const ModelConfig& mc, const EngineConfig& ec) {
   return p;
 }
 
-std::vector<float> run_gpu_block(alice::gpu::Block& b, const std::vector<float>& io,
+std::vector<float> run_gpu_block(alice::block::Block& b, const std::vector<float>& io,
                                  uint32_t S, uint32_t d) {
   float* d_io = nullptr;
   if (hipMalloc(&d_io, io.size() * 4) != hipSuccess) throw std::bad_alloc();

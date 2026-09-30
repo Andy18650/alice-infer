@@ -106,7 +106,7 @@ cmake --build build-release -j                     # Release: measure here
 
 ## State of play (2026-09, GPU-resident v1)
 
-- 60/60 tests (post-retirement: tensor/safetensors/manifest/tokenizer,
+- Tests (post-retirement: tensor/safetensors/manifest/tokenizer,
   cpu_generic oracle kernel+block suites, GPU-resident kernel/block/
   model/canonical suites incl. long-case). Canonical: short fixtures
   1B 0.33 / 8B 0.47 (bf16 ref, gate 0.75); long fixtures (WikiText

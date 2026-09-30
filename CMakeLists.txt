@@ -117,7 +117,9 @@ if(ALICE_BUILD_TESTS)
   target_sources(alice_tests PRIVATE tests/test_gpu_kernels.cpp
                                      tests/test_gpu_blocks.cpp
                                      tests/test_gpu_model.cpp
-                                     tests/test_gpu_sampler.cpp)
+                                     tests/test_gpu_sampler.cpp
+                                     tests/oracle/sampler.cpp)
+  target_include_directories(alice_tests PRIVATE tests)
   target_compile_definitions(alice_tests PRIVATE __HIP_PLATFORM_AMD__)
   target_link_libraries(alice_tests PRIVATE "${ALICE_HIP_LIB}")
   target_link_libraries(alice_tests PRIVATE alice GTest::gtest_main nlohmann_json::nlohmann_json)

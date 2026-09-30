@@ -1,6 +1,7 @@
-// GPU Sampler tests: verify that the GPU-resident sampler (device argmax
-// for greedy, D2H + host sample for temperature > 0) produces identical
-// results to a direct CPU reference.
+// GPU Sampler tests: verify that gpu::Sampler produces identical results
+// to the original host alice::Sampler, preserved in tests/oracle/ as a
+// frozen git-extracted oracle. The oracle is the code that shipped as
+// src/sampler.cpp before the merge — any divergence is a transcription bug.
 
 #include <algorithm>
 #include <cstdint>
@@ -11,6 +12,7 @@
 #include <gtest/gtest.h>
 #include <hip/hip_runtime_api.h>
 
+#include "oracle/sampler.hpp"
 #include "../src/gpu/sampler.hpp"
 
 using alice::SamplingConfig;
@@ -30,21 +32,17 @@ float* dev_upload(const std::vector<float>& host) {
 
 }  // namespace
 
-TEST(GpuSampler, GreedyMatchesCpuArgmax) {
-  // The GPU sampler at temperature=0 must return the same index as
-  // std::max_element on the host.
+TEST(GpuSampler, GreedyMatchesOracle) {
   const uint32_t vocab = 1024;
   std::mt19937 rng(42);
   std::vector<float> logits(vocab);
   for (auto& v : logits) v = float(rng()) / float(rng.max()) * 2.f - 1.f;
 
-  const int32_t cpu_id =
-      int32_t(std::max_element(logits.begin(), logits.end()) - logits.begin());
-
   SamplingConfig cfg;  // temperature 0 (greedy)
-  cfg.seed = 0;
-  Sampler sampler(cfg);
+  oracle::Sampler ref(cfg);
+  const int32_t cpu_id = ref.sample(logits.data(), vocab);
 
+  Sampler sampler(cfg);
   float* dev = dev_upload(logits);
   const int32_t gpu_id = sampler.sample(dev, vocab);
   hipFree(dev);
@@ -52,18 +50,15 @@ TEST(GpuSampler, GreedyMatchesCpuArgmax) {
   EXPECT_EQ(gpu_id, cpu_id);
 }
 
-TEST(GpuSampler, GreedyMatchesCpuArgmaxSmallVocab) {
-  // Edge case: very small vocabulary (the kernel must handle V < warp).
+TEST(GpuSampler, GreedyMatchesOracleSmallVocab) {
   const uint32_t vocab = 7;
   std::vector<float> logits = {0.1f, -0.5f, 0.3f, 0.9f, -0.2f, 0.8f, 0.05f};
 
-  const int32_t cpu_id =
-      int32_t(std::max_element(logits.begin(), logits.end()) - logits.begin());
-
   SamplingConfig cfg;
-  cfg.seed = 0;
-  Sampler sampler(cfg);
+  oracle::Sampler ref(cfg);
+  const int32_t cpu_id = ref.sample(logits.data(), vocab);
 
+  Sampler sampler(cfg);
   float* dev = dev_upload(logits);
   const int32_t gpu_id = sampler.sample(dev, vocab);
   hipFree(dev);
@@ -72,14 +67,12 @@ TEST(GpuSampler, GreedyMatchesCpuArgmaxSmallVocab) {
 }
 
 TEST(GpuSampler, GreedyDeterministicAcrossCalls) {
-  // Greedy sampling must be deterministic (no RNG involved).
   const uint32_t vocab = 512;
   std::mt19937 rng(99);
   std::vector<float> logits(vocab);
   for (auto& v : logits) v = float(rng()) / float(rng.max());
 
   SamplingConfig cfg;
-  cfg.seed = 0;
   Sampler sampler(cfg);
 
   float* dev = dev_upload(logits);
@@ -90,9 +83,7 @@ TEST(GpuSampler, GreedyDeterministicAcrossCalls) {
   EXPECT_EQ(id1, id2);
 }
 
-TEST(GpuSampler, TemperatureMatchesCpuSample) {
-  // Temperature > 0 path: D2H logits, then host-side sampling.
-  // Verify against a pure CPU implementation using the same seed.
+TEST(GpuSampler, TemperatureMatchesOracle) {
   const uint32_t vocab = 256;
   const float temperature = 0.8f;
   const uint64_t seed = 12345;
@@ -101,42 +92,67 @@ TEST(GpuSampler, TemperatureMatchesCpuSample) {
   std::vector<float> logits(vocab);
   for (auto& v : logits) v = float(rng()) / float(rng.max()) * 2.f - 1.f;
 
-  // GPU sampler
   SamplingConfig cfg;
   cfg.temperature = temperature;
   cfg.seed = seed;
-  Sampler sampler(cfg);
 
+  oracle::Sampler ref(cfg);
+  const int32_t cpu_id = ref.sample(logits.data(), vocab);
+
+  Sampler sampler(cfg);
   float* dev = dev_upload(logits);
   const int32_t gpu_id = sampler.sample(dev, vocab);
   hipFree(dev);
 
-  // CPU reference: same sampling logic as sample_host
-  std::vector<float> work(logits);
-  const float inv_t = 1.0f / temperature;
-  for (auto& x : work) x *= inv_t;
-  const float mx = *std::max_element(work.begin(), work.end());
-  float sum = 0.0f;
-  for (auto& x : work) { x = std::exp(x - mx); sum += x; }
-  for (auto& x : work) x /= sum;
+  EXPECT_EQ(gpu_id, cpu_id);
+}
 
-  std::vector<uint32_t> idx(vocab);
-  std::iota(idx.begin(), idx.end(), 0);
-  std::sort(idx.begin(), idx.end(),
-            [&](uint32_t a, uint32_t b) { return work[a] > work[b]; });
+TEST(GpuSampler, TopKMatchesOracle) {
+  const uint32_t vocab = 256;
+  const float temperature = 0.8f;
+  const uint64_t seed = 54321;
 
-  size_t keep = vocab;  // top_k=0, top_p=1.0 → no pruning
-  float total = 0.0f;
-  for (size_t i = 0; i < keep; ++i) total += work[idx[i]];
-  std::mt19937_64 cpu_rng(seed);
-  std::uniform_real_distribution<float> u(0.0f, total);
-  const float r = u(cpu_rng);
-  float acc = 0.0f;
-  int32_t cpu_id = int32_t(idx[keep - 1]);
-  for (size_t i = 0; i < keep; ++i) {
-    acc += work[idx[i]];
-    if (r < acc) { cpu_id = int32_t(idx[i]); break; }
-  }
+  std::mt19937 rng(77);
+  std::vector<float> logits(vocab);
+  for (auto& v : logits) v = float(rng()) / float(rng.max()) * 2.f - 1.f;
+
+  SamplingConfig cfg;
+  cfg.temperature = temperature;
+  cfg.top_k = 40;
+  cfg.seed = seed;
+
+  oracle::Sampler ref(cfg);
+  const int32_t cpu_id = ref.sample(logits.data(), vocab);
+
+  Sampler sampler(cfg);
+  float* dev = dev_upload(logits);
+  const int32_t gpu_id = sampler.sample(dev, vocab);
+  hipFree(dev);
+
+  EXPECT_EQ(gpu_id, cpu_id);
+}
+
+TEST(GpuSampler, TopPMatchesOracle) {
+  const uint32_t vocab = 256;
+  const float temperature = 0.8f;
+  const uint64_t seed = 98765;
+
+  std::mt19937 rng(88);
+  std::vector<float> logits(vocab);
+  for (auto& v : logits) v = float(rng()) / float(rng.max()) * 2.f - 1.f;
+
+  SamplingConfig cfg;
+  cfg.temperature = temperature;
+  cfg.top_p = 0.9f;
+  cfg.seed = seed;
+
+  oracle::Sampler ref(cfg);
+  const int32_t cpu_id = ref.sample(logits.data(), vocab);
+
+  Sampler sampler(cfg);
+  float* dev = dev_upload(logits);
+  const int32_t gpu_id = sampler.sample(dev, vocab);
+  hipFree(dev);
 
   EXPECT_EQ(gpu_id, cpu_id);
 }

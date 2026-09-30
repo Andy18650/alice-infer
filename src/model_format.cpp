@@ -15,6 +15,8 @@
 #include <fstream>
 #include <cstdio>
 #include <cstring>
+#include <new>
+#include <span>
 #include <stdexcept>
 
 #include <hip/hip_runtime_api.h>
@@ -191,6 +193,38 @@ class Fd {
   int fd_ = -1;
 };
 
+// A THP-backed staging buffer for one block's pread extent (design §9:
+// mmap + MADV_HUGEPAGE). RAII: munmap'd at scope exit, including on throw.
+// Non-movable and non-copyable, like Fd — the load loop constructs a fresh
+// one per block and never hands off ownership; construct() receives a
+// non-owning span over it, and the chunk is destroyed at the end of the
+// loop iteration (construction is the last use, so the move-ownership
+// machinery that would otherwise mark it "freed" is unnecessary here).
+class Chunk {
+ public:
+  explicit Chunk(size_t bytes) : size_(bytes) {
+    if (bytes) {
+      void* p = mmap(nullptr, bytes, PROT_READ | PROT_WRITE,
+                     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+      if (p == MAP_FAILED) throw std::bad_alloc();
+      (void)madvise(p, bytes, MADV_HUGEPAGE);
+      data_ = static_cast<uint8_t*>(p);
+    }
+  }
+  ~Chunk() {
+    if (data_) (void)munmap(data_, size_);
+  }
+  Chunk(const Chunk&) = delete;
+  Chunk& operator=(const Chunk&) = delete;
+
+  uint8_t* data() { return data_; }
+  size_t size() const { return size_; }
+
+ private:
+  uint8_t* data_ = nullptr;
+  size_t size_ = 0;
+};
+
 // Reads a .model descriptor file and returns the parsed envelope: text
 // region (everything before the first NUL, which must be \n- or \r\n-
 // terminated; a binary tail may follow in single-file models, so no
@@ -358,7 +392,9 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
     ++st.hash_verifications;
 
     t = Timer{};
-    out.blocks.push_back(rs->construct(std::move(chunk), *out.allocator, ctx, ec));
+    out.blocks.push_back(rs->construct(
+        std::as_bytes(std::span<uint8_t>(chunk.data(), chunk.size())),
+        *out.allocator, ctx, ec));
     st.construct_ms += t.ms();
   }
   st.blocks = out.blocks.size();

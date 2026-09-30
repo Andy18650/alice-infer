@@ -49,12 +49,12 @@ std::string GqaAttentionBF16Factory::interface_sig() const {
 }
 
 std::unique_ptr<Block> GqaAttentionBF16Factory::construct(
-    Chunk chunk, modelfmt::DeviceAllocator& alloc, const gpu_rocm::Context& ctx,
+    std::span<const std::byte> data, modelfmt::DeviceAllocator& alloc, const gpu_rocm::Context& ctx,
     const EngineConfig& ec) const {
-  if (chunk.size() != derived_bytes())
-    fail("gqa_attention_bf16: decoded chunk is " + std::to_string(chunk.size()) +
+  if (data.size() != derived_bytes())
+    fail("gqa_attention_bf16: decoded chunk is " + std::to_string(data.size()) +
          " bytes but the v1 layout derives " + std::to_string(derived_bytes()));
-  const bf16* base = reinterpret_cast<const bf16*>(chunk.data());
+  const bf16* base = reinterpret_cast<const bf16*>(data.data());
   size_t off = 0;
   auto take = [&](uint32_t rows, uint32_t cols) {
     TensorView<bf16> v(base + off, rows, cols);

@@ -20,7 +20,7 @@ class DenseFfnBF16Factory final : public BlockFactory {
   uint64_t derived_bytes() const override;
   size_t scratch_bytes(const EngineConfig& ec) const override;
   std::string interface_sig() const override;
-  std::unique_ptr<Block> construct(Chunk chunk, modelfmt::DeviceAllocator& alloc,
+  std::unique_ptr<Block> construct(std::span<const std::byte> data, modelfmt::DeviceAllocator& alloc,
                                    const gpu_rocm::Context& ctx,
                                    const EngineConfig& ec) const override;
 

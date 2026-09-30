@@ -17,12 +17,12 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <span>
 #include <string>
 
 #include <nlohmann/json.hpp>  // ResolveFn carries json; internal header
 
 #include "alice/engine_config.hpp"
-#include "../chunk.hpp"
 #include "block.hpp"
 
 namespace alice::modelfmt {
@@ -52,10 +52,11 @@ class BlockFactory {
   // opinion. The loader checks all present signatures agree.
   virtual std::string interface_sig() const { return {}; }
 
-  // Reconciles the chunk length against the derived length (exact), slices
+  // Reconciles the view length against the derived length (exact), slices
   // tensor views, runs the block constructor (private H2D), returns the
-  // block. The chunk is consumed; the caller frees it after return.
-  virtual std::unique_ptr<Block> construct(Chunk chunk,
+  // block. The view is non-owning; the loader-owned staging buffer outlives
+  // this call (construction is the last use of it in the load loop).
+  virtual std::unique_ptr<Block> construct(std::span<const std::byte> data,
                                            modelfmt::DeviceAllocator& alloc,
                                            const gpu_rocm::Context& ctx,
                                            const EngineConfig& ec) const = 0;

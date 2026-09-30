@@ -92,10 +92,10 @@ struct Descriptor {
   std::vector<BlockEntry> blocks;
 };
 
-// Chunk (the THP-backed staging extent) and BlockFactory (the loader's
-// block-construction seam, the former "ResolvedSpec") live with the block
-// layer — src/chunk.hpp and src/blocks/block_factory.hpp — since both are
-// shared by the loader and the block constructors, not format concepts.
+// BlockFactory (the loader's block-construction seam, the former
+// "ResolvedSpec") lives in src/blocks/block_factory.hpp; the THP-backed
+// staging buffer (Chunk) is a loader-private RAII helper in model_format.cpp,
+// not a boundary type — construct() takes a non-owning std::span<const std::byte>.
 
 // ---------------------------------------------------------------------------
 // Allocator (docs/model-loader.md §5)

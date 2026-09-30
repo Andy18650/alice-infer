@@ -1,28 +1,36 @@
 #pragma once
 
 // CPU reference (naive oracle) GQA attention — development-only reference
-// implementation (design §3/§8.1): the test oracle and the compute core of
-// gpu::CpuReferenceBlock. Never production compute.
+// implementation (design §3/§8.1): the test oracle and the dev-only
+// ALICE_CPU_REF_BLOCKS swap-in.  Never production compute.
 // Weights bf16; KV cache fp32 (oracle numerics); position = private counter.
+//
+// Inherits gpu::StatefulBlock so it can be placed directly into the GPU-
+// resident model loop; forward() does an internal D2H -> host compute ->
+// H2D round trip (the same work the former CpuReferenceBlock adapter did).
 
 #include <memory>
+#include <vector>
 
 #include "alice/engine_config.hpp"
+#include "../../gpu/block.hpp"
 #include "../../manifest.hpp"
 #include "alice/tensor.hpp"
 
 namespace alice::cpu_generic {
 
-class GqaAttentionBF16CpuGeneric final {
+class GqaAttentionBF16 final : public gpu::StatefulBlock {
  public:
   // Takes ownership of the staged weights (moved in, shape-checked).
-  GqaAttentionBF16CpuGeneric(Tensor<bf16> wq, Tensor<bf16> wk, Tensor<bf16> wv,
-                             Tensor<bf16> wo, const ModelConfig& mc,
-                             const EngineConfig& ec);
+  GqaAttentionBF16(Tensor<bf16> wq, Tensor<bf16> wk, Tensor<bf16> wv,
+                   Tensor<bf16> wo, const ModelConfig& mc,
+                   const EngineConfig& ec);
 
-  // io: fp32 [S, d] host, in-place (block output overwrites input).
-  void forward(float* io, uint32_t S);
-  void reset_state() { pos_ = 0; }  // allocation kept, cache invalidated
+  // io: fp32 [S, d] device pointer, in-place (block output overwrites input).
+  // Internally: D2H staging, host compute, H2D result.
+  void forward(float* io, uint32_t S) override;
+
+  void reset_state() override { pos_ = 0; }  // allocation kept, cache invalidated
   uint32_t position() const { return pos_; }
 
  private:
@@ -40,6 +48,8 @@ class GqaAttentionBF16CpuGeneric final {
   // Transients (sized by max_prefill_chunk).
   std::unique_ptr<float[]> q_, k_, v_, attn_, scores_;
   std::unique_ptr<float[]> rope_cos_, rope_sin_;  // [max_seq, hd/2]
+
+  std::vector<float> host_io_;  // D2H/H2D staging [mpc, d]
 };
 
 }  // namespace alice::cpu_generic

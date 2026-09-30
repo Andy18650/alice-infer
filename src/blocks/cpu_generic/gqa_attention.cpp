@@ -3,15 +3,28 @@
 #include <cmath>
 #include <cstring>
 #include <stdexcept>
+#include <string>
+
+#include <hip/hip_runtime_api.h>
 
 #include "kernels.hpp"
 
 namespace alice::cpu_generic {
 
-GqaAttentionBF16CpuGeneric::GqaAttentionBF16CpuGeneric(Tensor<bf16> wq, Tensor<bf16> wk,
-                                                       Tensor<bf16> wv, Tensor<bf16> wo,
-                                                       const ModelConfig& mc,
-                                                       const EngineConfig& ec)
+namespace {
+#define HIP_CHECK(x)                                                                    \
+  do {                                                                                  \
+    hipError_t e_ = (x);                                                                \
+    if (e_ != hipSuccess)                                                               \
+      throw std::runtime_error(std::string("cpu_generic::GqaAttentionBF16: ") + #x +   \
+                               " failed: " + hipGetErrorString(e_));                    \
+  } while (0)
+}  // namespace
+
+GqaAttentionBF16::GqaAttentionBF16(Tensor<bf16> wq, Tensor<bf16> wk,
+                                   Tensor<bf16> wv, Tensor<bf16> wo,
+                                   const ModelConfig& mc,
+                                   const EngineConfig& ec)
     : nh_(mc.num_heads),
       nkv_(mc.num_kv_heads),
       hd_(mc.head_dim),
@@ -23,9 +36,9 @@ GqaAttentionBF16CpuGeneric::GqaAttentionBF16CpuGeneric(Tensor<bf16> wq, Tensor<b
   const uint32_t qd = nh_ * hd_, kvd = nkv_ * hd_;
   if (wq.rows() != qd || wq.cols() != d_ || wk.rows() != kvd || wk.cols() != d_ ||
       wv.rows() != kvd || wv.cols() != d_ || wo.rows() != d_ || wo.cols() != qd)
-    throw std::invalid_argument("GqaAttentionBF16CpuGeneric: weight shape mismatch vs config");
+    throw std::invalid_argument("GqaAttentionBF16: weight shape mismatch vs config");
   if (nh_ % nkv_ != 0)
-    throw std::invalid_argument("GqaAttentionBF16CpuGeneric: num_heads % num_kv_heads != 0");
+    throw std::invalid_argument("GqaAttentionBF16: num_heads % num_kv_heads != 0");
 
   wq_ = std::move(wq);
   wk_ = std::move(wk);
@@ -46,13 +59,16 @@ GqaAttentionBF16CpuGeneric::GqaAttentionBF16CpuGeneric(Tensor<bf16> wq, Tensor<b
   rope_sin_ = std::make_unique<float[]>(size_t(max_seq_) * half);
   build_rope_tables(rope_cos_.get(), rope_sin_.get(), max_seq_, hd_, mc.rope_theta,
                     mc.has_rope_scaling, mc.rope_scaling);
+  host_io_.resize(size_t(mpc_) * d_);
 }
 
-void GqaAttentionBF16CpuGeneric::forward(float* io, uint32_t S) {
-  if (S > mpc_)
-    throw std::runtime_error("GqaAttentionBF16CpuGeneric: prefill chunk exceeded");
+void GqaAttentionBF16::forward(float* io, uint32_t S) {
+  if (S == 0 || S > mpc_)
+    throw std::runtime_error("cpu_generic::GqaAttentionBF16::forward: S out of range");
   if (pos_ + S > max_seq_)
-    throw std::runtime_error("GqaAttentionBF16CpuGeneric: max_seq_len exceeded");
+    throw std::runtime_error("cpu_generic::GqaAttentionBF16::forward: max_seq_len exceeded");
+  const size_t n = size_t(S) * d_;
+  HIP_CHECK(hipMemcpy(host_io_.data(), io, n * sizeof(float), hipMemcpyDeviceToHost));
 
   const uint32_t qd = nh_ * hd_, kvd = nkv_ * hd_, half = hd_ / 2;
   float* q = q_.get();
@@ -60,9 +76,9 @@ void GqaAttentionBF16CpuGeneric::forward(float* io, uint32_t S) {
   float* v = v_.get();
   float* attn = attn_.get();
 
-  matmul_wt(io, wq_.data(), q, S, d_, qd);
-  matmul_wt(io, wk_.data(), k, S, d_, kvd);
-  matmul_wt(io, wv_.data(), v, S, d_, kvd);
+  matmul_wt(host_io_.data(), wq_.data(), q, S, d_, qd);
+  matmul_wt(host_io_.data(), wk_.data(), k, S, d_, kvd);
+  matmul_wt(host_io_.data(), wv_.data(), v, S, d_, kvd);
 
   // RoPE at absolute positions, then append to the cache.
   for (uint32_t s = 0; s < S; ++s) {
@@ -100,8 +116,12 @@ void GqaAttentionBF16CpuGeneric::forward(float* io, uint32_t S) {
     }
   }
 
-  matmul_wt(attn, wo_.data(), io, S, qd, d_);  // reads attn, writes io: no aliasing
+  matmul_wt(attn, wo_.data(), host_io_.data(), S, qd, d_);
   pos_ += S;
+
+  HIP_CHECK(hipMemcpy(io, host_io_.data(), n * sizeof(float), hipMemcpyHostToDevice));
 }
+
+#undef HIP_CHECK
 
 }  // namespace alice::cpu_generic

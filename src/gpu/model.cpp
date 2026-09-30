@@ -13,10 +13,11 @@
 #include <filesystem>
 
 #include "../loader_staging.hpp"
+#include "../blocks/cpu_generic/dense_ffn.hpp"
+#include "../blocks/cpu_generic/gqa_attention.hpp"
 #include "../blocks/gpu_rocm/platform.hpp"
 #include "manifest.hpp"
 #include "block.hpp"
-#include "cpu_reference.hpp"
 #include "../blocks/gpu_rocm/dense_ffn.hpp"
 #include "embedder.hpp"
 #include "../blocks/gpu_rocm/gqa_attention.hpp"
@@ -168,8 +169,8 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
   }
   // Development-only fault-localization hook (design §3/§8.1): block
   // indices listed in ALICE_CPU_REF_BLOCKS (comma-separated) are built as
-  // CpuReferenceBlock adapters (D2H -> cpu_generic compute -> H2D) instead
-  // of device blocks. Never for production.
+  // cpu_generic blocks (internal D2H -> host compute -> H2D) instead of
+  // device blocks. Never for production.
   std::set<size_t> cpu_ref;
   if (const char* env = std::getenv("ALICE_CPU_REF_BLOCKS")) {
     const std::string s(env);
@@ -208,11 +209,9 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
       auto wv = loader::stage<bf16>(*file, b.weights.at("wv"));
       auto wo = loader::stage<bf16>(*file, b.weights.at("wo"));
       if (ref)
-        model->blocks_.push_back(std::make_unique<CpuReferenceBlock>(
-            cpu_generic::GqaAttentionBF16CpuGeneric(std::move(wq), std::move(wk),
-                                                    std::move(wv), std::move(wo),
-                                                    m.config, cfg),
-            m.config.hidden_size, cfg.max_prefill_chunk));
+        model->blocks_.push_back(std::make_unique<cpu_generic::GqaAttentionBF16>(
+            std::move(wq), std::move(wk), std::move(wv), std::move(wo),
+            m.config, cfg));
       else
         model->blocks_.push_back(std::make_unique<gpu_rocm::GqaAttentionBF16>(
             wq.view(), wk.view(), wv.view(), wo.view(), m.config, cfg,
@@ -222,10 +221,9 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
       auto w_up = loader::stage<bf16>(*file, b.weights.at("w_up"));
       auto w_down = loader::stage<bf16>(*file, b.weights.at("w_down"));
       if (ref)
-        model->blocks_.push_back(std::make_unique<CpuReferenceBlock>(
-            cpu_generic::DenseFfnBF16CpuGeneric(std::move(w_gate), std::move(w_up),
-                                                std::move(w_down), m.config, cfg),
-            m.config.hidden_size, cfg.max_prefill_chunk));
+        model->blocks_.push_back(std::make_unique<cpu_generic::DenseFfnBF16>(
+            std::move(w_gate), std::move(w_up), std::move(w_down),
+            m.config, cfg));
       else
         model->blocks_.push_back(std::make_unique<gpu_rocm::DenseFfnBF16>(
             w_gate.view(), w_up.view(), w_down.view(), m.config, cfg,

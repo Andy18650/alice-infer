@@ -111,13 +111,13 @@ if(ALICE_BUILD_TESTS)
     tests/test_tensor.cpp
     tests/test_safetensors.cpp
     tests/test_manifest.cpp
-    tests/test_blocks.cpp
     tests/test_tokenizer.cpp
   )
   target_sources(alice_tests PRIVATE tests/test_gpu_kernels.cpp
                                      tests/test_gpu_blocks.cpp
                                      tests/test_gpu_model.cpp
                                      tests/test_gpu_sampler.cpp
+                                     tests/test_hf_block_oracle.cpp
                                      tests/oracle/sampler.cpp)
   target_include_directories(alice_tests PRIVATE tests)
   target_compile_definitions(alice_tests PRIVATE __HIP_PLATFORM_AMD__)

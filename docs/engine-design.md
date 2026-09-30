@@ -306,8 +306,23 @@ Narrow entry that sniffs format by content and delegates
   Greedy decode comparison is exact-match with a coin-flip rule: a
   divergence is a bug only if our token is ≥0.25 below the reference
   argmax (near-ties flip legitimately within the bf16-input budget).
-- Per-block: CPU reference block (§3) vs device implementation on toy
-  weights, tolerance-based; incremental == batched.
+- **Single-block HF oracle (2026-09)**: `tests/python/dump_hf_block_oracle.py`
+  extracts real weights from a chosen layer and runs the exact HF
+  `LlamaAttention` / `LlamaMLP` submodules on synthetic data.  The C++
+  test constructs the corresponding alice::gpu_rocm block with those
+  weights and asserts against the HF output.  Because only one block is
+  exercised (no layer-stack amplification), the bound is much tighter
+  than the full-model gate: observed max|Δ| 0.040 prefill / 0.003 decode
+  for attention, 0.016 prefill / 0.010 decode for FFN (Llama-3.2-1B
+  layer 5, S=8/S=1).  This is the primary per-block numerical oracle.
+- **CPU reference (§3)**: retired as a numerical test oracle.  The
+  `cpu_generic` block implementations survive only as (a) the compute
+  core inside `CpuReferenceBlock` for the `ALICE_CPU_REF_BLOCKS` dev-
+  only fault-localization hook, and (b) the reference for kernel-level
+  unit tests in `test_gpu_kernels.cpp` (rmsnorm, add_rows, silu_mul,
+  etc.).  `test_blocks.cpp` (cpu_generic self-testing) was removed;
+  `test_gpu_blocks.cpp` keeps only structural tests (incremental==
+  batched, reset freshness) that have no HF equivalent.
 - Determinism: same tokens + fresh state + temperature 0 → identical
   output.
 - Loader: synthetic safetensors fixtures incl. corruption cases;

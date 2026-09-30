@@ -18,6 +18,10 @@ namespace alice::block {
 
 class GqaAttentionBF16Factory final : public BlockFactory {
  public:
+  // Parses + validates the spec into a populated factory. Returns the base
+  // type so &from_spec is directly a ResolveFn (no trampoline).
+  static std::unique_ptr<BlockFactory> from_spec(const modelfmt::BlockSpecDecl& d);
+
   uint64_t derived_bytes() const override;
   size_t scratch_bytes(const EngineConfig& ec) const override;
   std::string interface_sig() const override;
@@ -25,13 +29,12 @@ class GqaAttentionBF16Factory final : public BlockFactory {
                                    const gpu_rocm::Context& ctx,
                                    const EngineConfig& ec) const override;
 
+ private:
   uint32_t io = 0;    // hidden_size
   uint32_t nh = 0;    // num query heads
   uint32_t nkv = 0;   // num kv heads
   uint32_t hd = 0;    // head dim
-  ModelConfig mc;     // built during resolve, consumed by construct
+  ModelConfig mc;     // built during from_spec, consumed by construct
 };
-
-std::unique_ptr<BlockFactory> resolve_gqa_attention(const modelfmt::BlockSpecDecl& d);
 
 }  // namespace alice::block

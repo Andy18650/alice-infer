@@ -60,7 +60,7 @@ std::unique_ptr<Block> DenseFfnBF16Factory::construct(
   return std::make_unique<gpu_rocm::DenseFfnBF16>(gate, up, down, mc, ec, ctx);
 }
 
-std::unique_ptr<BlockFactory> resolve_dense_ffn(const modelfmt::BlockSpecDecl& d) {
+std::unique_ptr<BlockFactory> DenseFfnBF16Factory::from_spec(const modelfmt::BlockSpecDecl& d) {
   if (d.version != 1)
     fail("dense_ffn_bf16: unsupported version " + std::to_string(d.version) +
          " (registry provides version 1)");
@@ -77,7 +77,7 @@ namespace {
 // Self-registration (design §15): runs at static init. The TU is retained
 // by consumers linking the factory objects with --whole-archive.
 const bool dense_ffn_registered = [] {
-  register_factory("dense_ffn_bf16", &resolve_dense_ffn);
+  register_factory("dense_ffn_bf16", &DenseFfnBF16Factory::from_spec);
   return true;
 }();
 }  // namespace

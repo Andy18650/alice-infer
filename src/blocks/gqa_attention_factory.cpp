@@ -69,7 +69,7 @@ std::unique_ptr<Block> GqaAttentionBF16Factory::construct(
                                                       alloc.scratch_ptr());
 }
 
-std::unique_ptr<BlockFactory> resolve_gqa_attention(const modelfmt::BlockSpecDecl& d) {
+std::unique_ptr<BlockFactory> GqaAttentionBF16Factory::from_spec(const modelfmt::BlockSpecDecl& d) {
   if (d.version != 1)
     fail("gqa_attention_bf16: unsupported version " + std::to_string(d.version) +
          " (registry provides version 1)");
@@ -112,7 +112,7 @@ namespace {
 // Self-registration (design §15): runs at static init. The TU is retained
 // by consumers linking the factory objects with --whole-archive.
 const bool gqa_attention_registered = [] {
-  register_factory("gqa_attention_bf16", &resolve_gqa_attention);
+  register_factory("gqa_attention_bf16", &GqaAttentionBF16Factory::from_spec);
   return true;
 }();
 }  // namespace

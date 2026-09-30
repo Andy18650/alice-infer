@@ -8,9 +8,10 @@
 // earlier "ResolvedSpec").
 //
 // Concrete factories live next to their block implementations
-// (src/blocks/gpu_rocm/*_factory.{hpp,cpp}); each (type, version) is one
-// factory class. The registry maps a type name to a resolve function that
-// produces a factory from a BlockSpecDecl.
+// (src/blocks/*_factory.{hpp,cpp}); each (type, version) is one factory
+// class. The registry maps a type name to a factory's from_spec. Note:
+// from_spec takes (version, config) as primitives, NOT a BlockSpecDecl —
+// the factory must not ingest the descriptor's own `type` string.
 
 #include <cstddef>
 #include <cstdint>
@@ -18,12 +19,13 @@
 #include <memory>
 #include <string>
 
+#include <nlohmann/json.hpp>  // ResolveFn carries json; internal header
+
 #include "alice/engine_config.hpp"
 #include "../chunk.hpp"
 #include "block.hpp"
 
 namespace alice::modelfmt {
-struct BlockSpecDecl;
 class DeviceAllocator;
 }  // namespace alice::modelfmt
 namespace alice::gpu_rocm {
@@ -59,9 +61,11 @@ class BlockFactory {
                                            const EngineConfig& ec) const = 0;
 };
 
-// resolve: BlockSpecDecl -> BlockFactory. Type-version validation + config
+// resolve: (version, config) -> BlockFactory. Version validation + config
 // parsing happen here; the returned factory is the captured layout result.
-using ResolveFn = std::unique_ptr<BlockFactory>(const modelfmt::BlockSpecDecl&);
+// Primitives, not a BlockSpecDecl, so the factory never sees the type name.
+using ResolveFn = std::unique_ptr<BlockFactory>(uint32_t version,
+                                                const nlohmann::json& config);
 
 // Self-registration: each concrete factory TU registers its (type -> resolve
 // fn) pair via a static initializer. The registry map is a function-local

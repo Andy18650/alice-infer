@@ -289,7 +289,7 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
       fail(where + ": unknown block type '" + decl.type + "'");
     std::unique_ptr<block::BlockFactory> rs;
     try {
-      rs = it->second(decl);
+      rs = it->second(decl.version, decl.config);
     } catch (const json::exception& e) {
       // BlockSpecDecl::config is a COPY of the document subtree, so the
       // diagnostics parent chain (and JSON path) is severed — this one

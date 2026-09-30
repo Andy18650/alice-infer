@@ -7,17 +7,15 @@
 
 #include "block_factory.hpp"
 
-namespace alice::modelfmt {
-struct BlockSpecDecl;
-}  // namespace alice::modelfmt
-
 namespace alice::block {
 
 class DenseFfnBF16Factory final : public BlockFactory {
  public:
-  // Parses + validates the spec into a populated factory. Returns the base
-  // type so &from_spec is directly a ResolveFn (no trampoline).
-  static std::unique_ptr<BlockFactory> from_spec(const modelfmt::BlockSpecDecl& d);
+  // Parses + validates the spec into a populated factory. Takes primitives
+  // (version, config), not a BlockSpecDecl, so it never sees the type name.
+  // Returns the base type so &from_spec is directly a ResolveFn (no trampoline).
+  static std::unique_ptr<BlockFactory> from_spec(uint32_t version,
+                                                 const nlohmann::json& config);
 
   uint64_t derived_bytes() const override;
   size_t scratch_bytes(const EngineConfig& ec) const override;

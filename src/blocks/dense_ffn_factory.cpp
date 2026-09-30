@@ -7,7 +7,7 @@
 
 #include "../manifest.hpp"   // ModelConfig (block-constructor vocab)
 #include "alice/tensor.hpp"   // bf16, TensorView
-#include "../model_format.hpp"  // BlockSpecDecl, DeviceAllocator
+#include "../model_format.hpp"  // DeviceAllocator
 #include "gpu_rocm/dense_ffn.hpp"  // gpu_rocm::DenseFfnBF16
 
 namespace alice::block {
@@ -60,11 +60,12 @@ std::unique_ptr<Block> DenseFfnBF16Factory::construct(
   return std::make_unique<gpu_rocm::DenseFfnBF16>(gate, up, down, mc, ec, ctx);
 }
 
-std::unique_ptr<BlockFactory> DenseFfnBF16Factory::from_spec(const modelfmt::BlockSpecDecl& d) {
-  if (d.version != 1)
-    fail("dense_ffn_bf16: unsupported version " + std::to_string(d.version) +
+std::unique_ptr<BlockFactory> DenseFfnBF16Factory::from_spec(uint32_t version,
+                                                              const nlohmann::json& config) {
+  if (version != 1)
+    fail("dense_ffn_bf16: unsupported version " + std::to_string(version) +
          " (registry provides version 1)");
-  const DenseFfnV1Config cfg = d.config.get<DenseFfnV1Config>();
+  const DenseFfnV1Config cfg = config.get<DenseFfnV1Config>();
   auto r = std::make_unique<DenseFfnBF16Factory>();
   r->io = cfg.io_dim;
   r->inter = cfg.intermediate_dim;

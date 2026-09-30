@@ -7,7 +7,7 @@
 
 #include "../manifest.hpp"   // ModelConfig
 #include "alice/tensor.hpp"   // bf16, TensorView
-#include "../model_format.hpp"  // BlockSpecDecl, DeviceAllocator
+#include "../model_format.hpp"  // DeviceAllocator
 #include "gpu_rocm/gqa_attention.hpp"  // gpu_rocm::GqaAttentionBF16
 
 namespace alice::block {
@@ -69,11 +69,12 @@ std::unique_ptr<Block> GqaAttentionBF16Factory::construct(
                                                       alloc.scratch_ptr());
 }
 
-std::unique_ptr<BlockFactory> GqaAttentionBF16Factory::from_spec(const modelfmt::BlockSpecDecl& d) {
-  if (d.version != 1)
-    fail("gqa_attention_bf16: unsupported version " + std::to_string(d.version) +
+std::unique_ptr<BlockFactory> GqaAttentionBF16Factory::from_spec(uint32_t version,
+                                                                 const nlohmann::json& config) {
+  if (version != 1)
+    fail("gqa_attention_bf16: unsupported version " + std::to_string(version) +
          " (registry provides version 1)");
-  const GqaAttentionV1Config cfg = d.config.get<GqaAttentionV1Config>();
+  const GqaAttentionV1Config cfg = config.get<GqaAttentionV1Config>();
   auto r = std::make_unique<GqaAttentionBF16Factory>();
   r->io = cfg.io_dim;
   r->nh = cfg.num_q_heads;
@@ -92,18 +93,18 @@ std::unique_ptr<BlockFactory> GqaAttentionBF16Factory::from_spec(const modelfmt:
   mc.num_kv_heads = r->nkv;
   mc.head_dim = r->hd;
   mc.rope_theta = float(cfg.rope_theta);
-  if (d.config.contains("rope_scaling_type")) {
-    const std::string type = d.config.at("rope_scaling_type").get<std::string>();
+  if (config.contains("rope_scaling_type")) {
+    const std::string type = config.at("rope_scaling_type").get<std::string>();
     if (type != "llama3")
       fail("gqa_attention_bf16: unsupported rope_scaling_type '" + type + "'");
     mc.has_rope_scaling = true;
-    mc.rope_scaling.factor = d.config.at("rope_scaling_factor").get<float>();
+    mc.rope_scaling.factor = config.at("rope_scaling_factor").get<float>();
     mc.rope_scaling.low_freq_factor =
-        d.config.at("rope_scaling_low_freq_factor").get<float>();
+        config.at("rope_scaling_low_freq_factor").get<float>();
     mc.rope_scaling.high_freq_factor =
-        d.config.at("rope_scaling_high_freq_factor").get<float>();
+        config.at("rope_scaling_high_freq_factor").get<float>();
     mc.rope_scaling.original_max_position_embeddings =
-        d.config.at("original_max_position_embeddings").get<uint32_t>();
+        config.at("original_max_position_embeddings").get<uint32_t>();
   }
   return r;
 }

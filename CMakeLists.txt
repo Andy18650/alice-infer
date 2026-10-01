@@ -85,6 +85,7 @@ target_sources(alice PRIVATE
     src/blocks/gpu_rocm/dense_ffn.cpp src/blocks/gpu_rocm/gqa_attention.cpp
     src/blocks/dense_ffn_factory.cpp src/blocks/gqa_attention_factory.cpp
     src/blocks/block_factory.cpp
+    src/data_loader.cpp
     src/gpu/trunk.cpp src/gpu/embedder.cpp src/gpu/lm_head.cpp
     src/gpu/sampler.cpp src/gpu/model.cpp
     src/gpu/kernels.hip
@@ -120,6 +121,7 @@ if(ALICE_BUILD_TESTS)
                                      tests/test_gpu_model.cpp
                                      tests/test_gpu_sampler.cpp
                                      tests/test_hf_block_oracle.cpp
+                                     tests/test_data_loader.cpp
                                      tests/oracle/sampler.cpp)
   target_include_directories(alice_tests PRIVATE tests)
   target_compile_definitions(alice_tests PRIVATE __HIP_PLATFORM_AMD__)

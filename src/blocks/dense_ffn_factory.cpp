@@ -7,7 +7,6 @@
 
 #include "../manifest.hpp"   // ModelConfig (block-constructor vocab)
 #include "alice/tensor.hpp"   // bf16, TensorView
-#include "../model_format.hpp"  // DeviceAllocator
 #include "gpu_rocm/dense_ffn.hpp"  // gpu_rocm::DenseFfnBF16
 
 namespace alice::block {
@@ -38,9 +37,8 @@ std::string DenseFfnBF16Factory::interface_sig() const {
 }
 
 std::unique_ptr<Block> DenseFfnBF16Factory::construct(
-    std::span<const std::byte> data, modelfmt::DeviceAllocator& alloc, const gpu_rocm::Context& ctx,
-    const EngineConfig& ec) const {
-  (void)alloc;
+    std::span<const std::byte> data, gpu::Resources& res, const EngineConfig& ec) const {
+  (void)res;
   if (data.size() != derived_bytes())
     fail("dense_ffn_bf16: decoded chunk is " + std::to_string(data.size()) +
          " bytes but the v1 layout derives " + std::to_string(derived_bytes()));
@@ -57,7 +55,7 @@ std::unique_ptr<Block> DenseFfnBF16Factory::construct(
   ModelConfig mc;
   mc.hidden_size = io;
   mc.intermediate_size = inter;
-  return std::make_unique<gpu_rocm::DenseFfnBF16>(gate, up, down, mc, ec, ctx);
+  return std::make_unique<gpu_rocm::DenseFfnBF16>(gate, up, down, mc, ec, res);
 }
 
 std::unique_ptr<BlockFactory> DenseFfnBF16Factory::from_spec(uint32_t version,

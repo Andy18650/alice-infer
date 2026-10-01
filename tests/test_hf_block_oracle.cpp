@@ -29,7 +29,7 @@
 #include "alice/tensor.hpp"
 #include "../src/blocks/gpu_rocm/dense_ffn.hpp"
 #include "../src/blocks/gpu_rocm/gqa_attention.hpp"
-#include "../src/blocks/gpu_rocm/platform.hpp"
+#include "../src/gpu/resources.hpp"
 #include "../src/manifest.hpp"
 
 namespace {
@@ -37,7 +37,7 @@ namespace {
 using alice::bf16;
 using alice::EngineConfig;
 using alice::ModelConfig;
-using alice::gpu_rocm::Context;
+using alice::gpu::Resources;
 using alice::TensorView;
 
 std::string fixture_dir(uint32_t S) {
@@ -97,12 +97,9 @@ std::vector<float> run_gpu_block(Block& b, const std::vector<float>& io, uint32_
   return out;
 }
 
-float* alloc_prefill_scratch(const ModelConfig& mc, const EngineConfig& ec) {
-  float* p = nullptr;
-  const size_t bytes = size_t(mc.num_heads) * ec.max_prefill_chunk *
-                       ((ec.max_seq_len + 63) / 64) * (mc.head_dim + 2) * sizeof(float);
-  if (hipMalloc(&p, bytes) != hipSuccess) throw std::bad_alloc();
-  return p;
+size_t prefill_scratch_bytes(const ModelConfig& mc, const EngineConfig& ec) {
+  return size_t(mc.num_heads) * ec.max_prefill_chunk *
+         ((ec.max_seq_len + 63) / 64) * (mc.head_dim + 2) * sizeof(float);
 }
 
 // ---------------------------------------------------------------------------
@@ -147,11 +144,12 @@ void run_attention_test(uint32_t S, float tolerance) {
   auto input = read_f32(S, "input.f32", size_t(S) * d);
   auto want = read_f32(S, "attn_out.f32", size_t(S) * d);
 
-  Context ctx(0);
+  Resources res(0);
+  res.init_scratch(prefill_scratch_bytes(mc, ec));
   alice::gpu_rocm::GqaAttentionBF16 attn(
       TensorView<bf16>(wq.data(), qd, d), TensorView<bf16>(wk.data(), kvd, d),
       TensorView<bf16>(wv.data(), kvd, d), TensorView<bf16>(wo.data(), d, qd), mc, ec,
-      ctx, alloc_prefill_scratch(mc, ec));
+      res);
 
   auto got = run_gpu_block(attn, input, S);
 
@@ -187,10 +185,10 @@ void run_ffn_test(uint32_t S, float tolerance) {
   auto input = read_f32(S, "input.f32", size_t(S) * d);
   auto want = read_f32(S, "ffn_out.f32", size_t(S) * d);
 
-  Context ctx(0);
+  Resources res(0);
   alice::gpu_rocm::DenseFfnBF16 ffn(
       TensorView<bf16>(gate.data(), inter, d), TensorView<bf16>(up.data(), inter, d),
-      TensorView<bf16>(down.data(), d, inter), mc, ec, ctx);
+      TensorView<bf16>(down.data(), d, inter), mc, ec, res);
 
   auto got = run_gpu_block(ffn, input, S);
 

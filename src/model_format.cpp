@@ -17,7 +17,7 @@
 #include <nlohmann/json.hpp>
 
 #include "blocks/block_factory.hpp"  // BlockFactory + registry() (block layer)
-#include "blocks/gpu_rocm/platform.hpp"
+#include "gpu/resources.hpp"
 #include "data_loader.hpp"  // LocalFileDataLoader (content-addressed fetch)
 #include "manifest.hpp"  // ModelConfig: the block constructors' vocabulary
 #include "alice/tensor.hpp"
@@ -25,7 +25,7 @@
 namespace alice::modelfmt {
 
 using nlohmann::json;
-using gpu_rocm::Context;
+using gpu::Resources;
 
 namespace {
 
@@ -94,52 +94,6 @@ Descriptor parse_descriptor(const json& m) {
 
 
 // ---------------------------------------------------------------------------
-// DeviceAllocator
-// ---------------------------------------------------------------------------
-
-
-DeviceAllocator::~DeviceAllocator() {
-  for (auto& [name, np] : named_)
-    if (np.first) (void)hipFree(np.first);
-  if (scratch_) (void)hipFree(scratch_);
-}
-
-void* DeviceAllocator::named(const std::string& name, size_t bytes) {
-  auto it = named_.find(name);
-  if (it != named_.end()) {
-    if (it->second.second != bytes)
-      fail("allocator: named buffer '" + name + "' requested at " +
-           std::to_string(bytes) + " bytes but exists at " +
-           std::to_string(it->second.second) + " bytes");
-    return it->second.first;
-  }
-  void* p = nullptr;
-  if (hipMalloc(&p, bytes) != hipSuccess)
-    fail("allocator: hipMalloc(" + std::to_string(bytes) + ") failed for '" +
-         name + "'");
-  named_[name] = {p, bytes};
-  return p;
-}
-
-void DeviceAllocator::plan_scratch(size_t bytes) {
-  scratch_planned_ = std::max(scratch_planned_, bytes);
-}
-
-void DeviceAllocator::init_scratch() {
-  if (scratch_initialized_) return;
-  scratch_initialized_ = true;
-  scratch_bytes_ = scratch_planned_;
-  if (scratch_planned_ == 0) return;
-  if (hipMalloc(reinterpret_cast<void**>(&scratch_), scratch_planned_) != hipSuccess)
-    fail("allocator: scratch hipMalloc(" + std::to_string(scratch_planned_) +
-         ") failed");
-  // Poison fill (quiet NaN): read-before-first-write becomes visible.
-  if (hipMemsetD32(scratch_, 0x7fc00000, uint32_t(scratch_planned_ / 4)) !=
-      hipSuccess)
-    fail("allocator: scratch poison fill failed");
-}
-
-// ---------------------------------------------------------------------------
 // load_blocks
 // ---------------------------------------------------------------------------
 
@@ -196,10 +150,9 @@ namespace {
 // where-string plumbing. json::exception is not a runtime_error, so this
 // also keeps load_blocks' exception contract uniform.
 LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
-                              const Context& ctx, const EngineConfig& ec,
+                              gpu::Resources& res, const EngineConfig& ec,
                               LoadStats& st) {
   LoadedBlocks out;
-  out.allocator = std::make_unique<DeviceAllocator>();
 
   // --- framing + envelope + descriptor --------------------------------------
   Timer t;
@@ -264,9 +217,11 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
   }
 
   // --- scratch: max over specs, allocated once, before construction ----------
-  for (const auto& [_, rs] : resolved) out.allocator->plan_scratch(rs->scratch_bytes(ec));
-  out.allocator->init_scratch();
-  st.scratch_bytes = out.allocator->scratch_bytes();
+  size_t scratch_bytes = 0;
+  for (const auto& [_, rs] : resolved)
+    scratch_bytes = std::max(scratch_bytes, rs->scratch_bytes(ec));
+  res.init_scratch(scratch_bytes);
+  st.scratch_bytes = scratch_bytes;
 
   // --- the block loop: single pass over the composition — per block,
   // checks (spec ref, codec) then read -> hash -> construct. A bad
@@ -291,7 +246,7 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
     // (decoded length == derived) still runs in construct.
     data_loader.fetch(e.id, [&](std::span<const std::byte> data) {
       Timer tc;
-      out.blocks.push_back(rs->construct(data, *out.allocator, ctx, ec));
+      out.blocks.push_back(rs->construct(data, res, ec));
       st.construct_ms += tc.ms();
     });
   }
@@ -306,11 +261,11 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
 }  // namespace
 
 LoadedBlocks load_blocks(const std::filesystem::path& model_file,
-                         const Context& ctx, const EngineConfig& ec,
+                         gpu::Resources& res, const EngineConfig& ec,
                          LoadStats* out_stats) {
   LoadStats dummy;
   try {
-    return load_blocks_impl(model_file, ctx, ec, out_stats ? *out_stats : dummy);
+    return load_blocks_impl(model_file, res, ec, out_stats ? *out_stats : dummy);
   } catch (const json::exception& e) {
     fail(std::string("descriptor: ") + e.what());
   }

@@ -10,7 +10,7 @@
 #include <rocblas/rocblas.h>
 
 #include "../cpu_generic/kernels.hpp"
-#include "platform.hpp"
+#include "../../gpu/resources.hpp"
 #include "kernels.hpp"
 
 namespace alice::gpu_rocm {
@@ -34,8 +34,7 @@ namespace {
 
 GqaAttentionBF16::GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, TensorView<bf16> wv,
                                    TensorView<bf16> wo, const ModelConfig& mc,
-                                   const EngineConfig& ec, const Context& ctx,
-                                   float* prefill_scratch)
+                                   const EngineConfig& ec, gpu::Resources& res)
     : nh_(mc.num_heads),
       nkv_(mc.num_kv_heads),
       hd_(mc.head_dim),
@@ -51,7 +50,7 @@ GqaAttentionBF16::GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, Ten
   if (nh_ % nkv_ != 0 || hd_ > 128)
     throw std::invalid_argument("gpu::GqaAttentionBF16: bad head config");
 
-  handle_ = ctx.handle;
+  handle_ = res.handle();
 
   // Fuse [Wq;Wk;Wv] on host, one H2D.
   std::vector<bf16> qkv(size_t(qd + 2 * kvd) * d_);
@@ -59,51 +58,42 @@ GqaAttentionBF16::GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, Ten
   std::memcpy(qkv.data() + size_t(qd) * d_, wk.data(), size_t(kvd) * d_ * sizeof(bf16));
   std::memcpy(qkv.data() + size_t(qd + kvd) * d_, wv.data(), size_t(kvd) * d_ * sizeof(bf16));
 
-  HIP_CHECK(hipMalloc(&dw_qkv_, qkv.size() * sizeof(bf16)));
-  HIP_CHECK(hipMalloc(&dw_o_, size_t(d_) * qd * sizeof(bf16)));
+  dw_qkv_ = res.alloc(qkv.size() * sizeof(bf16));
+  dw_o_ = res.alloc(size_t(d_) * qd * sizeof(bf16));
   HIP_CHECK(hipMemcpy(dw_qkv_, qkv.data(), qkv.size() * sizeof(bf16), hipMemcpyHostToDevice));
   HIP_CHECK(hipMemcpy(dw_o_, wo.data(), size_t(d_) * qd * sizeof(bf16), hipMemcpyHostToDevice));
 
-  HIP_CHECK(hipMalloc(&dkcache_, size_t(max_seq_) * kvd * sizeof(float)));
-  HIP_CHECK(hipMalloc(&dvcache_, size_t(max_seq_) * kvd * sizeof(float)));
+  dkcache_ = static_cast<float*>(res.alloc(size_t(max_seq_) * kvd * sizeof(float)));
+  dvcache_ = static_cast<float*>(res.alloc(size_t(max_seq_) * kvd * sizeof(float)));
 
   const uint32_t half = hd_ / 2;
   std::vector<float> cos_t(size_t(max_seq_) * half), sin_t(size_t(max_seq_) * half);
   cpu_generic::build_rope_tables(cos_t.data(), sin_t.data(), max_seq_, hd_, mc.rope_theta,
                                  mc.has_rope_scaling, mc.rope_scaling);
-  HIP_CHECK(hipMalloc(&drope_cos_, cos_t.size() * sizeof(float)));
-  HIP_CHECK(hipMalloc(&drope_sin_, sin_t.size() * sizeof(float)));
+  drope_cos_ = static_cast<float*>(res.alloc(cos_t.size() * sizeof(float)));
+  drope_sin_ = static_cast<float*>(res.alloc(sin_t.size() * sizeof(float)));
   HIP_CHECK(hipMemcpy(drope_cos_, cos_t.data(), cos_t.size() * sizeof(float),
                       hipMemcpyHostToDevice));
   HIP_CHECK(hipMemcpy(drope_sin_, sin_t.data(), sin_t.size() * sizeof(float),
                       hipMemcpyHostToDevice));
 
-  HIP_CHECK(hipMalloc(&dx_, size_t(mpc_) * d_ * sizeof(bf16)));
-  HIP_CHECK(hipMalloc(&dqkv_, size_t(mpc_) * (qd + 2 * kvd) * sizeof(float)));
-  HIP_CHECK(hipMalloc(&dattn_, size_t(mpc_) * qd * sizeof(bf16)));
-  HIP_CHECK(hipMalloc(&dsplit_, size_t(kernels::kAttnMaxSplits) * nh_ *
-                                    kernels::kAttnSplitMaxS * (hd_ + 2) * sizeof(float)));
+  dx_ = res.alloc(size_t(mpc_) * d_ * sizeof(bf16));
+  dqkv_ = static_cast<float*>(res.alloc(size_t(mpc_) * (qd + 2 * kvd) * sizeof(float)));
+  dattn_ = res.alloc(size_t(mpc_) * qd * sizeof(bf16));
+  dsplit_ = static_cast<float*>(res.alloc(size_t(kernels::kAttnMaxSplits) * nh_ *
+                                          kernels::kAttnSplitMaxS * (hd_ + 2) * sizeof(float)));
   // S=1 GEMV partials: the larger of the two sites (qkv / o_proj).
   const size_t gemv_floats = std::max(
       kernels::gemv_partial_floats(qd + 2 * kvd, d_), kernels::gemv_partial_floats(d_, qd));
-  HIP_CHECK(hipMalloc(&dgemv_, gemv_floats * sizeof(float)));
-  prefill_scratch_ = prefill_scratch;
+  dgemv_ = static_cast<float*>(res.alloc(gemv_floats * sizeof(float)));
+  prefill_scratch_ = res.scratch();
   if (prefill_scratch_ == nullptr)
-    throw std::invalid_argument("gpu_rocm::GqaAttentionBF16: null prefill scratch");
+    throw std::invalid_argument("gpu_rocm::GqaAttentionBF16: null prefill scratch "
+                                "(Resources::init_scratch not called?)");
 }
 
 GqaAttentionBF16::~GqaAttentionBF16() {
-  (void)hipFree(dw_qkv_);
-  (void)hipFree(dw_o_);
-  (void)hipFree(dkcache_);
-  (void)hipFree(dvcache_);
-  (void)hipFree(drope_cos_);
-  (void)hipFree(drope_sin_);
-  (void)hipFree(dx_);
-  (void)hipFree(dqkv_);
-  (void)hipFree(dattn_);
-  (void)hipFree(dsplit_);
-  (void)hipFree(dgemv_);
+  // Device VRAM is owned by gpu::Resources (freed at teardown).
 }
 
 void GqaAttentionBF16::forward(float* io, uint32_t S) {

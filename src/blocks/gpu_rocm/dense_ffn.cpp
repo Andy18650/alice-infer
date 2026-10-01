@@ -8,7 +8,7 @@
 #include <hip/hip_runtime_api.h>
 #include <rocblas/rocblas.h>
 
-#include "platform.hpp"
+#include "../../gpu/resources.hpp"
 #include "kernels.hpp"
 
 namespace alice::gpu_rocm {
@@ -32,40 +32,35 @@ namespace {
 
 DenseFfnBF16::DenseFfnBF16(TensorView<bf16> w_gate, TensorView<bf16> w_up, TensorView<bf16> w_down,
                            const ModelConfig& mc, const EngineConfig& ec,
-                           const Context& ctx)
+                           gpu::Resources& res)
     : d_(mc.hidden_size), inter_(mc.intermediate_size), mpc_(ec.max_prefill_chunk) {
   if (w_gate.rows() != inter_ || w_gate.cols() != d_ || w_up.rows() != inter_ ||
       w_up.cols() != d_ || w_down.rows() != d_ || w_down.cols() != inter_)
     throw std::invalid_argument("gpu::DenseFfnBF16: weight shape mismatch vs config");
 
-  handle_ = ctx.handle;
+  handle_ = res.handle();
 
   // Fuse [Wg;Wu] on host, one H2D (same layout the pre-migration block used).
   std::vector<bf16> gup(size_t(2) * inter_ * d_);
   std::memcpy(gup.data(), w_gate.data(), size_t(inter_) * d_ * sizeof(bf16));
   std::memcpy(gup.data() + size_t(inter_) * d_, w_up.data(), size_t(inter_) * d_ * sizeof(bf16));
 
-  HIP_CHECK(hipMalloc(&dw_gup_, gup.size() * sizeof(bf16)));
-  HIP_CHECK(hipMalloc(&dw_down_, size_t(d_) * inter_ * sizeof(bf16)));
-  HIP_CHECK(hipMalloc(&dx_, size_t(mpc_) * d_ * sizeof(bf16)));
-  HIP_CHECK(hipMalloc(&dgu_, size_t(mpc_) * 2 * inter_ * sizeof(float)));
-  HIP_CHECK(hipMalloc(&dact_, size_t(mpc_) * inter_ * sizeof(bf16)));
+  dw_gup_ = res.alloc(gup.size() * sizeof(bf16));
+  dw_down_ = res.alloc(size_t(d_) * inter_ * sizeof(bf16));
+  dx_ = res.alloc(size_t(mpc_) * d_ * sizeof(bf16));
+  dgu_ = static_cast<float*>(res.alloc(size_t(mpc_) * 2 * inter_ * sizeof(float)));
+  dact_ = res.alloc(size_t(mpc_) * inter_ * sizeof(bf16));
   // S=1 GEMV partials: the larger of the two sites (gup / down).
   const size_t gemv_floats = std::max(kernels::gemv_partial_floats(2 * inter_, d_),
                                       kernels::gemv_partial_floats(d_, inter_));
-  HIP_CHECK(hipMalloc(&dgemv_, gemv_floats * sizeof(float)));
+  dgemv_ = static_cast<float*>(res.alloc(gemv_floats * sizeof(float)));
   HIP_CHECK(hipMemcpy(dw_gup_, gup.data(), gup.size() * sizeof(bf16), hipMemcpyHostToDevice));
   HIP_CHECK(hipMemcpy(dw_down_, w_down.data(), size_t(d_) * inter_ * sizeof(bf16),
                       hipMemcpyHostToDevice));
 }
 
 DenseFfnBF16::~DenseFfnBF16() {
-  (void)hipFree(dw_gup_);
-  (void)hipFree(dw_down_);
-  (void)hipFree(dx_);
-  (void)hipFree(dgu_);
-  (void)hipFree(dact_);
-  (void)hipFree(dgemv_);
+  // Device VRAM is owned by gpu::Resources (freed at teardown).
 }
 
 void DenseFfnBF16::forward(float* io, uint32_t S) {

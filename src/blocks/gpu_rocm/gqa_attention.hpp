@@ -7,7 +7,7 @@
 
 #include "../block.hpp"
 
-#include "platform.hpp"
+#include "../../gpu/resources.hpp"
 
 #include "alice/engine_config.hpp"
 #include "../../manifest.hpp"
@@ -17,12 +17,13 @@ namespace alice::gpu_rocm {
 
 class GqaAttentionBF16 final : public block::StatefulBlock {
  public:
-  // prefill_scratch: shared device transient for the v4 prefill partials
-  // (loader-allocated, NOT owned: nh * max_prefill_chunk * ceil(max_seq/64)
-  // * (hd+2) floats; design §14 scratch pool, first instance).
+  // prefill_scratch comes from res.scratch() (Resources-owned, the §14
+  // shared partials buffer). Device VRAM is allocated through `res`
+  // (bookkeeping); the block borrows the handle + carved pointers + scratch
+  // and does NOT free them (Resources owns them, freed at teardown).
   GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, TensorView<bf16> wv, TensorView<bf16> wo,
                    const ModelConfig& mc, const EngineConfig& ec,
-                   const Context& ctx, float* prefill_scratch);
+                   gpu::Resources& res);
   ~GqaAttentionBF16() override;
 
   void forward(float* io, uint32_t S) override;
@@ -46,7 +47,7 @@ class GqaAttentionBF16 final : public block::StatefulBlock {
   float* dsplit_ = nullptr;  // split-T partials [kAttnMaxSplits*nh*kAttnSplitMaxS*(hd+2)]
   float* dgemv_ = nullptr;   // S=1 GEMV partials (max of the two sites' needs)
   float* prefill_scratch_ = nullptr;  // shared v4 prefill partials (not owned)
-  rocblas_handle handle_ = nullptr;   // borrowed from the Model's Context
+  rocblas_handle handle_ = nullptr;   // borrowed from the Model's Resources
 };
 
 }  // namespace alice::gpu

@@ -6,7 +6,6 @@
 #include <hip/hip_runtime_api.h>
 #include <rocblas/rocblas.h>
 
-#include "../blocks/gpu_rocm/platform.hpp"
 #include "kernels.hpp"
 
 namespace alice::gpu {

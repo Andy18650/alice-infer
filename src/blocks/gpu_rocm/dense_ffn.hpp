@@ -8,7 +8,7 @@
 
 #include "../block.hpp"
 
-#include "platform.hpp"
+#include "../../gpu/resources.hpp"
 
 #include "alice/engine_config.hpp"
 #include "../../manifest.hpp"
@@ -19,10 +19,12 @@ namespace alice::gpu_rocm {
 class DenseFfnBF16 final : public block::Block {
  public:
   // Staged weights are moved in and freed on return (fused/copied to the
-  // device in the constructor).
+  // device in the constructor). Device VRAM is allocated through `res`
+  // (bookkeeping); the block borrows the handle + carved pointers and does
+  // NOT free them (Resources owns them, freed at teardown).
   DenseFfnBF16(TensorView<bf16> w_gate, TensorView<bf16> w_up, TensorView<bf16> w_down,
               const ModelConfig& mc, const EngineConfig& ec,
-              const Context& ctx);
+              gpu::Resources& res);
   ~DenseFfnBF16() override;
 
   void forward(float* io, uint32_t S) override;
@@ -35,7 +37,7 @@ class DenseFfnBF16 final : public block::Block {
   float* dgu_ = nullptr;     // fp32 [mpc, 2I] (col-major [2I, S] view)
   void* dact_ = nullptr;     // bf16 [mpc, I]
   float* dgemv_ = nullptr;   // S=1 GEMV partials (max of the two sites' needs)
-  rocblas_handle handle_ = nullptr;  // borrowed from the Model's Context
+  rocblas_handle handle_ = nullptr;  // borrowed from the Model's Resources
 };
 
 }  // namespace alice::gpu

@@ -18,13 +18,13 @@
 #include "../../src/model_format.hpp"
 #include "../../src/safetensors.hpp"
 #include "blocks/block.hpp"
-#include "blocks/gpu_rocm/platform.hpp"
+#include "gpu/resources.hpp"
 #include "blocks/gpu_rocm/dense_ffn.hpp"
 #include "blocks/gpu_rocm/gqa_attention.hpp"
 #include "loader_staging.hpp"
 
 using namespace alice;
-using gpu_rocm::Context;
+using gpu::Resources;
 
 #define HIP_CHECK(x)                                                            \
   do {                                                                          \
@@ -50,13 +50,13 @@ int main(int argc, char** argv) {
   ec.max_prefill_chunk = uint32_t(std::stoul(argv[5]));
   const uint32_t S = 16;  // > 4: exercises the v4 prefill path + shared scratch
 
-  Context ctx(0);
+  Resources res(0);
   auto t0 = std::chrono::steady_clock::now();
 
   // --- new path ---------------------------------------------------------------
   modelfmt::LoadStats st;
   modelfmt::LoadedBlocks lb =
-      modelfmt::load_blocks(packed / "model.model", ctx, ec, &st);
+      modelfmt::load_blocks(packed / "model.model", res, ec, &st);
   const double load_s =
       std::chrono::duration<double>(std::chrono::steady_clock::now() - t0)
           .count();
@@ -75,12 +75,8 @@ int main(int argc, char** argv) {
   auto files = safetensors::Files::open({hf_dir + "/model.safetensors"});
   const ModelConfig& mc = m.config;
 
-  // Reference scratch (same formula the loader registry uses).
-  const uint64_t max_chunks = (uint64_t(ec.max_seq_len) + 63) / 64;
-  const size_t scratch_bytes = size_t(mc.num_heads) * ec.max_prefill_chunk *
-                               max_chunks * (mc.head_dim + 2) * sizeof(float);
-  float* ref_scratch = nullptr;
-  HIP_CHECK(hipMalloc((void**)&ref_scratch, scratch_bytes));
+  // Reference blocks reuse res.scratch() (init'd by load_blocks from the
+  // factory scratch_bytes, same formula); no separate ref scratch.
 
   // io buffer [S, d] fp32 with a deterministic pattern.
   std::vector<float> host_io(size_t(S) * mc.hidden_size);
@@ -101,13 +97,13 @@ int main(int argc, char** argv) {
       auto wo = loader::stage<bf16>(files, bs.weights.at("wo"));
       ref = std::make_unique<gpu_rocm::GqaAttentionBF16>(wq.view(), wk.view(),
                                                          wv.view(), wo.view(),
-                                                         mc, ec, ctx, ref_scratch);
+                                                         mc, ec, res);
     } else {
       auto g = loader::stage<bf16>(files, bs.weights.at("w_gate"));
       auto u = loader::stage<bf16>(files, bs.weights.at("w_up"));
       auto dn = loader::stage<bf16>(files, bs.weights.at("w_down"));
       ref = std::make_unique<gpu_rocm::DenseFfnBF16>(g.view(), u.view(), dn.view(),
-                                                     mc, ec, ctx);
+                                                     mc, ec, res);
     }
 
     HIP_CHECK(hipMemcpy(io_a, host_io.data(), host_io.size() * 4,
@@ -139,6 +135,5 @@ int main(int argc, char** argv) {
               mc.num_heads ? "v4 prefill" : "?");
   HIP_CHECK(hipFree(io_a));
   HIP_CHECK(hipFree(io_b));
-  HIP_CHECK(hipFree(ref_scratch));
   return 0;
 }

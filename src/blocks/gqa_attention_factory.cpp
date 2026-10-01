@@ -7,7 +7,6 @@
 
 #include "../manifest.hpp"   // ModelConfig
 #include "alice/tensor.hpp"   // bf16, TensorView
-#include "../model_format.hpp"  // DeviceAllocator
 #include "gpu_rocm/gqa_attention.hpp"  // gpu_rocm::GqaAttentionBF16
 
 namespace alice::block {
@@ -49,8 +48,7 @@ std::string GqaAttentionBF16Factory::interface_sig() const {
 }
 
 std::unique_ptr<Block> GqaAttentionBF16Factory::construct(
-    std::span<const std::byte> data, modelfmt::DeviceAllocator& alloc, const gpu_rocm::Context& ctx,
-    const EngineConfig& ec) const {
+    std::span<const std::byte> data, gpu::Resources& res, const EngineConfig& ec) const {
   if (data.size() != derived_bytes())
     fail("gqa_attention_bf16: decoded chunk is " + std::to_string(data.size()) +
          " bytes but the v1 layout derives " + std::to_string(derived_bytes()));
@@ -65,8 +63,7 @@ std::unique_ptr<Block> GqaAttentionBF16Factory::construct(
   const auto wk = take(nkv * hd, io);
   const auto wv = take(nkv * hd, io);
   const auto wo = take(io, nh * hd);
-  return std::make_unique<gpu_rocm::GqaAttentionBF16>(wq, wk, wv, wo, mc, ec, ctx,
-                                                      alloc.scratch_ptr());
+  return std::make_unique<gpu_rocm::GqaAttentionBF16>(wq, wk, wv, wo, mc, ec, res);
 }
 
 std::unique_ptr<BlockFactory> GqaAttentionBF16Factory::from_spec(uint32_t version,

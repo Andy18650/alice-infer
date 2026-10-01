@@ -15,7 +15,7 @@
 #include "../loader_staging.hpp"
 #include "../blocks/cpu_generic/dense_ffn.hpp"
 #include "../blocks/cpu_generic/gqa_attention.hpp"
-#include "../blocks/gpu_rocm/platform.hpp"
+#include "resources.hpp"
 #include "manifest.hpp"
 #include "blocks/block.hpp"
 #include "../blocks/gpu_rocm/dense_ffn.hpp"
@@ -79,9 +79,7 @@ const float* Model::run(std::span<const int32_t> tokens, bool all_positions) {
 }
 
 Model::Model() = default;
-Model::~Model() {
-  if (prefill_scratch_) (void)hipFree(prefill_scratch_);
-}
+Model::~Model() = default;
 
 int32_t Model::forward(std::span<const int32_t> tokens) {
   const float* logits = run(tokens, false);
@@ -149,7 +147,7 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
 
   // Acquire the GPU context first: binds the device for this thread and
   // fails loudly if absent (the former lazy platform() singleton's job).
-  model->ctx_ = std::make_unique<gpu_rocm::Context>(0);
+  model->resources_ = std::make_unique<gpu::Resources>(0);
 
   {  // embedder
     LoadSection sec("embedder");
@@ -192,9 +190,7 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
     const uint32_t max_chunks = (cfg.max_seq_len + 63) / 64;
     const size_t scratch_bytes = size_t(m.config.num_heads) * cfg.max_prefill_chunk *
                                  max_chunks * (m.config.head_dim + 2) * sizeof(float);
-    if (hipMalloc(&model->prefill_scratch_, scratch_bytes) != hipSuccess)
-      throw std::runtime_error("gpu::Model::load: prefill scratch allocation failed (" +
-                               std::to_string(scratch_bytes >> 20) + " MiB)");
+    model->resources_->init_scratch(scratch_bytes);
   }
 
   std::string blocks_label = "blocks (" + std::to_string(m.blocks.size()) + ")";
@@ -215,7 +211,7 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
       else
         model->blocks_.push_back(std::make_unique<gpu_rocm::GqaAttentionBF16>(
             wq.view(), wk.view(), wv.view(), wo.view(), m.config, cfg,
-            *model->ctx_, model->prefill_scratch_));
+            *model->resources_));
     } else if (b.type == "dense_ffn_bf16") {
       auto w_gate = loader::stage<bf16>(*file, b.weights.at("w_gate"));
       auto w_up = loader::stage<bf16>(*file, b.weights.at("w_up"));
@@ -227,7 +223,7 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
       else
         model->blocks_.push_back(std::make_unique<gpu_rocm::DenseFfnBF16>(
             w_gate.view(), w_up.view(), w_down.view(), m.config, cfg,
-            *model->ctx_));
+            *model->resources_));
     } else {
       throw std::runtime_error("gpu::Model::load: unknown block type '" + b.type + "'");
     }
@@ -237,14 +233,14 @@ std::unique_ptr<Model> Model::load(const std::string& model_dir,
     LoadSection sec("lm_head");
     auto w = loader::stage<bf16>(*file, m.lm_head);
     model->lm_head_ =
-        std::make_unique<LmHead>(std::move(w), cfg.max_prefill_chunk, model->ctx_->handle);
+        std::make_unique<LmHead>(std::move(w), cfg.max_prefill_chunk, model->resources_->handle());
   }
   model->sampler_ = std::make_unique<Sampler>(cfg.sampling);
   const double total_s =
       std::chrono::duration<double>(Clock::now() - t_start).count();
   std::fprintf(stderr, "[gpu::Model] model loaded in %.2f s (vocab %u, %zu blocks, %s arch)\n",
                total_s, model->vocab_size(), m.blocks.size(),
-               model->ctx_->arch.c_str());
+               model->resources_->arch().c_str());
   return model;
 }
 

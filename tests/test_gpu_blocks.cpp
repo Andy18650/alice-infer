@@ -20,7 +20,7 @@ namespace {
 
 using alice::bf16;
 using alice::EngineConfig;
-using alice::gpu_rocm::Context;
+using alice::gpu::Resources;
 using alice::ModelConfig;
 using alice::Tensor;
 using alice::TensorView;
@@ -45,12 +45,9 @@ std::vector<float> mat_vals(uint32_t r, uint32_t c) {
   return v;
 }
 
-float* alloc_prefill_scratch(const ModelConfig& mc, const EngineConfig& ec) {
-  float* p = nullptr;
-  const size_t bytes = size_t(mc.num_heads) * ec.max_prefill_chunk *
-                       ((ec.max_seq_len + 63) / 64) * (mc.head_dim + 2) * 4;
-  if (hipMalloc(&p, bytes) != hipSuccess) throw std::bad_alloc();
-  return p;
+size_t prefill_scratch_bytes(const ModelConfig& mc, const EngineConfig& ec) {
+  return size_t(mc.num_heads) * ec.max_prefill_chunk *
+         ((ec.max_seq_len + 63) / 64) * (mc.head_dim + 2) * 4;
 }
 
 std::vector<float> run_gpu_block(alice::block::Block& b, const std::vector<float>& io,
@@ -77,7 +74,7 @@ float max_abs_diff(const std::vector<float>& a, const std::vector<float>& b) {
 // Attention structural tests
 // ---------------------------------------------------------------------------
 TEST(GpuBlocks, AttentionIncrementalEqualsBatched) {
-  Context ctx(0);
+  Resources res(0);
   ModelConfig mc;
   mc.num_heads = 2;
   mc.num_kv_heads = 1;
@@ -87,13 +84,14 @@ TEST(GpuBlocks, AttentionIncrementalEqualsBatched) {
   EngineConfig ec;
   ec.max_seq_len = 8;
   ec.max_prefill_chunk = 4;
+  res.init_scratch(prefill_scratch_bytes(mc, ec));
   auto mk = [&]() {
     Bf16Mat* wq = new Bf16Mat(8, 8, mat_vals(8, 8));
     Bf16Mat* wk = new Bf16Mat(4, 8, mat_vals(9, 9));
     Bf16Mat* wv = new Bf16Mat(4, 8, mat_vals(10, 10));
     Bf16Mat* wo = new Bf16Mat(8, 8, mat_vals(11, 11));
     auto b = std::make_unique<alice::gpu_rocm::GqaAttentionBF16>(
-        wq->v(), wk->v(), wv->v(), wo->v(), mc, ec, ctx, alloc_prefill_scratch(mc, ec));
+        wq->v(), wk->v(), wv->v(), wo->v(), mc, ec, res);
     return std::tuple{
         std::unique_ptr<Bf16Mat>(wq), std::unique_ptr<Bf16Mat>(wk),
         std::unique_ptr<Bf16Mat>(wv), std::unique_ptr<Bf16Mat>(wo), std::move(b)};
@@ -124,9 +122,9 @@ TEST(GpuBlocks, AttentionResetRestartsPosition) {
   ec.max_prefill_chunk = 4;
   Bf16Mat wq(8, 8, mat_vals(8, 8)), wk(4, 8, mat_vals(9, 9)), wv(4, 8, mat_vals(10, 10)),
       wo(8, 8, mat_vals(11, 11));
-  Context ctx(0);
-  alice::gpu_rocm::GqaAttentionBF16 b(wq.v(), wk.v(), wv.v(), wo.v(), mc, ec, ctx,
-                                      alloc_prefill_scratch(mc, ec));
+  Resources res(0);
+  res.init_scratch(prefill_scratch_bytes(mc, ec));
+  alice::gpu_rocm::GqaAttentionBF16 b(wq.v(), wk.v(), wv.v(), wo.v(), mc, ec, res);
   auto first = run_gpu_block(b, mat_vals(3, 8), 3, 8);
   EXPECT_EQ(b.position(), 3u);
   b.reset_state();

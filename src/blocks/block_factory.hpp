@@ -25,12 +25,9 @@
 #include "alice/engine_config.hpp"
 #include "block.hpp"
 
-namespace alice::modelfmt {
-class DeviceAllocator;
-}  // namespace alice::modelfmt
-namespace alice::gpu_rocm {
-struct Context;
-}  // namespace alice::gpu_rocm
+namespace alice::gpu {
+class Resources;  // GPU resources (device + BLAS handle + allocator): src/gpu/resources.hpp
+}  // namespace alice::gpu
 
 namespace alice::block {
 
@@ -53,12 +50,12 @@ class BlockFactory {
   virtual std::string interface_sig() const { return {}; }
 
   // Reconciles the view length against the derived length (exact), slices
-  // tensor views, runs the block constructor (private H2D), returns the
+  // tensor views, runs the block constructor (which allocates device VRAM
+  // through `res` and borrows its handle + the shared scratch), returns the
   // block. The view is non-owning; the loader-owned staging buffer outlives
   // this call (construction is the last use of it in the load loop).
   virtual std::unique_ptr<Block> construct(std::span<const std::byte> data,
-                                           modelfmt::DeviceAllocator& alloc,
-                                           const gpu_rocm::Context& ctx,
+                                           gpu::Resources& res,
                                            const EngineConfig& ec) const = 0;
 };
 

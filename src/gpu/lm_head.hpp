@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-#include "../blocks/gpu_rocm/platform.hpp"
+#include "blas.hpp"
 #include "alice/tensor.hpp"
 
 namespace alice::gpu {
@@ -30,7 +30,7 @@ class LmHead {
   void* w_ = nullptr;        // bf16 [V, d]
   void* dx_ = nullptr;       // bf16 [mpc, d]
   float* logits_ = nullptr;  // fp32 [mpc, V] (row 0 reused by project_last)
-  rocblas_handle handle_ = nullptr;  // borrowed from the Model's Context
+  rocblas_handle handle_ = nullptr;  // borrowed from the Model's Resources
 };
 
 }  // namespace alice::gpu

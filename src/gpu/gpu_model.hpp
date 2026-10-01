@@ -26,6 +26,15 @@ namespace block {
 class Block;  // abstract block interface (src/blocks/block.hpp)
 }  // namespace block
 
+namespace loader {
+class LocalFileDataLoader;  // content-addressed bytes source (src/data_loader.hpp)
+}  // namespace loader
+
+namespace modelfmt {
+struct Descriptor;  // parsed .model descriptor (src/model_format.hpp)
+struct LoadStats;   // load timing/throughput (src/model_format.hpp)
+}  // namespace modelfmt
+
 namespace gpu {
 
 class Resources;  // GPU resources (device + BLAS handle + allocator)
@@ -41,6 +50,17 @@ class Model {
   static std::unique_ptr<Model> load(const std::string& model_dir,
                                      const std::string& manifest_path,
                                      const EngineConfig& cfg);
+
+  // Parsed .model descriptor + content-addressed bytes source -> Model.
+  // The model-format load path: constructs the device model in place from
+  // the descriptor's content-addressed blocks + members (same component
+  // constructors as the manifest path; arena covers the block loop only).
+  // Defined in src/model_format.cpp (the format loader TU). Throws on any
+  // framing, parse, hash, or length failure.
+  static std::unique_ptr<Model> load_from_format(
+      const modelfmt::Descriptor& descriptor,
+      const loader::LocalFileDataLoader& data_loader, const EngineConfig& ec,
+      modelfmt::LoadStats& st);
 
   ~Model();
 

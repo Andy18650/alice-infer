@@ -2,10 +2,10 @@
 // docs/model-loader.md §8 scope). init_engine is the public entry: it
 // reads the .model envelope (magic/framing/signature-state), extracts the
 // signed metadata + non-device members (tokenizer, chat_template), and
-// loads the device model — the block list AND the component members
-// (embedder/trunk/lm_head/sampler). Signature verification is deferred
-// with the chain of trust: the envelope's signature state is DECLARED
-// loudly, not checked.
+// loads the device model via gpu::Model::load_from_format — unifying the
+// model-format path and the manifest path on one runnable gpu::Model type.
+// Signature verification is deferred with the chain of trust: the
+// envelope's signature state is DECLARED loudly, not checked.
 
 #include "model_format.hpp"
 
@@ -21,12 +21,13 @@
 #include "blocks/block_factory.hpp"  // BlockFactory + registry() (block layer)
 #include "data_loader.hpp"  // LocalFileDataLoader (content-addressed fetch)
 #include "gpu/embedder.hpp"  // gpu::Embedder (member)
+#include "gpu/gpu_model.hpp"  // gpu::Model (load_from_format + ~Engine)
 #include "gpu/lm_head.hpp"  // gpu::LmHead (member)
-#include "gpu/resources.hpp"  // gpu::Resources (load_model param + handle for LmHead)
+#include "gpu/resources.hpp"  // gpu::Resources (load_from_format + handle for LmHead)
 #include "gpu/sampler.hpp"  // gpu::Sampler (member)
 #include "gpu/trunk.hpp"  // gpu::RmsNormAddTrunk (member)
 
-namespace alice::modelfmt {
+namespace alice {
 
 using nlohmann::json;
 
@@ -46,7 +47,7 @@ struct Timer {
 };
 
 // Descriptor parses via from_json (header); json exceptions carry the key
-// name (JSON_DIAGNOSTICS), converted once at the load_blocks boundary. Only
+// name (JSON_DIAGNOSTICS), converted once at the init_engine boundary. Only
 // SEMANTIC checks hand-build context here (version, unknown type/codec,
 // hash mismatches): things the json library cannot know.
 
@@ -91,7 +92,6 @@ json read_envelope(const std::filesystem::path& file) {
   return envelope;
 }
 
-// Member load helpers ----------------------------------------------------
 // Verified bytes (BLAKE3==id) -> an owning Tensor<bf16> of the given shape;
 // a size mismatch is a descriptor/packer contract violation (the ID already
 // certified the bytes, so this only catches a config/id pairing bug).
@@ -104,27 +104,36 @@ Tensor<bf16> blob_to_tensor(std::span<const std::byte> blob, uint32_t rows,
          std::to_string(cols) + " bf16, got " + std::to_string(blob.size()) +
          ")");
   return Tensor<bf16>::copy_of(reinterpret_cast<const bf16*>(blob.data()),
-                               rows, cols);
+                                rows, cols);
 }
 
-const MemberDecl& require_member(const Descriptor& d, const char* key) {
+const modelfmt::MemberDecl& require_member(const modelfmt::Descriptor& d,
+                                           const char* key) {
   const auto it = d.members.find(key);
   if (it == d.members.end())
     fail(std::string("descriptor missing required member '") + key + "'");
   return it->second;
 }
 
-// load_model: the device-model half. Given a parsed Descriptor + the
-// content-addressed bytes source, create the Resources (device + BLAS +
-// allocator) and construct the block list + device members. json faults
-// convert at the init_engine boundary (json::exception is not a
-// runtime_error, so the catch keeps the contract uniform).
-LoadedModel load_model(const Descriptor& descriptor,
-                       const loader::LocalFileDataLoader& data_loader,
-                       const EngineConfig& ec, LoadStats& st) {
-  LoadedModel out;
-  out.resources = std::make_unique<gpu::Resources>(0);  // device 0 (single-GCD bring-up)
-  gpu::Resources& res = *out.resources;
+}  // namespace
+
+namespace gpu {
+
+// Model::load_from_format: the model-format device load. Given a parsed
+// Descriptor + the content-addressed bytes source, construct a Model IN
+// PLACE (new Model() -> fill members), the same shape as the manifest
+// path's Model::load but sourcing weights from the DataLoader. In-place
+// construction avoids any copy/move of Model (which is non-copyable and,
+// with a user-declared destructor, non-movable). json faults convert at
+// the init_engine boundary.
+std::unique_ptr<Model> Model::load_from_format(
+    const modelfmt::Descriptor& descriptor,
+    const loader::LocalFileDataLoader& data_loader, const EngineConfig& ec,
+    modelfmt::LoadStats& st) {
+  auto m = std::unique_ptr<Model>(new Model());  // private ctor; static member
+  m->cfg_ = ec;  // forward() reads cfg_.max_prefill_chunk / max_seq_len
+  m->resources_ = std::make_unique<Resources>(0);  // device 0 (single-GCD bring-up)
+  Resources& res = *m->resources_;
 
   // --- spec pre-resolution + composition check: every spec resolves
   // against the registry (config faults carry spec context), and all
@@ -182,7 +191,7 @@ LoadedModel load_model(const Descriptor& descriptor,
   // by the DataLoader at construction; the factory-side reconciliation
   // (decoded length == derived) still runs in construct.
   for (size_t i = 0; i < descriptor.blocks.size(); ++i) {
-    const BlockEntry& e = descriptor.blocks[i];
+    const modelfmt::BlockEntry& e = descriptor.blocks[i];
     const std::string where = "blocks[" + std::to_string(i) + "]";
     const auto rit = resolved.find(e.spec);
     if (rit == resolved.end())
@@ -190,7 +199,7 @@ LoadedModel load_model(const Descriptor& descriptor,
     const block::BlockFactory* rs = rit->second.get();
     data_loader.fetch(e.id, [&](std::span<const std::byte> data) {
       Timer tc;
-      out.blocks.push_back(rs->construct(data, res, ec));
+      m->blocks_.push_back(rs->construct(data, res, ec));
       st.construct_ms += tc.ms();
     });
   }
@@ -206,22 +215,22 @@ LoadedModel load_model(const Descriptor& descriptor,
   // truth), so no special case. LmHead borrows res.handle() (same contract
   // as the manifest path).
   {  // embedder: [vocab, d] bf16
-    const MemberDecl& m = require_member(descriptor, "embedder");
-    const uint32_t vocab = m.config.at("vocab_size").get<uint32_t>();
-    const uint32_t d = m.config.at("embedding_dim").get<uint32_t>();
-    data_loader.fetch(m.id, [&](std::span<const std::byte> blob) {
+    const modelfmt::MemberDecl& mm = require_member(descriptor, "embedder");
+    const uint32_t vocab = mm.config.at("vocab_size").get<uint32_t>();
+    const uint32_t d = mm.config.at("embedding_dim").get<uint32_t>();
+    data_loader.fetch(mm.id, [&](std::span<const std::byte> blob) {
       Timer tc;
-      out.embedder = std::make_unique<gpu::Embedder>(
+      m->embedder_ = std::make_unique<Embedder>(
           blob_to_tensor(blob, vocab, d, "embedder"), ec.max_prefill_chunk);
       st.construct_ms += tc.ms();
     });
   }
   {  // trunk: 2L pre_norms [1,d] (one per block, exec order) + final [1,d]
-    const MemberDecl& m = require_member(descriptor, "trunk");
-    const uint32_t d = m.config.at("hidden_dim").get<uint32_t>();
-    const float eps = m.config.at("epsilon").get<float>();
-    const size_t npre = out.blocks.size();
-    data_loader.fetch(m.id, [&](std::span<const std::byte> blob) {
+    const modelfmt::MemberDecl& mm = require_member(descriptor, "trunk");
+    const uint32_t d = mm.config.at("hidden_dim").get<uint32_t>();
+    const float eps = mm.config.at("epsilon").get<float>();
+    const size_t npre = m->blocks_.size();
+    data_loader.fetch(mm.id, [&](std::span<const std::byte> blob) {
       Timer tc;
       const size_t per = size_t(d) * sizeof(bf16);
       const size_t want = (npre + 1) * per;
@@ -235,39 +244,44 @@ LoadedModel load_model(const Descriptor& descriptor,
       for (size_t i = 0; i < npre; ++i)
         pre_norms.push_back(Tensor<bf16>::copy_of(p + i * d, 1, d));
       auto final_norm = Tensor<bf16>::copy_of(p + npre * d, 1, d);
-      out.trunk = std::make_unique<gpu::RmsNormAddTrunk>(
+      m->trunk_ = std::make_unique<RmsNormAddTrunk>(
           std::move(pre_norms), std::move(final_norm), eps, d,
           ec.max_prefill_chunk);
       st.construct_ms += tc.ms();
     });
   }
   {  // language_head: [vocab, d] bf16 (tied shares embedder's content-ID)
-    const MemberDecl& m = require_member(descriptor, "language_head");
-    const uint32_t vocab = m.config.at("vocab_size").get<uint32_t>();
-    const uint32_t d = m.config.at("hidden_dim").get<uint32_t>();
-    data_loader.fetch(m.id, [&](std::span<const std::byte> blob) {
+    const modelfmt::MemberDecl& mm = require_member(descriptor, "language_head");
+    const uint32_t vocab = mm.config.at("vocab_size").get<uint32_t>();
+    const uint32_t d = mm.config.at("hidden_dim").get<uint32_t>();
+    data_loader.fetch(mm.id, [&](std::span<const std::byte> blob) {
       Timer tc;
-      out.lm_head = std::make_unique<gpu::LmHead>(
+      m->lm_head_ = std::make_unique<LmHead>(
           blob_to_tensor(blob, vocab, d, "language_head"),
           ec.max_prefill_chunk, res.handle());
       st.construct_ms += tc.ms();
     });
   }
-  out.sampler = std::make_unique<gpu::Sampler>(ec.sampling);
+  m->sampler_ = std::make_unique<Sampler>(ec.sampling);
 
   st.read_ms = data_loader.read_ms();
   st.hash_ms = data_loader.hash_ms();
   st.bytes_read = data_loader.bytes_read();
   st.hash_verifications = data_loader.hash_verifications();
-  st.blocks = out.blocks.size();
-  return out;
+  st.blocks = m->blocks_.size();
+  return m;
 }
+
+}  // namespace gpu
+
+namespace modelfmt {
 
 // init_engine: the envelope half. Reads the .model file (magic/framing),
 // validates + parses the descriptor, declares the signature state, builds
 // the content-addressed DataLoader from the unsigned `files` table, fetches
 // the non-device members (tokenizer, chat_template) + signed metadata, then
-// hands the descriptor + DataLoader to load_model for the device half.
+// hands the descriptor + DataLoader to Model::load_from_format for the
+// device half.
 Engine init_engine_impl(const std::filesystem::path& model_file,
                         const EngineConfig& ec, LoadStats& st) {
   Engine out;
@@ -331,11 +345,9 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
   out.license_text = descriptor.license_text;
   out.max_context = descriptor.max_context;
 
-  out.model = load_model(descriptor, data_loader, ec, st);
+  out.model = gpu::Model::load_from_format(descriptor, data_loader, ec, st);
   return out;
 }
-
-}  // namespace
 
 Engine init_engine(const std::filesystem::path& model_file,
                    const EngineConfig& ec, LoadStats* out_stats) {
@@ -347,8 +359,11 @@ Engine init_engine(const std::filesystem::path& model_file,
   }
 }
 
-// Out-of-line: the unique_ptr deleters need the member types complete
-// (resources/embedder/trunk/lm_head/sampler/block), which are only included here.
-LoadedModel::~LoadedModel() = default;
+// Out-of-line: the unique_ptr<Model> deleter needs Model complete
+// (gpu_model.hpp, included above). Defined here so model_format.hpp stays
+// free of the vendor/internal includes Model drags in.
+Engine::~Engine() = default;
 
-}  // namespace alice::modelfmt
+}  // namespace modelfmt
+
+}  // namespace alice

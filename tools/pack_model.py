@@ -6,7 +6,7 @@ consumes.
 
 Fused file shape (one JSON object, parse-once; verify-before-parse is
 accepted — it only guards against an exploitable nlohmann bug):
-  {"Alice": {"format_version": 1},
+  {"ALICE": {"format_version": 1},
    "model":  {<descriptor: blocks/members carry content-ID only>},
    "signature": null,                  # placeholder; signing not implemented
    "files":   [{id, file, offset, size, codec}, ...]}   # unsigned location table
@@ -212,7 +212,7 @@ def main():
     # canonical bytes); `files` is the unsigned location table; `signature`
     # is a placeholder. Compact single-line (sorted keys, no whitespace) so
     # head -n 1 | jq works; canonicalization proper belongs to the signing round.
-    envelope = {"Alice": {"format_version": 1}, "model": descriptor,
+    envelope = {"ALICE": {"format_version": 1}, "model": descriptor,
                 "signature": None, "files": pk.files()}
     text = json.dumps(envelope, sort_keys=True, separators=(",", ":"))
     with open(f"{args.out_dir}/model.model", "wb") as f:

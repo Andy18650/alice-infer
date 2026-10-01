@@ -207,19 +207,23 @@ hash     BLAKE3 over exactly [offset, offset+size)
 ## 7. Meta-packaging: framing and signing
 
 **File framing.** Every alice-authored file begins with the text magic
-`{"Alice"` — unique enough, `file(1)`-matchable, greppable, and it
-keeps the file valid JSON from byte 0. All files (descriptor and data)
-end their text region with **`\n\0`** before any binary tail, so:
-`head -n 1 | jq` works on any alice file (canonical JSON is one line),
-and the region before the first NUL is a valid C string.
+`{"ALICE"` (all-caps key) — unique enough, `file(1)`-matchable, greppable,
+and it keeps the file valid JSON from byte 0. All-caps is the best we can
+do to satisfy `file(1)`: all-caps keys are rare in real JSON (least chance
+of a random JSON file being mistaken for a model), and the magic is the
+least likely to be disturbed if a tool canonicalizes the whole document
+(which is not required but OK). All files (descriptor and data) end their
+text region with **`\n\0`** before any binary tail, so: `head -n 1 | jq`
+works on any alice file (canonical JSON is one line), and the region
+before the first NUL is a valid C string.
 
-- **Descriptor file**: `{"Alice"`-magic JSON envelope, canonical JSON,
+- **Descriptor file**: `{"ALICE"`-magic JSON envelope, canonical JSON,
   then `\n\0`, then optionally the model's binary tail (single-file
   models).
 - **Data files**: no format requirement at all — the contract is per
   record (`{file, offset, size, hash}` against the signed descriptor);
   any container (or none) is legal. A conventional header
-  `{"Alice":null}\n\0` is recommended so systems can recognize alice
+  `{"ALICE":null}\n\0` is recommended so systems can recognize alice
   data files and so block bytes never begin at offset 0 (a block
   payload that is also a valid ELF is a real, if impractical, attack
   surface — and one unrelated to this format's specific design, since
@@ -233,15 +237,15 @@ without trusting the JSON parser (the paranoid path: locate signature
 and signed bytes by displacement, verify, only then parse). Two shapes
 were tabled; **[agent rec]** is the second:
 
-1. `{"Alice": {<model map>}, "signature": "<ed25519>"}` — signature at
+1. `{"ALICE": {<model map>}, "signature": "<ed25519>"}` — signature at
    fixed displacement *backwards from the `\n\0`* (Ed25519 is
    fixed-length; a padded hex/base64 encoding is fixed-length too).
-2. `{"Alice": "<signature block>", "model": {<model map>}}\n\0` — with
+2. `{"ALICE": "<signature block>", "model": {<model map>}}\n\0` — with
    the signature block extended to carry `{alg, key fingerprint, sig}`
    as fixed-length fields, *everything* before the variable-length
    model map is fixed-size: signature, key id, and algorithm all sit at
    fixed displacements from the file head. Recommended: verification
-   before parse is clean, and "Alice" reads as the engine's seal.
+   before parse is clean, and "ALICE" reads as the engine's seal.
 
 The signature covers the **canonical (JCS) bytes of the model map** —
 nothing else needs covering; per-record hashes already cover content,
@@ -274,7 +278,7 @@ fine-tune" threat is only answered by *whose* key you pinned.
 
 ## 8. Load-time verification procedure (normative order)
 
-1. Read the fixed prologue; check magic `{"Alice"` and format version.
+1. Read the fixed prologue; check magic `{"ALICE"` and format version.
 2. Locate signature + key fingerprint by displacement; verify Ed25519
    over the canonical model-map bytes. Trinary verdict as above.
 3. Parse the (now authenticated) descriptor.

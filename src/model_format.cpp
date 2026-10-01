@@ -47,7 +47,7 @@ struct Timer {
 // Reads a .model descriptor file and returns the parsed envelope: text
 // region (everything before the first NUL, which must be \n- or \r\n-
 // terminated; a binary tail may follow in single-file models, so no
-// whole-file read), {"Alice" magic, then the json parse. The raw text is
+// whole-file read), {"ALICE" magic, then the json parse. The raw text is
 // local — only the parsed envelope crosses out (the string is freed once
 // the json is constructed). Descriptor budget: real ones measure <100 KiB
 // (the 70B-with-MoE projects to ~32 KiB); the 1 MiB read cap exists to
@@ -63,8 +63,8 @@ json read_envelope(const std::filesystem::path& file) {
 
   // Magic first: a wrong file should fail HERE, not on some
   // incidental terminator detail deeper in.
-  if (got < 8 || text.compare(0, 8, "{\"Alice\"") != 0)
-    fail("bad magic: a .model file must begin with {\"Alice\"");
+  if (got < 8 || text.compare(0, 8, "{\"ALICE\"") != 0)
+    fail("bad magic: a .model file must begin with {\"ALICE\"");
 
   const size_t nul = text.find('\0');
   if (nul == std::string::npos || nul >= got)
@@ -99,10 +99,10 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
   Timer t;
   const json envelope = read_envelope(model_file);
   if (!envelope.is_object()) fail("envelope must be an object");
-  const json& alice = envelope.at("Alice");
-  if (!alice.is_object()) fail("envelope.Alice must be an object");
+  const json& alice = envelope.at("ALICE");
+  if (!alice.is_object()) fail("envelope.ALICE must be an object");
   if (alice.at("format_version").get<uint64_t>() != 1)
-    fail("envelope.Alice: unsupported format_version (this loader reads 1)");
+    fail("envelope.ALICE: unsupported format_version (this loader reads 1)");
   if (envelope.contains("signature") && !envelope.at("signature").is_null()) {
     std::string key = "?", alg = "?";
     const json& s = envelope.at("signature");

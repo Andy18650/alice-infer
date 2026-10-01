@@ -55,8 +55,8 @@ int main(int argc, char** argv) {
 
   // --- new path ---------------------------------------------------------------
   modelfmt::LoadStats st;
-  modelfmt::LoadedBlocks lb =
-      modelfmt::load_blocks(packed / "model.model", res, ec, &st);
+  modelfmt::LoadedModel lb =
+      modelfmt::load_model(packed / "model.model", res, ec, &st);
   const double load_s =
       std::chrono::duration<double>(std::chrono::steady_clock::now() - t0)
           .count();
@@ -75,10 +75,10 @@ int main(int argc, char** argv) {
   auto files = safetensors::Files::open({hf_dir + "/model.safetensors"});
   const ModelConfig& mc = m.config;
 
-  // Reference blocks reuse res.scratch() (init'd by load_blocks from the
+  // Reference blocks reuse res.scratch() (init'd by load_model from the
   // factory scratch_bytes, same formula); no separate ref scratch.
   // The reference blocks get their OWN Resources (on-demand, no arena) —
-  // load_blocks arena'd `res` for its 32 blocks, and a bump arena can't
+  // load_model arena'd `res` for its 32 blocks, and a bump arena can't
   // absorb a second block set. Two Resources on one device is fine.
   Resources res_ref(0);
   const uint64_t max_chunks = (uint64_t(ec.max_seq_len) + 63) / 64;

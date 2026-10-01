@@ -17,7 +17,11 @@
 
 #include "blocks/block_factory.hpp"  // BlockFactory + registry() (block layer)
 #include "data_loader.hpp"  // LocalFileDataLoader (content-addressed fetch)
-#include "gpu/resources.hpp"  // gpu::Resources (load_blocks param)
+#include "gpu/embedder.hpp"  // gpu::Embedder (member)
+#include "gpu/lm_head.hpp"  // gpu::LmHead (member)
+#include "gpu/resources.hpp"  // gpu::Resources (load_model param + handle for LmHead)
+#include "gpu/sampler.hpp"  // gpu::Sampler (member)
+#include "gpu/trunk.hpp"  // gpu::RmsNormAddTrunk (member)
 
 namespace alice::modelfmt {
 
@@ -84,15 +88,38 @@ json read_envelope(const std::filesystem::path& file) {
   return envelope;
 }
 
+// Member load helpers ----------------------------------------------------
+// Verified bytes (BLAKE3==id) -> an owning Tensor<bf16> of the given shape;
+// a size mismatch is a descriptor/packer contract violation (the ID already
+// certified the bytes, so this only catches a config/id pairing bug).
+Tensor<bf16> blob_to_tensor(std::span<const std::byte> blob, uint32_t rows,
+                            uint32_t cols, const char* what) {
+  const size_t want = size_t(rows) * cols * sizeof(bf16);
+  if (blob.size() != want)
+    fail(std::string(what) + ": blob size mismatch (expected " +
+         std::to_string(want) + " = " + std::to_string(rows) + "x" +
+         std::to_string(cols) + " bf16, got " + std::to_string(blob.size()) +
+         ")");
+  return Tensor<bf16>::copy_of(reinterpret_cast<const bf16*>(blob.data()),
+                               rows, cols);
+}
+
+const MemberDecl& require_member(const Descriptor& d, const char* key) {
+  const auto it = d.members.find(key);
+  if (it == d.members.end())
+    fail(std::string("descriptor missing required member '") + key + "'");
+  return it->second;
+}
+
 // All json faults (missing keys, wrong types) convert here, ONCE: with
 // JSON_DIAGNOSTICS the exception message carries the full JSON pointer
 // path (e.g. "/model/block_specs/ffn/config"), replacing the hand-rolled
 // where-string plumbing. json::exception is not a runtime_error, so this
-// also keeps load_blocks' exception contract uniform.
-LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
-                              gpu::Resources& res, const EngineConfig& ec,
-                              LoadStats& st) {
-  LoadedBlocks out;
+// also keeps load_model's exception contract uniform.
+LoadedModel load_model_impl(const std::filesystem::path& model_file,
+                            gpu::Resources& res, const EngineConfig& ec,
+                            LoadStats& st) {
+  LoadedModel out;
 
   // --- framing + envelope + descriptor --------------------------------------
   Timer t;
@@ -202,6 +229,66 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
       st.construct_ms += tc.ms();
     });
   }
+
+  // --- members: embedder, trunk, language_head, sampler ------------------
+  // Weights come from the same content-addressed DataLoader (one fetch per
+  // member; the ID is BLAKE3-verified on fetch). Each member is built with
+  // its EXISTING constructor (own hipMalloc, unchanged) — the arena is the
+  // block loop's only; members stay on direct hipMalloc per the bring-up
+  // decision (small footprint, no churn to the soon-to-be-phased-out manifest
+  // path). Tied lm_head shares the embedder's content-ID; the DataLoader's
+  // content-addressed cache returns the same verified bytes, so no special
+  // case. LmHead borrows res.handle() (same contract as the manifest path).
+  {  // embedder: [vocab, d] bf16
+    const MemberDecl& m = require_member(out.descriptor, "embedder");
+    const uint32_t vocab = m.config.at("vocab_size").get<uint32_t>();
+    const uint32_t d = m.config.at("embedding_dim").get<uint32_t>();
+    data_loader.fetch(m.id, [&](std::span<const std::byte> blob) {
+      Timer tc;
+      out.embedder = std::make_unique<gpu::Embedder>(
+          blob_to_tensor(blob, vocab, d, "embedder"), ec.max_prefill_chunk);
+      st.construct_ms += tc.ms();
+    });
+  }
+  {  // trunk: 2L pre_norms [1,d] (one per block, exec order) + final [1,d]
+    const MemberDecl& m = require_member(out.descriptor, "trunk");
+    const uint32_t d = m.config.at("hidden_dim").get<uint32_t>();
+    const float eps = m.config.at("epsilon").get<float>();
+    const size_t npre = out.blocks.size();
+    data_loader.fetch(m.id, [&](std::span<const std::byte> blob) {
+      Timer tc;
+      const size_t per = size_t(d) * sizeof(bf16);
+      const size_t want = (npre + 1) * per;
+      if (blob.size() != want)
+        fail("trunk: blob size mismatch (expected " + std::to_string(want) +
+             " = " + std::to_string(npre + 1) + "x" + std::to_string(d) +
+             " bf16, got " + std::to_string(blob.size()) + ")");
+      std::vector<Tensor<bf16>> pre_norms;
+      pre_norms.reserve(npre);
+      const auto* p = reinterpret_cast<const bf16*>(blob.data());
+      for (size_t i = 0; i < npre; ++i)
+        pre_norms.push_back(Tensor<bf16>::copy_of(p + i * d, 1, d));
+      auto final_norm = Tensor<bf16>::copy_of(p + npre * d, 1, d);
+      out.trunk = std::make_unique<gpu::RmsNormAddTrunk>(
+          std::move(pre_norms), std::move(final_norm), eps, d,
+          ec.max_prefill_chunk);
+      st.construct_ms += tc.ms();
+    });
+  }
+  {  // language_head: [vocab, d] bf16 (tied shares embedder's content-ID)
+    const MemberDecl& m = require_member(out.descriptor, "language_head");
+    const uint32_t vocab = m.config.at("vocab_size").get<uint32_t>();
+    const uint32_t d = m.config.at("hidden_dim").get<uint32_t>();
+    data_loader.fetch(m.id, [&](std::span<const std::byte> blob) {
+      Timer tc;
+      out.lm_head = std::make_unique<gpu::LmHead>(
+          blob_to_tensor(blob, vocab, d, "language_head"),
+          ec.max_prefill_chunk, res.handle());
+      st.construct_ms += tc.ms();
+    });
+  }
+  out.sampler = std::make_unique<gpu::Sampler>(ec.sampling);
+
   st.read_ms = data_loader.read_ms();
   st.hash_ms = data_loader.hash_ms();
   st.bytes_read = data_loader.bytes_read();
@@ -212,15 +299,19 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
 
 }  // namespace
 
-LoadedBlocks load_blocks(const std::filesystem::path& model_file,
-                         gpu::Resources& res, const EngineConfig& ec,
-                         LoadStats* out_stats) {
+LoadedModel load_model(const std::filesystem::path& model_file,
+                        gpu::Resources& res, const EngineConfig& ec,
+                        LoadStats* out_stats) {
   LoadStats dummy;
   try {
-    return load_blocks_impl(model_file, res, ec, out_stats ? *out_stats : dummy);
+    return load_model_impl(model_file, res, ec, out_stats ? *out_stats : dummy);
   } catch (const json::exception& e) {
     fail(std::string("descriptor: ") + e.what());
   }
 }
+
+// Out-of-line: the unique_ptr deleters need the member types complete
+// (embedder/trunk/lm_head/sampler/block), which are only included here.
+LoadedModel::~LoadedModel() = default;
 
 }  // namespace alice::modelfmt

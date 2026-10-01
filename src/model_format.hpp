@@ -1,12 +1,13 @@
 #pragma once
 
 // The alice model format loader (docs/model-format.md RC1,
-// docs/model-loader.md). This round: framing + envelope + descriptor
-// parse, spec pre-resolution, and the BLOCK loading loop.
-// Non-block members (embedder/trunk/language_head/tokenizer) are parsed
-// structurally and set aside. Signature verification is deferred with the
-// chain of trust: the envelope's signature state is DECLARED loudly and
-// the load proceeds.
+// docs/model-loader.md). Loads a full model: the block list AND the
+// component members (embedder/trunk/language_head/sampler) from the
+// descriptor's content-addressed member records. Tokenizer/chat_template
+// are parsed structurally and carried in the descriptor (not constructed —
+// they are not part of the device-resident forward path).
+// Signature verification is deferred with the chain of trust: the
+// envelope's signature state is DECLARED loudly and the load proceeds.
 
 #include <cstdint>
 #include <filesystem>
@@ -27,6 +28,10 @@ class Block;
 }
 namespace alice::gpu {
 class Resources;
+class Embedder;
+class RmsNormAddTrunk;
+class LmHead;
+class Sampler;
 }
 
 namespace alice::modelfmt {
@@ -122,21 +127,41 @@ struct LoadStats {
   size_t hash_verifications = 0;
 };
 
-struct LoadedBlocks {
-  Descriptor descriptor;  // members set aside, available to later rounds
-  std::vector<std::unique_ptr<block::Block>> blocks;  // destroyed first
+struct LoadedModel {
+  Descriptor descriptor;  // members carried for later rounds (tokenizer, etc.)
+  std::unique_ptr<gpu::Embedder> embedder;
+  std::unique_ptr<gpu::RmsNormAddTrunk> trunk;
+  std::vector<std::unique_ptr<block::Block>> blocks;  // destroyed before trunk
+  std::unique_ptr<gpu::LmHead> lm_head;
+  std::unique_ptr<gpu::Sampler> sampler;
+
+  // Member types are forward-declared above (exploded pimpl: this header
+  // stays free of vendor/internal includes). The destructor is out-of-line
+  // so the unique_ptr deleters see complete types without forcing every
+  // includer to pull the member headers. Move-only (RVO covers the return).
+  ~LoadedModel();
+  LoadedModel() = default;
+  LoadedModel(LoadedModel&&) noexcept = default;
+  LoadedModel& operator=(LoadedModel&&) noexcept = default;
+  LoadedModel(const LoadedModel&) = delete;
+  LoadedModel& operator=(const LoadedModel&) = delete;
 };
 
-// Loads the block list of a .model descriptor file. Throws
+// Loads a full model from a .model descriptor file: the block list AND the
+// component members (embedder/trunk/language_head/sampler). Throws
 // std::runtime_error loudly on any framing, parse, validation, hash, or
-// length failure (message names the file/spec/block involved).
+// length failure (message names the file/spec/block/member involved).
+//
+// Member construction uses each component's existing constructor (own
+// hipMalloc, unchanged); the arena covers the block loop only. LmHead
+// borrows res.handle() (same contract as the manifest path).
 //
 // out_stats, if non-null, receives timing/throughput breakdown for each
 // phase (parse, read, hash, construct). Null Object pattern: the loader
 // writes to a local dummy if null, so internal code has no per-site
 // branches.
-LoadedBlocks load_blocks(const std::filesystem::path& model_file,
-                         gpu::Resources& res, const EngineConfig& ec,
-                         LoadStats* out_stats = nullptr);
+LoadedModel load_model(const std::filesystem::path& model_file,
+                        gpu::Resources& res, const EngineConfig& ec,
+                        LoadStats* out_stats = nullptr);
 
 }  // namespace alice::modelfmt

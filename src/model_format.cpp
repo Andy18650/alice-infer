@@ -13,7 +13,6 @@
 #include <span>
 #include <stdexcept>
 
-#include <hip/hip_runtime_api.h>
 #include <nlohmann/json.hpp>
 
 #include "blocks/block_factory.hpp"  // BlockFactory + registry() (block layer)

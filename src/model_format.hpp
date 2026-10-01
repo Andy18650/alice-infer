@@ -128,17 +128,22 @@ struct LoadStats {
 };
 
 struct LoadedModel {
-  Descriptor descriptor;  // members carried for later rounds (tokenizer, etc.)
+  // resources is declared first so it is destroyed LAST (members borrow
+  // resources->handle(); the handle must outlive them). All device VRAM
+  // for the block loop (arena + scratch) and the borrowed BLAS handle
+  // live here; the member components own their own private buffers.
+  std::unique_ptr<gpu::Resources> resources;
   std::unique_ptr<gpu::Embedder> embedder;
   std::unique_ptr<gpu::RmsNormAddTrunk> trunk;
-  std::vector<std::unique_ptr<block::Block>> blocks;  // destroyed before trunk
+  std::vector<std::unique_ptr<block::Block>> blocks;  // destroyed before resources
   std::unique_ptr<gpu::LmHead> lm_head;
   std::unique_ptr<gpu::Sampler> sampler;
 
   // Member types are forward-declared above (exploded pimpl: this header
   // stays free of vendor/internal includes). The destructor is out-of-line
-  // so the unique_ptr deleters see complete types without forcing every
-  // includer to pull the member headers. Move-only (RVO covers the return).
+  // so the unique_ptr deleters see complete types (incl. Resources, which
+  // owns the device) without forcing every includer to pull the headers.
+  // Move-only (RVO covers the return).
   ~LoadedModel();
   LoadedModel() = default;
   LoadedModel(LoadedModel&&) noexcept = default;
@@ -147,21 +152,38 @@ struct LoadedModel {
   LoadedModel& operator=(const LoadedModel&) = delete;
 };
 
-// Loads a full model from a .model descriptor file: the block list AND the
-// component members (embedder/trunk/language_head/sampler). Throws
+// A full loaded engine: signed metadata + the non-device members
+// (tokenizer, chat_template) + the device-resident model. init_engine is
+// the one public entry: it reads the .model envelope, extracts the
+// metadata + non-device members, and loads the device model (blocks +
+// embedder/trunk/lm_head/sampler). The Descriptor is an internal parse
+// structure — consumed by the loader, not returned. Throws
 // std::runtime_error loudly on any framing, parse, validation, hash, or
-// length failure (message names the file/spec/block/member involved).
+// length failure.
 //
 // Member construction uses each component's existing constructor (own
 // hipMalloc, unchanged); the arena covers the block loop only. LmHead
-// borrows res.handle() (same contract as the manifest path).
+// borrows the model's resources->handle() (same contract as the manifest
+// path).
 //
 // out_stats, if non-null, receives timing/throughput breakdown for each
 // phase (parse, read, hash, construct). Null Object pattern: the loader
 // writes to a local dummy if null, so internal code has no per-site
 // branches.
-LoadedModel load_model(const std::filesystem::path& model_file,
-                        gpu::Resources& res, const EngineConfig& ec,
-                        LoadStats* out_stats = nullptr);
+struct Engine {
+  // Signed metadata (informational; retained for "what is this model?"
+  // queries — no consumer yet, stored so they survive the load).
+  std::string name, producer, packager, license, license_url, license_text;
+  uint64_t max_context = 0;
+  // Non-device members, fetched + retained for the session/REPL layer.
+  std::string tokenizer;       // tokenizer.json text (content-addressed)
+  std::string chat_template;  // jinja template (content-addressed)
+  LoadedModel model;
+  // Implicit move-only (LoadedModel is move-only); ~ delegates to
+  // ~LoadedModel (out-of-line) so Engine is usable without the member
+  // headers.
+};
+Engine init_engine(const std::filesystem::path& model_file,
+                   const EngineConfig& ec, LoadStats* out_stats = nullptr);
 
 }  // namespace alice::modelfmt

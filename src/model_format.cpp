@@ -1,8 +1,11 @@
-// The alice model format loader — first implementation round
-// (docs/model-format.md RC1, docs/model-loader.md §8 scope). Blocks only;
-// members parsed structurally and set aside. Signature verification is
-// deferred with the chain of trust: the envelope's signature state is
-// DECLARED loudly, not checked.
+// The alice model format loader (docs/model-format.md RC1,
+// docs/model-loader.md §8 scope). init_engine is the public entry: it
+// reads the .model envelope (magic/framing/signature-state), extracts the
+// signed metadata + non-device members (tokenizer, chat_template), and
+// loads the device model — the block list AND the component members
+// (embedder/trunk/lm_head/sampler). Signature verification is deferred
+// with the chain of trust: the envelope's signature state is DECLARED
+// loudly, not checked.
 
 #include "model_format.hpp"
 
@@ -111,55 +114,24 @@ const MemberDecl& require_member(const Descriptor& d, const char* key) {
   return it->second;
 }
 
-// All json faults (missing keys, wrong types) convert here, ONCE: with
-// JSON_DIAGNOSTICS the exception message carries the full JSON pointer
-// path (e.g. "/model/block_specs/ffn/config"), replacing the hand-rolled
-// where-string plumbing. json::exception is not a runtime_error, so this
-// also keeps load_model's exception contract uniform.
-LoadedModel load_model_impl(const std::filesystem::path& model_file,
-                            gpu::Resources& res, const EngineConfig& ec,
-                            LoadStats& st) {
+// load_model: the device-model half. Given a parsed Descriptor + the
+// content-addressed bytes source, create the Resources (device + BLAS +
+// allocator) and construct the block list + device members. json faults
+// convert at the init_engine boundary (json::exception is not a
+// runtime_error, so the catch keeps the contract uniform).
+LoadedModel load_model(const Descriptor& descriptor,
+                       const loader::LocalFileDataLoader& data_loader,
+                       const EngineConfig& ec, LoadStats& st) {
   LoadedModel out;
-
-  // --- framing + envelope + descriptor --------------------------------------
-  Timer t;
-  const json envelope = read_envelope(model_file);
-  if (!envelope.is_object()) fail("envelope must be an object");
-  const json& alice = envelope.at("ALICE");
-  if (!alice.is_object()) fail("envelope.ALICE must be an object");
-  if (alice.at("format_version").get<uint64_t>() != 1)
-    fail("envelope.ALICE: unsupported format_version (this loader reads 1)");
-  if (envelope.contains("signature") && !envelope.at("signature").is_null()) {
-    std::string key = "?", alg = "?";
-    const json& s = envelope.at("signature");
-    if (s.is_object()) {
-      if (s.contains("key")) key = s.at("key").get<std::string>();
-      if (s.contains("alg")) alg = s.at("alg").get<std::string>();
-    }
-    std::fprintf(stderr,
-                 "[model loader] descriptor carries a signature (alg=%s key=%s) — "
-                 "verification not implemented (chain-of-trust round); proceeding\n",
-                 alg.c_str(), key.c_str());
-  } else {
-    std::fprintf(stderr,
-                 "[model loader] unsigned descriptor — proceeding (dev artifacts only)\n");
-  }
-  const json& model = envelope.at("model");
-  if (!model.is_object()) fail("envelope.model must be an object");
-  out.descriptor = model.get<Descriptor>();
-  if (out.descriptor.version != 1)
-    fail("descriptor: unsupported version " + std::to_string(out.descriptor.version) +
-         " (this loader reads version 1)");
-  st.parse_ms = t.ms();
-  st.specs = out.descriptor.specs.size();
+  out.resources = std::make_unique<gpu::Resources>(0);  // device 0 (single-GCD bring-up)
+  gpu::Resources& res = *out.resources;
 
   // --- spec pre-resolution + composition check: every spec resolves
   // against the registry (config faults carry spec context), and all
   // specs must present the same interface.
-  t = Timer{};
   std::map<std::string, std::unique_ptr<block::BlockFactory>> resolved;
   std::string iface;
-  for (const auto& [name, decl] : out.descriptor.specs) {
+  for (const auto& [name, decl] : descriptor.specs) {
     const std::string where = "block_specs." + name;
     const auto it = block::registry().find(decl.type);
     if (it == block::registry().end())
@@ -192,7 +164,7 @@ LoadedModel load_model_impl(const std::filesystem::path& model_file,
   // against hipMemGetInfo inside init_arena. Scratch (shared v4 prefill
   // partials) stays on its own alloc, per the clean buffer-type separation.
   uint64_t arena_bytes = 0;
-  for (const auto& entry : out.descriptor.blocks)
+  for (const auto& entry : descriptor.blocks)
     arena_bytes += resolved.at(entry.spec)->device_bytes(ec);
   res.init_arena(arena_bytes);
 
@@ -206,23 +178,16 @@ LoadedModel load_model_impl(const std::filesystem::path& model_file,
   // checks (spec ref, codec) then read -> hash -> construct. A bad
   // record at block i fails after blocks < i are loaded: accepted
   // (files are machine-packed; RAII teardown handles the partial state).
-  const std::filesystem::path base = model_file.parent_path();
-  // The fused .model file's unsigned `files` array is the default location
-  // source; the DataLoader resolves content-IDs to verified bytes (fetch
-  // verifies BLAKE3==id). "Where bytes come from" is overridable at runtime
-  // in principle; for now the loader uses this in-file default.
-  const loader::LocalFileDataLoader data_loader(envelope.at("files"),
-                                                 base.string());
-  for (size_t i = 0; i < out.descriptor.blocks.size(); ++i) {
-    const BlockEntry& e = out.descriptor.blocks[i];
+  // Location (file/offset/size/codec) lives in the `files` table, validated
+  // by the DataLoader at construction; the factory-side reconciliation
+  // (decoded length == derived) still runs in construct.
+  for (size_t i = 0; i < descriptor.blocks.size(); ++i) {
+    const BlockEntry& e = descriptor.blocks[i];
     const std::string where = "blocks[" + std::to_string(i) + "]";
     const auto rit = resolved.find(e.spec);
     if (rit == resolved.end())
       fail(where + ": references unknown spec '" + e.spec + "'");
     const block::BlockFactory* rs = rit->second.get();
-    // Location (file/offset/size/codec) lives in the `files` table, validated
-    // by the DataLoader at construction; the factory-side reconciliation
-    // (decoded length == derived) still runs in construct.
     data_loader.fetch(e.id, [&](std::span<const std::byte> data) {
       Timer tc;
       out.blocks.push_back(rs->construct(data, res, ec));
@@ -236,11 +201,12 @@ LoadedModel load_model_impl(const std::filesystem::path& model_file,
   // its EXISTING constructor (own hipMalloc, unchanged) — the arena is the
   // block loop's only; members stay on direct hipMalloc per the bring-up
   // decision (small footprint, no churn to the soon-to-be-phased-out manifest
-  // path). Tied lm_head shares the embedder's content-ID; the DataLoader's
-  // content-addressed cache returns the same verified bytes, so no special
-  // case. LmHead borrows res.handle() (same contract as the manifest path).
+  // path). Tied lm_head shares the embedder's content-ID; the DataLoader
+  // returns the same verified bytes for both (the ID is the single source of
+  // truth), so no special case. LmHead borrows res.handle() (same contract
+  // as the manifest path).
   {  // embedder: [vocab, d] bf16
-    const MemberDecl& m = require_member(out.descriptor, "embedder");
+    const MemberDecl& m = require_member(descriptor, "embedder");
     const uint32_t vocab = m.config.at("vocab_size").get<uint32_t>();
     const uint32_t d = m.config.at("embedding_dim").get<uint32_t>();
     data_loader.fetch(m.id, [&](std::span<const std::byte> blob) {
@@ -251,7 +217,7 @@ LoadedModel load_model_impl(const std::filesystem::path& model_file,
     });
   }
   {  // trunk: 2L pre_norms [1,d] (one per block, exec order) + final [1,d]
-    const MemberDecl& m = require_member(out.descriptor, "trunk");
+    const MemberDecl& m = require_member(descriptor, "trunk");
     const uint32_t d = m.config.at("hidden_dim").get<uint32_t>();
     const float eps = m.config.at("epsilon").get<float>();
     const size_t npre = out.blocks.size();
@@ -276,7 +242,7 @@ LoadedModel load_model_impl(const std::filesystem::path& model_file,
     });
   }
   {  // language_head: [vocab, d] bf16 (tied shares embedder's content-ID)
-    const MemberDecl& m = require_member(out.descriptor, "language_head");
+    const MemberDecl& m = require_member(descriptor, "language_head");
     const uint32_t vocab = m.config.at("vocab_size").get<uint32_t>();
     const uint32_t d = m.config.at("hidden_dim").get<uint32_t>();
     data_loader.fetch(m.id, [&](std::span<const std::byte> blob) {
@@ -297,21 +263,92 @@ LoadedModel load_model_impl(const std::filesystem::path& model_file,
   return out;
 }
 
+// init_engine: the envelope half. Reads the .model file (magic/framing),
+// validates + parses the descriptor, declares the signature state, builds
+// the content-addressed DataLoader from the unsigned `files` table, fetches
+// the non-device members (tokenizer, chat_template) + signed metadata, then
+// hands the descriptor + DataLoader to load_model for the device half.
+Engine init_engine_impl(const std::filesystem::path& model_file,
+                        const EngineConfig& ec, LoadStats& st) {
+  Engine out;
+
+  Timer t;
+  const json envelope = read_envelope(model_file);
+  if (!envelope.is_object()) fail("envelope must be an object");
+  const json& alice = envelope.at("ALICE");
+  if (!alice.is_object()) fail("envelope.ALICE must be an object");
+  if (alice.at("format_version").get<uint64_t>() != 1)
+    fail("envelope.ALICE: unsupported format_version (this loader reads 1)");
+  if (envelope.contains("signature") && !envelope.at("signature").is_null()) {
+    std::string key = "?", alg = "?";
+    const json& s = envelope.at("signature");
+    if (s.is_object()) {
+      if (s.contains("key")) key = s.at("key").get<std::string>();
+      if (s.contains("alg")) alg = s.at("alg").get<std::string>();
+    }
+    std::fprintf(stderr,
+                 "[model loader] descriptor carries a signature (alg=%s key=%s) — "
+                 "verification not implemented (chain-of-trust round); proceeding\n",
+                 alg.c_str(), key.c_str());
+  } else {
+    std::fprintf(stderr,
+                 "[model loader] unsigned descriptor — proceeding (dev artifacts only)\n");
+  }
+  const json& model = envelope.at("model");
+  if (!model.is_object()) fail("envelope.model must be an object");
+  Descriptor descriptor = model.get<Descriptor>();
+  if (descriptor.version != 1)
+    fail("descriptor: unsupported version " + std::to_string(descriptor.version) +
+         " (this loader reads version 1)");
+  st.parse_ms = t.ms();
+  st.specs = descriptor.specs.size();
+
+  // The bytes source: content-addressed DataLoader from the unsigned `files`
+  // table (location separated from identity, per the format).
+  const std::filesystem::path base = model_file.parent_path();
+  const loader::LocalFileDataLoader data_loader(envelope.at("files"),
+                                                 base.string());
+
+  // Non-device members + signed metadata, retained for the session/REPL
+  // layer (not part of the device forward path). Optional: absent -> empty.
+  auto fetch_string = [&](const char* key) -> std::string {
+    const auto it = descriptor.members.find(key);
+    if (it == descriptor.members.end()) return {};
+    std::string s;
+    data_loader.fetch(it->second.id, [&](std::span<const std::byte> blob) {
+      s.assign(reinterpret_cast<const char*>(blob.data()), blob.size());
+    });
+    return s;
+  };
+  out.tokenizer = fetch_string("tokenizer");
+  out.chat_template = fetch_string("chat_template");
+
+  out.name = descriptor.name;
+  out.producer = descriptor.producer;
+  out.packager = descriptor.packager;
+  out.license = descriptor.license;
+  out.license_url = descriptor.license_url;
+  out.license_text = descriptor.license_text;
+  out.max_context = descriptor.max_context;
+
+  out.model = load_model(descriptor, data_loader, ec, st);
+  return out;
+}
+
 }  // namespace
 
-LoadedModel load_model(const std::filesystem::path& model_file,
-                        gpu::Resources& res, const EngineConfig& ec,
-                        LoadStats* out_stats) {
+Engine init_engine(const std::filesystem::path& model_file,
+                   const EngineConfig& ec, LoadStats* out_stats) {
   LoadStats dummy;
   try {
-    return load_model_impl(model_file, res, ec, out_stats ? *out_stats : dummy);
+    return init_engine_impl(model_file, ec, out_stats ? *out_stats : dummy);
   } catch (const json::exception& e) {
     fail(std::string("descriptor: ") + e.what());
   }
 }
 
 // Out-of-line: the unique_ptr deleters need the member types complete
-// (embedder/trunk/lm_head/sampler/block), which are only included here.
+// (resources/embedder/trunk/lm_head/sampler/block), which are only included here.
 LoadedModel::~LoadedModel() = default;
 
 }  // namespace alice::modelfmt

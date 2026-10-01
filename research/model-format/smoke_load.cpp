@@ -50,13 +50,12 @@ int main(int argc, char** argv) {
   ec.max_prefill_chunk = uint32_t(std::stoul(argv[5]));
   const uint32_t S = 16;  // > 4: exercises the v4 prefill path + shared scratch
 
-  Resources res(0);
+  modelfmt::LoadStats st;
   auto t0 = std::chrono::steady_clock::now();
 
   // --- new path ---------------------------------------------------------------
-  modelfmt::LoadStats st;
-  modelfmt::LoadedModel lb =
-      modelfmt::load_model(packed / "model.model", res, ec, &st);
+  modelfmt::Engine eng =
+      modelfmt::init_engine(packed / "model.model", ec, &st);
   const double load_s =
       std::chrono::duration<double>(std::chrono::steady_clock::now() - t0)
           .count();
@@ -75,12 +74,7 @@ int main(int argc, char** argv) {
   auto files = safetensors::Files::open({hf_dir + "/model.safetensors"});
   const ModelConfig& mc = m.config;
 
-  // Reference blocks reuse res.scratch() (init'd by load_model from the
-  // factory scratch_bytes, same formula); no separate ref scratch.
-  // The reference blocks get their OWN Resources (on-demand, no arena) —
-  // load_model arena'd `res` for its 32 blocks, and a bump arena can't
-  // absorb a second block set. Two Resources on one device is fine.
-  Resources res_ref(0);
+  Resources res_ref(0);  // reference blocks' own Resources (the loaded model owns its own, inside Engine)
   const uint64_t max_chunks = (uint64_t(ec.max_seq_len) + 63) / 64;
   res_ref.init_scratch(size_t(mc.num_heads) * ec.max_prefill_chunk *
                         max_chunks * (mc.head_dim + 2) * sizeof(float));
@@ -94,7 +88,7 @@ int main(int argc, char** argv) {
   HIP_CHECK(hipMalloc((void**)&io_b, host_io.size() * 4));
 
   size_t compared = 0;
-  for (size_t i = 0; i < lb.blocks.size() && i < m.blocks.size(); ++i) {
+  for (size_t i = 0; i < eng.model.blocks.size() && i < m.blocks.size(); ++i) {
     const auto& bs = m.blocks[i];
     std::unique_ptr<block::Block> ref;
     if (bs.type == "gqa_attention_bf16") {
@@ -117,7 +111,7 @@ int main(int argc, char** argv) {
                         hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(io_b, host_io.data(), host_io.size() * 4,
                         hipMemcpyHostToDevice));
-    lb.blocks[i]->forward(io_a, S);  // fresh blocks: position 0, same schedule
+    eng.model.blocks[i]->forward(io_a, S);  // fresh blocks: position 0, same schedule
     ref->forward(io_b, S);
     HIP_CHECK(hipDeviceSynchronize());
 
@@ -138,7 +132,7 @@ int main(int argc, char** argv) {
 
   std::printf("[smoke] PASS: %zu/%zu blocks bit-exact vs the safetensors path "
               "(S=%u, %s scratch path)\n",
-              compared, lb.blocks.size(), S,
+              compared, eng.model.blocks.size(), S,
               mc.num_heads ? "v4 prefill" : "?");
   HIP_CHECK(hipFree(io_a));
   HIP_CHECK(hipFree(io_b));

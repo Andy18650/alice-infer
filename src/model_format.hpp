@@ -37,18 +37,11 @@ namespace alice::modelfmt {
 // Descriptor structures (the "model" map of the envelope)
 // ---------------------------------------------------------------------------
 
-// The physical record fields, inline in every member/block object (the
-// v0.2 shape — records are not nested objects). hash stays the 64-char
-// hex STRING: compared against the recomputed BLAKE3 hex at verification,
-// so any
-// malformed hash (wrong length, bad chars, wrong value) funnels into the
-// single BLAKE3-mismatch error at the right place.
-#define ALICE_MODEL_FMT_RECORD_FIELDS \
-  std::string file;                 /* relative to the descriptor's dir */ \
-  uint64_t offset = 0; \
-  uint64_t size = 0;                /* stored (post-codec) bytes */ \
-  std::string codec;                /* "raw" is the only legal value in v1 */ \
-  std::string hash;                 /* BLAKE3 hex over [offset, offset+size) */
+// PROTOTYPE (fused JSON, 2026-09 — NOT frozen): location is separated
+// from identity. A block/member record carries only a content-ID (the
+// BLAKE3 of its bytes); the unsigned `files` array in the same JSON maps
+// IDs to {file, offset, size, codec}. The ID doubles as the integrity
+// check (verified on fetch).
 
 struct BlockSpecDecl {
   std::string type;     // registry name, e.g. "dense_ffn_bf16"
@@ -67,17 +60,15 @@ struct MemberDecl {
   std::string type;
   uint32_t version = 0;
   nlohmann::json config;
-  ALICE_MODEL_FMT_RECORD_FIELDS
+  std::string id;  // content-ID (BLAKE3 hex); location in the `files` table
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MemberDecl, type, version, config, file,
-                                   offset, size, codec, hash)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MemberDecl, type, version, config, id)
 
 struct BlockEntry {
   std::string spec;  // key into block_specs
-  ALICE_MODEL_FMT_RECORD_FIELDS
+  std::string id;    // content-ID (BLAKE3 hex); location in the `files` table
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BlockEntry, spec, file, offset, size,
-                                   codec, hash)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BlockEntry, spec, id)
 
 struct Descriptor {
   std::string name;

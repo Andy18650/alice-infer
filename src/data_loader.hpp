@@ -15,10 +15,10 @@
 // This first cut is a concrete LocalFileDataLoader — no abstract transport
 // base yet, per the project's "no abstract until a second implementation
 // exists" rule (design §8.3); the interface gets extracted when a second
-// transport (P2P/HTTP) is built. The location table is a separate JSON file
-// today; merging it into the .model file as a gated unsigned section is a
-// later format decision (the table is untrusted plumbing, verified by the
-// content hash either way).
+// transport (P2P/HTTP) is built. The location table is the fused .model
+// file's `files` array (unsigned, verified by the content hash); a separate
+// table file is also accepted (used by tests). Owns one THP-backed staging
+// buffer (sized to the max entry, reused across fetches).
 
 #include <cstddef>
 #include <cstdint>
@@ -27,6 +27,8 @@
 #include <string>
 #include <unordered_map>
 
+#include <nlohmann/json.hpp>  // location-table ctor carries json; internal header
+
 namespace alice::loader {
 
 // BLAKE3 of a byte range as a 64-char lowercase hex string. This is the
@@ -34,15 +36,16 @@ namespace alice::loader {
 std::string blake3_hex(const std::byte* data, size_t len);
 std::string blake3_hex(std::span<const std::byte> data);
 
-// Local-file content-addressed loader. Built from a location-table file
-// (provisional JSON: a top-level array of {id, file, offset, size, codec};
-// `file` resolves relative to the table's directory). Owns one THP-backed
-// staging buffer (sized to the max entry, reused across fetches) — the
-// Chunk-as-boundary-type question dissolves: it is a private detail of this
-// one transport impl.
+// Local-file content-addressed loader. A location table is a JSON array of
+// records {id, file, offset, size, codec}; `file` resolves relative to the
+// table's base directory.
 class LocalFileDataLoader {
  public:
+  // From a separate location-table file.
   explicit LocalFileDataLoader(const std::string& table_path);
+  // From an already-parsed `files` array (e.g. the fused .model file's
+  // `files` element), with `file` paths resolved relative to `base_dir`.
+  LocalFileDataLoader(const nlohmann::json& files, const std::string& base_dir);
   ~LocalFileDataLoader();
   LocalFileDataLoader(const LocalFileDataLoader&) = delete;
   LocalFileDataLoader& operator=(const LocalFileDataLoader&) = delete;
@@ -55,17 +58,29 @@ class LocalFileDataLoader {
   void fetch(const std::string& id,
              std::function<void(std::span<const std::byte>)> consume) const;
 
+  // Transport-reported metrics, accumulated across fetches (provisional: a
+  // P2P transport would report different quantities).
+  double read_ms() const { return read_ms_; }
+  double hash_ms() const { return hash_ms_; }
+  uint64_t bytes_read() const { return bytes_read_; }
+  size_t hash_verifications() const { return hash_verifications_; }
+
  private:
   struct Entry {
-    std::string file;     // absolute (resolved from the table's directory)
+    std::string file;     // absolute (resolved from the table's base dir)
     uint64_t offset = 0;
     uint64_t size = 0;
     std::string codec;    // "raw" (the only legal value in v1)
   };
 
+  void build(const nlohmann::json& files, const std::string& base_dir);
+
   std::unordered_map<std::string, Entry> entries_;
   mutable std::byte* buf_ = nullptr;   // pooled THP staging (max-entry-sized)
   mutable size_t buf_cap_ = 0;
+  mutable double read_ms_ = 0, hash_ms_ = 0;
+  mutable uint64_t bytes_read_ = 0;
+  mutable size_t hash_verifications_ = 0;
 };
 
 }  // namespace alice::loader

@@ -6,25 +6,19 @@
 
 #include "model_format.hpp"
 
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <unistd.h>
-
 #include <algorithm>
 #include <chrono>
 #include <fstream>
 #include <cstdio>
-#include <cstring>
-#include <new>
 #include <span>
 #include <stdexcept>
 
 #include <hip/hip_runtime_api.h>
-#include <blake3.h>
 #include <nlohmann/json.hpp>
 
 #include "blocks/block_factory.hpp"  // BlockFactory + registry() (block layer)
 #include "blocks/gpu_rocm/platform.hpp"
+#include "data_loader.hpp"  // LocalFileDataLoader (content-addressed fetch)
 #include "manifest.hpp"  // ModelConfig: the block constructors' vocabulary
 #include "alice/tensor.hpp"
 
@@ -37,24 +31,6 @@ namespace {
 
 [[noreturn]] void fail(const std::string& what) {
   throw std::runtime_error("model loader: " + what);
-}
-
-// BLAKE3 of a byte range as lowercase hex (the record-hash comparison
-// vocabulary — the descriptor stores hashes as text). Malformed stored
-// hashes funnel into the single mismatch error at the comparison site.
-std::string blake3_hex(const void* data, size_t len) {
-  blake3_hasher h;
-  blake3_hasher_init(&h);
-  blake3_hasher_update(&h, data, len);
-  uint8_t d[32];
-  blake3_hasher_finalize(&h, d, sizeof(d));
-  static const char* hex = "0123456789abcdef";
-  std::string s(64, '0');
-  for (size_t i = 0; i < 32; ++i) {
-    s[2 * i] = hex[d[i] >> 4];
-    s[2 * i + 1] = hex[d[i] & 0xF];
-  }
-  return s;
 }
 
 struct Timer {
@@ -169,62 +145,6 @@ void DeviceAllocator::init_scratch() {
 
 namespace {
 
-// A file descriptor. RAII: closed at scope exit, including on throw.
-// Non-movable and non-copyable — the load loop opens a fresh one per
-// block, so at most one fd is open at any moment. pread, not ifstream:
-// offset-addressed and stateless (prefetch-pipeline safe), matching the
-// §9 weight path — streams for text, syscalls for bulk bytes.
-class Fd {
- public:
-  Fd(const std::filesystem::path& p) {
-    fd_ = ::open(p.c_str(), O_RDONLY);
-    if (fd_ < 0)
-      fail("cannot open data file '" + p.string() + "': " + std::strerror(errno));
-  }
-  ~Fd() {
-    if (fd_ >= 0) (void)::close(fd_);
-  }
-  Fd(const Fd&) = delete;
-  Fd& operator=(const Fd&) = delete;
-
-  int get() const { return fd_; }
-
- private:
-  int fd_ = -1;
-};
-
-// A THP-backed staging buffer for one block's pread extent (design §9:
-// mmap + MADV_HUGEPAGE). RAII: munmap'd at scope exit, including on throw.
-// Non-movable and non-copyable, like Fd — the load loop constructs a fresh
-// one per block and never hands off ownership; construct() receives a
-// non-owning span over it, and the chunk is destroyed at the end of the
-// loop iteration (construction is the last use, so the move-ownership
-// machinery that would otherwise mark it "freed" is unnecessary here).
-class Chunk {
- public:
-  explicit Chunk(size_t bytes) : size_(bytes) {
-    if (bytes) {
-      void* p = mmap(nullptr, bytes, PROT_READ | PROT_WRITE,
-                     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-      if (p == MAP_FAILED) throw std::bad_alloc();
-      (void)madvise(p, bytes, MADV_HUGEPAGE);
-      data_ = static_cast<uint8_t*>(p);
-    }
-  }
-  ~Chunk() {
-    if (data_) (void)munmap(data_, size_);
-  }
-  Chunk(const Chunk&) = delete;
-  Chunk& operator=(const Chunk&) = delete;
-
-  uint8_t* data() { return data_; }
-  size_t size() const { return size_; }
-
- private:
-  uint8_t* data_ = nullptr;
-  size_t size_ = 0;
-};
-
 // Reads a .model descriptor file and returns the parsed envelope: text
 // region (everything before the first NUL, which must be \n- or \r\n-
 // terminated; a binary tail may follow in single-file models, so no
@@ -289,9 +209,9 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
   if (!alice.is_object()) fail("envelope.Alice must be an object");
   if (alice.at("format_version").get<uint64_t>() != 1)
     fail("envelope.Alice: unsupported format_version (this loader reads 1)");
-  if (alice.contains("signature")) {
+  if (envelope.contains("signature") && !envelope.at("signature").is_null()) {
     std::string key = "?", alg = "?";
-    const json& s = alice.at("signature");
+    const json& s = envelope.at("signature");
     if (s.is_object()) {
       if (s.contains("key")) key = s.at("key").get<std::string>();
       if (s.contains("alg")) alg = s.at("alg").get<std::string>();
@@ -353,6 +273,12 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
   // record at block i fails after blocks < i are loaded: accepted
   // (files are machine-packed; RAII teardown handles the partial state).
   const std::filesystem::path base = model_file.parent_path();
+  // The fused .model file's unsigned `files` array is the default location
+  // source; the DataLoader resolves content-IDs to verified bytes (fetch
+  // verifies BLAKE3==id). "Where bytes come from" is overridable at runtime
+  // in principle; for now the loader uses this in-file default.
+  const loader::LocalFileDataLoader data_loader(envelope.at("files"),
+                                                 base.string());
   for (size_t i = 0; i < out.descriptor.blocks.size(); ++i) {
     const BlockEntry& e = out.descriptor.blocks[i];
     const std::string where = "blocks[" + std::to_string(i) + "]";
@@ -360,43 +286,19 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
     if (rit == resolved.end())
       fail(where + ": references unknown spec '" + e.spec + "'");
     const block::BlockFactory* rs = rit->second.get();
-    if (e.codec != "raw")
-      fail(where + ": codec '" + e.codec +
-           "' is not supported (format v1 provides 'raw' only)");
-    // NOTE: no derived==e.size check here. Stored size equals the layout-
-    // derived size only as a raw-codec coincidence; the contract is the
-    // factory-side reconciliation (decoded length == derived, exactly) —
-    // which for raw checks the same mismatch, since decoded == stored.
-
-    t = Timer{};
-    Chunk chunk(size_t(e.size));
-    const Fd fd(base / e.file);
-    size_t got = 0;
-    while (got < e.size) {
-      const ssize_t n =
-          ::pread(fd.get(), chunk.data() + got, e.size - got, off_t(e.offset + got));
-      if (n <= 0)
-        fail(where + " (" + e.file + ":" + std::to_string(e.offset) +
-             "): short read (" + std::to_string(got) + "/" +
-             std::to_string(e.size) + " bytes): " + std::strerror(errno));
-      got += size_t(n);
-    }
-    st.read_ms += t.ms();
-    st.bytes_read += e.size;
-
-    t = Timer{};
-    if (blake3_hex(chunk.data(), chunk.size()) != e.hash)
-      fail(where + " (" + e.file + ":" + std::to_string(e.offset) +
-           "): BLAKE3 mismatch — record is corrupt or tampered");
-    st.hash_ms += t.ms();
-    ++st.hash_verifications;
-
-    t = Timer{};
-    out.blocks.push_back(rs->construct(
-        std::as_bytes(std::span<uint8_t>(chunk.data(), chunk.size())),
-        *out.allocator, ctx, ec));
-    st.construct_ms += t.ms();
+    // Location (file/offset/size/codec) lives in the `files` table, validated
+    // by the DataLoader at construction; the factory-side reconciliation
+    // (decoded length == derived) still runs in construct.
+    data_loader.fetch(e.id, [&](std::span<const std::byte> data) {
+      Timer tc;
+      out.blocks.push_back(rs->construct(data, *out.allocator, ctx, ec));
+      st.construct_ms += tc.ms();
+    });
   }
+  st.read_ms = data_loader.read_ms();
+  st.hash_ms = data_loader.hash_ms();
+  st.bytes_read = data_loader.bytes_read();
+  st.hash_verifications = data_loader.hash_verifications();
   st.blocks = out.blocks.size();
   return out;
 }

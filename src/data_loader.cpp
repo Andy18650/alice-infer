@@ -7,13 +7,13 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
 
 #include <blake3.h>
-#include <nlohmann/json.hpp>
 
 namespace alice::loader {
 
@@ -23,8 +23,8 @@ namespace {
   throw std::runtime_error("data_loader: " + what);
 }
 
-// RAII file descriptor (mirrors the loader-private Fd in model_format.cpp;
-// non-movable, one per fetch — at most one open at a time on this path).
+// RAII file descriptor (non-movable; one per fetch — at most one open at a
+// time on this path).
 class Fd {
  public:
   explicit Fd(const std::string& path) {
@@ -40,6 +40,15 @@ class Fd {
 
  private:
   int fd_ = -1;
+};
+
+struct Timer {
+  std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+  double ms() const {
+    return std::chrono::duration<double, std::milli>(
+               std::chrono::steady_clock::now() - t0)
+        .count();
+  }
 };
 
 }  // namespace
@@ -63,28 +72,14 @@ std::string blake3_hex(std::span<const std::byte> data) {
   return blake3_hex(data.data(), data.size());
 }
 
-LocalFileDataLoader::LocalFileDataLoader(const std::string& table_path) {
+void LocalFileDataLoader::build(const nlohmann::json& files,
+                                const std::string& base_dir) {
   namespace fs = std::filesystem;
-  const fs::path p(table_path);
-  const std::string table_dir = p.parent_path().string();
-
-  std::ifstream in(p, std::ios::binary);
-  if (!in) fail("cannot open table '" + table_path + "'");
-  std::string text((std::istreambuf_iterator<char>(in)), {});
-
-  nlohmann::json tbl;
-  try {
-    tbl = nlohmann::json::parse(text);
-  } catch (const nlohmann::json::exception& e) {
-    fail(std::string("table JSON: ") + e.what());
-  }
-  if (!tbl.is_array()) fail("table must be a JSON array of records");
-
+  if (!files.is_array()) fail("location table must be a JSON array of records");
   uint64_t max_size = 0;
-  for (const auto& e : tbl) {
+  for (const auto& e : files) {
     Entry ent;
-    ent.file =
-        (fs::path(table_dir) / e.at("file").get<std::string>()).string();
+    ent.file = (fs::path(base_dir) / e.at("file").get<std::string>()).string();
     ent.offset = e.at("offset").get<uint64_t>();
     ent.size = e.at("size").get<uint64_t>();
     ent.codec = e.value("codec", "raw");
@@ -92,12 +87,10 @@ LocalFileDataLoader::LocalFileDataLoader(const std::string& table_path) {
       fail("codec '" + ent.codec + "' not supported (v1: raw only)");
     const std::string id = e.at("id").get<std::string>();
     if (!entries_.emplace(id, std::move(ent)).second)
-      fail("duplicate id '" + id + "' in table");
+      fail("duplicate id '" + id + "' in location table");
     max_size = std::max(max_size, entries_.at(id).size);
   }
-  if (entries_.empty()) fail("table has no entries");
-
-  // One THP-backed staging buffer, max-entry-sized, reused across fetches.
+  if (entries_.empty()) fail("location table has no entries");
   if (max_size) {
     void* m = mmap(nullptr, max_size, PROT_READ | PROT_WRITE,
                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -106,6 +99,26 @@ LocalFileDataLoader::LocalFileDataLoader(const std::string& table_path) {
     buf_ = static_cast<std::byte*>(m);
     buf_cap_ = max_size;
   }
+}
+
+LocalFileDataLoader::LocalFileDataLoader(const nlohmann::json& files,
+                                         const std::string& base_dir) {
+  build(files, base_dir);
+}
+
+LocalFileDataLoader::LocalFileDataLoader(const std::string& table_path) {
+  namespace fs = std::filesystem;
+  const fs::path p(table_path);
+  std::ifstream in(p, std::ios::binary);
+  if (!in) fail("cannot open table '" + table_path + "'");
+  std::string text((std::istreambuf_iterator<char>(in)), {});
+  nlohmann::json tbl;
+  try {
+    tbl = nlohmann::json::parse(text);
+  } catch (const nlohmann::json::exception& e) {
+    fail(std::string("table JSON: ") + e.what());
+  }
+  build(tbl, p.parent_path().string());
 }
 
 LocalFileDataLoader::~LocalFileDataLoader() {
@@ -123,6 +136,7 @@ void LocalFileDataLoader::fetch(
          std::to_string(buf_cap_));
 
   Fd fd(e.file);
+  Timer tr;
   size_t got = 0;
   while (got < e.size) {
     const ssize_t n =
@@ -131,11 +145,16 @@ void LocalFileDataLoader::fetch(
       fail("short read on '" + e.file + "': " + std::strerror(errno));
     got += size_t(n);
   }
+  read_ms_ += tr.ms();
+  bytes_read_ += e.size;
 
-  // The self-certifying guarantee: the bytes are verified against the ID
-  // (which is their hash) before the caller ever sees them.
+  // The self-certifying guarantee: bytes are verified against the ID (which
+  // is their hash) before the caller ever sees them.
+  Timer th;
   if (blake3_hex(buf_, e.size) != id)
     fail("BLAKE3 mismatch for id '" + id + "' — content corrupt or tampered");
+  hash_ms_ += th.ms();
+  ++hash_verifications_;
 
   consume(std::span<const std::byte>(buf_, e.size));
 }

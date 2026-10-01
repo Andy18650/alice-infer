@@ -57,6 +57,11 @@ Resources::~Resources() {
 
 void* Resources::alloc(size_t bytes) {
   if (arena_) {
+    // Explicit start-alignment: enforced invariant (the size-padded advance
+    // below keeps the offset aligned inductively, but this holds regardless
+    // of how offset arrived). Up to kDeviceAlign-1 bytes may be skipped —
+    // absorbed by the +kDeviceAlign slack in init_arena.
+    arena_offset_ = (arena_offset_ + kDeviceAlign - 1) & ~(kDeviceAlign - 1);
     const size_t padded = (bytes + kDeviceAlign - 1) & ~(kDeviceAlign - 1);
     if (arena_offset_ + padded > arena_cap_)
       fail("arena overflow: need " + std::to_string(arena_offset_ + padded) +
@@ -81,20 +86,25 @@ void* Resources::alloc(size_t bytes) {
 
 void Resources::init_arena(size_t bytes) {
   if (arena_) fail("arena already initialized");
+  // +kDeviceAlign slack: the explicit start-alignment in alloc() can skip up
+  // to kDeviceAlign-1 bytes at the front; size the arena to absorb it so the
+  // device_bytes() sum always fits.
+  const size_t alloc_bytes = bytes + kDeviceAlign;
   size_t free = 0, total = 0;
   if (hipMemGetInfo(&free, &total) != hipSuccess)
     fail("hipMemGetInfo failed before arena alloc");
-  if (bytes > free)
-    fail("arena pre-allocation " + std::to_string(bytes) + " bytes (" +
-         std::to_string(bytes >> 20) + " MiB) exceeds " +
-         std::to_string(free >> 20) + " MiB free on device " +
-         std::to_string(device_) +
+  if (alloc_bytes > free)
+    fail("arena pre-allocation " + std::to_string(alloc_bytes) + " bytes (" +
+         std::to_string(alloc_bytes >> 20) + " MiB; " + std::to_string(bytes >> 20) +
+         " MiB device_bytes + " + std::to_string(kDeviceAlign) +
+         " align slack) exceeds " + std::to_string(free >> 20) +
+         " MiB free on device " + std::to_string(device_) +
          " — reduce max_seq_len / max_prefill_chunk, or use a leaner model");
-  if (hipMalloc(reinterpret_cast<void**>(&arena_), bytes) != hipSuccess)
-    fail("arena hipMalloc(" + std::to_string(bytes) + ") failed (fit-check passed; "
-         "concurrent allocation?");
-  arena_cap_ = bytes;
-  ledger_.push_back({arena_, bytes});  // freed at teardown as one owned region
+  if (hipMalloc(reinterpret_cast<void**>(&arena_), alloc_bytes) != hipSuccess)
+    fail("arena hipMalloc(" + std::to_string(alloc_bytes) +
+         ") failed (fit-check passed; concurrent allocation?)");
+  arena_cap_ = alloc_bytes;
+  ledger_.push_back({arena_, alloc_bytes});  // freed at teardown as one owned region
 }
 
 void Resources::init_scratch(size_t bytes) {

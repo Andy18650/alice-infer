@@ -160,7 +160,16 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
     resolved[name] = std::move(rs);
   }
 
-  // --- scratch: max over specs, allocated once, before construction ----------
+  // --- arena + scratch: pre-allocate device VRAM before construction -----
+  // Arena (one hipMalloc, bump-carved): sum of each block's device_bytes()
+  // (weights + transients + state, padded to kDeviceAlign). Fit-checked
+  // against hipMemGetInfo inside init_arena. Scratch (shared v4 prefill
+  // partials) stays on its own alloc, per the clean buffer-type separation.
+  uint64_t arena_bytes = 0;
+  for (const auto& entry : out.descriptor.blocks)
+    arena_bytes += resolved.at(entry.spec)->device_bytes(ec);
+  res.init_arena(arena_bytes);
+
   size_t scratch_bytes = 0;
   for (const auto& [_, rs] : resolved)
     scratch_bytes = std::max(scratch_bytes, rs->scratch_bytes(ec));

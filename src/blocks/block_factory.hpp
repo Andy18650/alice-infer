@@ -38,6 +38,15 @@ class BlockFactory {
   // Layout-derived byte size of the block's weight record (config → bytes).
   virtual uint64_t derived_bytes() const = 0;
 
+  // The block's own device VRAM (weights + transients + state), each
+  // allocation padded to gpu::kDeviceAlign, as a pure function of
+  // (type, version, config, engine knobs). The loader sums this over
+  // blocks to pre-allocate the arena (one hipMalloc) and do the upfront
+  // §15 fit-check. Must be >= the constructor's actual alloc total (an
+  // underestimate overflows the arena → loud failure; an overestimate just
+  // wastes arena slack).
+  virtual uint64_t device_bytes(const EngineConfig& ec) const = 0;
+
   // Scratch requirement: a pure function of (type, version, config, engine
   // knobs). The loader takes the max over factories and allocates once.
   // [open: scratch is a kernel-impl property, not a (type,version) one —

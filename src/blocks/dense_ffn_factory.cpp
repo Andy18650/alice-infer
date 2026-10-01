@@ -2,12 +2,14 @@
 
 #include <stdexcept>
 #include <string>
+#include <algorithm>
 
 #include <nlohmann/json.hpp>
 
 #include "../manifest.hpp"   // ModelConfig (block-constructor vocab)
 #include "alice/tensor.hpp"   // bf16, TensorView
 #include "gpu_rocm/dense_ffn.hpp"  // gpu_rocm::DenseFfnBF16
+#include "gpu_rocm/kernels.hpp"    // gemv_partial_floats
 
 namespace alice::block {
 
@@ -28,6 +30,25 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DenseFfnV1Config, io_dim, intermediate_dim)
 
 uint64_t DenseFfnBF16Factory::derived_bytes() const {
   return 3 * uint64_t(io) * inter * sizeof(bf16);
+}
+
+uint64_t DenseFfnBF16Factory::device_bytes(const EngineConfig& ec) const {
+  // Mirrors the constructor's allocations (dense_ffn.cpp). Each padded to
+  // gpu::kDeviceAlign so the arena total is exactly predictable.
+  const auto pad = [](size_t n) {
+    return (n + gpu::kDeviceAlign - 1) & ~(gpu::kDeviceAlign - 1);
+  };
+  const uint32_t mpc = ec.max_prefill_chunk;
+  uint64_t total = 0;
+  total += pad(size_t(2) * inter * io * sizeof(bf16));          // dw_gup_ [2I,d] fused
+  total += pad(size_t(io) * inter * sizeof(bf16));               // dw_down_ [d,I]
+  total += pad(size_t(mpc) * io * sizeof(bf16));                 // dx_ [mpc,d]
+  total += pad(size_t(mpc) * 2 * inter * sizeof(float));         // dgu_ [mpc,2I]
+  total += pad(size_t(mpc) * inter * sizeof(bf16));              // dact_ [mpc,I]
+  const size_t gemv = std::max(gpu_rocm::kernels::gemv_partial_floats(2 * inter, io),
+                               gpu_rocm::kernels::gemv_partial_floats(io, inter));
+  total += pad(gemv * sizeof(float));                            // dgemv_
+  return total;
 }
 
 size_t DenseFfnBF16Factory::scratch_bytes(const EngineConfig&) const { return 0; }

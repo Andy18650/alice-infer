@@ -2,12 +2,14 @@
 
 #include <stdexcept>
 #include <string>
+#include <algorithm>
 
 #include <nlohmann/json.hpp>
 
 #include "../manifest.hpp"   // ModelConfig
 #include "alice/tensor.hpp"   // bf16, TensorView
 #include "gpu_rocm/gqa_attention.hpp"  // gpu_rocm::GqaAttentionBF16
+#include "gpu_rocm/kernels.hpp"        // gemv_partial_floats, kAttn* constants
 
 namespace alice::block {
 
@@ -35,6 +37,33 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GqaAttentionV1Config, io_dim, qk_dim, v_dim,
 
 uint64_t GqaAttentionBF16Factory::derived_bytes() const {
   return uint64_t(2 * nh + 2 * nkv) * hd * io * sizeof(bf16);
+}
+
+uint64_t GqaAttentionBF16Factory::device_bytes(const EngineConfig& ec) const {
+  // Mirrors the constructor's allocations (gqa_attention.cpp). Each padded
+  // to gpu::kDeviceAlign so the arena total is exactly predictable.
+  const auto pad = [](size_t n) {
+    return (n + gpu::kDeviceAlign - 1) & ~(gpu::kDeviceAlign - 1);
+  };
+  const uint32_t qd = nh * hd, kvd = nkv * hd, qkvd = qd + 2 * kvd;
+  const uint32_t mpc = ec.max_prefill_chunk, max_seq = ec.max_seq_len;
+  const uint32_t half = hd / 2;
+  uint64_t total = 0;
+  total += pad(size_t(qkvd) * io * sizeof(bf16));                     // dw_qkv_
+  total += pad(size_t(io) * qd * sizeof(bf16));                      // dw_o_
+  total += pad(size_t(max_seq) * kvd * sizeof(float));               // dkcache_
+  total += pad(size_t(max_seq) * kvd * sizeof(float));               // dvcache_
+  total += pad(size_t(max_seq) * half * sizeof(float));              // drope_cos_
+  total += pad(size_t(max_seq) * half * sizeof(float));              // drope_sin_
+  total += pad(size_t(mpc) * io * sizeof(bf16));                     // dx_
+  total += pad(size_t(mpc) * qkvd * sizeof(float));                  // dqkv_
+  total += pad(size_t(mpc) * qd * sizeof(bf16));                     // dattn_
+  total += pad(size_t(gpu_rocm::kernels::kAttnMaxSplits) * nh *
+               gpu_rocm::kernels::kAttnSplitMaxS * (hd + 2) * sizeof(float));  // dsplit_
+  const size_t gemv = std::max(gpu_rocm::kernels::gemv_partial_floats(qkvd, io),
+                               gpu_rocm::kernels::gemv_partial_floats(io, qd));
+  total += pad(gemv * sizeof(float));                                // dgemv_
+  return total;
 }
 
 size_t GqaAttentionBF16Factory::scratch_bytes(const EngineConfig& ec) const {

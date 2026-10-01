@@ -56,6 +56,17 @@ Resources::~Resources() {
 }
 
 void* Resources::alloc(size_t bytes) {
+  if (arena_) {
+    const size_t padded = (bytes + kDeviceAlign - 1) & ~(kDeviceAlign - 1);
+    if (arena_offset_ + padded > arena_cap_)
+      fail("arena overflow: need " + std::to_string(arena_offset_ + padded) +
+           " (offset " + std::to_string(arena_offset_) + " + alloc " +
+           std::to_string(padded) + "), cap " + std::to_string(arena_cap_) +
+           " — device_bytes() underestimates the block's actual allocations");
+    void* p = arena_ + arena_offset_;
+    arena_offset_ += padded;
+    return p;
+  }
   void* p = nullptr;
   if (hipMalloc(&p, bytes) != hipSuccess) {
     const size_t free = total_free_device_bytes();
@@ -66,6 +77,24 @@ void* Resources::alloc(size_t bytes) {
   }
   ledger_.push_back({p, bytes});
   return p;
+}
+
+void Resources::init_arena(size_t bytes) {
+  if (arena_) fail("arena already initialized");
+  size_t free = 0, total = 0;
+  if (hipMemGetInfo(&free, &total) != hipSuccess)
+    fail("hipMemGetInfo failed before arena alloc");
+  if (bytes > free)
+    fail("arena pre-allocation " + std::to_string(bytes) + " bytes (" +
+         std::to_string(bytes >> 20) + " MiB) exceeds " +
+         std::to_string(free >> 20) + " MiB free on device " +
+         std::to_string(device_) +
+         " — reduce max_seq_len / max_prefill_chunk, or use a leaner model");
+  if (hipMalloc(reinterpret_cast<void**>(&arena_), bytes) != hipSuccess)
+    fail("arena hipMalloc(" + std::to_string(bytes) + ") failed (fit-check passed; "
+         "concurrent allocation?");
+  arena_cap_ = bytes;
+  ledger_.push_back({arena_, bytes});  // freed at teardown as one owned region
 }
 
 void Resources::init_scratch(size_t bytes) {
@@ -89,7 +118,12 @@ void* Resources::named(const std::string& name, size_t bytes) {
       return np.first;
     }
   }
-  void* p = alloc(bytes);  // reuses alloc's ledger + OOM context
+  // Named buffers keep their own alloc path (separate hipMalloc, off-arena)
+  // per the clean buffer-type separation.
+  void* p = nullptr;
+  if (hipMalloc(&p, bytes) != hipSuccess)
+    fail("named hipMalloc(" + std::to_string(bytes) + ") failed for '" + name + "'");
+  ledger_.push_back({p, bytes});
   named_.push_back({name, {p, bytes}});
   return p;
 }

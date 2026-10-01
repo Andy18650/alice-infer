@@ -77,6 +77,13 @@ int main(int argc, char** argv) {
 
   // Reference blocks reuse res.scratch() (init'd by load_blocks from the
   // factory scratch_bytes, same formula); no separate ref scratch.
+  // The reference blocks get their OWN Resources (on-demand, no arena) —
+  // load_blocks arena'd `res` for its 32 blocks, and a bump arena can't
+  // absorb a second block set. Two Resources on one device is fine.
+  Resources res_ref(0);
+  const uint64_t max_chunks = (uint64_t(ec.max_seq_len) + 63) / 64;
+  res_ref.init_scratch(size_t(mc.num_heads) * ec.max_prefill_chunk *
+                        max_chunks * (mc.head_dim + 2) * sizeof(float));
 
   // io buffer [S, d] fp32 with a deterministic pattern.
   std::vector<float> host_io(size_t(S) * mc.hidden_size);
@@ -97,13 +104,13 @@ int main(int argc, char** argv) {
       auto wo = loader::stage<bf16>(files, bs.weights.at("wo"));
       ref = std::make_unique<gpu_rocm::GqaAttentionBF16>(wq.view(), wk.view(),
                                                          wv.view(), wo.view(),
-                                                         mc, ec, res);
+                                                         mc, ec, res_ref);
     } else {
       auto g = loader::stage<bf16>(files, bs.weights.at("w_gate"));
       auto u = loader::stage<bf16>(files, bs.weights.at("w_up"));
       auto dn = loader::stage<bf16>(files, bs.weights.at("w_down"));
       ref = std::make_unique<gpu_rocm::DenseFfnBF16>(g.view(), u.view(), dn.view(),
-                                                     mc, ec, res);
+                                                     mc, ec, res_ref);
     }
 
     HIP_CHECK(hipMemcpy(io_a, host_io.data(), host_io.size() * 4,

@@ -29,6 +29,12 @@
 
 namespace alice::gpu {
 
+// Arena alignment: every device allocation is carved aligned + padded to
+// this boundary (256 B satisfies hipMalloc's default + every GPU load the
+// kernels do). One fixed arena alignment keeps device_bytes() a single
+// predictable number per block.
+inline constexpr size_t kDeviceAlign = 256;
+
 class Resources {
  public:
   // Validates the device exists, binds it as the calling thread's current
@@ -43,10 +49,19 @@ class Resources {
   BlasHandle handle() const { return handle_; }
   const std::string& arch() const { return arch_; }  // e.g. "gfx90a" (reporting)
 
-  // Device-memory allocation (on-demand: hipMalloc + ledger). The returned
-  // ptr is owned by Resources (freed at teardown); callers must NOT hipFree
-  // it. Throws on failure with OOM context.
+  // Device-memory allocation. If init_arena() was called, carves an aligned
+  // + padded slice from the arena (bump); otherwise hipMallocs on demand.
+  // Either way the returned ptr is Resources-owned (freed at teardown) and
+  // kDeviceAlign-aligned; callers must NOT hipFree it. Throws on failure
+  // (arena overflow / OOM, with free-MiB + ledger context).
   void* alloc(size_t bytes);
+
+  // Arena pre-allocation (the optimization): one hipMalloc of `bytes`, then
+  // alloc() bump-carves from it. Does a fit-check against hipMemGetInfo free
+  // first (fails loud, naming the bytes + free). device_bytes() summed over
+  // the blocks is the intended input. Optional — without it, alloc() is
+  // on-demand. Not re-callable.
+  void init_arena(size_t bytes);
 
   // Shared scratch (the v4 prefill partials buffer, design §14). Sized +
   // allocated once via init_scratch; NaN-poison-filled so read-before-first-
@@ -67,8 +82,12 @@ class Resources {
   BlasHandle handle_ = nullptr;
   float* scratch_ = nullptr;
   size_t scratch_bytes_ = 0;
-  // Owned allocations freed at teardown (alloc + named). scratch_ is freed
-  // separately (it carries the §14 poison invariant).
+  // Arena (optional, via init_arena): one hipMalloc'd region, bump-carved.
+  std::byte* arena_ = nullptr;
+  size_t arena_cap_ = 0;
+  size_t arena_offset_ = 0;
+  // Owned allocations freed at teardown (on-demand alloc + named + the arena
+  // base). scratch_ is freed separately (it carries the §14 poison invariant).
   std::vector<std::pair<void*, size_t>> ledger_;
   std::vector<std::pair<std::string, std::pair<void*, size_t>>> named_;
 };

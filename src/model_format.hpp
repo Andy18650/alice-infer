@@ -83,6 +83,29 @@ struct Descriptor {
   std::vector<BlockEntry> blocks;
 };
 
+// from_json for Descriptor: the field-extraction half of the former
+// parse_descriptor, in nlohmann's from_json infrastructure (uniform with
+// the macro-defined BlockSpecDecl/MemberDecl/BlockEntry). Optional fields
+// use value(key, default); the members map collects whichever of the five
+// member keys are present. The version!=1 semantic check stays in the
+// loader (from_json is pure extraction, no validation).
+inline void from_json(const nlohmann::json& m, Descriptor& d) {
+  d.name = m.at("name").get<std::string>();
+  d.version = m.at("version").get<uint32_t>();
+  d.max_context = m.at("max_context").get<uint64_t>();
+  d.producer = m.value("producer", "");
+  d.packager = m.value("packager", "");
+  d.license = m.value("license", "");
+  d.license_url = m.value("license_url", "");
+  d.license_text = m.value("license_text", "");
+  for (const char* name :
+       {"chat_template", "tokenizer", "embedder", "language_head", "trunk"}) {
+    if (m.contains(name)) d.members[name] = m.at(name).get<MemberDecl>();
+  }
+  d.specs = m.at("block_specs").get<std::map<std::string, BlockSpecDecl>>();
+  d.blocks = m.at("blocks").get<std::vector<BlockEntry>>();
+}
+
 // BlockFactory (the loader's block-construction seam, the former
 // "ResolvedSpec") lives in src/blocks/block_factory.hpp; the THP-backed
 // staging buffer (Chunk) is a loader-private RAII helper in model_format.cpp,

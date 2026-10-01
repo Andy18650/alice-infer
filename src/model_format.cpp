@@ -17,15 +17,12 @@
 #include <nlohmann/json.hpp>
 
 #include "blocks/block_factory.hpp"  // BlockFactory + registry() (block layer)
-#include "gpu/resources.hpp"
 #include "data_loader.hpp"  // LocalFileDataLoader (content-addressed fetch)
-#include "manifest.hpp"  // ModelConfig: the block constructors' vocabulary
-#include "alice/tensor.hpp"
+#include "gpu/resources.hpp"  // gpu::Resources (load_blocks param)
 
 namespace alice::modelfmt {
 
 using nlohmann::json;
-using gpu::Resources;
 
 namespace {
 
@@ -42,62 +39,10 @@ struct Timer {
   }
 };
 
-// --- config: stored raw; types parse their own (struct +
-// NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE) -------------------------------------------------
-
-// Records parse via get<Record>() (NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE in
-// the header); json exceptions carry the key name. Unknown fields are
-// ignored: schema evolution is version-governed (a field addition is a
-// version bump, and an old engine rejects the file on the version —
-// catching a forgotten bump is review/CI's job, not the loader's).
-
-// MemberDecl, BlockSpecDecl, and BlockEntry parse via their
-// NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE from_json (header) — json members and
-// nested macro-defined types compose correctly, and faults throw with the
-// full JSON path (JSON_DIAGNOSTICS), converted once at the load_blocks
-// boundary. Only SEMANTIC checks hand-build context (unknown
-// type/version/codec, hash mismatches): things the json library cannot
-// know.
-Descriptor parse_descriptor(const json& m) {
-  Descriptor d;
-  d.name = m.at("name").get<std::string>();
-  d.version = m.at("version").get<uint32_t>();
-  if (d.version != 1)
-    fail("descriptor: unsupported version " + std::to_string(d.version) +
-         " (this loader reads version 1)");
-  d.max_context = m.at("max_context").get<uint64_t>();
-  if (m.contains("producer")) d.producer = m.at("producer").get<std::string>();
-  if (m.contains("packager")) d.packager = m.at("packager").get<std::string>();
-  if (m.contains("license")) d.license = m.at("license").get<std::string>();
-  if (m.contains("license_url")) d.license_url = m.at("license_url").get<std::string>();
-  if (m.contains("license_text")) d.license_text = m.at("license_text").get<std::string>();
-
-  // Members: parsed structurally, set aside this round (docs/model-loader.md).
-  for (const char* name :
-       {"chat_template", "tokenizer", "embedder", "language_head", "trunk"}) {
-    if (m.contains(name)) d.members[name] = m.at(name).get<MemberDecl>();
-  }
-
-  if (!m.at("block_specs").is_object()) fail("descriptor: block_specs must be an object");
-  for (auto it = m.at("block_specs").begin(); it != m.at("block_specs").end(); ++it)
-    d.specs[it.key()] = it.value().get<BlockSpecDecl>();
-
-  const json& blocks = m.at("blocks");
-  if (!blocks.is_array() || blocks.empty())
-    fail("descriptor: blocks must be a non-empty array");
-  for (const auto& b : blocks)
-    d.blocks.push_back(b.get<BlockEntry>());
-  return d;
-}
-
-}  // namespace
-
-
-// ---------------------------------------------------------------------------
-// load_blocks
-// ---------------------------------------------------------------------------
-
-namespace {
+// Descriptor parses via from_json (header); json exceptions carry the key
+// name (JSON_DIAGNOSTICS), converted once at the load_blocks boundary. Only
+// SEMANTIC checks hand-build context here (version, unknown type/codec,
+// hash mismatches): things the json library cannot know.
 
 // Reads a .model descriptor file and returns the parsed envelope: text
 // region (everything before the first NUL, which must be \n- or \r\n-
@@ -140,10 +85,6 @@ json read_envelope(const std::filesystem::path& file) {
   return envelope;
 }
 
-}  // namespace
-
-namespace {
-
 // All json faults (missing keys, wrong types) convert here, ONCE: with
 // JSON_DIAGNOSTICS the exception message carries the full JSON pointer
 // path (e.g. "/model/block_specs/ffn/config"), replacing the hand-rolled
@@ -179,7 +120,10 @@ LoadedBlocks load_blocks_impl(const std::filesystem::path& model_file,
   }
   const json& model = envelope.at("model");
   if (!model.is_object()) fail("envelope.model must be an object");
-  out.descriptor = parse_descriptor(model);
+  out.descriptor = model.get<Descriptor>();
+  if (out.descriptor.version != 1)
+    fail("descriptor: unsupported version " + std::to_string(out.descriptor.version) +
+         " (this loader reads version 1)");
   st.parse_ms = t.ms();
   st.specs = out.descriptor.specs.size();
 

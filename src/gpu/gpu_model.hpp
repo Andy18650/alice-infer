@@ -15,7 +15,6 @@
 #include <cstdint>
 #include <memory>
 #include <span>
-#include <string>
 #include <vector>
 
 #include "alice/engine_config.hpp"
@@ -45,12 +44,6 @@ class Sampler;
 
 class Model {
  public:
-  // model path + manifest -> Model. Throws on contract violation or if the
-  // build/machine lacks GPU-resident support.
-  static std::unique_ptr<Model> load(const std::string& model_dir,
-                                     const std::string& manifest_path,
-                                     const EngineConfig& cfg);
-
   // Parsed .model descriptor + content-addressed bytes source -> Model.
   // The model-format load path: constructs the device model in place from
   // the descriptor's content-addressed blocks + members (same component

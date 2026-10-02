@@ -6,7 +6,6 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../model_config.hpp"   // ModelConfig (block-constructor vocab)
 #include "alice/tensor.hpp"   // bf16, TensorView
 #include "gpu_rocm/dense_ffn.hpp"  // gpu_rocm::DenseFfnBF16
 #include "gpu_rocm/kernels.hpp"    // gemv_partial_floats
@@ -19,17 +18,14 @@ namespace {
   throw std::runtime_error("block factory: " + what);
 }
 
-// dense_ffn_bf16 v1 config (missing keys throw via the macro's from_json).
-struct DenseFfnV1Config {
-  uint32_t io_dim = 0;
-  uint32_t intermediate_dim = 0;
-};
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DenseFfnV1Config, io_dim, intermediate_dim)
-
 }  // namespace
 
+// JSON binding for the block-type config (design §8): plain POD, the macro
+// is the only nlohmann touch and stays in the factory .cpp.
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DenseFfnConfig, io_dim, intermediate_dim)
+
 uint64_t DenseFfnBF16Factory::derived_bytes() const {
-  return 3 * uint64_t(io) * inter * sizeof(bf16);
+  return 3 * uint64_t(cfg_.io_dim) * cfg_.intermediate_dim * sizeof(bf16);
 }
 
 uint64_t DenseFfnBF16Factory::device_bytes(const EngineConfig& ec) const {
@@ -38,6 +34,7 @@ uint64_t DenseFfnBF16Factory::device_bytes(const EngineConfig& ec) const {
   const auto pad = [](size_t n) {
     return (n + gpu::kDeviceAlign - 1) & ~(gpu::kDeviceAlign - 1);
   };
+  const uint32_t io = cfg_.io_dim, inter = cfg_.intermediate_dim;
   const uint32_t mpc = ec.max_prefill_chunk;
   uint64_t total = 0;
   total += pad(size_t(2) * inter * io * sizeof(bf16));          // dw_gup_ [2I,d] fused
@@ -54,7 +51,7 @@ uint64_t DenseFfnBF16Factory::device_bytes(const EngineConfig& ec) const {
 size_t DenseFfnBF16Factory::scratch_bytes(const EngineConfig&) const { return 0; }
 
 std::string DenseFfnBF16Factory::interface_sig() const {
-  return "io:" + std::to_string(io);
+  return "io:" + std::to_string(cfg_.io_dim);
 }
 
 std::unique_ptr<Block> DenseFfnBF16Factory::construct(
@@ -63,6 +60,7 @@ std::unique_ptr<Block> DenseFfnBF16Factory::construct(
   if (data.size() != derived_bytes())
     fail("dense_ffn_bf16: decoded chunk is " + std::to_string(data.size()) +
          " bytes but the v1 layout derives " + std::to_string(derived_bytes()));
+  const uint32_t io = cfg_.io_dim, inter = cfg_.intermediate_dim;
   const bf16* base = reinterpret_cast<const bf16*>(data.data());
   size_t off = 0;
   auto take = [&](uint32_t rows, uint32_t cols) {
@@ -73,10 +71,7 @@ std::unique_ptr<Block> DenseFfnBF16Factory::construct(
   const auto gate = take(inter, io);
   const auto up = take(inter, io);
   const auto down = take(io, inter);
-  ModelConfig mc;
-  mc.hidden_size = io;
-  mc.intermediate_size = inter;
-  return std::make_unique<gpu_rocm::DenseFfnBF16>(gate, up, down, mc, ec, res);
+  return std::make_unique<gpu_rocm::DenseFfnBF16>(gate, up, down, cfg_, ec, res);
 }
 
 std::unique_ptr<BlockFactory> DenseFfnBF16Factory::from_spec(uint32_t version,
@@ -84,12 +79,11 @@ std::unique_ptr<BlockFactory> DenseFfnBF16Factory::from_spec(uint32_t version,
   if (version != 1)
     fail("dense_ffn_bf16: unsupported version " + std::to_string(version) +
          " (registry provides version 1)");
-  const DenseFfnV1Config cfg = config.get<DenseFfnV1Config>();
-  auto r = std::make_unique<DenseFfnBF16Factory>();
-  r->io = cfg.io_dim;
-  r->inter = cfg.intermediate_dim;
-  if (r->io == 0 || r->inter == 0)
+  const DenseFfnConfig cfg = config.get<DenseFfnConfig>();
+  if (cfg.io_dim == 0 || cfg.intermediate_dim == 0)
     fail("dense_ffn_bf16: io_dim/intermediate_dim must be non-zero");
+  auto r = std::make_unique<DenseFfnBF16Factory>();
+  r->cfg_ = cfg;
   return r;
 }
 

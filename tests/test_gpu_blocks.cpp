@@ -12,7 +12,6 @@
 #include <gtest/gtest.h>
 #include <hip/hip_runtime_api.h>
 
-#include "../src/blocks/gpu_rocm/dense_ffn.hpp"
 #include "../src/blocks/gpu_rocm/gqa_attention.hpp"
 #include "../src/gpu/gpu_model.hpp"
 
@@ -21,7 +20,7 @@ namespace {
 using alice::bf16;
 using alice::EngineConfig;
 using alice::gpu::Resources;
-using alice::ModelConfig;
+using alice::block::GqaAttentionConfig;
 using alice::Tensor;
 using alice::TensorView;
 
@@ -45,9 +44,9 @@ std::vector<float> mat_vals(uint32_t r, uint32_t c) {
   return v;
 }
 
-size_t prefill_scratch_bytes(const ModelConfig& mc, const EngineConfig& ec) {
-  return size_t(mc.num_heads) * ec.max_prefill_chunk *
-         ((ec.max_seq_len + 63) / 64) * (mc.head_dim + 2) * 4;
+size_t prefill_scratch_bytes(const GqaAttentionConfig& cfg, const EngineConfig& ec) {
+  return size_t(cfg.num_q_heads) * ec.max_prefill_chunk *
+         ((ec.max_seq_len + 63) / 64) * (cfg.qk_dim + 2) * 4;
 }
 
 std::vector<float> run_gpu_block(alice::block::Block& b, const std::vector<float>& io,
@@ -75,23 +74,24 @@ float max_abs_diff(const std::vector<float>& a, const std::vector<float>& b) {
 // ---------------------------------------------------------------------------
 TEST(GpuBlocks, AttentionIncrementalEqualsBatched) {
   Resources res(0);
-  ModelConfig mc;
-  mc.num_heads = 2;
-  mc.num_kv_heads = 1;
-  mc.head_dim = 4;
-  mc.hidden_size = 8;
-  mc.rope_theta = 10000.0f;
+  GqaAttentionConfig cfg;
+  cfg.io_dim = 8;
+  cfg.qk_dim = 4;
+  cfg.v_dim = 4;
+  cfg.num_q_heads = 2;
+  cfg.num_kv_heads = 1;
+  cfg.rope_theta = 10000.0;
   EngineConfig ec;
   ec.max_seq_len = 8;
   ec.max_prefill_chunk = 4;
-  res.init_scratch(prefill_scratch_bytes(mc, ec));
+  res.init_scratch(prefill_scratch_bytes(cfg, ec));
   auto mk = [&]() {
     Bf16Mat* wq = new Bf16Mat(8, 8, mat_vals(8, 8));
     Bf16Mat* wk = new Bf16Mat(4, 8, mat_vals(9, 9));
     Bf16Mat* wv = new Bf16Mat(4, 8, mat_vals(10, 10));
     Bf16Mat* wo = new Bf16Mat(8, 8, mat_vals(11, 11));
     auto b = std::make_unique<alice::gpu_rocm::GqaAttentionBF16>(
-        wq->v(), wk->v(), wv->v(), wo->v(), mc, ec, res);
+        wq->v(), wk->v(), wv->v(), wo->v(), cfg, ec, res);
     return std::tuple{
         std::unique_ptr<Bf16Mat>(wq), std::unique_ptr<Bf16Mat>(wk),
         std::unique_ptr<Bf16Mat>(wv), std::unique_ptr<Bf16Mat>(wo), std::move(b)};
@@ -111,20 +111,21 @@ TEST(GpuBlocks, AttentionIncrementalEqualsBatched) {
 }
 
 TEST(GpuBlocks, AttentionResetRestartsPosition) {
-  ModelConfig mc;
-  mc.num_heads = 2;
-  mc.num_kv_heads = 1;
-  mc.head_dim = 4;
-  mc.hidden_size = 8;
-  mc.rope_theta = 10000.0f;
+  GqaAttentionConfig cfg;
+  cfg.io_dim = 8;
+  cfg.qk_dim = 4;
+  cfg.v_dim = 4;
+  cfg.num_q_heads = 2;
+  cfg.num_kv_heads = 1;
+  cfg.rope_theta = 10000.0;
   EngineConfig ec;
   ec.max_seq_len = 8;
   ec.max_prefill_chunk = 4;
   Bf16Mat wq(8, 8, mat_vals(8, 8)), wk(4, 8, mat_vals(9, 9)), wv(4, 8, mat_vals(10, 10)),
       wo(8, 8, mat_vals(11, 11));
   Resources res(0);
-  res.init_scratch(prefill_scratch_bytes(mc, ec));
-  alice::gpu_rocm::GqaAttentionBF16 b(wq.v(), wk.v(), wv.v(), wo.v(), mc, ec, res);
+  res.init_scratch(prefill_scratch_bytes(cfg, ec));
+  alice::gpu_rocm::GqaAttentionBF16 b(wq.v(), wk.v(), wv.v(), wo.v(), cfg, ec, res);
   auto first = run_gpu_block(b, mat_vals(3, 8), 3, 8);
   EXPECT_EQ(b.position(), 3u);
   b.reset_state();

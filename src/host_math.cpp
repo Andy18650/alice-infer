@@ -23,22 +23,22 @@ void add_rows(float* dst, const float* src, uint32_t S, uint32_t d) {
 }
 
 void build_rope_tables(float* cos_t, float* sin_t, uint32_t max_seq, uint32_t head_dim,
-                       float theta, bool has_scaling, const RopeScaling& rs) {
+                       float theta, const std::optional<RopeScaling>& rs) {
   const uint32_t half = head_dim / 2;
   const double ln_theta = std::log(double(theta));
   for (uint32_t i = 0; i < half; ++i) {
     double f = std::exp(-(2.0 * i / double(head_dim)) * ln_theta);
-    if (has_scaling) {
+    if (rs) {
       const double wavelen = 2.0 * M_PI / f;
-      const double orig = double(rs.original_max_position_embeddings);
-      if (wavelen > orig / double(rs.low_freq_factor)) {
-        f /= double(rs.factor);  // low-frequency band
-      } else if (wavelen >= orig / double(rs.high_freq_factor)) {
+      const double orig = double(rs->original_max_position_embeddings);
+      if (wavelen > orig / double(rs->low_freq_factor)) {
+        f /= double(rs->factor);  // low-frequency band
+      } else if (wavelen >= orig / double(rs->high_freq_factor)) {
         // medium band: smooth interpolation
         const double s =
-            (orig / wavelen - double(rs.low_freq_factor)) /
-            (double(rs.high_freq_factor) - double(rs.low_freq_factor));
-        f = (1.0 - s) * f / double(rs.factor) + s * f;
+            (orig / wavelen - double(rs->low_freq_factor)) /
+            (double(rs->high_freq_factor) - double(rs->low_freq_factor));
+        f = (1.0 - s) * f / double(rs->factor) + s * f;
       }  // else high-frequency band: unchanged
     }
     for (uint32_t p = 0; p < max_seq; ++p) {

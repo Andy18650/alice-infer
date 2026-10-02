@@ -6,6 +6,7 @@
 // constructs; the layout order MUST match tools/pack_model.py.
 
 #include "block_factory.hpp"
+#include "dense_ffn_config.hpp"  // DenseFfnConfig (parsed spec state + ctor vocab)
 
 namespace alice::block {
 
@@ -26,8 +27,7 @@ class DenseFfnBF16Factory final : public BlockFactory {
                                    const EngineConfig& ec) const override;
 
  private:
-  uint32_t io = 0;     // hidden_size
-  uint32_t inter = 0;  // intermediate_size
+  DenseFfnConfig cfg_;
 };
 
 }  // namespace alice::block

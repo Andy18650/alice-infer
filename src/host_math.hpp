@@ -8,8 +8,9 @@
 // kernels, not host blocks.)
 
 #include <cstdint>
+#include <optional>
 
-#include "model_config.hpp"  // RopeScaling
+#include "rope_scaling.hpp"  // RopeScaling (a build_rope_tables param)
 
 // Intra-op parallelism is the implementation's private business (design
 // §10): OpenMP when available, transparent sequential fallback otherwise.
@@ -32,8 +33,9 @@ void add_rows(float* dst, const float* src, uint32_t S, uint32_t d);   // dst +=
 // RoPE tables, HF/Llama convention: cos_t[p*half + i] = cos(p * inv_freq[i]),
 // inv_freq[i] = theta^(-2i/head_dim), with optional llama3 frequency scaling
 // (low band divided by factor, high band unchanged, smooth between).
+// `rs` present => apply scaling; absent => plain theta tables.
 void build_rope_tables(float* cos_t, float* sin_t, uint32_t max_seq, uint32_t head_dim,
-                       float theta, bool has_scaling, const RopeScaling& rs);
+                       float theta, const std::optional<RopeScaling>& rs);
 
 // Rotate one head vector in place at one position (half-split pairing:
 // x[i] with x[i+half]).

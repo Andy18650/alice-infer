@@ -33,16 +33,16 @@ namespace {
 }  // namespace
 
 GqaAttentionBF16::GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, TensorView<bf16> wv,
-                                   TensorView<bf16> wo, const ModelConfig& mc,
+                                   TensorView<bf16> wo, const block::GqaAttentionConfig& cfg,
                                    const EngineConfig& ec, gpu::Resources& res)
-    : nh_(mc.num_heads),
-      nkv_(mc.num_kv_heads),
-      hd_(mc.head_dim),
-      d_(mc.hidden_size),
-      group_(mc.num_heads / mc.num_kv_heads),
+    : nh_(cfg.num_q_heads),
+      nkv_(cfg.num_kv_heads),
+      hd_(cfg.qk_dim),
+      d_(cfg.io_dim),
+      group_(cfg.num_q_heads / cfg.num_kv_heads),
       max_seq_(ec.max_seq_len),
       mpc_(ec.max_prefill_chunk),
-      scale_(1.0f / std::sqrt(float(mc.head_dim))) {
+      scale_(1.0f / std::sqrt(float(cfg.qk_dim))) {
   const uint32_t qd = nh_ * hd_, kvd = nkv_ * hd_;
   if (wq.rows() != qd || wq.cols() != d_ || wk.rows() != kvd || wk.cols() != d_ ||
       wv.rows() != kvd || wv.cols() != d_ || wo.rows() != d_ || wo.cols() != qd)
@@ -68,8 +68,8 @@ GqaAttentionBF16::GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, Ten
 
   const uint32_t half = hd_ / 2;
   std::vector<float> cos_t(size_t(max_seq_) * half), sin_t(size_t(max_seq_) * half);
-  host_math::build_rope_tables(cos_t.data(), sin_t.data(), max_seq_, hd_, mc.rope_theta,
-                                 mc.has_rope_scaling, mc.rope_scaling);
+  host_math::build_rope_tables(cos_t.data(), sin_t.data(), max_seq_, hd_,
+                                 float(cfg.rope_theta), cfg.rope_scaling);
   drope_cos_ = static_cast<float*>(res.alloc(cos_t.size() * sizeof(float)));
   drope_sin_ = static_cast<float*>(res.alloc(sin_t.size() * sizeof(float)));
   HIP_CHECK(hipMemcpy(drope_cos_, cos_t.data(), cos_t.size() * sizeof(float),

@@ -30,13 +30,16 @@
 #include "../src/blocks/gpu_rocm/dense_ffn.hpp"
 #include "../src/blocks/gpu_rocm/gqa_attention.hpp"
 #include "../src/gpu/resources.hpp"
-#include "../src/model_config.hpp"
+#include "../src/blocks/dense_ffn_config.hpp"
+#include "../src/blocks/gqa_attention_config.hpp"
 
 namespace {
 
 using alice::bf16;
 using alice::EngineConfig;
-using alice::ModelConfig;
+using alice::RopeScaling;
+using alice::block::DenseFfnConfig;
+using alice::block::GqaAttentionConfig;
 using alice::gpu::Resources;
 using alice::TensorView;
 
@@ -97,9 +100,9 @@ std::vector<float> run_gpu_block(Block& b, const std::vector<float>& io, uint32_
   return out;
 }
 
-size_t prefill_scratch_bytes(const ModelConfig& mc, const EngineConfig& ec) {
-  return size_t(mc.num_heads) * ec.max_prefill_chunk *
-         ((ec.max_seq_len + 63) / 64) * (mc.head_dim + 2) * sizeof(float);
+size_t prefill_scratch_bytes(const GqaAttentionConfig& cfg, const EngineConfig& ec) {
+  return size_t(cfg.num_q_heads) * ec.max_prefill_chunk *
+         ((ec.max_seq_len + 63) / 64) * (cfg.qk_dim + 2) * sizeof(float);
 }
 
 // ---------------------------------------------------------------------------
@@ -116,20 +119,22 @@ void run_attention_test(uint32_t S, float tolerance) {
   const uint32_t kvd =
       meta.at("num_kv_heads").get<uint32_t>() * meta.at("head_dim").get<uint32_t>();
 
-  ModelConfig mc;
-  mc.hidden_size = d;
-  mc.num_heads = meta.at("num_heads").get<uint32_t>();
-  mc.num_kv_heads = meta.at("num_kv_heads").get<uint32_t>();
-  mc.head_dim = meta.at("head_dim").get<uint32_t>();
-  mc.rope_theta = meta.at("rope_theta").get<float>();
-  mc.has_rope_scaling = meta.value("has_rope_scaling", false);
-  if (mc.has_rope_scaling) {
+  GqaAttentionConfig cfg;
+  cfg.io_dim = d;
+  cfg.qk_dim = meta.at("head_dim").get<uint32_t>();
+  cfg.v_dim = cfg.qk_dim;
+  cfg.num_q_heads = meta.at("num_heads").get<uint32_t>();
+  cfg.num_kv_heads = meta.at("num_kv_heads").get<uint32_t>();
+  cfg.rope_theta = meta.at("rope_theta").get<double>();
+  if (meta.value("has_rope_scaling", false)) {
     const auto& rsj = meta.at("rope_scaling");
-    mc.rope_scaling.factor = rsj.at("factor").get<float>();
-    mc.rope_scaling.low_freq_factor = rsj.at("low_freq_factor").get<float>();
-    mc.rope_scaling.high_freq_factor = rsj.at("high_freq_factor").get<float>();
-    mc.rope_scaling.original_max_position_embeddings =
+    RopeScaling rs;
+    rs.factor = rsj.at("factor").get<float>();
+    rs.low_freq_factor = rsj.at("low_freq_factor").get<float>();
+    rs.high_freq_factor = rsj.at("high_freq_factor").get<float>();
+    rs.original_max_position_embeddings =
         rsj.at("original_max_position_embeddings").get<uint32_t>();
+    cfg.rope_scaling = rs;
   }
 
   EngineConfig ec;
@@ -145,10 +150,10 @@ void run_attention_test(uint32_t S, float tolerance) {
   auto want = read_f32(S, "attn_out.f32", size_t(S) * d);
 
   Resources res(0);
-  res.init_scratch(prefill_scratch_bytes(mc, ec));
+  res.init_scratch(prefill_scratch_bytes(cfg, ec));
   alice::gpu_rocm::GqaAttentionBF16 attn(
       TensorView<bf16>(wq.data(), qd, d), TensorView<bf16>(wk.data(), kvd, d),
-      TensorView<bf16>(wv.data(), kvd, d), TensorView<bf16>(wo.data(), d, qd), mc, ec,
+      TensorView<bf16>(wv.data(), kvd, d), TensorView<bf16>(wo.data(), d, qd), cfg, ec,
       res);
 
   auto got = run_gpu_block(attn, input, S);
@@ -170,9 +175,9 @@ void run_ffn_test(uint32_t S, float tolerance) {
   const uint32_t d = meta.at("hidden_size").get<uint32_t>();
   const uint32_t inter = meta.at("intermediate_size").get<uint32_t>();
 
-  ModelConfig mc;
-  mc.hidden_size = d;
-  mc.intermediate_size = inter;
+  DenseFfnConfig cfg;
+  cfg.io_dim = d;
+  cfg.intermediate_dim = inter;
 
   EngineConfig ec;
   ec.max_seq_len = 8192;
@@ -188,7 +193,7 @@ void run_ffn_test(uint32_t S, float tolerance) {
   Resources res(0);
   alice::gpu_rocm::DenseFfnBF16 ffn(
       TensorView<bf16>(gate.data(), inter, d), TensorView<bf16>(up.data(), inter, d),
-      TensorView<bf16>(down.data(), d, inter), mc, ec, res);
+      TensorView<bf16>(down.data(), d, inter), cfg, ec, res);
 
   auto got = run_gpu_block(ffn, input, S);
 

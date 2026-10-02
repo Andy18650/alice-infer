@@ -153,8 +153,8 @@ TEST(GpuKernels, RopeAppendMatchesOracle) {
   auto qkv = pattern(size_t(S) * qkvd, 8);
   std::vector<float> oracle_qkv = qkv;
   std::vector<float> cos_t(max_seq * half), sin_t(max_seq * half);
-  alice::RopeScaling rs;
-  hm::build_rope_tables(cos_t.data(), sin_t.data(), max_seq, hd, 10000.0f, false, rs);
+  hm::build_rope_tables(cos_t.data(), sin_t.data(), max_seq, hd, 10000.0f,
+                       std::nullopt);
 
   // oracle: rotate q/k in place, then memcpy rows into caches
   std::vector<float> okc(size_t(max_seq) * kvd, 0.0f), ovc(size_t(max_seq) * kvd, 0.0f);

@@ -8,7 +8,7 @@
 // match tools/pack_model.py.
 
 #include "block_factory.hpp"
-#include "../model_config.hpp"  // ModelConfig (block-constructor vocab)
+#include "gqa_attention_config.hpp"  // GqaAttentionConfig (parsed spec state + ctor vocab)
 
 namespace alice::block {
 
@@ -29,11 +29,7 @@ class GqaAttentionBF16Factory final : public BlockFactory {
                                    const EngineConfig& ec) const override;
 
  private:
-  uint32_t io = 0;    // hidden_size
-  uint32_t nh = 0;    // num query heads
-  uint32_t nkv = 0;   // num kv heads
-  uint32_t hd = 0;    // head dim
-  ModelConfig mc;     // built during from_spec, consumed by construct
+  GqaAttentionConfig cfg_;
 };
 
 }  // namespace alice::block

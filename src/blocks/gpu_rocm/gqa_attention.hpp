@@ -10,7 +10,7 @@
 #include "../../gpu/resources.hpp"
 
 #include "alice/engine_config.hpp"
-#include "../../model_config.hpp"
+#include "../gqa_attention_config.hpp"
 #include "alice/tensor.hpp"
 
 namespace alice::gpu_rocm {
@@ -22,7 +22,7 @@ class GqaAttentionBF16 final : public block::StatefulBlock {
   // (bookkeeping); the block borrows the handle + carved pointers + scratch
   // and does NOT free them (Resources owns them, freed at teardown).
   GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, TensorView<bf16> wv, TensorView<bf16> wo,
-                   const ModelConfig& mc, const EngineConfig& ec,
+                   const block::GqaAttentionConfig& cfg, const EngineConfig& ec,
                    gpu::Resources& res);
   ~GqaAttentionBF16() override;
 

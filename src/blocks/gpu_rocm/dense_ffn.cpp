@@ -31,9 +31,9 @@ namespace {
 }  // namespace
 
 DenseFfnBF16::DenseFfnBF16(TensorView<bf16> w_gate, TensorView<bf16> w_up, TensorView<bf16> w_down,
-                           const ModelConfig& mc, const EngineConfig& ec,
+                           const block::DenseFfnConfig& cfg, const EngineConfig& ec,
                            gpu::Resources& res)
-    : d_(mc.hidden_size), inter_(mc.intermediate_size), mpc_(ec.max_prefill_chunk) {
+    : d_(cfg.io_dim), inter_(cfg.intermediate_dim), mpc_(ec.max_prefill_chunk) {
   if (w_gate.rows() != inter_ || w_gate.cols() != d_ || w_up.rows() != inter_ ||
       w_up.cols() != d_ || w_down.rows() != d_ || w_down.cols() != inter_)
     throw std::invalid_argument("gpu::DenseFfnBF16: weight shape mismatch vs config");

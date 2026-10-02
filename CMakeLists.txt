@@ -21,8 +21,6 @@ endif()
 
 # The engine is being rebuilt from docs/engine-design.md.
 add_library(alice
-  src/safetensors.cpp
-  src/manifest.cpp
   src/blocks/cpu_generic/kernels.cpp
   src/blocks/cpu_generic/dense_ffn.cpp
   src/blocks/cpu_generic/gqa_attention.cpp
@@ -116,8 +114,6 @@ if(ALICE_BUILD_TESTS)
   endif()
   add_executable(alice_tests
     tests/test_tensor.cpp
-    tests/test_safetensors.cpp
-    tests/test_manifest.cpp
     tests/test_tokenizer.cpp
   )
   target_sources(alice_tests PRIVATE tests/test_gpu_kernels.cpp

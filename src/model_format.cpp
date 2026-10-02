@@ -134,7 +134,7 @@ std::unique_ptr<Model> Model::load_from_format(
     modelfmt::LoadStats& st) {
   auto m = std::unique_ptr<Model>(new Model());  // private ctor; static member
   m->cfg_ = ec;  // forward() reads cfg_.max_prefill_chunk / max_seq_len
-  m->resources_ = std::make_unique<Resources>(0);  // device 0 (single-GCD bring-up)
+  m->resources_ = std::make_unique<Resources>(0, 0, ec.tp_degree);  // rank 0, single rank for now
   Resources& res = *m->resources_;
 
   // --- spec pre-resolution + composition check: every spec resolves

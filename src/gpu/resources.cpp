@@ -31,7 +31,8 @@ size_t total_free_device_bytes() {
 
 }  // namespace
 
-Resources::Resources(int dev) : device_(dev) {
+Resources::Resources(int dev, int rank, int world_size)
+    : device_(dev), rank_(rank), world_size_(world_size) {
   int n = 0;
   HIP_CHECK(hipGetDeviceCount(&n));
   if (dev < 0 || dev >= n)

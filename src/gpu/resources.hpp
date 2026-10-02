@@ -40,12 +40,14 @@ class Resources {
   // Validates the device exists, binds it as the calling thread's current
   // device (hipSetDevice is per-thread), creates the BLAS handle. Throws
   // std::runtime_error loudly.
-  explicit Resources(int device);
+  explicit Resources(int device, int rank = 0, int world_size = 1);
   ~Resources();
   Resources(const Resources&) = delete;
   Resources& operator=(const Resources&) = delete;
 
   int device() const { return device_; }
+  int rank() const { return rank_; }
+  int world_size() const { return world_size_; }
   BlasHandle handle() const { return handle_; }
   const std::string& arch() const { return arch_; }  // e.g. "gfx90a" (reporting)
 
@@ -78,6 +80,8 @@ class Resources {
 
  private:
   int device_ = 0;
+  int rank_ = 0;
+  int world_size_ = 1;
   std::string arch_;
   BlasHandle handle_ = nullptr;
   float* scratch_ = nullptr;

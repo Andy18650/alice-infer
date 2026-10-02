@@ -3,9 +3,10 @@
 A from-scratch C++20 LLM inference engine for this machine (4× MI250X =
 8 GCDs, gfx90a; Zen3 host). **GPU-mandatory**: model state is
 device-resident and the block loop runs entirely on device — the host
-loads weights, tokenizes, and reads back token ids. Weights load directly
-from safetensors against an externally-authored manifest that acts as the
-total contract. Single-user, single-context.
+loads weights, tokenizes, and reads back token ids. Models load via the
+alice model format (a packed `.model` descriptor + `weights.bin`, packed
+from HuggingFace safetensors by `tools/pack_model.py`). Single-user,
+single-context.
 
 The full design rationale lives in `docs/engine-design.md`.
 
@@ -46,25 +47,27 @@ reference) are NOT committed (777 MB each). Regenerate with:
 ## Run
 
 ```sh
-./build-release/alice_repl <model_dir> <manifest.json> \
-    [max_new=64] [max_seq=8192] [prompt]
+./build-release/alice_repl <model.model> [max_new=64] [max_seq=8192] [prompt]
 # no prompt -> interactive REPL; with prompt -> single non-interactive round
 ```
 
 Examples:
 
 ```sh
-./build-release/alice_repl /opt/models/Llama-3.2-1B-Instruct \
-    models/llama-3.2-1b-instruct.manifest.json 32 8192 "The capital of France is"
+./build-release/alice_repl /opt/models/alice/Llama-3.2-1B-Instruct/model.model \
+    32 8192 "The capital of France is"
 
-./build-release/alice_repl /opt/models/deepseek-ai/deepseek-r1-distill-llama-8b \
-    models/deepseek-r1-distill-llama-8b.manifest.json 32 8192 "The capital of France is"
+./build-release/alice_repl /opt/models/alice/deepseek-r1-distill-llama-8b/model.model \
+    32 8192 "The capital of France is"
 ```
 
-Multi-shard models are handled automatically (all `.safetensors` in the
-model directory are probed; no index file is read). Manifests for
-llama-family models can be authored with `tools/gen_manifest.py` and
-pre-flight-checked with `tools/check_manifest.py`.
+Models are loaded via the alice model format (a packed `.model` descriptor +
+`weights.bin`); pack a HuggingFace llama-family model with
+`tools/pack_model.py`:
+
+```sh
+.venv/bin/python tools/pack_model.py /opt/models/Llama-3.2-1B-Instruct /opt/models/alice/Llama-3.2-1B-Instruct
+```
 
 Development-only fault localization: `ALICE_CPU_REF_BLOCKS=0,5,17` swaps
 the listed blocks to naive CPU reference implementations (D2H → compute →
@@ -72,13 +75,13 @@ H2D inside the block). Never for production.
 
 ## Layout
 
-- `include/alice/` — public headers (typed tensor views, manifest, gpu model)
+- `include/alice/` — public headers (typed tensor, engine config)
 - `src/gpu/` — GPU-resident engine (trunk/state SIMT kernels via hipcc, trunk, model)
 - `src/blocks/cpu_generic/` — naive CPU reference implementations (test oracle)
 - `src/blocks/gpu_rocm/` — ROCm block impls (rocBLAS GEMMs + private SIMT kernels) + platform plumbing (device + rocBLAS handle)
 - `src/frontend/` — REPL, tokenizer (system PCRE2)
-- `models/` — manifests (the contract), one per bring-up model
+- `src/model_format.{hpp,cpp}` — the alice model format loader (init_engine)
 - `tests/` — GoogleTest suite + canonical teacher-forced fixtures
-- `tools/` — manifest generator/auditor, sweep scripts
+- `tools/` — pack_model.py (HF -> .model), sweep scripts
 - `research/` — decision-support studies (RCCL/P2P multi-GPU, ROCm overlays)
 - `docs/` — engine-design.md (the design), session-api.md (draft)

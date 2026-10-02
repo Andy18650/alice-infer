@@ -68,7 +68,7 @@ namespace rk = alice::gpu_rocm::kernels;
 
 using Clock = std::chrono::steady_clock;
 
-// --- 8B model constants (models/deepseek-r1-distill-llama-8b.manifest.json)
+// --- 8B model constants (deepseek-r1-distill-llama-8b)
 constexpr uint32_t kD = 4096, kInter = 14336, kLayers = 32;
 constexpr uint32_t kNh = 32, kNkv = 8, kHd = 128, kV = 128256;
 constexpr uint32_t kQkvN = (kNh + 2 * kNkv) * kHd;  // 6144

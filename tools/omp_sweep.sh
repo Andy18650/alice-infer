@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
 # OpenMP thread-count sweep (design §10 knobs: thread count first).
-# Usage: tools/omp_sweep.sh [decode_tokens=32] [numa_mode] [hardware]
+# Usage: tools/omp_sweep.sh [decode_tokens=32] [numa_mode]
 #   numa_mode: spread (default, no pinning) | node0 (cpunodebind+membind 0)
 #              | interleave (numactl --interleave=all)
-#   hardware:  cpu_avx2 (default) | cpu_generic
 # Reports prefill/decode rates for OMP_NUM_THREADS = 16..96 step 16.
 set -u
 cd "$(dirname "$0")/.."
 
 REPL=./build-release/alice_repl
-MODEL=/opt/models/Llama-3.2-1B-Instruct
-MANIFEST=models/llama-3.2-1b-instruct.manifest.json
+MODEL=/opt/models/alice/Llama-3.2-1B-Instruct/model.model
 TOKENS=${1:-32}
 NUMA_MODE=${2:-spread}
-HW=${3:-cpu_avx2}
 
 case "$NUMA_MODE" in
   spread)     PREFIX=() ;;
@@ -27,7 +24,7 @@ PROMPT="The history of computing began with mechanical calculators in the sevent
 
 printf "%-9s | %-22s | %-22s\n" threads prefill decode
 for t in 16 32 48 64 80 96; do
-  out=$(OMP_NUM_THREADS=$t "${PREFIX[@]}" "$REPL" "$MODEL" "$MANIFEST" "$TOKENS" 8192 "$PROMPT" "$HW" 2>&1)
+  out=$(OMP_NUM_THREADS=$t "${PREFIX[@]}" "$REPL" "$MODEL" "$TOKENS" 8192 "$PROMPT" 2>&1)
   pre=$(echo "$out" | grep -oP 'prefill: .*tok/s' | grep -oP '[\d.]+ tok/s, [\d.]+' | head -1)
   pre_rate=$(echo "$out" | grep -oP '\[prefill[^\]]*' | grep -oP '[\d.]+(?= tok/s)')
   dec_rate=$(echo "$out" | grep -oP '\[decode[^\]]*' | grep -oP '[\d.]+(?= tok/s)')

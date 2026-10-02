@@ -9,7 +9,6 @@ tests/canonical_long*/
 
 # Single-layer HF oracle fixtures (regenerable via dump_hf_block_oracle.py; ~350 MB)
 tests/hf_oracle/
-research/model-format/smoke_load*
 
 # Repo-local scratch space (AGENTS.md): durable across power cycles, unlike
 # /tmp (tmpfs). Packed smoke models, benchmark outputs, ad-hoc artifacts.

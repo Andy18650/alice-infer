@@ -97,7 +97,12 @@ message(STATUS "alice: HIP language enabled (${CMAKE_HIP_COMPILER}, arch ${CMAKE
 
 # Minimal REPL PoC (design §12: the CLI owns the whole loop for now)
 add_executable(alice_repl src/frontend/repl.cpp)
-target_link_libraries(alice_repl PRIVATE alice)
+# The model-format path (init_engine -> Model::load_from_format) builds blocks
+# via the self-registering BlockFactory registry; without --whole-archive the
+# linker drops the factory TUs (no direct caller) and the registry comes up
+# empty. Wrap libalice.a so the static initializers survive.
+target_link_libraries(alice_repl PRIVATE
+  -Wl,--whole-archive alice -Wl,--no-whole-archive nlohmann_json::nlohmann_json)
 
 if(ALICE_BUILD_TESTS)
   enable_testing()

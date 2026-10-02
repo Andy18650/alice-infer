@@ -337,6 +337,22 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
   out.tokenizer = fetch_string("tokenizer");
   out.chat_template = fetch_string("chat_template");
 
+  // Token metadata from the tokenizer member config (the packer emits
+  // bos_token_id + eos_token_id there). The REPL uses these for BOS/EOS.
+  if (const auto it = descriptor.members.find("tokenizer");
+      it != descriptor.members.end()) {
+    const json& tc = it->second.config;
+    if (tc.contains("bos_token_id"))
+      out.bos_token_id = tc.at("bos_token_id").get<uint32_t>();
+    if (tc.contains("eos_token_id")) {
+      const json& e = tc.at("eos_token_id");
+      if (e.is_array())
+        for (const auto& x : e) out.eos_token_ids.push_back(x.get<uint32_t>());
+      else
+        out.eos_token_ids.push_back(e.get<uint32_t>());
+    }
+  }
+
   out.name = descriptor.name;
   out.producer = descriptor.producer;
   out.packager = descriptor.packager;

@@ -19,7 +19,12 @@ class Tokenizer {
  public:
   // Throws std::runtime_error on IO/format problems.
   explicit Tokenizer(const std::string& tokenizer_json_path);
+  // Construct from an in-memory tokenizer.json string (e.g. the bytes fetched
+  // by the model-format loader, which are content-addressed in the .model).
+  static Tokenizer from_json(const std::string& tokenizer_json_text);
   ~Tokenizer();
+  Tokenizer(Tokenizer&&) noexcept = default;
+  Tokenizer& operator=(Tokenizer&&) noexcept = default;
 
   std::vector<int32_t> encode(const std::string& text) const;
   std::string decode(const std::vector<int32_t>& ids) const;
@@ -30,6 +35,9 @@ class Tokenizer {
   uint32_t vocab_size() const { return uint32_t(id_to_token_.size()); }
 
  private:
+  Tokenizer() = default;  // for from_json
+  void load(const std::string& text);  // parse + build (shared by both ctors)
+
   std::vector<int32_t> bpe_encode_span(const std::string& bytes) const;
 
   // GPT-2-style bytes<->alphabet-codepoint maps, built algorithmically.

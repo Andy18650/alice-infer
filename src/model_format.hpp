@@ -154,6 +154,10 @@ struct Engine {
   // Non-device members, fetched + retained for the session/REPL layer.
   std::string tokenizer;       // tokenizer.json text (content-addressed)
   std::string chat_template;  // jinja template (content-addressed)
+  // Token metadata from the tokenizer member config (frontend concern;
+  // the engine ignores them). Used by the REPL for BOS/EOS.
+  uint32_t bos_token_id = 128000;
+  std::vector<uint32_t> eos_token_ids;
   std::unique_ptr<gpu::Model> model;  // device-resident; built by Model::load_from_format
 
   // Model is forward-declared above (exploded pimpl: this header stays free

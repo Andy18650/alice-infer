@@ -100,6 +100,16 @@ Tokenizer::Tokenizer(const std::string& path) {
   if (!in) throw std::runtime_error("Tokenizer: cannot open " + path);
   const std::string text((std::istreambuf_iterator<char>(in)),
                          std::istreambuf_iterator<char>());
+  load(text);
+}
+
+Tokenizer Tokenizer::from_json(const std::string& json_text) {
+  Tokenizer t;
+  t.load(json_text);
+  return t;
+}
+
+void Tokenizer::load(const std::string& text) {
   nlohmann::json j;
   try {
     j = nlohmann::json::parse(text);

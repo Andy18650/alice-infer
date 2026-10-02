@@ -2,8 +2,8 @@
 // Reads lines from stdin, each line = a fresh session (reset + prefill +
 // greedy decode until EOS or token cap). Commands: /quit.
 //
-// Usage: alice_repl <model_dir> <manifest.json> [max_new_tokens=64] [max_seq=8192]
-//        alice_repl <model_dir> <manifest.json> <max_new_tokens> <max_seq> <prompt>
+// Usage: alice_repl <model.model> [max_new_tokens=64] [max_seq=8192] [prompt]
+//        (with a prompt argument: run once, non-interactive)
 
 #include <chrono>
 #include <cstdint>
@@ -14,7 +14,7 @@
 #include <algorithm>  // std::min, std::ranges::find
 
 #include "../gpu/gpu_model.hpp"
-#include "../manifest.hpp"
+#include "../model_format.hpp"
 #include "tokenizer.hpp"
 
 namespace {
@@ -59,9 +59,9 @@ void print_stats(const char* phase, size_t tokens, double seconds) {
                double(tokens) / seconds);
 }
 
-int run_rounds(const alice::Manifest& manifest, alice::frontend::Tokenizer& tokenizer,
-               alice::gpu::Model& model, int max_new, uint32_t max_seq, const char* prompt,
-               uint32_t chunk) {
+int run_rounds(uint32_t bos_token_id, const std::vector<uint32_t>& eos_token_ids,
+               alice::frontend::Tokenizer& tokenizer, alice::gpu::Model& model,
+               int max_new, uint32_t max_seq, const char* prompt, uint32_t chunk) {
   std::string line;
   for (;;) {
     std::fprintf(stderr, "\n>> ");
@@ -75,7 +75,7 @@ int run_rounds(const alice::Manifest& manifest, alice::frontend::Tokenizer& toke
 
     // session policy: sequence starts at BOS; encode() is a pure text->ids function
     auto ids = tokenizer.encode(line);
-    ids.insert(ids.begin(), int32_t(manifest.config.bos_token_id));
+    ids.insert(ids.begin(), int32_t(bos_token_id));
     if (ids.size() >= max_seq) {
       std::fprintf(stderr, "[prompt too long for max_seq]\n");
       continue;
@@ -92,9 +92,8 @@ int run_rounds(const alice::Manifest& manifest, alice::frontend::Tokenizer& toke
     print_stats("prefill", ids.size(), elapsed_s(prefill_t0));
 
     // decode, streaming only complete-UTF-8 suffixes
-    const auto& eos_ids = manifest.config.eos_token_ids;
     const auto is_eos = [&](int32_t id) {  // C++20: ranges::contains is C++23
-      return std::ranges::find(eos_ids, id) != eos_ids.end();
+      return std::ranges::find(eos_token_ids, id) != eos_token_ids.end();
     };
     std::fprintf(stderr, "decoding...\n");
     const auto decode_t0 = Clock::now();
@@ -118,32 +117,32 @@ int run_rounds(const alice::Manifest& manifest, alice::frontend::Tokenizer& toke
 }  // namespace
 
 int main(int argc, char** argv) {
-  if (argc < 3) {
+  if (argc < 2) {
     std::fprintf(stderr,
-                 "usage: %s <model_dir> <manifest.json> [max_new_tokens=64] [max_seq=8192]\n"
-                 "       %s <model_dir> <manifest.json> <max_new_tokens> <max_seq> <prompt>\n"
+                 "usage: %s <model.model> [max_new_tokens=64] [max_seq=8192] [prompt]\n"
                  "       (with a prompt argument: run once, non-interactive)\n",
-                 argv[0], argv[0]);
+                 argv[0]);
     return 1;
   }
-  const std::string model_dir = argv[1];
-  const std::string manifest_path = argv[2];
-  const int max_new = argc > 3 ? std::atoi(argv[3]) : 64;
-  const uint32_t max_seq = argc > 4 ? uint32_t(std::atoi(argv[4])) : 8192;
+  const std::string model_file = argv[1];
+  const int max_new = argc > 2 ? std::atoi(argv[2]) : 64;
+  const uint32_t max_seq = argc > 3 ? uint32_t(std::atoi(argv[3])) : 8192;
 
   try {
-    const alice::Manifest manifest = alice::Manifest::parse(manifest_path);
-    alice::frontend::Tokenizer tokenizer(model_dir + "/tokenizer.json");
-
     alice::EngineConfig cfg;
     cfg.max_seq_len = max_seq;
     cfg.max_prefill_chunk = 512;
     cfg.sampling.temperature = 0.0f;  // greedy
-    auto model = alice::gpu::Model::load(model_dir, manifest_path, cfg);
+    alice::modelfmt::Engine eng =
+        alice::modelfmt::init_engine(model_file, cfg);
+    alice::frontend::Tokenizer tokenizer =
+        alice::frontend::Tokenizer::from_json(eng.tokenizer);
+    auto& model = *eng.model;
     std::fprintf(stderr, "[alice] model loaded (vocab %u, GPU-resident). /quit to exit, session cleared on every round.\n",
-                 model->vocab_size());
-    return run_rounds(manifest, tokenizer, *model, max_new, max_seq,
-                      argc > 5 ? argv[5] : nullptr, cfg.max_prefill_chunk);
+                 model.vocab_size());
+    return run_rounds(eng.bos_token_id, eng.eos_token_ids, tokenizer, model,
+                      max_new, max_seq, argc > 4 ? argv[4] : nullptr,
+                      cfg.max_prefill_chunk);
   } catch (const std::exception& e) {
     std::fprintf(stderr, "fatal: %s\n", e.what());
     return 1;

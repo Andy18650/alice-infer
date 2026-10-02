@@ -2,7 +2,10 @@
 
 Status: living document. This revision (2026-09) commits the engine to
 GPU-resident execution and retires the CPU-first bring-up architecture.
-The tree is mid-migration; AGENTS.md tracks the state of play.
+The tree is mid-migration; AGENTS.md tracks the state of play. TP-first
+multi-GPU bring-up is in preparation: the generation loop has moved into
+the engine, BOS/EOS metadata lives in the tokenizer, and the data loader
+is thread-safe, so a single loader can be shared across worker threads.
 
 ## 1. Purpose & target
 

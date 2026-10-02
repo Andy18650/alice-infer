@@ -8,10 +8,13 @@
 // decode() maps special ids to their literal content.
 
 #include <cstdint>
-#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+namespace alice::modelfmt {
+struct Engine;  // allows Engine() to default-construct a Tokenizer before from_json
+}
 
 namespace alice::frontend {
 
@@ -21,10 +24,15 @@ class Tokenizer {
   explicit Tokenizer(const std::string& tokenizer_json_path);
   // Construct from an in-memory tokenizer.json string (e.g. the bytes fetched
   // by the model-format loader, which are content-addressed in the .model).
-  static Tokenizer from_json(const std::string& tokenizer_json_text);
+  // bos_token_id and eos_token_ids are model-package metadata; the tokenizer
+  // carries them so the engine's generation loop can add BOS and detect EOS
+  // without pulling them out of the descriptor separately.
+  static Tokenizer from_json(const std::string& tokenizer_json_text,
+                             uint32_t bos_token_id = 0,
+                             std::vector<uint32_t> eos_token_ids = {});
   ~Tokenizer();
-  Tokenizer(Tokenizer&&) noexcept = default;
-  Tokenizer& operator=(Tokenizer&&) noexcept = default;
+  Tokenizer(Tokenizer&& o) noexcept;
+  Tokenizer& operator=(Tokenizer&& o) noexcept;
 
   std::vector<int32_t> encode(const std::string& text) const;
   std::string decode(const std::vector<int32_t>& ids) const;
@@ -34,8 +42,12 @@ class Tokenizer {
 
   uint32_t vocab_size() const { return uint32_t(id_to_token_.size()); }
 
+  uint32_t bos_token_id() const { return bos_token_id_; }
+  const std::vector<uint32_t>& eos_token_ids() const { return eos_token_ids_; }
+
  private:
-  Tokenizer() = default;  // for from_json
+  friend struct alice::modelfmt::Engine;  // Engine() default-constructs then assigns via from_json
+  Tokenizer() = default;
   void load(const std::string& text);  // parse + build (shared by both ctors)
 
   std::vector<int32_t> bpe_encode_span(const std::string& bytes) const;
@@ -48,7 +60,10 @@ class Tokenizer {
   std::vector<std::string> id_to_token_;  // base vocab (byte-alphabet UTF-8)
   std::unordered_map<int32_t, std::string> special_id_to_content_;
   std::unordered_map<std::string, int32_t> merges_;  // "A\x01" B -> rank
-  std::unique_ptr<struct PretokRegex> pretok_re_;  // PCRE2 (opaque here)
+  struct PretokRegex* pretok_re_ = nullptr;  // PCRE2 (opaque, owned)
+
+  uint32_t bos_token_id_ = 0;
+  std::vector<uint32_t> eos_token_ids_;
 };
 
 }  // namespace alice::frontend

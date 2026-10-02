@@ -11,8 +11,10 @@
 
 #include <algorithm>
 #include <chrono>
-#include <fstream>
 #include <cstdio>
+#include <cstdint>
+#include <fstream>
+#include <functional>
 #include <span>
 #include <stdexcept>
 
@@ -334,24 +336,31 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
     });
     return s;
   };
-  out.tokenizer = fetch_string("tokenizer");
   out.chat_template = fetch_string("chat_template");
 
-  // Token metadata from the tokenizer member config (the packer emits
-  // bos_token_id + eos_token_id there). The REPL uses these for BOS/EOS.
+  // Tokenizer: construct it here so the engine owns both the vocab and the
+  // BOS/EOS metadata (pulled from the descriptor's tokenizer member config).
+  uint32_t bos_token_id = 0;
+  std::vector<uint32_t> eos_token_ids;
+  std::string tokenizer_json;
   if (const auto it = descriptor.members.find("tokenizer");
       it != descriptor.members.end()) {
+    data_loader.fetch(it->second.id, [&](std::span<const std::byte> blob) {
+      tokenizer_json.assign(reinterpret_cast<const char*>(blob.data()), blob.size());
+    });
     const json& tc = it->second.config;
     if (tc.contains("bos_token_id"))
-      out.bos_token_id = tc.at("bos_token_id").get<uint32_t>();
+      bos_token_id = tc.at("bos_token_id").get<uint32_t>();
     if (tc.contains("eos_token_id")) {
       const json& e = tc.at("eos_token_id");
       if (e.is_array())
-        for (const auto& x : e) out.eos_token_ids.push_back(x.get<uint32_t>());
+        for (const auto& x : e) eos_token_ids.push_back(x.get<uint32_t>());
       else
-        out.eos_token_ids.push_back(e.get<uint32_t>());
+        eos_token_ids.push_back(e.get<uint32_t>());
     }
   }
+  out.tokenizer = frontend::Tokenizer::from_json(tokenizer_json, bos_token_id,
+                                                 std::move(eos_token_ids));
 
   out.name = descriptor.name;
   out.producer = descriptor.producer;
@@ -379,6 +388,120 @@ Engine init_engine(const std::filesystem::path& model_file,
 // (gpu_model.hpp, included above). Defined here so model_format.hpp stays
 // free of the vendor/internal includes Model drags in.
 Engine::~Engine() = default;
+
+namespace {
+
+using Clock = std::chrono::steady_clock;
+
+double elapsed_s(Clock::time_point t0) {
+  return std::chrono::duration<double>(Clock::now() - t0).count();
+}
+
+void print_stats(const char* phase, size_t tokens, double seconds) {
+  if (tokens == 0) {
+    std::fprintf(stderr, "[%s: 0 tokens in %.3f s]\n", phase, seconds);
+    return;
+  }
+  std::fprintf(stderr,
+               "[%s: %zu tokens in %.3f s — %.2f ms/token, %.1f tok/s]\n",
+               phase, tokens, seconds, seconds * 1e3 / double(tokens),
+               double(tokens) / seconds);
+}
+
+// Length of the longest complete-UTF-8 prefix of s.
+size_t utf8_complete_len(const std::string& s) {
+  size_t i = 0;
+  while (i < s.size()) {
+    const auto b = uint8_t(s[i]);
+    const size_t len =
+        b < 0x80 ? 1 : (b & 0xE0) == 0xC0 ? 2 : (b & 0xF0) == 0xE0 ? 3 : 4;
+    if (i + len > s.size()) break;
+    i += len;
+  }
+  return i;
+}
+
+}  // namespace
+
+std::vector<int32_t> Engine::encode(const std::string& text) const {
+  return tokenizer.encode(text);
+}
+
+std::string Engine::decode(const std::vector<int32_t>& ids) const {
+  return tokenizer.decode(ids);
+}
+
+std::vector<float> Engine::forward_logits(std::span<const int32_t> tokens) {
+  return model->forward_logits(tokens);
+}
+
+std::vector<float> Engine::forward_logits_all(std::span<const int32_t> tokens) {
+  return model->forward_logits_all(tokens);
+}
+
+int32_t Engine::forward(std::span<const int32_t> tokens) {
+  return model->forward(tokens);
+}
+
+void Engine::reset() { model->reset(); }
+
+Engine::GenerateResult Engine::generate(
+    const std::string& prompt, const GenerateOptions& opts,
+    std::function<void(const std::string&)> on_token) {
+  GenerateResult result;
+  model->reset();
+
+  // Encode prompt and prepend BOS.
+  auto ids = tokenizer.encode(prompt);
+  ids.insert(ids.begin(), int32_t(tokenizer.bos_token_id()));
+  if (ids.size() >= opts.max_seq_len)
+    throw std::runtime_error("generate: prompt too long for max_seq_len");
+  result.prompt_tokens = ids.size();
+
+  const auto is_eos = [&](int32_t id) {
+    const auto& eos = tokenizer.eos_token_ids();
+    return std::find(eos.begin(), eos.end(), id) != eos.end();
+  };
+
+  // Chunked prefill.
+  const auto prefill_t0 = Clock::now();
+  int32_t t = -1;
+  for (size_t off = 0; off < ids.size(); off += opts.max_prefill_chunk) {
+    const size_t n = std::min<size_t>(opts.max_prefill_chunk, ids.size() - off);
+    t = model->forward(std::span<const int32_t>(ids.data() + off, n));
+  }
+  result.prefill_seconds = elapsed_s(prefill_t0);
+  print_stats("prefill", ids.size(), result.prefill_seconds);
+
+  // Decode, streaming complete-UTF-8 suffixes.
+  const auto decode_t0 = Clock::now();
+  size_t shown = 0;
+  std::vector<int32_t> gen;
+  for (int step = 0; step < opts.max_new_tokens; ++step) {
+    if (is_eos(t)) break;
+    gen.push_back(t);
+    if (on_token) {
+      const std::string full = tokenizer.decode(gen);
+      const size_t complete = utf8_complete_len(full);
+      if (complete > shown) {
+        on_token(full.substr(shown, complete - shown));
+        shown = complete;
+      }
+    }
+    t = model->forward(std::span<const int32_t>(&t, 1));
+  }
+  // Flush any remaining complete bytes.
+  if (on_token && !gen.empty()) {
+    const std::string full = tokenizer.decode(gen);
+    const size_t complete = utf8_complete_len(full);
+    if (complete > shown) on_token(full.substr(shown, complete - shown));
+  }
+  result.text = tokenizer.decode(gen);
+  result.generated_tokens = gen.size();
+  result.decode_seconds = elapsed_s(decode_t0);
+  print_stats("decode", gen.size(), result.decode_seconds);
+  return result;
+}
 
 }  // namespace modelfmt
 

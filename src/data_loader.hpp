@@ -17,12 +17,15 @@
 // exists" rule (design §8.3); the interface gets extracted when a second
 // transport (P2P/HTTP) is built. The location table is the fused .model
 // file's `files` array (unsigned, verified by the content hash); a separate
-// table file is also accepted (used by tests). Owns one THP-backed staging
-// buffer (sized to the max entry, reused across fetches).
+// table file is also accepted (used by tests). Each fetch allocates its own
+// THP-backed staging buffer, so a single loader can be used concurrently by
+// multiple threads.
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <mutex>
 #include <span>
 #include <string>
 #include <unordered_map>
@@ -54,7 +57,8 @@ class LocalFileDataLoader {
   // with a non-owning view while the staging buffer is alive. Throws
   // std::runtime_error on unknown id, IO error, or hash mismatch — so
   // `consume` only ever sees verified bytes (the self-certifying guarantee).
-  // Not reentrant: the pooled buffer is reused across fetches.
+  // Thread-safe: each call allocates its own staging buffer, so multiple
+  // threads may fetch concurrently from the same loader.
   void fetch(const std::string& id,
              std::function<void(std::span<const std::byte>)> consume) const;
 
@@ -76,11 +80,10 @@ class LocalFileDataLoader {
   void build(const nlohmann::json& files, const std::string& base_dir);
 
   std::unordered_map<std::string, Entry> entries_;
-  mutable std::byte* buf_ = nullptr;   // pooled THP staging (max-entry-sized)
-  mutable size_t buf_cap_ = 0;
-  mutable double read_ms_ = 0, hash_ms_ = 0;
-  mutable uint64_t bytes_read_ = 0;
-  mutable size_t hash_verifications_ = 0;
+  mutable std::mutex metrics_mutex_;
+  mutable double read_ms_ = 0.0, hash_ms_ = 0.0;
+  mutable std::atomic<uint64_t> bytes_read_{0};
+  mutable std::atomic<size_t> hash_verifications_{0};
 };
 
 }  // namespace alice::loader

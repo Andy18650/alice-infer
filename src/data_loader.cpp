@@ -6,7 +6,6 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include <algorithm>
 #include <chrono>
 #include <cstring>
 #include <filesystem>
@@ -76,7 +75,6 @@ void LocalFileDataLoader::build(const nlohmann::json& files,
                                 const std::string& base_dir) {
   namespace fs = std::filesystem;
   if (!files.is_array()) fail("location table must be a JSON array of records");
-  uint64_t max_size = 0;
   for (const auto& e : files) {
     Entry ent;
     ent.file = (fs::path(base_dir) / e.at("file").get<std::string>()).string();
@@ -88,17 +86,8 @@ void LocalFileDataLoader::build(const nlohmann::json& files,
     const std::string id = e.at("id").get<std::string>();
     if (!entries_.emplace(id, std::move(ent)).second)
       fail("duplicate id '" + id + "' in location table");
-    max_size = std::max(max_size, entries_.at(id).size);
   }
   if (entries_.empty()) fail("location table has no entries");
-  if (max_size) {
-    void* m = mmap(nullptr, max_size, PROT_READ | PROT_WRITE,
-                   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (m == MAP_FAILED) fail("staging mmap failed");
-    (void)madvise(m, max_size, MADV_HUGEPAGE);  // design §9 THP staging
-    buf_ = static_cast<std::byte*>(m);
-    buf_cap_ = max_size;
-  }
 }
 
 LocalFileDataLoader::LocalFileDataLoader(const nlohmann::json& files,
@@ -121,9 +110,7 @@ LocalFileDataLoader::LocalFileDataLoader(const std::string& table_path) {
   build(tbl, p.parent_path().string());
 }
 
-LocalFileDataLoader::~LocalFileDataLoader() {
-  if (buf_) (void)munmap(buf_, buf_cap_);
-}
+LocalFileDataLoader::~LocalFileDataLoader() = default;
 
 void LocalFileDataLoader::fetch(
     const std::string& id,
@@ -131,32 +118,54 @@ void LocalFileDataLoader::fetch(
   const auto it = entries_.find(id);
   if (it == entries_.end()) fail("unknown id '" + id + "'");
   const Entry& e = it->second;
-  if (e.size > buf_cap_)  // can't happen: buf_cap_ is the table max
-    fail("entry size " + std::to_string(e.size) + " exceeds staging " +
-         std::to_string(buf_cap_));
+
+  // Per-call THP-backed staging buffer. Each thread gets its own mapping so
+  // concurrent fetches do not share mutable state. The mapping lives only for
+  // the duration of this call, mirroring the Tensor<T> allocation pattern.
+  std::byte* buf = nullptr;
+  if (e.size) {
+    void* m = mmap(nullptr, e.size, PROT_READ | PROT_WRITE,
+                   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (m == MAP_FAILED) fail("staging mmap failed for id '" + id + "'");
+    (void)madvise(m, e.size, MADV_HUGEPAGE);  // design §9 THP staging
+    buf = static_cast<std::byte*>(m);
+  }
+  struct MmapFree {
+    std::byte* p;
+    size_t n;
+    ~MmapFree() {
+      if (p && n) (void)munmap(p, n);
+    }
+  } guard{buf, size_t(e.size)};
 
   Fd fd(e.file);
   Timer tr;
   size_t got = 0;
   while (got < e.size) {
     const ssize_t n =
-        ::pread(fd.get(), buf_ + got, e.size - got, off_t(e.offset + got));
+        ::pread(fd.get(), buf + got, e.size - got, off_t(e.offset + got));
     if (n <= 0)
       fail("short read on '" + e.file + "': " + std::strerror(errno));
     got += size_t(n);
   }
-  read_ms_ += tr.ms();
-  bytes_read_ += e.size;
+  {
+    std::lock_guard<std::mutex> lock(metrics_mutex_);
+    read_ms_ += tr.ms();
+  }
+  bytes_read_.fetch_add(e.size);
 
   // The self-certifying guarantee: bytes are verified against the ID (which
   // is their hash) before the caller ever sees them.
   Timer th;
-  if (blake3_hex(buf_, e.size) != id)
+  if (blake3_hex(buf, e.size) != id)
     fail("BLAKE3 mismatch for id '" + id + "' — content corrupt or tampered");
-  hash_ms_ += th.ms();
-  ++hash_verifications_;
+  {
+    std::lock_guard<std::mutex> lock(metrics_mutex_);
+    hash_ms_ += th.ms();
+  }
+  hash_verifications_.fetch_add(1);
 
-  consume(std::span<const std::byte>(buf_, e.size));
+  consume(std::span<const std::byte>(buf, e.size));
 }
 
 }  // namespace alice::loader

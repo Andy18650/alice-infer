@@ -3,9 +3,9 @@
 // The alice model format loader (docs/model-format.md RC1,
 // docs/model-loader.md). Loads a full model: the block list AND the
 // component members (embedder/trunk/language_head/sampler) from the
-// descriptor's content-addressed member records. Tokenizer/chat_template
-// are parsed structurally and carried in the descriptor (not constructed —
-// they are not part of the device-resident forward path).
+// descriptor's content-addressed member records. The chat_template is
+// carried as text; the tokenizer is constructed so the engine owns the
+// generation-side special-token metadata.
 // Signature verification is deferred with the chain of trust: the
 // envelope's signature state is DECLARED loudly and the load proceeds.
 
@@ -22,9 +22,13 @@
                               // the source of truth for links)
 
 #include "alice/engine_config.hpp"
+#include "frontend/tokenizer.hpp"
 
 namespace alice::block {
 class Block;
+}
+namespace alice::frontend {
+class Tokenizer;  // src/frontend/tokenizer.hpp
 }
 namespace alice::gpu {
 class Resources;
@@ -152,12 +156,8 @@ struct Engine {
   std::string name, producer, packager, license, license_url, license_text;
   uint64_t max_context = 0;
   // Non-device members, fetched + retained for the session/REPL layer.
-  std::string tokenizer;       // tokenizer.json text (content-addressed)
-  std::string chat_template;  // jinja template (content-addressed)
-  // Token metadata from the tokenizer member config (frontend concern;
-  // the engine ignores them). Used by the REPL for BOS/EOS.
-  uint32_t bos_token_id = 128000;
-  std::vector<uint32_t> eos_token_ids;
+  frontend::Tokenizer tokenizer;  // constructed from the tokenizer.json member
+  std::string chat_template;      // jinja template (content-addressed)
   std::unique_ptr<gpu::Model> model;  // device-resident; built by Model::load_from_format
 
   // Model is forward-declared above (exploded pimpl: this header stays free
@@ -170,6 +170,35 @@ struct Engine {
   Engine& operator=(Engine&&) noexcept = default;
   Engine(const Engine&) = delete;
   Engine& operator=(const Engine&) = delete;
+
+  // --- generation API (moved here from repl.cpp) ---------------------------
+  struct GenerateOptions {
+    int max_new_tokens = 64;
+    uint32_t max_seq_len = 8192;
+    uint32_t max_prefill_chunk = 512;
+  };
+
+  struct GenerateResult {
+    std::string text;          // decoded generated text (not including the prompt)
+    size_t prompt_tokens = 0;  // prompt ids including BOS
+    size_t generated_tokens = 0;
+    double prefill_seconds = 0.0;
+    double decode_seconds = 0.0;
+  };
+
+  // Encode + add BOS, chunked prefill, then greedy decode up to max_new_tokens
+  // or EOS. on_token is called with each newly available complete UTF-8 chunk
+  // as decoding proceeds (may be empty if no callback is desired).
+  GenerateResult generate(const std::string& prompt, const GenerateOptions& opts,
+                          std::function<void(const std::string&)> on_token = {});
+
+  // Low-level conveniences; the generation loop uses these internally.
+  std::vector<int32_t> encode(const std::string& text) const;
+  std::string decode(const std::vector<int32_t>& ids) const;
+  std::vector<float> forward_logits(std::span<const int32_t> tokens);
+  std::vector<float> forward_logits_all(std::span<const int32_t> tokens);
+  int32_t forward(std::span<const int32_t> tokens);
+  void reset();
 };
 Engine init_engine(const std::filesystem::path& model_file,
                    const EngineConfig& ec, LoadStats* out_stats = nullptr);

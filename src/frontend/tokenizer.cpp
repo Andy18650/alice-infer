@@ -1,5 +1,6 @@
 #include "tokenizer.hpp"
 
+#include <cstring>
 #include <fstream>
 #include <stdexcept>
 
@@ -103,9 +104,12 @@ Tokenizer::Tokenizer(const std::string& path) {
   load(text);
 }
 
-Tokenizer Tokenizer::from_json(const std::string& json_text) {
+Tokenizer Tokenizer::from_json(const std::string& json_text, uint32_t bos_token_id,
+                                 std::vector<uint32_t> eos_token_ids) {
   Tokenizer t;
   t.load(json_text);
+  t.bos_token_id_ = bos_token_id;
+  t.eos_token_ids_ = std::move(eos_token_ids);
   return t;
 }
 
@@ -159,10 +163,40 @@ void Tokenizer::load(const std::string& text) {
   for (const auto& pt : j.at("pre_tokenizer").at("pretokenizers"))
     if (pt.value("type", "") == "Split") pattern = pt.at("pattern").at("Regex").get<std::string>();
   if (pattern.empty()) throw std::runtime_error("Tokenizer: no Split pre-tokenizer found");
-  pretok_re_ = std::make_unique<PretokRegex>(pattern);
+  pretok_re_ = new PretokRegex(pattern);
 }
 
-Tokenizer::~Tokenizer() = default;
+Tokenizer::~Tokenizer() { delete pretok_re_; }
+
+Tokenizer::Tokenizer(Tokenizer&& o) noexcept
+    : token_to_id_(std::move(o.token_to_id_)),
+      id_to_token_(std::move(o.id_to_token_)),
+      special_id_to_content_(std::move(o.special_id_to_content_)),
+      merges_(std::move(o.merges_)),
+      pretok_re_(o.pretok_re_),
+      bos_token_id_(o.bos_token_id_),
+      eos_token_ids_(std::move(o.eos_token_ids_)) {
+  std::memcpy(byte_to_cp_, o.byte_to_cp_, sizeof(byte_to_cp_));
+  std::memcpy(cp_to_byte_, o.cp_to_byte_, sizeof(cp_to_byte_));
+  o.pretok_re_ = nullptr;
+}
+
+Tokenizer& Tokenizer::operator=(Tokenizer&& o) noexcept {
+  if (this != &o) {
+    delete pretok_re_;
+    std::memcpy(byte_to_cp_, o.byte_to_cp_, sizeof(byte_to_cp_));
+    std::memcpy(cp_to_byte_, o.cp_to_byte_, sizeof(cp_to_byte_));
+    token_to_id_ = std::move(o.token_to_id_);
+    id_to_token_ = std::move(o.id_to_token_);
+    special_id_to_content_ = std::move(o.special_id_to_content_);
+    merges_ = std::move(o.merges_);
+    pretok_re_ = o.pretok_re_;
+    bos_token_id_ = o.bos_token_id_;
+    eos_token_ids_ = std::move(o.eos_token_ids_);
+    o.pretok_re_ = nullptr;
+  }
+  return *this;
+}
 
 std::vector<int32_t> Tokenizer::bpe_encode_span(const std::string& bytes) const {
   // bytes -> alphabet symbols (single-codepoint UTF-8 strings)

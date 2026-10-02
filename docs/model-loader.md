@@ -53,9 +53,9 @@ seam with borrows:
   access), performs its own H2D into private device storage, and never
   frees host memory. This is why device-block constructors take
   `TensorView<T>` rather than owning `Tensor<T>`: they only *read*
-  weights during construction. (The cpu_generic oracle keeps owning
-  `Tensor<T>` — it retains weights host-side for compute. Owning is
-  correct there; borrowing is correct here.)
+  weights during construction. (The host-side math oracle in `src/host_math`
+  keeps owning `Tensor<T>` when it needs host data for compute — e.g. the
+  RoPE tables. Owning is correct there; borrowing is correct here.)
 
 The uniform factory signature enables the registration pattern when the
 type zoo grows:
@@ -155,7 +155,8 @@ private state. The stream stays Model/trunk-owned and forward-passed.
   codec from its own data) must **equal** the layout-derived length
   (from the registry) — not greater, not less. Neither is canonical;
   both are independently derived and their agreement is the evidence
-  (two-watches, same epistemology as the manifest audit). For `raw`,
+  (two-watches: the factory's derived layout vs the descriptor's
+  content-addressed record). For `raw`,
   decoded = stored, so this also catches a lying record size. There is
   deliberately NO derived-vs-declared-size check at the record level:
   stored size equals derived size only as a raw-codec coincidence —
@@ -191,12 +192,11 @@ private state. The stream stays Model/trunk-owned and forward-passed.
 - Spec pre-resolution with full-consumption config checks.
 - Allocator (named buffers + registry-sized scratch + poison fill).
 - Factories + registry entries for `dense_ffn_bf16` v1 and
-  `gqa_attention_bf16` v1; the two gpu_rocm constructors migrate to
-  borrowed `TensorView<T>` (the old safetensors path wraps staged
-  tensors with `.view()`, no behavior change).
+  `gqa_attention_bf16` v1; the two gpu_rocm constructors take
+  borrowed `TensorView<T>` (built from the fetched, BLAKE3-verified blob).
 - A Python packer (`tools/pack_model.py`) to break the chicken-and-egg
-  (no packer, no test model); a smoke harness under
-  `research/model-format/` verifying packed bytes == safetensors bytes
-  and every block constructs and forwards.
+  (no packer, no test model). The cross-check (packed bytes == HuggingFace
+  bytes, every block constructs + forwards bit-exactly) was retired once
+  the format path was verified equivalent — recorded in git history.
 - Not this round: members, model assembly, signing, tests in ctest
   (manual review first, per the standing decision).

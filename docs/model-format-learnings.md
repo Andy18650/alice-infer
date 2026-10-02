@@ -131,9 +131,10 @@ format's contract, or today's configuration.**
 The chicken-and-egg (no test model without a packer, no verified
 format without a loader) was broken by writing the Python packer plus
 a smoke harness BEFORE handing over the loader. The harness's trick:
-both loading paths (old manifest+safetensors, new format+factories)
-converge on the SAME block constructor signature (the deliberate seam
-of the design), so running `forward()` on both and `memcmp`-ing
+both loading paths (the since-retired manifest+safetensors path and the
+new format+factories path) converged on the SAME block constructor
+signature (the deliberate seam of the design), so running `forward()` on
+both and `memcmp`-ing
 outputs verifies exactly what can differ upstream — bytes and config
 delivery — with zero adapter code. It is output-equivalence
 (probabilistic evidence of byte equality), not a direct byte compare;

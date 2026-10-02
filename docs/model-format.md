@@ -1,11 +1,12 @@
 # The Alice Model Format — RC1
 
-Status: **Release candidate 1** (2026-09). Design decided, nothing
-implemented. Everything in this format is **compatibility-breaking until
-the first loader exists and survives contact with real models**; the
-breaking-change window is deliberately held open for that reason. This
-document is the normative record of the design; `models/llama-3.2-1b-instruct.jsonc`
-is the companion example (its comments are discussion notes, not spec).
+Status: **Implemented** (2026-09) — the loader (`init_engine` /
+`Model::load_from_format`) survives real models (1B + 8B, packed into
+`/opt/models/alice/<name>/`). Everything in this format is
+**compatibility-breaking** — the breaking-change window stays open while
+the bring-up models are the only consumers. This document is the normative
+record of the design; `tools/pack_model.py` produces `.model` files
+conforming to it.
 
 Authority note: all design decisions herein are the user's, made in the
 2026-09 design sessions; items marked **[open]** are not yet decided;
@@ -43,8 +44,9 @@ safetensors enumerated in the design sessions:
 
 1. **The file is the contract.** The descriptor carries composition,
    types, configs, roles, and placement. There is no external manifest
-   for files in this format; the engine's manifest machinery is the
-   *loader* of this contract, not a second source of truth.
+   for files in this format; the engine's loader (`init_engine` /
+   `Model::load_from_format`) consumes this contract directly — it is not
+   a second source of truth.
 2. **No names.** The old name/role split (safetensors name ↔ engine
    role, bridged by a manifest) is gone. Roles are config keys owned by
    block types. Nothing in the file is a lookup key into a foreign
@@ -292,8 +294,8 @@ fine-tune" threat is only answered by *whose* key you pinned.
 
 ## 9. Example
 
-See `models/llama-3.2-1b-instruct.jsonc` (draft with discussion
-comments; the shipped form is plain canonical JSON).
+See a packed `.model` (produced by `tools/pack_model.py` from a
+HuggingFace llama-family model) for a concrete example.
 
 ## 10. Parked / deferred
 
@@ -313,9 +315,8 @@ comments; the shipped form is plain canonical JSON).
 
 ## 11. Relationship to the current engine
 
-Nothing in the engine changes for RC1. The existing manifest machinery
-remains the loader for safetensors-format models. When the alice
-format's loader is built, it consumes the descriptor directly — the
-manifest becomes the safetensors-only path (and the experimental
-HF-directory synthesis in `Manifest::parse`, commit 68e409f, is the
-historical record of why the contract moved into the file).
+The alice format's loader (`init_engine` / `Model::load_from_format`) is
+the **sole** load path. The manifest + safetensors + loader_staging path
+is retired (the packer, `tools/pack_model.py`, reads HuggingFace
+safetensors to produce `.model` files; `dump_canonical.py` remains the
+canonical-fixture generator). The format is the contract.

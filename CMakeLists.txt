@@ -130,7 +130,11 @@ if(ALICE_BUILD_TESTS)
   target_include_directories(alice_tests PRIVATE tests)
   target_compile_definitions(alice_tests PRIVATE __HIP_PLATFORM_AMD__)
   target_link_libraries(alice_tests PRIVATE "${ALICE_HIP_LIB}")
-  target_link_libraries(alice_tests PRIVATE alice GTest::gtest_main nlohmann_json::nlohmann_json)
+  # --whole-archive: the model-format path (init_engine, used by test_gpu_model)
+  # builds blocks via the self-registering BlockFactory registry; without it
+  # the factory TUs are dropped and the registry comes up empty.
+  target_link_libraries(alice_tests PRIVATE
+    -Wl,--whole-archive alice -Wl,--no-whole-archive GTest::gtest_main nlohmann_json::nlohmann_json)
   target_compile_definitions(alice_tests PRIVATE ALICE_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
   include(GoogleTest)
   # Easy win from the thread sweep (tools/omp_sweep.sh, docs §10): on this

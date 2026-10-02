@@ -1,5 +1,11 @@
 // GPU-resident model tests (design §13): determinism, and the teacher-forced
 // canonical gate vs HF fixtures on the device-resident path.
+//
+// Loads via the model-format path (init_engine) against packed .model files
+// under /opt/models/alice/<name>/ (packed by tools/pack_model.py). The tests
+// skip if a packed model or its fixtures are absent — same shape as the old
+// /opt/models/... assumption. Once loaded, the gpu::Model is identical to the
+// (retired) manifest path's, so the post-load gate code is unchanged.
 
 #include <cmath>
 #include <filesystem>
@@ -11,18 +17,32 @@
 
 #include "alice/engine_config.hpp"
 #include "../src/gpu/gpu_model.hpp"
+#include "../src/model_format.hpp"
 
 namespace {
 
 constexpr float kMaxLogitDrift = 0.75f;  // the canonical gate (design §13)
 
+// Packed .model locations (model-format path; packed into /opt/models/alice/).
+constexpr const char* kPacked1B =
+    "/opt/models/alice/Llama-3.2-1B-Instruct/model.model";
+constexpr const char* kPacked8B =
+    "/opt/models/alice/deepseek-r1-distill-llama-8b/model.model";
+
 std::string fixture(const std::string& dir, const std::string& name) {
   return std::string(ALICE_SOURCE_DIR) + "/tests/" + dir + "/" + name;
 }
 
-bool have_gpu_model(const std::string& dir, const std::string& fixture_dir) {
-  return std::filesystem::exists(dir) &&
+bool have_packed(const std::string& model_file, const std::string& fixture_dir) {
+  return std::filesystem::exists(model_file) &&
          std::filesystem::exists(fixture(fixture_dir, "case_0.json"));
+}
+
+// Load via the model-format path; .model extracts the gpu::Model (the Engine's
+// metadata + non-device members are discarded — the tests only need the Model).
+std::unique_ptr<alice::gpu::Model> load_packed(const std::string& model_file,
+                                               const alice::EngineConfig& cfg) {
+  return alice::modelfmt::init_engine(model_file, cfg).model;
 }
 
 void run_teacher_forced(alice::gpu::Model& model, const std::string& fixture_dir,
@@ -76,13 +96,11 @@ void run_teacher_forced(alice::gpu::Model& model, const std::string& fixture_dir
 }
 
 TEST(GpuModel, DeterminismBitExact) {
-  const std::string dir = "/opt/models/Llama-3.2-1B-Instruct";
-  if (!std::filesystem::exists(dir))
-    GTEST_SKIP() << "no 1B model";
+  if (!std::filesystem::exists(kPacked1B))
+    GTEST_SKIP() << "no packed 1B model at " << kPacked1B;
   alice::EngineConfig cfg;
   cfg.max_seq_len = 512;
-  auto model = alice::gpu::Model::load(
-      dir, std::string(ALICE_SOURCE_DIR) + "/models/llama-3.2-1b-instruct.manifest.json", cfg);
+  auto model = load_packed(kPacked1B, cfg);
   const std::vector<int32_t> tokens = {128000, 791, 6864, 315, 9822, 374};
   auto a = model->forward_logits(tokens);
   model->reset();
@@ -93,24 +111,20 @@ TEST(GpuModel, DeterminismBitExact) {
 }
 
 TEST(GpuModel, Canonical1BTeacherForced) {
-  const std::string dir = "/opt/models/Llama-3.2-1B-Instruct";
-  if (!have_gpu_model(dir, "canonical"))
-    GTEST_SKIP() << "no GPU, 1B model, or canonical fixtures";
+  if (!have_packed(kPacked1B, "canonical"))
+    GTEST_SKIP() << "no packed 1B model or canonical fixtures";
   alice::EngineConfig cfg;
   cfg.max_seq_len = 4096;
-  auto model = alice::gpu::Model::load(
-      dir, std::string(ALICE_SOURCE_DIR) + "/models/llama-3.2-1b-instruct.manifest.json", cfg);
+  auto model = load_packed(kPacked1B, cfg);
   run_teacher_forced(*model, fixture("canonical", ""), cfg.max_prefill_chunk, 3);
 }
 
 TEST(GpuModel, Canonical8BTeacherForced) {
-  const std::string dir = "/opt/models/deepseek-ai/deepseek-r1-distill-llama-8b";
-  if (!have_gpu_model(dir, "canonical_8b"))
-    GTEST_SKIP() << "no GPU, 8B model, or canonical fixtures";
+  if (!have_packed(kPacked8B, "canonical_8b"))
+    GTEST_SKIP() << "no packed 8B model or canonical_8b fixtures";
   alice::EngineConfig cfg;
   cfg.max_seq_len = 4096;
-  auto model = alice::gpu::Model::load(
-      dir, std::string(ALICE_SOURCE_DIR) + "/models/deepseek-r1-distill-llama-8b.manifest.json", cfg);
+  auto model = load_packed(kPacked8B, cfg);
   run_teacher_forced(*model, fixture("canonical_8b", ""), cfg.max_prefill_chunk, 3);
 }
 
@@ -119,8 +133,7 @@ TEST(GpuModel, Canonical8BTeacherForced) {
 // path at long context (greedy continuation must match HF token-for-token).
 // Fixtures are regenerable (tests/python/dump_canonical.py --prompt-file)
 // and NOT committed (777 MB each; see .gitignore) — skips when absent.
-void run_long_case(const std::string& model_dir, const std::string& manifest,
-                   const std::string& fixture_dir) {
+void run_long_case(const std::string& model_file, const std::string& fixture_dir) {
   std::ifstream min(fixture_dir + "/case_0.json");
   const auto meta = nlohmann::json::parse(
       std::string((std::istreambuf_iterator<char>(min)), std::istreambuf_iterator<char>()));
@@ -139,7 +152,7 @@ void run_long_case(const std::string& model_dir, const std::string& manifest,
 
   alice::EngineConfig cfg;
   cfg.max_seq_len = 8192;
-  auto model = alice::gpu::Model::load(model_dir, manifest, cfg);
+  auto model = load_packed(model_file, cfg);
 
   // (a) teacher-forced, chunked across boundaries
   model->reset();
@@ -208,39 +221,30 @@ void run_long_case(const std::string& model_dir, const std::string& manifest,
 }
 
 TEST(GpuModel, CanonicalLong1B) {
-  const std::string dir = "/opt/models/Llama-3.2-1B-Instruct";
-  if (!have_gpu_model(dir, "canonical_long"))
-    GTEST_SKIP() << "no GPU, 1B model, or long fixtures (regenerate: dump_canonical.py "
+  if (!have_packed(kPacked1B, "canonical_long"))
+    GTEST_SKIP() << "no packed 1B model or long fixtures (regenerate: dump_canonical.py "
                     "--prompt-file)";
-  run_long_case(dir,
-                std::string(ALICE_SOURCE_DIR) +
-                    "/models/llama-3.2-1b-instruct.manifest.json",
-                fixture("canonical_long", ""));
+  run_long_case(kPacked1B, fixture("canonical_long", ""));
 }
 
 TEST(GpuModel, CanonicalLong8B) {
-  const std::string dir = "/opt/models/deepseek-ai/deepseek-r1-distill-llama-8b";
-  if (!have_gpu_model(dir, "canonical_long_8b"))
-    GTEST_SKIP() << "no GPU, 8B model, or long fixtures (regenerate: dump_canonical.py "
+  if (!have_packed(kPacked8B, "canonical_long_8b"))
+    GTEST_SKIP() << "no packed 8B model or long fixtures (regenerate: dump_canonical.py "
                     "--prompt-file)";
-  run_long_case(dir,
-                std::string(ALICE_SOURCE_DIR) +
-                    "/models/deepseek-r1-distill-llama-8b.manifest.json",
-                fixture("canonical_long_8b", ""));
+  run_long_case(kPacked8B, fixture("canonical_long_8b", ""));
 }
 
 // Ad-hoc model validation without recompile (mirrors CanonicalEnv for the
-// host path): ALICE_CANONICAL_{MODEL_DIR,MANIFEST,FIXTURES[,CHUNK]}.
+// host path): ALICE_CANONICAL_{MODEL_FILE,FIXTURES[,CHUNK]}.
 TEST(GpuModel, CanonicalEnvTeacherForced) {
-  const char* dir = getenv("ALICE_CANONICAL_MODEL_DIR");
-  const char* man = getenv("ALICE_CANONICAL_MANIFEST");
+  const char* file = getenv("ALICE_CANONICAL_MODEL_FILE");
   const char* fix = getenv("ALICE_CANONICAL_FIXTURES");
-  if (!dir || !man || !fix) GTEST_SKIP() << "ALICE_CANONICAL_* not set";
+  if (!file || !fix) GTEST_SKIP() << "ALICE_CANONICAL_* not set";
   alice::EngineConfig cfg;
   cfg.max_seq_len = 8192;
   const char* chunk_env = getenv("ALICE_CANONICAL_CHUNK");
   if (chunk_env) cfg.max_prefill_chunk = uint32_t(atoi(chunk_env));
-  auto model = alice::gpu::Model::load(dir, man, cfg);
+  auto model = load_packed(file, cfg);
   run_teacher_forced(*model, fix, cfg.max_prefill_chunk, 3);
 }
 

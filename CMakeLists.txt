@@ -21,9 +21,7 @@ endif()
 
 # The engine is being rebuilt from docs/engine-design.md.
 add_library(alice
-  src/blocks/cpu_generic/kernels.cpp
-  src/blocks/cpu_generic/dense_ffn.cpp
-  src/blocks/cpu_generic/gqa_attention.cpp
+  src/host_math.cpp
   src/frontend/tokenizer.cpp
 )
 add_library(alice::alice ALIAS alice)

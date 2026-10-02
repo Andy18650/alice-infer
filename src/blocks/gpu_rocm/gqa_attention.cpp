@@ -9,7 +9,7 @@
 #include <hip/hip_runtime_api.h>
 #include <rocblas/rocblas.h>
 
-#include "../cpu_generic/kernels.hpp"
+#include "../../host_math.hpp"
 #include "../../gpu/resources.hpp"
 #include "kernels.hpp"
 
@@ -68,7 +68,7 @@ GqaAttentionBF16::GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, Ten
 
   const uint32_t half = hd_ / 2;
   std::vector<float> cos_t(size_t(max_seq_) * half), sin_t(size_t(max_seq_) * half);
-  cpu_generic::build_rope_tables(cos_t.data(), sin_t.data(), max_seq_, hd_, mc.rope_theta,
+  host_math::build_rope_tables(cos_t.data(), sin_t.data(), max_seq_, hd_, mc.rope_theta,
                                  mc.has_rope_scaling, mc.rope_scaling);
   drope_cos_ = static_cast<float*>(res.alloc(cos_t.size() * sizeof(float)));
   drope_sin_ = static_cast<float*>(res.alloc(sin_t.size() * sizeof(float)));

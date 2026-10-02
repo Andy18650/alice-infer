@@ -1,5 +1,5 @@
 // GPU-resident SIMT kernel tests (design §13): each device kernel compared
-// against the cpu_generic functional tier (the permanent oracle).
+// against the host_math oracle (the ground-truth host reference).
 
 #include <cmath>
 #include <cstring>
@@ -8,14 +8,15 @@
 #include <gtest/gtest.h>
 #include <hip/hip_runtime_api.h>
 
-#include "../src/blocks/cpu_generic/kernels.hpp"
+#include "../src/host_math.hpp"
+#include "alice/tensor.hpp"
 #include "../src/blocks/gpu_rocm/kernels.hpp"
 #include "../src/gpu/kernels.hpp"
 #include "../src/gpu/gpu_model.hpp"
 
 namespace {
 
-namespace cg = alice::cpu_generic;
+namespace hm = alice::host_math;
 namespace gk = alice::gpu::kernels;
 namespace gbk = alice::gpu_rocm::kernels;
 using alice::bf16;
@@ -66,7 +67,7 @@ TEST(GpuKernels, RmsnormMatchesOracle) {
   auto x = pattern(size_t(S) * d, 2);
   auto g = pattern(d, 3);
   std::vector<float> oracle = x;
-  cg::rmsnorm_inplace(oracle.data(), S, d, g.data(), 1e-5f);
+  hm::rmsnorm_inplace(oracle.data(), S, d, g.data(), 1e-5f);
   float* d_in = dev_upload(x);
   float* d_g = dev_upload(g);
   float* d_out = nullptr;
@@ -82,7 +83,7 @@ TEST(GpuKernels, RmsnormMatchesOracle) {
 TEST(GpuKernels, AddRowsMatchesOracle) {
   auto a = pattern(777, 4), b = pattern(777, 5);
   std::vector<float> oracle = a;
-  cg::add_rows(oracle.data(), b.data(), 1, 777);
+  hm::add_rows(oracle.data(), b.data(), 1, 777);
   float* d_a = dev_upload(a);
   float* d_b = dev_upload(b);
   gk::add_rows(d_a, d_b, 777);
@@ -124,7 +125,7 @@ TEST(GpuKernels, SiluMulMatchesHost) {
   for (uint32_t s = 0; s < S; ++s)
     for (uint32_t i = 0; i < I; ++i) {
       const float g = gu[size_t(s) * 2 * I + i], u = gu[size_t(s) * 2 * I + I + i];
-      const float want = bf16::from_f32(cg::silu(g) * u).to_f32();
+      const float want = bf16::from_f32(hm::silu(g) * u).to_f32();
       EXPECT_NEAR(bf16{got[size_t(s) * I + i]}.to_f32(), want, 1e-3f) << s << "," << i;
     }
   dev_free(d_gu);
@@ -153,17 +154,17 @@ TEST(GpuKernels, RopeAppendMatchesOracle) {
   std::vector<float> oracle_qkv = qkv;
   std::vector<float> cos_t(max_seq * half), sin_t(max_seq * half);
   alice::RopeScaling rs;
-  cg::build_rope_tables(cos_t.data(), sin_t.data(), max_seq, hd, 10000.0f, false, rs);
+  hm::build_rope_tables(cos_t.data(), sin_t.data(), max_seq, hd, 10000.0f, false, rs);
 
   // oracle: rotate q/k in place, then memcpy rows into caches
   std::vector<float> okc(size_t(max_seq) * kvd, 0.0f), ovc(size_t(max_seq) * kvd, 0.0f);
   for (uint32_t s = 0; s < S; ++s) {
     const uint32_t pos = pos0 + s;
     for (uint32_t h = 0; h < nh; ++h)
-      cg::rope_rotate(oracle_qkv.data() + size_t(s) * qkvd + h * hd, hd,
+      hm::rope_rotate(oracle_qkv.data() + size_t(s) * qkvd + h * hd, hd,
                       cos_t.data() + size_t(pos) * half, sin_t.data() + size_t(pos) * half);
     for (uint32_t g = 0; g < nkv; ++g)
-      cg::rope_rotate(oracle_qkv.data() + size_t(s) * qkvd + qd + g * hd, hd,
+      hm::rope_rotate(oracle_qkv.data() + size_t(s) * qkvd + qd + g * hd, hd,
                       cos_t.data() + size_t(pos) * half, sin_t.data() + size_t(pos) * half);
     std::memcpy(okc.data() + size_t(pos) * kvd, oracle_qkv.data() + size_t(s) * qkvd + qd,
                 kvd * sizeof(float));

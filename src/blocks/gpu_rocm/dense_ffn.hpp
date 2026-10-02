@@ -2,7 +2,7 @@
 
 // GPU-resident dense FFN block (design §8.1; gfx90a implementation:
 // rocBLAS gemm_ex bf16→fp32 + SIMT silu-mul). Device-io successor of the
-// Device-resident dense FFN: same math as the cpu_generic oracle (fused
+// Device-resident dense FFN: same math as the host reference (fused
 // silu-mul, down GEMM into io), no host staging — the stream never leaves
 // the device.
 

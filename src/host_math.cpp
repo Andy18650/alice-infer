@@ -1,25 +1,8 @@
-#include "kernels.hpp"
+#include "host_math.hpp"
 
 #include <cmath>
-#include <stdexcept>
 
-namespace alice::cpu_generic {
-
-void matmul_wt(const float* in, const bf16* w, float* out, uint32_t S, uint32_t I,
-               uint32_t O) {
-  // o outer: one parallel region, O-way parallelism; each (s, o) reduction
-  // stays sequential inside a thread (bit-exact vs the sequential oracle).
-  ALICE_OMP_PARALLEL_FOR
-  for (uint32_t o = 0; o < O; ++o) {
-    const bf16* w_row = w + size_t(o) * I;
-    for (uint32_t s = 0; s < S; ++s) {
-      const float* in_row = in + size_t(s) * I;
-      float acc = 0.0f;
-      for (uint32_t i = 0; i < I; ++i) acc += in_row[i] * w_row[i].to_f32();
-      out[size_t(s) * O + o] = acc;
-    }
-  }
-}
+namespace alice::host_math {
 
 void rmsnorm_inplace(float* x, uint32_t S, uint32_t d, const float* g, float eps) {
   for (uint32_t s = 0; s < S; ++s) {
@@ -29,11 +12,6 @@ void rmsnorm_inplace(float* x, uint32_t S, uint32_t d, const float* g, float eps
     const float inv = 1.0f / std::sqrt(ss / float(d) + eps);
     for (uint32_t i = 0; i < d; ++i) row[i] = row[i] * inv * g[i];
   }
-}
-
-void copy_rows(float* dst, const float* src, uint32_t S, uint32_t d) {
-  for (uint32_t s = 0; s < S; ++s)
-    std::memcpy(dst + size_t(s) * d, src + size_t(s) * d, d * sizeof(float));
 }
 
 void add_rows(float* dst, const float* src, uint32_t S, uint32_t d) {
@@ -81,16 +59,4 @@ void rope_rotate(float* x, uint32_t head_dim, const float* cos_row, const float*
 
 float silu(float x) { return x / (1.0f + std::exp(-x)); }
 
-void softmax(float* x, uint32_t n) {
-  float mx = x[0];
-  for (uint32_t i = 1; i < n; ++i) mx = std::max(mx, x[i]);
-  float sum = 0.0f;
-  for (uint32_t i = 0; i < n; ++i) {
-    x[i] = std::exp(x[i] - mx);
-    sum += x[i];
-  }
-  const float inv = 1.0f / sum;
-  for (uint32_t i = 0; i < n; ++i) x[i] *= inv;
-}
-
-}  // namespace alice::cpu_generic
+}  // namespace alice::host_math

@@ -1,8 +1,8 @@
-#include "host_math.hpp"
+#include "math.hpp"
 
 #include <cmath>
 
-namespace alice::host_math {
+namespace oracle {
 
 void rmsnorm_inplace(float* x, uint32_t S, uint32_t d, const float* g, float eps) {
   for (uint32_t s = 0; s < S; ++s) {
@@ -23,24 +23,11 @@ void add_rows(float* dst, const float* src, uint32_t S, uint32_t d) {
 }
 
 void build_rope_tables(float* cos_t, float* sin_t, uint32_t max_seq, uint32_t head_dim,
-                       float theta, const std::optional<RopeScaling>& rs) {
+                       float theta) {
   const uint32_t half = head_dim / 2;
   const double ln_theta = std::log(double(theta));
   for (uint32_t i = 0; i < half; ++i) {
-    double f = std::exp(-(2.0 * i / double(head_dim)) * ln_theta);
-    if (rs) {
-      const double wavelen = 2.0 * M_PI / f;
-      const double orig = double(rs->original_max_position_embeddings);
-      if (wavelen > orig / double(rs->low_freq_factor)) {
-        f /= double(rs->factor);  // low-frequency band
-      } else if (wavelen >= orig / double(rs->high_freq_factor)) {
-        // medium band: smooth interpolation
-        const double s =
-            (orig / wavelen - double(rs->low_freq_factor)) /
-            (double(rs->high_freq_factor) - double(rs->low_freq_factor));
-        f = (1.0 - s) * f / double(rs->factor) + s * f;
-      }  // else high-frequency band: unchanged
-    }
+    const double f = std::exp(-(2.0 * i / double(head_dim)) * ln_theta);
     for (uint32_t p = 0; p < max_seq; ++p) {
       cos_t[size_t(p) * half + i] = float(std::cos(double(p) * f));
       sin_t[size_t(p) * half + i] = float(std::sin(double(p) * f));
@@ -59,4 +46,4 @@ void rope_rotate(float* x, uint32_t head_dim, const float* cos_row, const float*
 
 float silu(float x) { return x / (1.0f + std::exp(-x)); }
 
-}  // namespace alice::host_math
+}  // namespace oracle

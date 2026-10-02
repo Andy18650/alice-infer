@@ -1,10 +1,10 @@
 #pragma once
 
-// llama3-type RoPE frequency-scaling params (design §3). A parameter of
-// host_math::build_rope_tables (the function that interprets these fields)
-// and the optional payload of GqaAttentionConfig::rope_scaling. Leaf header
-// (no deps) so the host-math oracle and the attention block config can both
-// include it without pulling each other in.
+// llama3-type RoPE frequency-scaling params (design §3). A parameter of the
+// RoPE table builder (prod: src/blocks/gpu_rocm/gqa_attention.cpp) and the
+// optional payload of GqaAttentionConfig::rope_scaling. Leaf header (no deps)
+// so the prod block and the attention config can both include it without
+// pulling each other in.
 
 #include <cstdint>
 

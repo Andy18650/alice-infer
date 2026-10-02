@@ -21,7 +21,6 @@ endif()
 
 # The engine is being rebuilt from docs/engine-design.md.
 add_library(alice
-  src/host_math.cpp
   src/frontend/tokenizer.cpp
 )
 add_library(alice::alice ALIAS alice)
@@ -120,7 +119,8 @@ if(ALICE_BUILD_TESTS)
                                      tests/test_gpu_sampler.cpp
                                      tests/test_hf_block_oracle.cpp
                                      tests/test_data_loader.cpp
-                                     tests/oracle/sampler.cpp)
+                                     tests/oracle/sampler.cpp
+                                     tests/oracle/math.cpp)
   target_include_directories(alice_tests PRIVATE tests)
   target_compile_definitions(alice_tests PRIVATE __HIP_PLATFORM_AMD__)
   target_link_libraries(alice_tests PRIVATE "${ALICE_HIP_LIB}")

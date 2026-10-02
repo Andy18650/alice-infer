@@ -6,7 +6,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../manifest.hpp"   // ModelConfig
+#include "../model_config.hpp"   // ModelConfig
 #include "alice/tensor.hpp"   // bf16, TensorView
 #include "gpu_rocm/gqa_attention.hpp"  // gpu_rocm::GqaAttentionBF16
 #include "gpu_rocm/kernels.hpp"        // gemv_partial_floats, kAttn* constants

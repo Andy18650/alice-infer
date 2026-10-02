@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <cstring>
 
-#include "../../manifest.hpp"  // RopeScaling
+#include "../../model_config.hpp"  // RopeScaling
 #include "alice/tensor.hpp"
 
 // Intra-op parallelism is the implementation's private business (design

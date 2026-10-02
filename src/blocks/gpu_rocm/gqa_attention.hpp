@@ -10,7 +10,7 @@
 #include "../../gpu/resources.hpp"
 
 #include "alice/engine_config.hpp"
-#include "../../manifest.hpp"
+#include "../../model_config.hpp"
 #include "alice/tensor.hpp"
 
 namespace alice::gpu_rocm {

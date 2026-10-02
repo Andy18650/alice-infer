@@ -30,7 +30,7 @@
 #include "../src/blocks/gpu_rocm/dense_ffn.hpp"
 #include "../src/blocks/gpu_rocm/gqa_attention.hpp"
 #include "../src/gpu/resources.hpp"
-#include "../src/manifest.hpp"
+#include "../src/model_config.hpp"
 
 namespace {
 

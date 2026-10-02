@@ -6,7 +6,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../manifest.hpp"   // ModelConfig (block-constructor vocab)
+#include "../model_config.hpp"   // ModelConfig (block-constructor vocab)
 #include "alice/tensor.hpp"   // bf16, TensorView
 #include "gpu_rocm/dense_ffn.hpp"  // gpu_rocm::DenseFfnBF16
 #include "gpu_rocm/kernels.hpp"    // gemv_partial_floats

@@ -8,6 +8,9 @@
 
 #include "safetensors.hpp"
 #include "alice/tensor.hpp"
+#include "model_config.hpp"  // ModelConfig (ModelConfig is a block-layer concept;
+                            // relocated to its own header; manifest still
+                            // carries it via ModelConfig in Manifest::config)
 
 namespace alice {
 
@@ -27,33 +30,6 @@ struct WeightSpec {
 // tied embeddings are expressed by naming the EMBEDDER's tensor in the
 // lm_head role, the one legal shared claim (validate() exempts exactly
 // that pair; a mistied lm_head still fails the shape check).
-
-struct RopeScaling {  // llama3-type scaling; presence flagged in ModelConfig
-  float factor = 1.0f;
-  float low_freq_factor = 1.0f;
-  float high_freq_factor = 1.0f;
-  uint32_t original_max_position_embeddings = 0;
-};
-
-struct ModelConfig {
-  uint32_t hidden_size = 0;
-  uint32_t intermediate_size = 0;
-  // No num_layers field (2026-09 round 1 of the manifest diet): it was
-  // written by the generator, parsed, and consumed by nothing — the block
-  // list IS the layer composition; pre_norms count is validated against
-  // blocks.size().
-  uint32_t num_heads = 0;
-  uint32_t num_kv_heads = 0;
-  uint32_t head_dim = 0;
-  uint32_t vocab_size = 0;
-  float rms_norm_eps = 1e-5f;
-  float rope_theta = 500000.0f;
-  bool has_rope_scaling = false;
-  RopeScaling rope_scaling;
-  // Token metadata (frontend concern; engine ignores them). Optional.
-  uint32_t bos_token_id = 128000;
-  std::vector<uint32_t> eos_token_ids;
-};
 
 struct BlockSpec {
   std::string type;  // "gqa_attention_bf16" | "dense_ffn_bf16" (registry grows)

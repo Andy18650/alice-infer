@@ -8,7 +8,7 @@
 // match tools/pack_model.py.
 
 #include "block_factory.hpp"
-#include "../manifest.hpp"  // ModelConfig (block-constructor vocab)
+#include "../model_config.hpp"  // ModelConfig (block-constructor vocab)
 
 namespace alice::block {
 

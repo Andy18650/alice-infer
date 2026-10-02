@@ -14,7 +14,7 @@
 
 #include "alice/engine_config.hpp"
 #include "../block.hpp"
-#include "../../manifest.hpp"
+#include "../../model_config.hpp"
 #include "alice/tensor.hpp"
 
 namespace alice::cpu_generic {

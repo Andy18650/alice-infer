@@ -191,12 +191,17 @@ void run_long_case(const std::string& model_file, const std::string& fixture_dir
   EXPECT_LT(max_drift, 2.0f) << "long case: bf16-input drift beyond budget";
   EXPECT_LT(mean_drift, 0.05) << "long case: systematic drift beyond budget";
 
-  // (b) greedy decode from the prompt: token ids must match HF exactly
+  // (b) greedy decode from the prompt: token ids must match HF exactly.
+  // Sampling now lives on the host, so we argmax the last-token logits here.
+  auto argmax = [](const std::vector<float>& logits) -> int32_t {
+    return int32_t(std::max_element(logits.begin(), logits.end()) - logits.begin());
+  };
   model->reset();
   int32_t t = -1;
   for (size_t off = 0; off < prompt.size(); off += chunk) {
     const size_t n = std::min<size_t>(chunk, prompt.size() - off);
-    t = model->forward(std::span<const int32_t>(prompt.data() + off, n));
+    const auto logits = model->forward_logits(std::span<const int32_t>(prompt.data() + off, n));
+    t = argmax(logits);
   }
   for (size_t i = 0; i < generated.size(); ++i) {
     if (t != generated[i]) {
@@ -216,7 +221,8 @@ void run_long_case(const std::string& model_file, const std::string& fixture_dir
              i, deficit);
       break;  // sequences fork after a flip; stop comparing
     }
-    t = model->forward(std::span<const int32_t>(&t, 1));
+    const auto logits = model->forward_logits(std::span<const int32_t>(&t, 1));
+    t = argmax(logits);
   }
 }
 

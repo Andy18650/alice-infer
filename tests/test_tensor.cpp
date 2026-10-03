@@ -83,4 +83,53 @@ TEST(Tensor, CopyOfCopiesSource) {
   EXPECT_EQ(src[0], 0.0f);  // source untouched
 }
 
+using alice::TensorView;
+using alice::gather_to_contiguous;
+
+TEST(TensorView, DefaultIsPackedRowMajor) {
+  float data[6] = {0, 1, 2, 3, 4, 5};
+  TensorView<float> v(data, 2, 3);
+  EXPECT_EQ(v.rows(), 2u);
+  EXPECT_EQ(v.cols(), 3u);
+  EXPECT_EQ(v.stride(), 3u);
+  EXPECT_EQ(v.numel(), 6u);
+  EXPECT_EQ(v.nbytes(), 24u);
+  EXPECT_EQ(v.span_elements(), 6u);
+  EXPECT_EQ(v.span_bytes(), 24u);
+  EXPECT_EQ(v.data(), data);
+}
+
+TEST(TensorView, StridedViewHasCorrectSpan) {
+  // 4x4 canonical buffer, view a 2x3 slice with stride 4.
+  float data[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+  TensorView<float> v(data, 2, 3, 4);
+  EXPECT_EQ(v.rows(), 2u);
+  EXPECT_EQ(v.cols(), 3u);
+  EXPECT_EQ(v.stride(), 4u);
+  EXPECT_EQ(v.numel(), 6u);
+  EXPECT_EQ(v.nbytes(), 24u);
+  EXPECT_EQ(v.span_elements(), 8u);
+  EXPECT_EQ(v.span_bytes(), 32u);
+  // Logical element access through data+stride.
+  EXPECT_FLOAT_EQ(v.data()[0 * 4 + 0], 0.0f);
+  EXPECT_FLOAT_EQ(v.data()[0 * 4 + 2], 2.0f);
+  EXPECT_FLOAT_EQ(v.data()[1 * 4 + 0], 4.0f);
+  EXPECT_FLOAT_EQ(v.data()[1 * 4 + 2], 6.0f);
+}
+
+TEST(TensorView, GatherToContiguousCopiesStridedSlice) {
+  float data[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+  TensorView<float> v(data, 2, 3, 4);
+  Tensor<float> t = gather_to_contiguous(v);
+  EXPECT_EQ(t.rows(), 2u);
+  EXPECT_EQ(t.cols(), 3u);
+  EXPECT_EQ(t.numel(), 6u);
+  EXPECT_FLOAT_EQ(t.data()[0], 0.0f);
+  EXPECT_FLOAT_EQ(t.data()[1], 1.0f);
+  EXPECT_FLOAT_EQ(t.data()[2], 2.0f);
+  EXPECT_FLOAT_EQ(t.data()[3], 4.0f);
+  EXPECT_FLOAT_EQ(t.data()[4], 5.0f);
+  EXPECT_FLOAT_EQ(t.data()[5], 6.0f);
+}
+
 }  // namespace

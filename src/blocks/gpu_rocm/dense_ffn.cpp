@@ -33,10 +33,14 @@ namespace {
 DenseFfnBF16::DenseFfnBF16(TensorView<bf16> w_gate, TensorView<bf16> w_up, TensorView<bf16> w_down,
                            const block::DenseFfnConfig& cfg, const EngineConfig& ec,
                            gpu::Resources& res)
-    : d_(cfg.io_dim), inter_(cfg.intermediate_dim), mpc_(ec.max_prefill_chunk) {
-  if (w_gate.rows() != inter_ || w_gate.cols() != d_ || w_up.rows() != inter_ ||
-      w_up.cols() != d_ || w_down.rows() != d_ || w_down.cols() != inter_)
+    : d_(cfg.io_dim), mpc_(ec.max_prefill_chunk) {
+  // Derive the tensor-parallel-local intermediate dim from the staged views.
+  if (w_gate.cols() != d_ || w_up.cols() != d_ || w_down.rows() != d_ ||
+      w_gate.rows() != w_up.rows() || w_down.cols() != w_gate.rows())
     throw std::invalid_argument("gpu::DenseFfnBF16: weight shape mismatch vs config");
+  inter_ = w_gate.rows();
+  if (inter_ == 0)
+    throw std::invalid_argument("gpu::DenseFfnBF16: bad intermediate dim");
 
   handle_ = res.handle();
 
@@ -55,7 +59,14 @@ DenseFfnBF16::DenseFfnBF16(TensorView<bf16> w_gate, TensorView<bf16> w_up, Tenso
                                       kernels::gemv_partial_floats(d_, inter_));
   dgemv_ = static_cast<float*>(res.alloc(gemv_floats * sizeof(float)));
   HIP_CHECK(hipMemcpy(dw_gup_, gup.data(), gup.size() * sizeof(bf16), hipMemcpyHostToDevice));
-  HIP_CHECK(hipMemcpy(dw_down_, w_down.data(), size_t(d_) * inter_ * sizeof(bf16),
+  // w_down may be a strided row-parallel shard: gather to contiguous host
+  // memory before the single H2D copy.
+  std::vector<bf16> down_contig(size_t(d_) * inter_);
+  for (uint32_t r = 0; r < d_; ++r) {
+    std::memcpy(down_contig.data() + size_t(r) * inter_,
+                w_down.data() + size_t(r) * w_down.stride(), inter_ * sizeof(bf16));
+  }
+  HIP_CHECK(hipMemcpy(dw_down_, down_contig.data(), down_contig.size() * sizeof(bf16),
                       hipMemcpyHostToDevice));
 }
 

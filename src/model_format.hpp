@@ -24,6 +24,10 @@
 #include "alice/engine_config.hpp"
 #include "frontend/tokenizer.hpp"
 
+namespace alice {
+class Sampler;  // host-side sampler (src/sampler.hpp)
+}
+
 namespace alice::block {
 class Block;
 }
@@ -35,7 +39,6 @@ class Resources;
 class Embedder;
 class RmsNormAddTrunk;
 class LmHead;
-class Sampler;
 class Model;  // the device-resident model (src/gpu/gpu_model.hpp)
 }
 
@@ -159,6 +162,7 @@ struct Engine {
   frontend::Tokenizer tokenizer;  // constructed from the tokenizer.json member
   std::string chat_template;      // jinja template (content-addressed)
   std::unique_ptr<gpu::Model> model;  // device-resident; built by Model::load_from_format
+  std::unique_ptr<Sampler> sampler;   // host-side sampling (moved here from gpu::Model)
 
   // Model is forward-declared above (exploded pimpl: this header stays free
   // of vendor/internal includes). The destructor is out-of-line so the

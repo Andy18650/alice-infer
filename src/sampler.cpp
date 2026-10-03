@@ -3,9 +3,8 @@
 #include <algorithm>
 #include <cmath>
 #include <numeric>
-#include <stdexcept>
 
-namespace oracle {
+namespace alice {
 
 int32_t Sampler::sample(const float* logits, uint32_t vocab) {
   const uint32_t V = vocab;
@@ -54,4 +53,4 @@ int32_t Sampler::sample(const float* logits, uint32_t vocab) {
   return int32_t(idx[keep - 1]);  // rounding guard
 }
 
-}  // namespace oracle
+}  // namespace alice

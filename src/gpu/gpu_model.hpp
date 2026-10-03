@@ -40,7 +40,6 @@ class Resources;  // GPU resources (device + BLAS handle + allocator)
 class Embedder;
 class RmsNormAddTrunk;
 class LmHead;
-class Sampler;
 
 class Model {
  public:
@@ -57,7 +56,10 @@ class Model {
 
   ~Model();
 
-  int32_t forward(std::span<const int32_t> tokens);  // token ids in -> id out
+  // Run forward for these token ids without D2H or sampling. Used for
+  // intermediate prefill chunks where only the final state matters.
+  void forward_run(std::span<const int32_t> tokens);
+
   std::vector<float> forward_logits(std::span<const int32_t> tokens);      // D2H [V]
   std::vector<float> forward_logits_all(std::span<const int32_t> tokens);  // D2H [S*V]
   void reset();  // new session: clear all stateful blocks
@@ -66,16 +68,13 @@ class Model {
  private:
   Model();
 
-  // Shared forward body: embed -> block loop -> trunk output -> project.
-  const float* run(std::span<const int32_t> tokens, bool all_positions);
+  // Threading step B: all device state and loading live inside the worker
+  // thread. The Model object is just a thin synchronous wrapper.
+  struct Impl;
+  std::unique_ptr<Impl> impl_;
+  uint32_t vocab_size_ = 0;
 
-  EngineConfig cfg_;
-  std::unique_ptr<Resources> resources_;  // GPU resources (device + handle + allocator)
-  std::unique_ptr<Embedder> embedder_;
-  std::unique_ptr<RmsNormAddTrunk> trunk_;
-  std::vector<std::unique_ptr<block::Block>> blocks_;
-  std::unique_ptr<LmHead> lm_head_;
-  std::unique_ptr<Sampler> sampler_;
+  static void worker_loop(Model* model, int rank);
 };
 
 }  // namespace gpu

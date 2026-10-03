@@ -22,6 +22,7 @@ endif()
 # The engine is being rebuilt from docs/engine-design.md.
 add_library(alice
   src/frontend/tokenizer.cpp
+  src/sampler.cpp
 )
 add_library(alice::alice ALIAS alice)
 target_include_directories(alice PUBLIC include PRIVATE src)
@@ -55,10 +56,14 @@ endif()
 find_library(ALICE_BLAKE3_LIB blake3)
 find_library(ALICE_ROCBLAS_LIB rocblas)
 find_library(ALICE_HIP_LIB amdhip64)
+find_library(ALICE_RCCL_LIB rccl)
 if(NOT ALICE_ROCBLAS_LIB OR NOT ALICE_HIP_LIB OR NOT ALICE_BLAKE3_LIB OR
    NOT EXISTS "/usr/include/rocblas/rocblas.h" OR
    NOT EXISTS "/usr/include/blake3.h")
   message(FATAL_ERROR "alice: ROCm (rocBLAS + HIP runtime) required — the engine is GPU-mandatory (design §3)")
+endif()
+if(NOT ALICE_RCCL_LIB OR NOT EXISTS "/usr/include/rccl/rccl.h")
+  message(FATAL_ERROR "alice: RCCL required for tensor-parallel collectives")
 endif()
 set(ALICE_GPU_ARCH "gfx90a" CACHE STRING "HIP offload architecture for the device TUs")
 set(CMAKE_HIP_ARCHITECTURES "${ALICE_GPU_ARCH}")
@@ -81,13 +86,13 @@ target_sources(alice PRIVATE
     src/blocks/block_factory.cpp
     src/data_loader.cpp
     src/gpu/resources.cpp src/gpu/trunk.cpp src/gpu/embedder.cpp src/gpu/lm_head.cpp
-    src/gpu/sampler.cpp src/gpu/model.cpp
+    src/gpu/model.cpp
     src/gpu/kernels.hip
     src/blocks/gpu_rocm/kernels.hip
     src/model_format.cpp)
 target_compile_definitions(alice PUBLIC JSON_DIAGNOSTICS=1)  # json exceptions carry the JSON pointer path
 target_compile_definitions(alice PRIVATE __HIP_PLATFORM_AMD__)
-target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}" "${ALICE_HIP_LIB}" "${ALICE_BLAKE3_LIB}")
+target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}" "${ALICE_HIP_LIB}" "${ALICE_BLAKE3_LIB}" "${ALICE_RCCL_LIB}")
 message(STATUS "alice: HIP language enabled (${CMAKE_HIP_COMPILER}, arch ${CMAKE_HIP_ARCHITECTURES})")
 
 # Minimal REPL PoC (design §12: the CLI owns the whole loop for now)
@@ -116,10 +121,8 @@ if(ALICE_BUILD_TESTS)
   target_sources(alice_tests PRIVATE tests/test_gpu_kernels.cpp
                                      tests/test_gpu_blocks.cpp
                                      tests/test_gpu_model.cpp
-                                     tests/test_gpu_sampler.cpp
                                      tests/test_hf_block_oracle.cpp
                                      tests/test_data_loader.cpp
-                                     tests/oracle/sampler.cpp
                                      tests/oracle/math.cpp)
   target_include_directories(alice_tests PRIVATE tests)
   target_compile_definitions(alice_tests PRIVATE __HIP_PLATFORM_AMD__)

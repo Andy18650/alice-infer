@@ -34,14 +34,16 @@ uint64_t GqaAttentionBF16Factory::derived_bytes() const {
 }
 
 uint64_t GqaAttentionBF16Factory::device_bytes(const EngineConfig& ec) const {
-  // Mirrors the constructor's allocations (gqa_attention.cpp). Each padded
-  // to gpu::kDeviceAlign so the arena total is exactly predictable.
+  // Mirrors the constructor's allocations (gqa_attention.cpp), but sized for
+  // this rank's tensor-parallel shard. Each padded to gpu::kDeviceAlign so
+  // the arena total is exactly predictable.
   const auto pad = [](size_t n) {
     return (n + gpu::kDeviceAlign - 1) & ~(gpu::kDeviceAlign - 1);
   };
+  const uint32_t tp = ec.tp_degree ? ec.tp_degree : 1;
   const uint32_t nh = cfg_.num_q_heads, nkv = cfg_.num_kv_heads,
                  hd = cfg_.qk_dim, io = cfg_.io_dim;
-  const uint32_t qd = nh * hd, kvd = nkv * hd, qkvd = qd + 2 * kvd;
+  const uint32_t qd = nh * hd / tp, kvd = nkv * hd / tp, qkvd = qd + 2 * kvd;
   const uint32_t mpc = ec.max_prefill_chunk, max_seq = ec.max_seq_len;
   const uint32_t half = hd / 2;
   uint64_t total = 0;
@@ -54,7 +56,7 @@ uint64_t GqaAttentionBF16Factory::device_bytes(const EngineConfig& ec) const {
   total += pad(size_t(mpc) * io * sizeof(bf16));                     // dx_
   total += pad(size_t(mpc) * qkvd * sizeof(float));                  // dqkv_
   total += pad(size_t(mpc) * qd * sizeof(bf16));                     // dattn_
-  total += pad(size_t(gpu_rocm::kernels::kAttnMaxSplits) * nh *
+  total += pad(size_t(gpu_rocm::kernels::kAttnMaxSplits) * (nh / tp) *
                gpu_rocm::kernels::kAttnSplitMaxS * (hd + 2) * sizeof(float));  // dsplit_
   const size_t gemv = std::max(gpu_rocm::kernels::gemv_partial_floats(qkvd, io),
                                gpu_rocm::kernels::gemv_partial_floats(io, qd));
@@ -63,9 +65,10 @@ uint64_t GqaAttentionBF16Factory::device_bytes(const EngineConfig& ec) const {
 }
 
 size_t GqaAttentionBF16Factory::scratch_bytes(const EngineConfig& ec) const {
-  // v4 prefill partials: nh * max_prefill_chunk * ceil(max_seq/64) * (hd+2)
+  // v4 prefill partials: (nh/tp) * max_prefill_chunk * ceil(max_seq/64) * (hd+2)
+  const uint32_t tp = ec.tp_degree ? ec.tp_degree : 1;
   const uint64_t max_chunks = (uint64_t(ec.max_seq_len) + 63) / 64;
-  return uint64_t(cfg_.num_q_heads) * ec.max_prefill_chunk * max_chunks *
+  return uint64_t(cfg_.num_q_heads / tp) * ec.max_prefill_chunk * max_chunks *
          (cfg_.qk_dim + 2) * sizeof(float);
 }
 
@@ -78,19 +81,26 @@ std::unique_ptr<Block> GqaAttentionBF16Factory::construct(
   if (data.size() != derived_bytes())
     fail("gqa_attention_bf16: decoded chunk is " + std::to_string(data.size()) +
          " bytes but the v1 layout derives " + std::to_string(derived_bytes()));
+  const uint32_t tp = ec.tp_degree ? ec.tp_degree : 1;
+  const uint32_t rank = static_cast<uint32_t>(res.rank());
   const uint32_t nh = cfg_.num_q_heads, nkv = cfg_.num_kv_heads,
                  hd = cfg_.qk_dim, io = cfg_.io_dim;
+  if (nh % tp != 0 || nkv % tp != 0)
+    fail("gqa_attention_bf16: tp_degree does not divide num_q_heads/num_kv_heads");
+  const uint32_t qd = nh * hd, kvd = nkv * hd;
+  const uint32_t qd_local = qd / tp, kvd_local = kvd / tp;
+
   const bf16* base = reinterpret_cast<const bf16*>(data.data());
-  size_t off = 0;
-  auto take = [&](uint32_t rows, uint32_t cols) {
-    TensorView<bf16> v(base + off, rows, cols);
-    off += size_t(rows) * cols;
-    return v;
-  };
-  const auto wq = take(nh * hd, io);
-  const auto wk = take(nkv * hd, io);
-  const auto wv = take(nkv * hd, io);
-  const auto wo = take(io, nh * hd);
+  // Column-parallel Q/K/V: contiguous slices along the output-feature dim.
+  const bf16* base_q = base;
+  const bf16* base_k = base + size_t(qd) * io;
+  const bf16* base_v = base + size_t(qd + kvd) * io;
+  TensorView<bf16> wq(base_q + rank * size_t(qd_local) * io, qd_local, io);
+  TensorView<bf16> wk(base_k + rank * size_t(kvd_local) * io, kvd_local, io);
+  TensorView<bf16> wv(base_v + rank * size_t(kvd_local) * io, kvd_local, io);
+  // Row-parallel O: strided slice along the input-feature (head) dim.
+  TensorView<bf16> wo(base + size_t(qd + 2 * kvd) * io + rank * qd_local,
+                      io, qd_local, qd);
   return std::make_unique<gpu_rocm::GqaAttentionBF16>(wq, wk, wv, wo, cfg_, ec, res);
 }
 

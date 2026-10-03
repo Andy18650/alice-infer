@@ -66,20 +66,21 @@ void build_rope_tables(float* cos_t, float* sin_t, uint32_t max_seq, uint32_t he
 GqaAttentionBF16::GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, TensorView<bf16> wv,
                                    TensorView<bf16> wo, const block::GqaAttentionConfig& cfg,
                                    const EngineConfig& ec, gpu::Resources& res)
-    : nh_(cfg.num_q_heads),
-      nkv_(cfg.num_kv_heads),
-      hd_(cfg.qk_dim),
+    : hd_(cfg.qk_dim),
       d_(cfg.io_dim),
-      group_(cfg.num_q_heads / cfg.num_kv_heads),
       max_seq_(ec.max_seq_len),
       mpc_(ec.max_prefill_chunk),
       scale_(1.0f / std::sqrt(float(cfg.qk_dim))) {
-  const uint32_t qd = nh_ * hd_, kvd = nkv_ * hd_;
-  if (wq.rows() != qd || wq.cols() != d_ || wk.rows() != kvd || wk.cols() != d_ ||
-      wv.rows() != kvd || wv.cols() != d_ || wo.rows() != d_ || wo.cols() != qd)
+  // Derive the tensor-parallel-local head counts from the staged weight
+  // views. The factory shards heads evenly, so q/k/v head ratios are preserved.
+  if (wq.cols() != d_ || wk.cols() != d_ || wv.cols() != d_ || wo.rows() != d_ ||
+      wq.rows() % hd_ != 0 || wk.rows() % hd_ != 0 || wo.cols() != wq.rows())
     throw std::invalid_argument("gpu::GqaAttentionBF16: weight shape mismatch vs config");
-  if (nh_ % nkv_ != 0 || hd_ > 128)
+  nh_ = wq.rows() / hd_;
+  nkv_ = wk.rows() / hd_;
+  if (nh_ == 0 || nkv_ == 0 || nh_ % nkv_ != 0 || hd_ > 128)
     throw std::invalid_argument("gpu::GqaAttentionBF16: bad head config");
+  const uint32_t qd = nh_ * hd_, kvd = nkv_ * hd_;
 
   handle_ = res.handle();
 
@@ -92,7 +93,15 @@ GqaAttentionBF16::GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, Ten
   dw_qkv_ = res.alloc(qkv.size() * sizeof(bf16));
   dw_o_ = res.alloc(size_t(d_) * qd * sizeof(bf16));
   HIP_CHECK(hipMemcpy(dw_qkv_, qkv.data(), qkv.size() * sizeof(bf16), hipMemcpyHostToDevice));
-  HIP_CHECK(hipMemcpy(dw_o_, wo.data(), size_t(d_) * qd * sizeof(bf16), hipMemcpyHostToDevice));
+  // wo may be a strided row-parallel shard: gather to contiguous host memory
+  // before the single H2D copy.
+  std::vector<bf16> wo_contig(size_t(d_) * qd);
+  for (uint32_t r = 0; r < d_; ++r) {
+    std::memcpy(wo_contig.data() + size_t(r) * qd,
+                wo.data() + size_t(r) * wo.stride(), qd * sizeof(bf16));
+  }
+  HIP_CHECK(hipMemcpy(dw_o_, wo_contig.data(), wo_contig.size() * sizeof(bf16),
+                      hipMemcpyHostToDevice));
 
   dkcache_ = static_cast<float*>(res.alloc(size_t(max_seq_) * kvd * sizeof(float)));
   dvcache_ = static_cast<float*>(res.alloc(size_t(max_seq_) * kvd * sizeof(float)));

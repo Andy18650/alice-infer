@@ -60,28 +60,38 @@ template <> constexpr DType dtype_of<float>() { return DType::F32; }
 
 // --- borrowed tensor view ----------------------------------------------------
 
-// Non-owning view of packed host storage: ptr + dims, the documented
+// Non-owning view of host storage: ptr + dims + stride, the documented
 // vocabulary for borrowed host access at compute boundaries. Device-block
 // constructors take TensorView (not Tensor): they only READ weights during
 // construction (private H2D, then done) — ownership stays with the loader
 // (the model-format factory owns the decoded chunk and frees it when the
 // constructor returns; docs/model-loader.md §2). Tensor::view() is the
 // adapter for the safetensors path, where staged Tensors outlive the call.
+//
+// Stride is in ELEMENTS per row. The default stride == cols gives packed
+// row-major layout. Strided views are used for tensor-parallel weight
+// sharding: the model file stays canonical row-major, and each rank builds
+// a view over its slice of the shared fetched buffer.
 template <typename T>
 struct TensorView {
   TensorView() = default;
   TensorView(const T* data, uint32_t rows, uint32_t cols)
-      : data_(data), rows_(rows), cols_(cols) {}
+      : data_(data), rows_(rows), cols_(cols), stride_(cols) {}
+  TensorView(const T* data, uint32_t rows, uint32_t cols, uint32_t stride)
+      : data_(data), rows_(rows), cols_(cols), stride_(stride) {}
 
   const T* data() const { return data_; }
   uint32_t rows() const { return rows_; }
   uint32_t cols() const { return cols_; }
+  uint32_t stride() const { return stride_; }
   size_t numel() const { return size_t(rows_) * cols_; }
   size_t nbytes() const { return numel() * sizeof(T); }
+  size_t span_elements() const { return size_t(rows_) * stride_; }
+  size_t span_bytes() const { return span_elements() * sizeof(T); }
 
  private:
   const T* data_ = nullptr;
-  uint32_t rows_ = 0, cols_ = 0;
+  uint32_t rows_ = 0, cols_ = 0, stride_ = 0;
 };
 
 // --- typed tensor -----------------------------------------------------------
@@ -183,5 +193,21 @@ class Tensor {
   size_t bytes_ = 0;
   uint32_t rows_ = 0, cols_ = 0;
 };
+
+// Copy a strided TensorView into a new packed row-major Tensor. Used by
+// tensor-parallel block factories to materialize a rank-local contiguous
+// weight matrix from a strided slice of the canonical row-major file buffer.
+template <typename T>
+Tensor<T> gather_to_contiguous(const TensorView<T>& view) {
+  Tensor<T> out(view.rows(), view.cols());
+  const T* src = view.data();
+  T* dst = out.data();
+  const uint32_t cols = view.cols();
+  const uint32_t stride = view.stride();
+  for (uint32_t r = 0; r < view.rows(); ++r) {
+    std::memcpy(dst + r * cols, src + r * stride, cols * sizeof(T));
+  }
+  return out;
+}
 
 }  // namespace alice

@@ -3,7 +3,7 @@
 // gpu::Resources (PROTOTYPE 2026-09 — NOT frozen): the Model's GPU resources
 // — device binding, the BLAS handle, and the device-memory allocator
 // (ledger-tracked). Merges the former gpu_rocm::Context (device + handle)
-// and modelfmt::DeviceAllocator (named buffers + scratch) into one
+// and engine::DeviceAllocator (named buffers + scratch) into one
 // session-scoped object owned by Model.
 //
 // NOT involved in forward(): component constructors call alloc() / borrow

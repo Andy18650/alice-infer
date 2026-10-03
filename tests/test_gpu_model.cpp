@@ -17,7 +17,7 @@
 
 #include "alice/engine_config.hpp"
 #include "../src/gpu/gpu_model.hpp"
-#include "../src/model_format.hpp"
+#include "../src/engine.hpp"
 
 namespace {
 
@@ -38,11 +38,11 @@ bool have_packed(const std::string& model_file, const std::string& fixture_dir) 
          std::filesystem::exists(fixture(fixture_dir, "case_0.json"));
 }
 
-// Load via the model-format path; .model extracts the gpu::Model (the Engine's
-// metadata + non-device members are discarded — the tests only need the Model).
-std::unique_ptr<alice::gpu::Model> load_packed(const std::string& model_file,
-                                               const alice::EngineConfig& cfg) {
-  return alice::modelfmt::init_engine(model_file, cfg).model;
+// Load via the model-format path and return the Engine. Tests that only need
+// the gpu::Model use engine.model().
+alice::engine::Engine load_packed(const std::string& model_file,
+                                  const alice::EngineConfig& cfg) {
+  return alice::engine::init_engine(model_file, cfg);
 }
 
 void run_teacher_forced(alice::gpu::Model& model, const std::string& fixture_dir,
@@ -100,7 +100,8 @@ TEST(GpuModel, DeterminismBitExact) {
     GTEST_SKIP() << "no packed 1B model at " << kPacked1B;
   alice::EngineConfig cfg;
   cfg.max_seq_len = 512;
-  auto model = load_packed(kPacked1B, cfg);
+  auto engine = load_packed(kPacked1B, cfg);
+  auto* model = engine.model();
   const std::vector<int32_t> tokens = {128000, 791, 6864, 315, 9822, 374};
   auto a = model->forward_logits(tokens);
   model->reset();
@@ -115,8 +116,8 @@ TEST(GpuModel, Canonical1BTeacherForced) {
     GTEST_SKIP() << "no packed 1B model or canonical fixtures";
   alice::EngineConfig cfg;
   cfg.max_seq_len = 4096;
-  auto model = load_packed(kPacked1B, cfg);
-  run_teacher_forced(*model, fixture("canonical", ""), cfg.max_prefill_chunk, 3);
+  auto engine = load_packed(kPacked1B, cfg);
+  run_teacher_forced(*engine.model(), fixture("canonical", ""), cfg.max_prefill_chunk, 3);
 }
 
 TEST(GpuModel, Canonical8BTeacherForced) {
@@ -124,8 +125,8 @@ TEST(GpuModel, Canonical8BTeacherForced) {
     GTEST_SKIP() << "no packed 8B model or canonical_8b fixtures";
   alice::EngineConfig cfg;
   cfg.max_seq_len = 4096;
-  auto model = load_packed(kPacked8B, cfg);
-  run_teacher_forced(*model, fixture("canonical_8b", ""), cfg.max_prefill_chunk, 3);
+  auto engine = load_packed(kPacked8B, cfg);
+  run_teacher_forced(*engine.model(), fixture("canonical_8b", ""), cfg.max_prefill_chunk, 3);
 }
 
 // Long-sequence gate: one ~1500-token WikiText prompt per model — exercises
@@ -152,7 +153,8 @@ void run_long_case(const std::string& model_file, const std::string& fixture_dir
 
   alice::EngineConfig cfg;
   cfg.max_seq_len = 8192;
-  auto model = load_packed(model_file, cfg);
+  auto engine = load_packed(model_file, cfg);
+  auto* model = engine.model();
 
   // (a) teacher-forced, chunked across boundaries
   model->reset();
@@ -250,8 +252,8 @@ TEST(GpuModel, CanonicalEnvTeacherForced) {
   cfg.max_seq_len = 8192;
   const char* chunk_env = getenv("ALICE_CANONICAL_CHUNK");
   if (chunk_env) cfg.max_prefill_chunk = uint32_t(atoi(chunk_env));
-  auto model = load_packed(file, cfg);
-  run_teacher_forced(*model, fix, cfg.max_prefill_chunk, 3);
+  auto engine = load_packed(file, cfg);
+  run_teacher_forced(*engine.model(), fix, cfg.max_prefill_chunk, 3);
 }
 
 }  // namespace

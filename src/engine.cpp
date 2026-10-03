@@ -7,7 +7,7 @@
 // Signature verification is deferred with the chain of trust: the
 // envelope's signature state is DECLARED loudly, not checked.
 
-#include "model_format.hpp"
+#include "engine.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -28,7 +28,7 @@ namespace alice {
 
 using nlohmann::json;
 
-namespace {
+namespace {   // private namespace for private helper stuff
 
 [[noreturn]] void fail(const std::string& what) {
   throw std::runtime_error("model loader: " + what);
@@ -91,7 +91,7 @@ json read_envelope(const std::filesystem::path& file) {
 
 }  // namespace
 
-namespace modelfmt {
+namespace engine {
 
 // init_engine: the envelope half. Reads the .model file (magic/framing),
 // validates + parses the descriptor, declares the signature state, builds
@@ -105,26 +105,29 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
 
   Timer t;
   const json envelope = read_envelope(model_file);
-  if (!envelope.is_object()) fail("envelope must be an object");
-  const json& alice = envelope.at("ALICE");
-  if (!alice.is_object()) fail("envelope.ALICE must be an object");
-  if (alice.at("format_version").get<uint64_t>() != 1)
-    fail("envelope.ALICE: unsupported format_version (this loader reads 1)");
-  if (envelope.contains("signature") && !envelope.at("signature").is_null()) {
-    std::string key = "?", alg = "?";
-    const json& s = envelope.at("signature");
-    if (s.is_object()) {
-      if (s.contains("key")) key = s.at("key").get<std::string>();
-      if (s.contains("alg")) alg = s.at("alg").get<std::string>();
+  {     // checking the envelope
+    if (!envelope.is_object()) fail("envelope must be an object");
+    const json& alice = envelope.at("ALICE");
+    if (!alice.is_object()) fail("envelope.ALICE must be an object");
+    if (alice.at("format_version").get<uint64_t>() != 1)
+      fail("envelope.ALICE: unsupported format_version (this loader reads 1)");
+    if (envelope.contains("signature") && !envelope.at("signature").is_null()) {
+      std::string key = "?", alg = "?";
+      const json& s = envelope.at("signature");
+      if (s.is_object()) {
+        if (s.contains("key")) key = s.at("key").get<std::string>();
+        if (s.contains("alg")) alg = s.at("alg").get<std::string>();
+      }
+      std::fprintf(stderr,
+                  "[model loader] descriptor carries a signature (alg=%s key=%s) — "
+                  "verification not implemented (chain-of-trust round); proceeding\n",
+                  alg.c_str(), key.c_str());
+    } else {
+      std::fprintf(stderr,
+                  "[model loader] unsigned descriptor — proceeding (dev artifacts only)\n");
     }
-    std::fprintf(stderr,
-                 "[model loader] descriptor carries a signature (alg=%s key=%s) — "
-                 "verification not implemented (chain-of-trust round); proceeding\n",
-                 alg.c_str(), key.c_str());
-  } else {
-    std::fprintf(stderr,
-                 "[model loader] unsigned descriptor — proceeding (dev artifacts only)\n");
   }
+
   const json& model = envelope.at("model");
   if (!model.is_object()) fail("envelope.model must be an object");
   Descriptor descriptor = model.get<Descriptor>();
@@ -151,7 +154,7 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
     });
     return s;
   };
-  out.chat_template = fetch_string("chat_template");
+  out.chat_template_ = fetch_string("chat_template");
 
   // Tokenizer: construct it here so the engine owns both the vocab and the
   // BOS/EOS metadata (pulled from the descriptor's tokenizer member config).
@@ -174,19 +177,19 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
         eos_token_ids.push_back(e.get<uint32_t>());
     }
   }
-  out.tokenizer = frontend::Tokenizer::from_json(tokenizer_json, bos_token_id,
+  out.tokenizer_ = frontend::Tokenizer::from_json(tokenizer_json, bos_token_id,
                                                  std::move(eos_token_ids));
 
-  out.name = descriptor.name;
-  out.producer = descriptor.producer;
-  out.packager = descriptor.packager;
-  out.license = descriptor.license;
-  out.license_url = descriptor.license_url;
-  out.license_text = descriptor.license_text;
-  out.max_context = descriptor.max_context;
+  out.name_ = descriptor.name;
+  out.producer_ = descriptor.producer;
+  out.packager_ = descriptor.packager;
+  out.license_ = descriptor.license;
+  out.license_url_ = descriptor.license_url;
+  out.license_text_ = descriptor.license_text;
+  out.max_context_ = descriptor.max_context;
 
-  out.model = gpu::Model::load_from_format(descriptor, data_loader, ec, st);
-  out.sampler = std::make_unique<Sampler>(ec.sampling);
+  out.model_ = gpu::Model::load_from_format(descriptor, data_loader, ec, st);
+  out.sampler_ = std::make_unique<Sampler>(ec.sampling);
   return out;
 }
 
@@ -201,7 +204,7 @@ Engine init_engine(const std::filesystem::path& model_file,
 }
 
 // Out-of-line: the unique_ptr<Model> deleter needs Model complete
-// (gpu_model.hpp, included above). Defined here so model_format.hpp stays
+// (gpu_model.hpp, included above). Defined here so engine.hpp stays
 // free of the vendor/internal includes Model drags in.
 Engine::~Engine() = default;
 
@@ -240,43 +243,43 @@ size_t utf8_complete_len(const std::string& s) {
 }  // namespace
 
 std::vector<int32_t> Engine::encode(const std::string& text) const {
-  return tokenizer.encode(text);
+  return tokenizer_.encode(text);
 }
 
 std::string Engine::decode(const std::vector<int32_t>& ids) const {
-  return tokenizer.decode(ids);
+  return tokenizer_.decode(ids);
 }
 
 std::vector<float> Engine::forward_logits(std::span<const int32_t> tokens) {
-  return model->forward_logits(tokens);
+  return model_->forward_logits(tokens);
 }
 
 std::vector<float> Engine::forward_logits_all(std::span<const int32_t> tokens) {
-  return model->forward_logits_all(tokens);
+  return model_->forward_logits_all(tokens);
 }
 
 int32_t Engine::forward(std::span<const int32_t> tokens) {
-  const auto logits = model->forward_logits(tokens);
-  return sampler->sample(logits.data(), static_cast<uint32_t>(logits.size()));
+  const auto logits = model_->forward_logits(tokens);
+  return sampler_->sample(logits.data(), static_cast<uint32_t>(logits.size()));
 }
 
-void Engine::reset() { model->reset(); }
+void Engine::reset() { model_->reset(); }
 
 Engine::GenerateResult Engine::generate(
     const std::string& prompt, const GenerateOptions& opts,
     std::function<void(const std::string&)> on_token) {
   GenerateResult result;
-  model->reset();
+  model_->reset();
 
   // Encode prompt and prepend BOS.
-  auto ids = tokenizer.encode(prompt);
-  ids.insert(ids.begin(), int32_t(tokenizer.bos_token_id()));
+  auto ids = tokenizer_.encode(prompt);
+  ids.insert(ids.begin(), int32_t(tokenizer_.bos_token_id()));
   if (ids.size() >= opts.max_seq_len)
     throw std::runtime_error("generate: prompt too long for max_seq_len");
   result.prompt_tokens = ids.size();
 
   const auto is_eos = [&](int32_t id) {
-    const auto& eos = tokenizer.eos_token_ids();
+    const auto& eos = tokenizer_.eos_token_ids();
     return std::find(eos.begin(), eos.end(), id) != eos.end();
   };
 
@@ -288,10 +291,10 @@ Engine::GenerateResult Engine::generate(
     const size_t n = std::min<size_t>(opts.max_prefill_chunk, ids.size() - off);
     const bool last = off + n >= ids.size();
     if (last) {
-      const auto logits = model->forward_logits(std::span<const int32_t>(ids.data() + off, n));
-      t = sampler->sample(logits.data(), static_cast<uint32_t>(logits.size()));
+      const auto logits = model_->forward_logits(std::span<const int32_t>(ids.data() + off, n));
+      t = sampler_->sample(logits.data(), static_cast<uint32_t>(logits.size()));
     } else {
-      model->forward_run(std::span<const int32_t>(ids.data() + off, n));
+      model_->forward_run(std::span<const int32_t>(ids.data() + off, n));
     }
   }
   result.prefill_seconds = elapsed_s(prefill_t0);
@@ -305,29 +308,29 @@ Engine::GenerateResult Engine::generate(
     if (is_eos(t)) break;
     gen.push_back(t);
     if (on_token) {
-      const std::string full = tokenizer.decode(gen);
+      const std::string full = tokenizer_.decode(gen);
       const size_t complete = utf8_complete_len(full);
       if (complete > shown) {
         on_token(full.substr(shown, complete - shown));
         shown = complete;
       }
     }
-    const auto logits = model->forward_logits(std::span<const int32_t>(&t, 1));
-    t = sampler->sample(logits.data(), static_cast<uint32_t>(logits.size()));
+    const auto logits = model_->forward_logits(std::span<const int32_t>(&t, 1));
+    t = sampler_->sample(logits.data(), static_cast<uint32_t>(logits.size()));
   }
   // Flush any remaining complete bytes.
   if (on_token && !gen.empty()) {
-    const std::string full = tokenizer.decode(gen);
+    const std::string full = tokenizer_.decode(gen);
     const size_t complete = utf8_complete_len(full);
     if (complete > shown) on_token(full.substr(shown, complete - shown));
   }
-  result.text = tokenizer.decode(gen);
+  result.text = tokenizer_.decode(gen);
   result.generated_tokens = gen.size();
   result.decode_seconds = elapsed_s(decode_t0);
   print_stats("decode", gen.size(), result.decode_seconds);
   return result;
 }
 
-}  // namespace modelfmt
+}  // namespace engine
 
 }  // namespace alice

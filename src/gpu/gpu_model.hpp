@@ -29,10 +29,10 @@ namespace loader {
 class LocalFileDataLoader;  // content-addressed bytes source (src/data_loader.hpp)
 }  // namespace loader
 
-namespace modelfmt {
-struct Descriptor;  // parsed .model descriptor (src/model_format.hpp)
-struct LoadStats;   // load timing/throughput (src/model_format.hpp)
-}  // namespace modelfmt
+namespace engine {
+struct Descriptor;  // parsed .model descriptor (src/engine.hpp)
+struct LoadStats;   // load timing/throughput (src/engine.hpp)
+}  // namespace engine
 
 namespace gpu {
 
@@ -47,12 +47,12 @@ class Model {
   // The model-format load path: constructs the device model in place from
   // the descriptor's content-addressed blocks + members (same component
   // constructors as the manifest path; arena covers the block loop only).
-  // Defined in src/model_format.cpp (the format loader TU). Throws on any
+  // Defined in src/engine.cpp (the format loader TU). Throws on any
   // framing, parse, hash, or length failure.
   static std::unique_ptr<Model> load_from_format(
-      const modelfmt::Descriptor& descriptor,
+      const engine::Descriptor& descriptor,
       const loader::LocalFileDataLoader& data_loader, const EngineConfig& ec,
-      modelfmt::LoadStats& st);
+      engine::LoadStats& st);
 
   ~Model();
 

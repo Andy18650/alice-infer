@@ -12,8 +12,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace alice::modelfmt {
-struct Engine;  // allows Engine() to default-construct a Tokenizer before from_json
+namespace alice::engine {
+class Engine;  // allows Engine() to default-construct a Tokenizer before from_json
 }
 
 namespace alice::frontend {
@@ -46,7 +46,7 @@ class Tokenizer {
   const std::vector<uint32_t>& eos_token_ids() const { return eos_token_ids_; }
 
  private:
-  friend struct alice::modelfmt::Engine;  // Engine() default-constructs then assigns via from_json
+  friend class alice::engine::Engine;  // Engine() default-constructs then assigns via from_json
   Tokenizer() = default;
   void load(const std::string& text);  // parse + build (shared by both ctors)
 

@@ -33,7 +33,7 @@
 #include "data_loader.hpp"
 #include "embedder.hpp"
 #include "lm_head.hpp"
-#include "model_format.hpp"
+#include "engine.hpp"
 #include "resources.hpp"
 #include "trunk.hpp"
 
@@ -66,7 +66,7 @@ Tensor<bf16> blob_to_tensor(std::span<const std::byte> blob, uint32_t rows,
   return Tensor<bf16>::copy_of(reinterpret_cast<const bf16*>(blob.data()), rows, cols);
 }
 
-const modelfmt::MemberDecl& require_member(const modelfmt::Descriptor& d,
+const engine::MemberDecl& require_member(const engine::Descriptor& d,
                                            const char* key) {
   const auto it = d.members.find(key);
   if (it == d.members.end())
@@ -123,10 +123,10 @@ struct Model::Impl {
   int tp_degree = 1;
 
   // Load parameters (valid until loading completes).
-  const modelfmt::Descriptor* load_descriptor = nullptr;
+  const engine::Descriptor* load_descriptor = nullptr;
   const loader::LocalFileDataLoader* load_data_loader = nullptr;
   EngineConfig load_ec;
-  modelfmt::LoadStats* load_stats = nullptr;
+  engine::LoadStats* load_stats = nullptr;
 
   // Global load coordination.
   std::mutex load_mutex;
@@ -278,7 +278,7 @@ struct Model::Impl {
 
     // --- block loop ------------------------------------------------------
     for (size_t i = 0; i < load_descriptor->blocks.size(); ++i) {
-      const modelfmt::BlockEntry& e = load_descriptor->blocks[i];
+      const engine::BlockEntry& e = load_descriptor->blocks[i];
       const std::string where = "blocks[" + std::to_string(i) + "]";
       const auto rit = resolved.find(e.spec);
       if (rit == resolved.end())
@@ -293,7 +293,7 @@ struct Model::Impl {
 
     // --- members ---------------------------------------------------------
     {  // embedder
-      const modelfmt::MemberDecl& mm = require_member(*load_descriptor, "embedder");
+      const engine::MemberDecl& mm = require_member(*load_descriptor, "embedder");
       const uint32_t vocab = mm.config.at("vocab_size").get<uint32_t>();
       const uint32_t d = mm.config.at("embedding_dim").get<uint32_t>();
       load_data_loader->fetch(mm.id, [&](std::span<const std::byte> blob) {
@@ -305,7 +305,7 @@ struct Model::Impl {
       hidden_dim_ = d;
     }
     {  // trunk
-      const modelfmt::MemberDecl& mm = require_member(*load_descriptor, "trunk");
+      const engine::MemberDecl& mm = require_member(*load_descriptor, "trunk");
       const uint32_t d = mm.config.at("hidden_dim").get<uint32_t>();
       const float eps = mm.config.at("epsilon").get<float>();
       const size_t npre = rk.blocks_.size();
@@ -329,7 +329,7 @@ struct Model::Impl {
       });
     }
     {  // language_head
-      const modelfmt::MemberDecl& mm = require_member(*load_descriptor, "language_head");
+      const engine::MemberDecl& mm = require_member(*load_descriptor, "language_head");
       const uint32_t vocab = mm.config.at("vocab_size").get<uint32_t>();
       const uint32_t d = mm.config.at("hidden_dim").get<uint32_t>();
       load_data_loader->fetch(mm.id, [&](std::span<const std::byte> blob) {
@@ -476,9 +476,9 @@ void Model::worker_loop(Model* model, int rank) {
 }
 
 std::unique_ptr<Model> Model::load_from_format(
-    const modelfmt::Descriptor& descriptor,
+    const engine::Descriptor& descriptor,
     const loader::LocalFileDataLoader& data_loader, const EngineConfig& ec,
-    modelfmt::LoadStats& st) {
+    engine::LoadStats& st) {
   auto m = std::unique_ptr<Model>(new Model());
   m->impl_->cfg_ = ec;
   m->impl_->tp_degree = ec.tp_degree;

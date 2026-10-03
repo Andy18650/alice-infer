@@ -80,7 +80,7 @@ H2D inside the block). Never for production.
 - `src/blocks/cpu_generic/` — naive CPU reference implementations (test oracle)
 - `src/blocks/gpu_rocm/` — ROCm block impls (rocBLAS GEMMs + private SIMT kernels) + platform plumbing (device + rocBLAS handle)
 - `src/frontend/` — REPL, tokenizer (system PCRE2)
-- `src/model_format.{hpp,cpp}` — the alice model format loader (init_engine)
+- `src/engine.{hpp,cpp}` — the alice model format loader (init_engine)
 - `tests/` — GoogleTest suite + canonical teacher-forced fixtures
 - `tools/` — pack_model.py (HF -> .model), sweep scripts
 - `research/` — decision-support studies (RCCL/P2P multi-GPU, ROCm overlays)

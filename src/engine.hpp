@@ -42,7 +42,7 @@ class LmHead;
 class Model;  // the device-resident model (src/gpu/gpu_model.hpp)
 }
 
-namespace alice::modelfmt {
+namespace alice::engine {
 
 // ---------------------------------------------------------------------------
 // Descriptor structures (the "model" map of the envelope)
@@ -119,7 +119,7 @@ inline void from_json(const nlohmann::json& m, Descriptor& d) {
 
 // BlockFactory (the loader's block-construction seam, the former
 // "ResolvedSpec") lives in src/blocks/block_factory.hpp; the THP-backed
-// staging buffer (Chunk) is a loader-private RAII helper in model_format.cpp,
+// staging buffer (Chunk) is a loader-private RAII helper in engine.cpp,
 // not a boundary type — construct() takes a non-owning std::span<const std::byte>.
 
 // ---------------------------------------------------------------------------
@@ -153,27 +153,24 @@ struct LoadStats {
 // phase (parse, read, hash, construct). Null Object pattern: the loader
 // writes to a local dummy if null, so internal code has no per-site
 // branches.
-struct Engine {
-  // Signed metadata (informational; retained for "what is this model?"
-  // queries — no consumer yet, stored so they survive the load).
-  std::string name, producer, packager, license, license_url, license_text;
-  uint64_t max_context = 0;
-  // Non-device members, fetched + retained for the session/REPL layer.
-  frontend::Tokenizer tokenizer;  // constructed from the tokenizer.json member
-  std::string chat_template;      // jinja template (content-addressed)
-  std::unique_ptr<gpu::Model> model;  // device-resident; built by Model::load_from_format
-  std::unique_ptr<Sampler> sampler;   // host-side sampling (moved here from gpu::Model)
-
+class Engine {
+ public:
   // Model is forward-declared above (exploded pimpl: this header stays free
   // of vendor/internal includes). The destructor is out-of-line so the
   // unique_ptr deleter sees Model complete without forcing every includer
   // to pull gpu_model.hpp. Move-only (RVO covers the return).
   ~Engine();
-  Engine() = default;
   Engine(Engine&&) noexcept = default;
   Engine& operator=(Engine&&) noexcept = default;
   Engine(const Engine&) = delete;
   Engine& operator=(const Engine&) = delete;
+
+  // --- accessors -----------------------------------------------------------
+  uint32_t vocab_size() const { return tokenizer_.vocab_size(); }
+  const frontend::Tokenizer& tokenizer() const { return tokenizer_; }
+  const std::string& chat_template() const { return chat_template_; }
+  gpu::Model* model() { return model_.get(); }
+  const gpu::Model* model() const { return model_.get(); }
 
   // --- generation API (moved here from repl.cpp) ---------------------------
   struct GenerateOptions {
@@ -203,8 +200,23 @@ struct Engine {
   std::vector<float> forward_logits_all(std::span<const int32_t> tokens);
   int32_t forward(std::span<const int32_t> tokens);
   void reset();
+
+ private:
+  Engine() = default;
+  friend Engine init_engine_impl(const std::filesystem::path& model_file,
+                                 const EngineConfig& ec, LoadStats& st);
+
+  // Signed metadata (informational; retained for "what is this model?"
+  // queries — no consumer yet, stored so they survive the load).
+  std::string name_, producer_, packager_, license_, license_url_, license_text_;
+  uint64_t max_context_ = 0;
+  // Non-device members, fetched + retained for the session/REPL layer.
+  frontend::Tokenizer tokenizer_;  // constructed from the tokenizer.json member
+  std::string chat_template_;      // jinja template (content-addressed)
+  std::unique_ptr<gpu::Model> model_;  // device-resident; built by Model::load_from_format
+  std::unique_ptr<Sampler> sampler_;   // host-side sampling (moved here from gpu::Model)
 };
 Engine init_engine(const std::filesystem::path& model_file,
                    const EngineConfig& ec, LoadStats* out_stats = nullptr);
 
-}  // namespace alice::modelfmt
+}  // namespace alice::engine

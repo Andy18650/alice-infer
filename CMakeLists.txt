@@ -89,7 +89,7 @@ target_sources(alice PRIVATE
     src/gpu/model.cpp
     src/gpu/kernels.hip
     src/blocks/gpu_rocm/kernels.hip
-    src/model_format.cpp)
+    src/engine.cpp)
 target_compile_definitions(alice PUBLIC JSON_DIAGNOSTICS=1)  # json exceptions carry the JSON pointer path
 target_compile_definitions(alice PRIVATE __HIP_PLATFORM_AMD__)
 target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}" "${ALICE_HIP_LIB}" "${ALICE_BLAKE3_LIB}" "${ALICE_RCCL_LIB}")

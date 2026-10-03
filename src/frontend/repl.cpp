@@ -10,7 +10,7 @@
 #include <iostream>
 #include <string>
 
-#include "../model_format.hpp"
+#include "../engine.hpp"
 
 namespace {
 
@@ -19,7 +19,7 @@ void print_new_text(const std::string& text) {
   std::fflush(stdout);
 }
 
-int run_rounds(alice::modelfmt::Engine& engine, int max_new, uint32_t max_seq,
+int run_rounds(alice::engine::Engine& engine, int max_new, uint32_t max_seq,
                const char* prompt, uint32_t chunk) {
   std::string line;
   for (;;) {
@@ -67,11 +67,11 @@ int main(int argc, char** argv) {
     cfg.max_prefill_chunk = 512;
     cfg.sampling.temperature = 0.0f;
     cfg.tp_degree = tp_degree;
-    alice::modelfmt::Engine eng = alice::modelfmt::init_engine(model_file, cfg);
+    alice::engine::Engine eng = alice::engine::init_engine(model_file, cfg);
     std::fprintf(stderr,
                  "[alice] model loaded (vocab %u, GPU-resident). /quit to exit, "
                  "session cleared on every round.\n",
-                 eng.tokenizer.vocab_size());
+                 eng.vocab_size());
     return run_rounds(eng, max_new, max_seq, argc > 5 ? argv[5] : nullptr,
                       cfg.max_prefill_chunk);
   } catch (const std::exception& e) {

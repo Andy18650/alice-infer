@@ -13,7 +13,7 @@
 #include <hip/hip_runtime_api.h>
 
 #include "../src/blocks/gpu_rocm/gqa_attention.hpp"
-#include "../src/gpu/gpu_model.hpp"
+#include "../src/gpu/model.hpp"
 
 namespace {
 

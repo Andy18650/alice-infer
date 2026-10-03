@@ -3,7 +3,7 @@
 // host<->device traffic.
 //
 // The component members are INCOMPLETE TYPES (forward-declared in
-// gpu_model.hpp): this file is the only TU that pulls the member headers
+// model.hpp): this file is the only TU that pulls the member headers
 // (embedder/trunk/lm_head/sampler/resources). "exploded pimpl" shape (user
 // direction 2026-09): named members instead of one Impl indirection.
 //
@@ -12,7 +12,7 @@
 // For this skeleton step weights are replicated on every rank; sharding
 // (strided TensorView) and AllReduce come next.
 
-#include "gpu/gpu_model.hpp"
+#include "gpu/model.hpp"
 
 #include <condition_variable>
 #include <cstdint>

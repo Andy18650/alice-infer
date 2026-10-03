@@ -39,7 +39,7 @@ class Resources;
 class Embedder;
 class RmsNormAddTrunk;
 class LmHead;
-class Model;  // the device-resident model (src/gpu/gpu_model.hpp)
+class Model;  // the device-resident model (src/gpu/model.hpp)
 }
 
 namespace alice::engine {
@@ -158,7 +158,7 @@ class Engine {
   // Model is forward-declared above (exploded pimpl: this header stays free
   // of vendor/internal includes). The destructor is out-of-line so the
   // unique_ptr deleter sees Model complete without forcing every includer
-  // to pull gpu_model.hpp. Move-only (RVO covers the return).
+  // to pull model.hpp. Move-only (RVO covers the return).
   ~Engine();
   Engine(Engine&&) noexcept = default;
   Engine& operator=(Engine&&) noexcept = default;

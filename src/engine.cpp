@@ -21,7 +21,7 @@
 #include <nlohmann/json.hpp>
 
 #include "data_loader.hpp"  // LocalFileDataLoader (content-addressed fetch)
-#include "gpu/gpu_model.hpp"  // gpu::Model (load_from_format + ~Engine)
+#include "gpu/model.hpp"  // gpu::Model (load_from_format + ~Engine)
 #include "sampler.hpp"  // host-side Sampler (moved from gpu::Model)
 
 namespace alice {
@@ -204,7 +204,7 @@ Engine init_engine(const std::filesystem::path& model_file,
 }
 
 // Out-of-line: the unique_ptr<Model> deleter needs Model complete
-// (gpu_model.hpp, included above). Defined here so engine.hpp stays
+// (model.hpp, included above). Defined here so engine.hpp stays
 // free of the vendor/internal includes Model drags in.
 Engine::~Engine() = default;
 

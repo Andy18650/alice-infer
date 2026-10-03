@@ -16,7 +16,7 @@
 #include <nlohmann/json.hpp>
 
 #include "alice/engine_config.hpp"
-#include "../src/gpu/gpu_model.hpp"
+#include "../src/gpu/model.hpp"
 #include "../src/engine.hpp"
 
 namespace {

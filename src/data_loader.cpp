@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include <chrono>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -118,6 +119,7 @@ void LocalFileDataLoader::fetch(
   const auto it = entries_.find(id);
   if (it == entries_.end()) fail("unknown id '" + id + "'");
   const Entry& e = it->second;
+  Timer total;
 
   // Per-call THP-backed staging buffer. Each thread gets its own mapping so
   // concurrent fetches do not share mutable state. The mapping lives only for
@@ -164,6 +166,12 @@ void LocalFileDataLoader::fetch(
     hash_ms_ += th.ms();
   }
   hash_verifications_.fetch_add(1);
+
+  std::fprintf(stderr,
+               "[data_loader] fetched %s: %.2f ms (read %.2f ms + hash %.2f ms), "
+               "%.2f MiB\n",
+               id.c_str(), total.ms(), tr.ms(), th.ms(),
+               double(e.size) / (1024.0 * 1024.0));
 
   consume(std::span<const std::byte>(buf, e.size));
 }

@@ -111,7 +111,27 @@ LocalFileDataLoader::LocalFileDataLoader(const std::string& table_path) {
   build(tbl, p.parent_path().string());
 }
 
-LocalFileDataLoader::~LocalFileDataLoader() = default;
+LocalFileDataLoader::~LocalFileDataLoader() {
+  if (buffer_ && buffer_size_) (void)::munmap(buffer_, buffer_size_);
+}
+
+void LocalFileDataLoader::ensure_buffer_(size_t size) const {
+  if (buffer_size_ == size) return;
+  if (buffer_) {
+    (void)::munmap(buffer_, buffer_size_);
+    buffer_ = nullptr;
+    buffer_size_ = 0;
+  }
+  if (size) {
+    void* m = ::mmap(nullptr, size, PROT_READ | PROT_WRITE,
+                     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (m == MAP_FAILED)
+      fail("staging mmap failed (size " + std::to_string(size) + ")");
+    (void)::madvise(m, size, MADV_HUGEPAGE);  // design §9 THP staging
+    buffer_ = static_cast<std::byte*>(m);
+    buffer_size_ = size;
+  }
+}
 
 void LocalFileDataLoader::fetch(
     const std::string& id,
@@ -119,61 +139,79 @@ void LocalFileDataLoader::fetch(
   const auto it = entries_.find(id);
   if (it == entries_.end()) fail("unknown id '" + id + "'");
   const Entry& e = it->second;
-  Timer total;
 
-  // Per-call THP-backed staging buffer. Each thread gets its own mapping so
-  // concurrent fetches do not share mutable state. The mapping lives only for
-  // the duration of this call, mirroring the Tensor<T> allocation pattern.
-  std::byte* buf = nullptr;
-  if (e.size) {
-    void* m = mmap(nullptr, e.size, PROT_READ | PROT_WRITE,
-                   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (m == MAP_FAILED) fail("staging mmap failed for id '" + id + "'");
-    (void)madvise(m, e.size, MADV_HUGEPAGE);  // design §9 THP staging
-    buf = static_cast<std::byte*>(m);
-  }
-  struct MmapFree {
-    std::byte* p;
-    size_t n;
-    ~MmapFree() {
-      if (p && n) (void)munmap(p, n);
+  std::unique_lock<std::mutex> lock(cache_mutex_);
+  cache_cv_.wait(lock,
+                 [&] { return cached_id_ == id || consumers_ == 0; });
+
+  if (cached_id_ != id) {
+    // We are the loader. Evict the previous id so no waiter matches while we
+    // are overwriting the buffer.
+    cached_id_.clear();
+    ensure_buffer_(static_cast<size_t>(e.size));
+
+    Timer total;
+    try {
+      Fd fd(e.file);
+      Timer tr;
+      size_t got = 0;
+      while (got < e.size) {
+        const ssize_t n = ::pread(fd.get(), buffer_ + got, e.size - got,
+                                  off_t(e.offset + got));
+        if (n <= 0)
+          fail("short read on '" + e.file + "': " + std::strerror(errno));
+        got += size_t(n);
+      }
+      {
+        std::lock_guard<std::mutex> mlock(metrics_mutex_);
+        read_ms_ += tr.ms();
+      }
+      bytes_read_.fetch_add(e.size);
+
+      // The self-certifying guarantee: bytes are verified against the ID
+      // before the caller ever sees them.
+      Timer th;
+      if (blake3_hex(buffer_, e.size) != id)
+        fail("BLAKE3 mismatch for id '" + id +
+             "' — content corrupt or tampered");
+      {
+        std::lock_guard<std::mutex> mlock(metrics_mutex_);
+        hash_ms_ += th.ms();
+      }
+      hash_verifications_.fetch_add(1);
+
+      cached_id_ = id;
+      consumers_ = 1;
+
+      std::fprintf(stderr,
+                   "[data_loader] loaded %s: %.2f ms (read %.2f ms + hash "
+                   "%.2f ms), %.2f MiB\n",
+                   id.c_str(), total.ms(), tr.ms(), th.ms(),
+                   double(e.size) / (1024.0 * 1024.0));
+
+      cache_cv_.notify_all();
+    } catch (...) {
+      // Load/verify failed. Reset cache state so waiters can retry.
+      cached_id_.clear();
+      consumers_ = 0;
+      cache_cv_.notify_all();
+      throw;
     }
-  } guard{buf, size_t(e.size)};
-
-  Fd fd(e.file);
-  Timer tr;
-  size_t got = 0;
-  while (got < e.size) {
-    const ssize_t n =
-        ::pread(fd.get(), buf + got, e.size - got, off_t(e.offset + got));
-    if (n <= 0)
-      fail("short read on '" + e.file + "': " + std::strerror(errno));
-    got += size_t(n);
+  } else {
+    ++consumers_;
   }
-  {
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
-    read_ms_ += tr.ms();
+
+  lock.unlock();
+
+  consume(std::span<const std::byte>(buffer_, e.size));
+
+  lock.lock();
+  --consumers_;
+  if (consumers_ == 0) {
+    cached_id_.clear();
+    cache_cv_.notify_all();
   }
-  bytes_read_.fetch_add(e.size);
-
-  // The self-certifying guarantee: bytes are verified against the ID (which
-  // is their hash) before the caller ever sees them.
-  Timer th;
-  if (blake3_hex(buf, e.size) != id)
-    fail("BLAKE3 mismatch for id '" + id + "' — content corrupt or tampered");
-  {
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
-    hash_ms_ += th.ms();
-  }
-  hash_verifications_.fetch_add(1);
-
-  std::fprintf(stderr,
-               "[data_loader] fetched %s: %.2f ms (read %.2f ms + hash %.2f ms), "
-               "%.2f MiB\n",
-               id.c_str(), total.ms(), tr.ms(), th.ms(),
-               double(e.size) / (1024.0 * 1024.0));
-
-  consume(std::span<const std::byte>(buf, e.size));
+  lock.unlock();
 }
 
 }  // namespace alice::loader

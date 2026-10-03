@@ -17,11 +17,15 @@
 // exists" rule (design §8.3); the interface gets extracted when a second
 // transport (P2P/HTTP) is built. The location table is the fused .model
 // file's `files` array (unsigned, verified by the content hash); a separate
-// table file is also accepted (used by tests). Each fetch allocates its own
-// THP-backed staging buffer, so a single loader can be used concurrently by
-// multiple threads.
+// table file is also accepted (used by tests).
+//
+// The loader keeps a single shared THP-backed staging chunk. One thread loads
+// a record at a time; once verified, other threads needing the same id share
+// the buffer and consume concurrently. The chunk is evicted once the last
+// consumer finishes.
 
 #include <atomic>
+#include <condition_variable>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -57,8 +61,8 @@ class LocalFileDataLoader {
   // with a non-owning view while the staging buffer is alive. Throws
   // std::runtime_error on unknown id, IO error, or hash mismatch — so
   // `consume` only ever sees verified bytes (the self-certifying guarantee).
-  // Thread-safe: each call allocates its own staging buffer, so multiple
-  // threads may fetch concurrently from the same loader.
+  // Thread-safe: multiple threads may fetch concurrently; a record is read and
+  // verified at most once, then shared among concurrent consumers.
   void fetch(const std::string& id,
              std::function<void(std::span<const std::byte>)> consume) const;
 
@@ -78,12 +82,23 @@ class LocalFileDataLoader {
   };
 
   void build(const nlohmann::json& files, const std::string& base_dir);
+  void ensure_buffer_(size_t size) const;
 
   std::unordered_map<std::string, Entry> entries_;
+
+  // Metrics; protected by metrics_mutex_.
   mutable std::mutex metrics_mutex_;
   mutable double read_ms_ = 0.0, hash_ms_ = 0.0;
   mutable std::atomic<uint64_t> bytes_read_{0};
   mutable std::atomic<size_t> hash_verifications_{0};
+
+  // Shared single-chunk cache; protected by cache_mutex_.
+  mutable std::mutex cache_mutex_;
+  mutable std::condition_variable cache_cv_;
+  mutable std::string cached_id_;
+  mutable std::byte* buffer_ = nullptr;
+  mutable size_t buffer_size_ = 0;
+  mutable int consumers_ = 0;
 };
 
 }  // namespace alice::loader

@@ -1,34 +1,39 @@
 // The alice model format loader (docs/model-format.md RC1,
 // docs/model-loader.md §8 scope). init_engine is the public entry: it
 // reads the .model envelope (magic/framing/signature-state), extracts the
-// signed metadata + non-device members (tokenizer, chat_template), and
-// loads the device model via gpu::Model::load_from_format — unifying the
-// model-format path and the manifest path on one runnable gpu::Model type.
+// signed metadata + non-device members (tokenizer, chat_template), and loads
+// one gpu::Model per tensor-parallel rank. The Engine then owns the worker
+// threads and the shared work barrier.
 // Signature verification is deferred with the chain of trust: the
 // envelope's signature state is DECLARED loudly, not checked.
 
 #include "engine.hpp"
 
+#include "gpu/model.hpp"  // per-rank Model + WorkItem
+
 #include <algorithm>
+#include <atomic>
 #include <chrono>
-#include <cstdio>
+#include <condition_variable>
 #include <cstdint>
+#include <cstdio>
 #include <fstream>
 #include <functional>
+#include <mutex>
 #include <span>
 #include <stdexcept>
 
 #include <nlohmann/json.hpp>
+#include <rccl/rccl.h>
 
 #include "data_loader.hpp"  // LocalFileDataLoader (content-addressed fetch)
-#include "gpu/model.hpp"  // gpu::Model (load_from_format + ~Engine)
-#include "sampler.hpp"  // host-side Sampler (moved from gpu::Model)
+#include "sampler.hpp"      // host-side Sampler
 
 namespace alice {
 
 using nlohmann::json;
 
-namespace {   // private namespace for private helper stuff
+namespace {  // private helpers
 
 [[noreturn]] void fail(const std::string& what) {
   throw std::runtime_error("model loader: " + what);
@@ -43,30 +48,19 @@ struct Timer {
   }
 };
 
-// Descriptor parses via from_json (header); json exceptions carry the key
-// name (JSON_DIAGNOSTICS), converted once at the init_engine boundary. Only
-// SEMANTIC checks hand-build context here (version, unknown type/codec,
-// hash mismatches): things the json library cannot know.
-
 // Reads a .model descriptor file and returns the parsed envelope: text
 // region (everything before the first NUL, which must be \n- or \r\n-
 // terminated; a binary tail may follow in single-file models, so no
-// whole-file read), {"ALICE" magic, then the json parse. The raw text is
-// local — only the parsed envelope crosses out (the string is freed once
-// the json is constructed). Descriptor budget: real ones measure <100 KiB
-// (the 70B-with-MoE projects to ~32 KiB); the 1 MiB read cap exists to
-// catch "wrong file pointed at the loader", not as a designed limit.
+// whole-file read), {"ALICE" magic, then the json parse.
 json read_envelope(const std::filesystem::path& file) {
   constexpr size_t kMaxDescriptor = 1 << 20;
 
   std::ifstream in(file, std::ios::binary);
   if (!in) fail("cannot open '" + file.string() + "'");
   std::string text(kMaxDescriptor, '\0');
-  in.read(text.data(), kMaxDescriptor);  // partial read at EOF is fine
+  in.read(text.data(), kMaxDescriptor);
   const size_t got = size_t(in.gcount());
 
-  // Magic first: a wrong file should fail HERE, not on some
-  // incidental terminator detail deeper in.
   if (got < 8 || text.compare(0, 8, "{\"ALICE\"") != 0)
     fail("bad magic: a .model file must begin with {\"ALICE\"");
 
@@ -76,8 +70,8 @@ json read_envelope(const std::filesystem::path& file) {
          "not a .model file?");
   if (nul == 0 || text[nul - 1] != '\n')
     fail("text region must end with \\n before the NUL gate");
-  size_t end = nul - 1;  // drop the \n
-  if (end > 0 && text[end - 1] == '\r') --end;  // tolerate \r\n
+  size_t end = nul - 1;
+  if (end > 0 && text[end - 1] == '\r') --end;
   text.resize(end);
 
   json envelope;
@@ -93,19 +87,122 @@ json read_envelope(const std::filesystem::path& file) {
 
 namespace engine {
 
-// init_engine: the envelope half. Reads the .model file (magic/framing),
-// validates + parses the descriptor, declares the signature state, builds
-// the content-addressed DataLoader from the unsigned `files` table, fetches
-// the non-device members (tokenizer, chat_template) + signed metadata, then
-// hands the descriptor + DataLoader to Model::load_from_format for the
-// device half.
+// Private threading state (non-movable members live here).
+struct Engine::ThreadState {
+  std::mutex work_mutex;
+  std::condition_variable work_cv;
+  gpu::WorkItem work;
+  uint64_t work_generation = 0;
+  std::vector<uint64_t> worker_generations;
+  std::atomic<int> pending{0};
+
+  std::mutex done_mutex;
+  std::condition_variable done_cv;
+
+  bool shutdown = false;
+
+  std::mutex load_mutex;
+  std::condition_variable load_cv;
+  int loaded_count = 0;
+  std::exception_ptr load_error;
+
+  ncclUniqueId nccl_id{};
+};
+
+Engine::Engine() : ts_(std::make_unique<ThreadState>()) {}
+
+Engine::Engine(Engine&&) noexcept = default;
+Engine& Engine::operator=(Engine&&) noexcept = default;
+
+Engine::~Engine() {
+  if (!ts_) return;
+
+  // Signal shutdown to every joinable worker and join.
+  {
+    std::lock_guard<std::mutex> lock(ts_->work_mutex);
+    ts_->shutdown = true;
+  }
+  ts_->work_cv.notify_all();
+
+  for (auto& t : workers_) {
+    if (t.joinable()) t.join();
+  }
+}
+
+void Engine::submit_work(const gpu::WorkItem& work) {
+  auto& ts = *ts_;
+  {
+    std::lock_guard<std::mutex> lock(ts.work_mutex);
+    ts.work = work;
+    ts.work_generation++;
+    ts.pending = static_cast<int>(models_.size());
+  }
+  ts.work_cv.notify_all();
+
+  std::unique_lock<std::mutex> lock(ts.done_mutex);
+  ts.done_cv.wait(lock, [&] { return ts.pending == 0; });
+
+  for (auto& m : models_) {
+    if (auto e = m->error()) std::rethrow_exception(e);
+  }
+}
+
+void worker_main(Engine* engine, int rank, gpu::Model* model,
+                 const Descriptor& descriptor,
+                 const loader::LocalFileDataLoader& data_loader,
+                 LoadStats& st) {
+  auto& ts = *engine->ts_;
+
+  // Load this rank's weights.
+  try {
+    model->load(descriptor, data_loader, st, ts.nccl_id);
+  } catch (...) {
+    model->set_error(std::current_exception());
+    {
+      std::lock_guard<std::mutex> lock(ts.load_mutex);
+      ts.loaded_count++;
+    }
+    ts.load_cv.notify_one();
+    return;
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(ts.load_mutex);
+    ts.loaded_count++;
+  }
+  ts.load_cv.notify_one();
+
+  // Work loop.
+  while (true) {
+    gpu::WorkItem work;
+    {
+      std::unique_lock<std::mutex> lock(ts.work_mutex);
+      ts.work_cv.wait(lock, [&] {
+        return ts.shutdown ||
+               ts.worker_generations[rank] != ts.work_generation;
+      });
+      if (ts.shutdown) break;
+      work = ts.work;
+      ts.worker_generations[rank] = ts.work_generation;
+    }
+
+    model->execute(work);
+
+    if (--ts.pending == 0) {
+      std::lock_guard<std::mutex> lock(ts.done_mutex);
+      ts.done_cv.notify_one();
+    }
+  }
+}
+
 Engine init_engine_impl(const std::filesystem::path& model_file,
                         const EngineConfig& ec, LoadStats& st) {
   Engine out;
+  auto& ts = *out.ts_;
 
   Timer t;
   const json envelope = read_envelope(model_file);
-  {     // checking the envelope
+  {
     if (!envelope.is_object()) fail("envelope must be an object");
     const json& alice = envelope.at("ALICE");
     if (!alice.is_object()) fail("envelope.ALICE must be an object");
@@ -119,12 +216,12 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
         if (s.contains("alg")) alg = s.at("alg").get<std::string>();
       }
       std::fprintf(stderr,
-                  "[model loader] descriptor carries a signature (alg=%s key=%s) — "
-                  "verification not implemented (chain-of-trust round); proceeding\n",
-                  alg.c_str(), key.c_str());
+                   "[model loader] descriptor carries a signature (alg=%s key=%s) — "
+                   "verification not implemented (chain-of-trust round); proceeding\n",
+                   alg.c_str(), key.c_str());
     } else {
       std::fprintf(stderr,
-                  "[model loader] unsigned descriptor — proceeding (dev artifacts only)\n");
+                   "[model loader] unsigned descriptor — proceeding (dev artifacts only)\n");
     }
   }
 
@@ -137,14 +234,10 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
   st.parse_ms = t.ms();
   st.specs = descriptor.specs.size();
 
-  // The bytes source: content-addressed DataLoader from the unsigned `files`
-  // table (location separated from identity, per the format).
   const std::filesystem::path base = model_file.parent_path();
   const loader::LocalFileDataLoader data_loader(envelope.at("files"),
-                                                 base.string());
+                                                base.string());
 
-  // Non-device members + signed metadata, retained for the session/REPL
-  // layer (not part of the device forward path). Optional: absent -> empty.
   auto fetch_string = [&](const char* key) -> std::string {
     const auto it = descriptor.members.find(key);
     if (it == descriptor.members.end()) return {};
@@ -156,8 +249,6 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
   };
   out.chat_template_ = fetch_string("chat_template");
 
-  // Tokenizer: construct it here so the engine owns both the vocab and the
-  // BOS/EOS metadata (pulled from the descriptor's tokenizer member config).
   uint32_t bos_token_id = 0;
   std::vector<uint32_t> eos_token_ids;
   std::string tokenizer_json;
@@ -178,7 +269,7 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
     }
   }
   out.tokenizer_ = frontend::Tokenizer::from_json(tokenizer_json, bos_token_id,
-                                                 std::move(eos_token_ids));
+                                                  std::move(eos_token_ids));
 
   out.name_ = descriptor.name;
   out.producer_ = descriptor.producer;
@@ -188,7 +279,52 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
   out.license_text_ = descriptor.license_text;
   out.max_context_ = descriptor.max_context;
 
-  out.model_ = gpu::Model::load_from_format(descriptor, data_loader, ec, st);
+  // Device models: one per rank, each loaded in its own worker thread.
+  ncclUniqueId nccl_id{};
+  if (ec.tp_degree > 1) {
+    ncclResult_t nr = ncclGetUniqueId(&nccl_id);
+    if (nr != ncclSuccess)
+      fail("ncclGetUniqueId failed: " + std::string(ncclGetErrorString(nr)));
+  }
+  ts.nccl_id = nccl_id;
+
+  out.models_.reserve(ec.tp_degree);
+  out.workers_.reserve(ec.tp_degree);
+  ts.worker_generations.assign(ec.tp_degree, 0);
+
+  for (uint32_t r = 0; r < ec.tp_degree; ++r) {
+    out.models_.push_back(std::make_unique<gpu::Model>(r, ec.tp_degree, ec));
+    gpu::Model* m = out.models_.back().get();
+    out.workers_.emplace_back(worker_main, &out, r, m,
+                              std::cref(descriptor), std::cref(data_loader),
+                              std::ref(st));
+  }
+
+  {
+    std::unique_lock<std::mutex> lock(ts.load_mutex);
+    ts.load_cv.wait(lock, [&] {
+      return ts.loaded_count == static_cast<int>(ec.tp_degree);
+    });
+  }
+
+  std::exception_ptr err;
+  for (auto& m : out.models_) {
+    if (auto e = m->error()) {
+      err = e;
+      break;
+    }
+  }
+  if (err) {
+    {
+      std::lock_guard<std::mutex> lock(ts.work_mutex);
+      ts.shutdown = true;
+    }
+    ts.work_cv.notify_all();
+    for (auto& t : out.workers_)
+      if (t.joinable()) t.join();
+    std::rethrow_exception(err);
+  }
+
   out.sampler_ = std::make_unique<Sampler>(ec.sampling);
   return out;
 }
@@ -202,11 +338,6 @@ Engine init_engine(const std::filesystem::path& model_file,
     fail(std::string("descriptor: ") + e.what());
   }
 }
-
-// Out-of-line: the unique_ptr<Model> deleter needs Model complete
-// (model.hpp, included above). Defined here so engine.hpp stays
-// free of the vendor/internal includes Model drags in.
-Engine::~Engine() = default;
 
 namespace {
 
@@ -227,7 +358,6 @@ void print_stats(const char* phase, size_t tokens, double seconds) {
                double(tokens) / seconds);
 }
 
-// Length of the longest complete-UTF-8 prefix of s.
 size_t utf8_complete_len(const std::string& s) {
   size_t i = 0;
   while (i < s.size()) {
@@ -251,27 +381,32 @@ std::string Engine::decode(const std::vector<int32_t>& ids) const {
 }
 
 std::vector<float> Engine::forward_logits(std::span<const int32_t> tokens) {
-  return model_->forward_logits(tokens);
+  submit_work(gpu::WorkItem{gpu::WorkItem::Kind::ForwardLogits,
+                            std::vector<int32_t>(tokens.begin(), tokens.end())});
+  return models_[0]->last_logits();
 }
 
 std::vector<float> Engine::forward_logits_all(std::span<const int32_t> tokens) {
-  return model_->forward_logits_all(tokens);
+  submit_work(gpu::WorkItem{gpu::WorkItem::Kind::ForwardLogitsAll,
+                            std::vector<int32_t>(tokens.begin(), tokens.end())});
+  return models_[0]->last_logits();
 }
 
 int32_t Engine::forward(std::span<const int32_t> tokens) {
-  const auto logits = model_->forward_logits(tokens);
+  const auto logits = forward_logits(tokens);
   return sampler_->sample(logits.data(), static_cast<uint32_t>(logits.size()));
 }
 
-void Engine::reset() { model_->reset(); }
+void Engine::reset() {
+  submit_work(gpu::WorkItem{gpu::WorkItem::Kind::Reset, {}});
+}
 
 Engine::GenerateResult Engine::generate(
     const std::string& prompt, const GenerateOptions& opts,
     std::function<void(const std::string&)> on_token) {
   GenerateResult result;
-  model_->reset();
+  reset();
 
-  // Encode prompt and prepend BOS.
   auto ids = tokenizer_.encode(prompt);
   ids.insert(ids.begin(), int32_t(tokenizer_.bos_token_id()));
   if (ids.size() >= opts.max_seq_len)
@@ -283,24 +418,23 @@ Engine::GenerateResult Engine::generate(
     return std::find(eos.begin(), eos.end(), id) != eos.end();
   };
 
-  // Chunked prefill: run all but the last chunk without D2H, then pull
-  // logits for the final chunk and sample on the host.
   const auto prefill_t0 = Clock::now();
   int32_t t = -1;
   for (size_t off = 0; off < ids.size(); off += opts.max_prefill_chunk) {
     const size_t n = std::min<size_t>(opts.max_prefill_chunk, ids.size() - off);
     const bool last = off + n >= ids.size();
     if (last) {
-      const auto logits = model_->forward_logits(std::span<const int32_t>(ids.data() + off, n));
+      const auto logits = forward_logits(std::span<const int32_t>(ids.data() + off, n));
       t = sampler_->sample(logits.data(), static_cast<uint32_t>(logits.size()));
     } else {
-      model_->forward_run(std::span<const int32_t>(ids.data() + off, n));
+      submit_work(gpu::WorkItem{gpu::WorkItem::Kind::ForwardRun,
+                                std::vector<int32_t>(ids.data() + off,
+                                                     ids.data() + off + n)});
     }
   }
   result.prefill_seconds = elapsed_s(prefill_t0);
   print_stats("prefill", ids.size(), result.prefill_seconds);
 
-  // Decode, streaming complete-UTF-8 suffixes.
   const auto decode_t0 = Clock::now();
   size_t shown = 0;
   std::vector<int32_t> gen;
@@ -315,10 +449,9 @@ Engine::GenerateResult Engine::generate(
         shown = complete;
       }
     }
-    const auto logits = model_->forward_logits(std::span<const int32_t>(&t, 1));
+    const auto logits = forward_logits(std::span<const int32_t>(&t, 1));
     t = sampler_->sample(logits.data(), static_cast<uint32_t>(logits.size()));
   }
-  // Flush any remaining complete bytes.
   if (on_token && !gen.empty()) {
     const std::string full = tokenizer_.decode(gen);
     const size_t complete = utf8_complete_len(full);

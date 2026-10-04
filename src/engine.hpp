@@ -11,9 +11,11 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <nlohmann/json.hpp>  // config handoff is raw json (dependency
@@ -28,18 +30,13 @@ namespace alice {
 class Sampler;  // host-side sampler (src/sampler.hpp)
 }
 
-namespace alice::block {
-class Block;
-}
-namespace alice::frontend {
-class Tokenizer;  // src/frontend/tokenizer.hpp
-}
 namespace alice::gpu {
-class Resources;
-class Embedder;
-class RmsNormAddTrunk;
-class LmHead;
-class Model;  // the device-resident model (src/gpu/model.hpp)
+class Model;     // per-rank device model (src/gpu/model.hpp)
+struct WorkItem; // work broadcast to all ranks (src/gpu/model.hpp)
+}
+
+namespace alice::loader {
+class LocalFileDataLoader; // content-addressed bytes source
 }
 
 namespace alice::engine {
@@ -136,32 +133,17 @@ struct LoadStats {
 };
 
 // A full loaded engine: signed metadata + the non-device members
-// (tokenizer, chat_template) + the device-resident model. init_engine is
+// (tokenizer, chat_template) + the device-resident models. init_engine is
 // the one public entry: it reads the .model envelope, extracts the
-// metadata + non-device members, and loads the device model (blocks +
-// embedder/trunk/lm_head/sampler) via Model::load_from_format. The
-// Descriptor is an internal parse structure — consumed by the loader, not
-// returned. Throws std::runtime_error loudly on any framing, parse,
-// validation, hash, or length failure.
-//
-// Member construction uses each component's existing constructor (own
-// hipMalloc, unchanged); the arena covers the block loop only. LmHead
-// borrows the model's resources->handle() (same contract as the manifest
-// path).
-//
-// out_stats, if non-null, receives timing/throughput breakdown for each
-// phase (parse, read, hash, construct). Null Object pattern: the loader
-// writes to a local dummy if null, so internal code has no per-site
-// branches.
+// metadata + non-device members, and loads the device models (one per rank)
+// via per-rank gpu::Model objects. The Descriptor is an internal parse
+// structure — consumed by the loader, not returned. Throws std::runtime_error
+// loudly on any framing, parse, validation, hash, or length failure.
 class Engine {
  public:
-  // Model is forward-declared above (exploded pimpl: this header stays free
-  // of vendor/internal includes). The destructor is out-of-line so the
-  // unique_ptr deleter sees Model complete without forcing every includer
-  // to pull model.hpp. Move-only (RVO covers the return).
   ~Engine();
-  Engine(Engine&&) noexcept = default;
-  Engine& operator=(Engine&&) noexcept = default;
+  Engine(Engine&&) noexcept;
+  Engine& operator=(Engine&&) noexcept;
   Engine(const Engine&) = delete;
   Engine& operator=(const Engine&) = delete;
 
@@ -169,8 +151,9 @@ class Engine {
   uint32_t vocab_size() const { return tokenizer_.vocab_size(); }
   const frontend::Tokenizer& tokenizer() const { return tokenizer_; }
   const std::string& chat_template() const { return chat_template_; }
-  gpu::Model* model() { return model_.get(); }
-  const gpu::Model* model() const { return model_.get(); }
+  size_t tp_degree() const { return models_.size(); }
+  gpu::Model* model(size_t r) { return models_.at(r).get(); }
+  const gpu::Model* model(size_t r) const { return models_.at(r).get(); }
 
   // --- generation API (moved here from repl.cpp) ---------------------------
   struct GenerateOptions {
@@ -202,7 +185,7 @@ class Engine {
   void reset();
 
  private:
-  Engine() = default;
+  Engine();
   friend Engine init_engine_impl(const std::filesystem::path& model_file,
                                  const EngineConfig& ec, LoadStats& st);
 
@@ -213,8 +196,22 @@ class Engine {
   // Non-device members, fetched + retained for the session/REPL layer.
   frontend::Tokenizer tokenizer_;  // constructed from the tokenizer.json member
   std::string chat_template_;      // jinja template (content-addressed)
-  std::unique_ptr<gpu::Model> model_;  // device-resident; built by Model::load_from_format
-  std::unique_ptr<Sampler> sampler_;   // host-side sampling (moved here from gpu::Model)
+  std::vector<std::unique_ptr<gpu::Model>> models_;  // one per rank
+  std::vector<std::thread> workers_;
+  std::unique_ptr<Sampler> sampler_;  // host-side sampling
+
+  // Synchronization primitives are non-movable and WorkItem pulls in
+  // GPU headers, so all threading state lives in a heap-allocated private
+  // object defined only in engine.cpp. Engine.hpp stays free of GPU internals.
+  struct ThreadState;
+  std::unique_ptr<ThreadState> ts_;
+
+  void submit_work(const gpu::WorkItem& work);
+
+  friend void worker_main(Engine* engine, int rank, gpu::Model* model,
+                          const Descriptor& descriptor,
+                          const loader::LocalFileDataLoader& data_loader,
+                          LoadStats& st);
 };
 Engine init_engine(const std::filesystem::path& model_file,
                    const EngineConfig& ec, LoadStats* out_stats = nullptr);

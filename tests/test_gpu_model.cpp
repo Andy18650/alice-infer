@@ -16,7 +16,6 @@
 #include <nlohmann/json.hpp>
 
 #include "alice/engine_config.hpp"
-#include "../src/gpu/model.hpp"
 #include "../src/engine.hpp"
 
 namespace {
@@ -45,8 +44,9 @@ alice::engine::Engine load_packed(const std::string& model_file,
   return alice::engine::init_engine(model_file, cfg);
 }
 
-void run_teacher_forced(alice::gpu::Model& model, const std::string& fixture_dir,
-                        uint32_t chunk, int cases) {
+void run_teacher_forced(alice::engine::Engine& engine,
+                        const std::string& fixture_dir, uint32_t chunk,
+                        int cases) {
   for (int ci = 0; ci < cases; ++ci) {
     std::ifstream min(fixture_dir + "/case_" + std::to_string(ci) + ".json");
     const auto meta = nlohmann::json::parse(
@@ -64,14 +64,14 @@ void run_teacher_forced(alice::gpu::Model& model, const std::string& fixture_dir
     bin.read(reinterpret_cast<char*>(ref.data()), ref.size() * sizeof(float));
     ASSERT_EQ(size_t(bin.gcount()), ref.size() * sizeof(float));
 
-    model.reset();
+    engine.reset();
     float max_drift = 0.0f;
     double sum_drift = 0.0;
     int worst_pos = -1;
     for (size_t off = 0; off < seq.size(); off += chunk) {
       const size_t n = std::min<size_t>(chunk, seq.size() - off);
-      const auto logits =
-          model.forward_logits_all(std::span<const int32_t>(seq.data() + off, n));
+      const auto logits = engine.forward_logits_all(
+          std::span<const int32_t>(seq.data() + off, n));
       ASSERT_EQ(logits.size(), n * size_t(vocab));
       for (size_t r = 0; r < n; ++r) {
         const size_t pos = off + r;
@@ -101,11 +101,10 @@ TEST(GpuModel, DeterminismBitExact) {
   alice::EngineConfig cfg;
   cfg.max_seq_len = 512;
   auto engine = load_packed(kPacked1B, cfg);
-  auto* model = engine.model();
   const std::vector<int32_t> tokens = {128000, 791, 6864, 315, 9822, 374};
-  auto a = model->forward_logits(tokens);
-  model->reset();
-  auto b = model->forward_logits(tokens);
+  auto a = engine.forward_logits(tokens);
+  engine.reset();
+  auto b = engine.forward_logits(tokens);
   ASSERT_EQ(a.size(), b.size());
   EXPECT_EQ(0, std::memcmp(a.data(), b.data(), a.size() * sizeof(float)))
       << "same tokens + fresh state produced different logits";
@@ -117,7 +116,7 @@ TEST(GpuModel, Canonical1BTeacherForced) {
   alice::EngineConfig cfg;
   cfg.max_seq_len = 4096;
   auto engine = load_packed(kPacked1B, cfg);
-  run_teacher_forced(*engine.model(), fixture("canonical", ""), cfg.max_prefill_chunk, 3);
+  run_teacher_forced(engine, fixture("canonical", ""), cfg.max_prefill_chunk, 3);
 }
 
 TEST(GpuModel, Canonical8BTeacherForced) {
@@ -126,7 +125,7 @@ TEST(GpuModel, Canonical8BTeacherForced) {
   alice::EngineConfig cfg;
   cfg.max_seq_len = 4096;
   auto engine = load_packed(kPacked8B, cfg);
-  run_teacher_forced(*engine.model(), fixture("canonical_8b", ""), cfg.max_prefill_chunk, 3);
+  run_teacher_forced(engine, fixture("canonical_8b", ""), cfg.max_prefill_chunk, 3);
 }
 
 // Long-sequence gate: one ~1500-token WikiText prompt per model — exercises
@@ -154,18 +153,17 @@ void run_long_case(const std::string& model_file, const std::string& fixture_dir
   alice::EngineConfig cfg;
   cfg.max_seq_len = 8192;
   auto engine = load_packed(model_file, cfg);
-  auto* model = engine.model();
 
   // (a) teacher-forced, chunked across boundaries
-  model->reset();
+  engine.reset();
   float max_drift = 0.0f;
   double sum_drift = 0.0;
   int worst_pos = -1;
   const uint32_t chunk = cfg.max_prefill_chunk;
   for (size_t off = 0; off < seq.size(); off += chunk) {
     const size_t n = std::min<size_t>(chunk, seq.size() - off);
-    const auto logits =
-        model->forward_logits_all(std::span<const int32_t>(seq.data() + off, n));
+    const auto logits = engine.forward_logits_all(
+        std::span<const int32_t>(seq.data() + off, n));
     ASSERT_EQ(logits.size(), n * size_t(vocab));
     for (size_t r = 0; r < n; ++r) {
       const size_t pos = off + r;
@@ -198,11 +196,12 @@ void run_long_case(const std::string& model_file, const std::string& fixture_dir
   auto argmax = [](const std::vector<float>& logits) -> int32_t {
     return int32_t(std::max_element(logits.begin(), logits.end()) - logits.begin());
   };
-  model->reset();
+  engine.reset();
   int32_t t = -1;
   for (size_t off = 0; off < prompt.size(); off += chunk) {
     const size_t n = std::min<size_t>(chunk, prompt.size() - off);
-    const auto logits = model->forward_logits(std::span<const int32_t>(prompt.data() + off, n));
+    const auto logits =
+        engine.forward_logits(std::span<const int32_t>(prompt.data() + off, n));
     t = argmax(logits);
   }
   for (size_t i = 0; i < generated.size(); ++i) {
@@ -223,7 +222,7 @@ void run_long_case(const std::string& model_file, const std::string& fixture_dir
              i, deficit);
       break;  // sequences fork after a flip; stop comparing
     }
-    const auto logits = model->forward_logits(std::span<const int32_t>(&t, 1));
+    const auto logits = engine.forward_logits(std::span<const int32_t>(&t, 1));
     t = argmax(logits);
   }
 }
@@ -253,7 +252,7 @@ TEST(GpuModel, CanonicalEnvTeacherForced) {
   const char* chunk_env = getenv("ALICE_CANONICAL_CHUNK");
   if (chunk_env) cfg.max_prefill_chunk = uint32_t(atoi(chunk_env));
   auto engine = load_packed(file, cfg);
-  run_teacher_forced(*engine.model(), fix, cfg.max_prefill_chunk, 3);
+  run_teacher_forced(engine, fix, cfg.max_prefill_chunk, 3);
 }
 
 }  // namespace

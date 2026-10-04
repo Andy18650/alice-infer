@@ -187,7 +187,7 @@ class Engine {
  private:
   Engine();
   friend Engine init_engine_impl(const std::filesystem::path& model_file,
-                                 const ModelConfig& ec, const SamplingConfig& sc, LoadStats& st);
+                                 const ModelConfig& mc, const SamplingConfig& sc, LoadStats& st);
 
   // Signed metadata (informational; retained for "what is this model?"
   // queries — no consumer yet, stored so they survive the load).
@@ -214,6 +214,6 @@ class Engine {
                           LoadStats& st);
 };
 Engine init_engine(const std::filesystem::path& model_file,
-                   const ModelConfig& ec, const SamplingConfig& sc, LoadStats* out_stats = nullptr);
+                   const ModelConfig& mc, const SamplingConfig& sc, LoadStats* out_stats = nullptr);
 
 }  // namespace alice::engine

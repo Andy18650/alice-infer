@@ -196,7 +196,7 @@ void worker_main(Engine* engine, int rank, int world_size, gpu::Model* model,
 }
 
 Engine init_engine_impl(const std::filesystem::path& model_file,
-                        const ModelConfig& ec, const SamplingConfig& sc, LoadStats& st) {
+                        const ModelConfig& mc, const SamplingConfig& sc, LoadStats& st) {
   Engine out;
   auto& ts = *out.ts_;
 
@@ -281,21 +281,21 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
 
   // Device models: one per rank, each loaded in its own worker thread.
   ncclUniqueId nccl_id{};
-  if (ec.tp_degree > 1) {
+  if (mc.tp_degree > 1) {
     ncclResult_t nr = ncclGetUniqueId(&nccl_id);
     if (nr != ncclSuccess)
       fail("ncclGetUniqueId failed: " + std::string(ncclGetErrorString(nr)));
   }
   ts.nccl_id = nccl_id;
 
-  out.models_.reserve(ec.tp_degree);
-  out.workers_.reserve(ec.tp_degree);
-  ts.worker_generations.assign(ec.tp_degree, 0);
+  out.models_.reserve(mc.tp_degree);
+  out.workers_.reserve(mc.tp_degree);
+  ts.worker_generations.assign(mc.tp_degree, 0);
 
-  for (uint32_t r = 0; r < ec.tp_degree; ++r) {
-    out.models_.push_back(std::make_unique<gpu::Model>(ec));
+  for (uint32_t r = 0; r < mc.tp_degree; ++r) {
+    out.models_.push_back(std::make_unique<gpu::Model>(mc));
     gpu::Model* m = out.models_.back().get();
-    out.workers_.emplace_back(worker_main, &out, r, static_cast<int>(ec.tp_degree),
+    out.workers_.emplace_back(worker_main, &out, r, static_cast<int>(mc.tp_degree),
                               m, std::cref(descriptor), std::cref(data_loader),
                               std::ref(st));
   }
@@ -303,7 +303,7 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
   {
     std::unique_lock<std::mutex> lock(ts.load_mutex);
     ts.load_cv.wait(lock, [&] {
-      return ts.loaded_count == static_cast<int>(ec.tp_degree);
+      return ts.loaded_count == static_cast<int>(mc.tp_degree);
     });
   }
 
@@ -330,10 +330,10 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
 }
 
 Engine init_engine(const std::filesystem::path& model_file,
-                   const ModelConfig& ec, const SamplingConfig& sc,  LoadStats* out_stats) {
+                   const ModelConfig& mc, const SamplingConfig& sc,  LoadStats* out_stats) {
   LoadStats dummy;
   try {
-    return init_engine_impl(model_file, ec, sc, out_stats ? *out_stats : dummy);
+    return init_engine_impl(model_file, mc, sc, out_stats ? *out_stats : dummy);
   } catch (const json::exception& e) {
     fail(std::string("descriptor: ") + e.what());
   }

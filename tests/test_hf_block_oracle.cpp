@@ -100,9 +100,9 @@ std::vector<float> run_gpu_block(Block& b, const std::vector<float>& io, uint32_
   return out;
 }
 
-size_t prefill_scratch_bytes(const GqaAttentionConfig& cfg, const ModelConfig& ec) {
-  return size_t(cfg.num_q_heads) * ec.max_prefill_chunk *
-         ((ec.max_seq_len + 63) / 64) * (cfg.qk_dim + 2) * sizeof(float);
+size_t prefill_scratch_bytes(const GqaAttentionConfig& cfg, const ModelConfig& mc) {
+  return size_t(cfg.num_q_heads) * mc.max_prefill_chunk *
+         ((mc.max_seq_len + 63) / 64) * (cfg.qk_dim + 2) * sizeof(float);
 }
 
 // ---------------------------------------------------------------------------

@@ -139,7 +139,7 @@ void Model::load(const engine::Descriptor& descriptor,
                  engine::LoadStats& st, ncclUniqueId nccl_id) {
   // Resources must be constructed in the worker thread so hipSetDevice is
   // thread-local; ncclCommInitRank uses the current thread's device.
-  resources_ = std::make_unique<Resources>(rank_, rank_, world_size_);
+  resources_ = std::make_unique<Resources>(rank_, world_size_);
 
   if (world_size_ > 1) {
     ncclResult_t nr = ncclCommInitRank(&nccl_comm_, world_size_, nccl_id, rank_);

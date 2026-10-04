@@ -31,16 +31,16 @@ size_t total_free_device_bytes() {
 
 }  // namespace
 
-Resources::Resources(int dev, int rank, int world_size)
-    : device_(dev), rank_(rank), world_size_(world_size) {
+Resources::Resources(int rank, int world_size)
+    : rank_(rank), world_size_(world_size) {
   int n = 0;
   HIP_CHECK(hipGetDeviceCount(&n));
-  if (dev < 0 || dev >= n)
-    fail("no ROCm device " + std::to_string(dev) + " (found " +
+  if (rank < 0 || rank >= n)
+    fail("no ROCm device " + std::to_string(rank) + " (found " +
          std::to_string(n) + ")");
-  HIP_CHECK(hipSetDevice(dev));
+  HIP_CHECK(hipSetDevice(rank));
   hipDeviceProp_t prop;
-  HIP_CHECK(hipGetDeviceProperties(&prop, dev));
+  HIP_CHECK(hipGetDeviceProperties(&prop, rank));
   arch_ = prop.gcnArchName;  // "gfx90a:sramecc+:xnack-" -> "gfx90a"
   arch_ = arch_.substr(0, arch_.find(':'));
   if (rocblas_create_handle(&handle_) != rocblas_status_success)
@@ -77,8 +77,8 @@ void* Resources::alloc(size_t bytes) {
   if (hipMalloc(&p, bytes) != hipSuccess) {
     const size_t free = total_free_device_bytes();
     fail("hipMalloc(" + std::to_string(bytes) + ") failed; " +
-         std::to_string(free >> 20) + " MiB free on device " +
-         std::to_string(device_) + ", ledger holds " +
+         std::to_string(free >> 20) + " MiB free on rank " +
+         std::to_string(rank_) + " device, ledger holds " +
          std::to_string(ledger_.size()) + " allocations");
   }
   ledger_.push_back({p, bytes});
@@ -99,8 +99,8 @@ void Resources::init_arena(size_t bytes) {
          std::to_string(alloc_bytes >> 20) + " MiB; " + std::to_string(bytes >> 20) +
          " MiB device_bytes + " + std::to_string(kDeviceAlign) +
          " align slack) exceeds " + std::to_string(free >> 20) +
-         " MiB free on device " + std::to_string(device_) +
-         " — reduce max_seq_len / max_prefill_chunk, or use a leaner model");
+         " MiB free on rank " + std::to_string(rank_) +
+         " device — reduce max_seq_len / max_prefill_chunk, or use a leaner model");
   if (hipMalloc(reinterpret_cast<void**>(&arena_), alloc_bytes) != hipSuccess)
     fail("arena hipMalloc(" + std::to_string(alloc_bytes) +
          ") failed (fit-check passed; concurrent allocation?)");

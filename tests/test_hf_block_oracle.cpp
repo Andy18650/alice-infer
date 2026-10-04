@@ -36,7 +36,7 @@
 namespace {
 
 using alice::bf16;
-using alice::EngineConfig;
+using alice::ModelConfig;
 using alice::RopeScaling;
 using alice::block::DenseFfnConfig;
 using alice::block::GqaAttentionConfig;
@@ -100,7 +100,7 @@ std::vector<float> run_gpu_block(Block& b, const std::vector<float>& io, uint32_
   return out;
 }
 
-size_t prefill_scratch_bytes(const GqaAttentionConfig& cfg, const EngineConfig& ec) {
+size_t prefill_scratch_bytes(const GqaAttentionConfig& cfg, const ModelConfig& ec) {
   return size_t(cfg.num_q_heads) * ec.max_prefill_chunk *
          ((ec.max_seq_len + 63) / 64) * (cfg.qk_dim + 2) * sizeof(float);
 }
@@ -137,7 +137,7 @@ void run_attention_test(uint32_t S, float tolerance) {
     cfg.rope_scaling = rs;
   }
 
-  EngineConfig ec;
+  ModelConfig ec;
   ec.max_seq_len = 8192;
   ec.max_prefill_chunk = std::max(S, 512u);
 
@@ -179,7 +179,7 @@ void run_ffn_test(uint32_t S, float tolerance) {
   cfg.io_dim = d;
   cfg.intermediate_dim = inter;
 
-  EngineConfig ec;
+  ModelConfig ec;
   ec.max_seq_len = 8192;
   ec.max_prefill_chunk = std::max(S, 512u);
 

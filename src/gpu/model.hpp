@@ -48,7 +48,7 @@ struct WorkItem {
 
 class Model {
  public:
-  explicit Model(const EngineConfig& cfg);
+  explicit Model(const ModelConfig& cfg);
   ~Model();
   Model(const Model&) = delete;
   Model& operator=(const Model&) = delete;
@@ -68,7 +68,7 @@ class Model {
   void set_error(std::exception_ptr e) { error_ = e; }
 
  private:
-  EngineConfig cfg_;
+  ModelConfig cfg_;
 
   std::unique_ptr<Resources> resources_;
   std::unique_ptr<Embedder> embedder_;

@@ -23,7 +23,7 @@ class DenseFfnBF16 final : public block::Block {
   // (bookkeeping); the block borrows the handle + carved pointers and does
   // NOT free them (Resources owns them, freed at teardown).
   DenseFfnBF16(TensorView<bf16> w_gate, TensorView<bf16> w_up, TensorView<bf16> w_down,
-              const block::DenseFfnConfig& cfg, const EngineConfig& ec,
+              const block::DenseFfnConfig& cfg, const ModelConfig& ec,
               gpu::Resources& res);
   ~DenseFfnBF16() override;
 

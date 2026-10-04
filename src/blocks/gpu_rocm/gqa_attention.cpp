@@ -65,11 +65,11 @@ void build_rope_tables(float* cos_t, float* sin_t, uint32_t max_seq, uint32_t he
 
 GqaAttentionBF16::GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, TensorView<bf16> wv,
                                    TensorView<bf16> wo, const block::GqaAttentionConfig& cfg,
-                                   const EngineConfig& ec, gpu::Resources& res)
+                                   const ModelConfig& mc, gpu::Resources& res)
     : hd_(cfg.qk_dim),
       d_(cfg.io_dim),
-      max_seq_(ec.max_seq_len),
-      mpc_(ec.max_prefill_chunk),
+      max_seq_(mc.max_seq_len),
+      mpc_(mc.max_prefill_chunk),
       scale_(1.0f / std::sqrt(float(cfg.qk_dim))) {
   // Derive the tensor-parallel-local head counts from the staged weight
   // views. The factory shards heads evenly, so q/k/v head ratios are preserved.

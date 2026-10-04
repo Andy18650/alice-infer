@@ -196,7 +196,7 @@ void worker_main(Engine* engine, int rank, int world_size, gpu::Model* model,
 }
 
 Engine init_engine_impl(const std::filesystem::path& model_file,
-                        const EngineConfig& ec, LoadStats& st) {
+                        const ModelConfig& ec, const SamplingConfig& sc, LoadStats& st) {
   Engine out;
   auto& ts = *out.ts_;
 
@@ -325,15 +325,15 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
     std::rethrow_exception(err);
   }
 
-  out.sampler_ = std::make_unique<Sampler>(ec.sampling);
+  out.sampler_ = std::make_unique<Sampler>(sc);
   return out;
 }
 
 Engine init_engine(const std::filesystem::path& model_file,
-                   const EngineConfig& ec, LoadStats* out_stats) {
+                   const ModelConfig& ec, const SamplingConfig& sc,  LoadStats* out_stats) {
   LoadStats dummy;
   try {
-    return init_engine_impl(model_file, ec, out_stats ? *out_stats : dummy);
+    return init_engine_impl(model_file, ec, sc, out_stats ? *out_stats : dummy);
   } catch (const json::exception& e) {
     fail(std::string("descriptor: ") + e.what());
   }

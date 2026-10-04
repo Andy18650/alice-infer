@@ -13,11 +13,10 @@ struct SamplingConfig {
 
 // Construction-time, engine-wide parameters (design §8.1: packaging, not a
 // designed object yet).
-struct EngineConfig {
+struct ModelConfig {
   uint32_t max_seq_len = 8192;        // state sized for this; exceeding = hard error
   uint32_t max_prefill_chunk = 512;   // forward() with more tokens = hard error
   uint32_t tp_degree = 1;             // tensor-parallel degree (1 = single-GCD)
-  SamplingConfig sampling;
 };
 
 }  // namespace alice

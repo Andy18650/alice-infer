@@ -62,12 +62,13 @@ int main(int argc, char** argv) {
   const uint32_t tp_degree = argc > 4 ? uint32_t(std::atoi(argv[4])) : 1;
 
   try {
-    alice::EngineConfig cfg;
+    alice::ModelConfig cfg;
+    alice::SamplingConfig sc;
     cfg.max_seq_len = max_seq;
     cfg.max_prefill_chunk = 512;
-    cfg.sampling.temperature = 0.0f;
+    sc.temperature = 0.0f;
     cfg.tp_degree = tp_degree;
-    alice::engine::Engine eng = alice::engine::init_engine(model_file, cfg);
+    alice::engine::Engine eng = alice::engine::init_engine(model_file, cfg, sc);
     std::fprintf(stderr,
                  "[alice] model loaded (vocab %u, GPU-resident). /quit to exit, "
                  "session cleared on every round.\n",

@@ -39,9 +39,10 @@ bool have_packed(const std::string& model_file, const std::string& fixture_dir) 
 
 // Load via the model-format path and return the Engine. Tests that only need
 // the gpu::Model use engine.model().
-alice::engine::Engine load_packed(const std::string& model_file,
-                                  const alice::EngineConfig& cfg) {
-  return alice::engine::init_engine(model_file, cfg);
+alice::engine::Engine load_packed(
+    const std::string& model_file, const alice::ModelConfig& cfg,
+    const alice::SamplingConfig& sc = alice::SamplingConfig{}) {
+  return alice::engine::init_engine(model_file, cfg, sc);
 }
 
 void run_teacher_forced(alice::engine::Engine& engine,
@@ -98,7 +99,7 @@ void run_teacher_forced(alice::engine::Engine& engine,
 TEST(GpuModel, DeterminismBitExact) {
   if (!std::filesystem::exists(kPacked1B))
     GTEST_SKIP() << "no packed 1B model at " << kPacked1B;
-  alice::EngineConfig cfg;
+  alice::ModelConfig cfg;
   cfg.max_seq_len = 512;
   auto engine = load_packed(kPacked1B, cfg);
   const std::vector<int32_t> tokens = {128000, 791, 6864, 315, 9822, 374};
@@ -113,7 +114,7 @@ TEST(GpuModel, DeterminismBitExact) {
 TEST(GpuModel, Canonical1BTeacherForced) {
   if (!have_packed(kPacked1B, "canonical"))
     GTEST_SKIP() << "no packed 1B model or canonical fixtures";
-  alice::EngineConfig cfg;
+  alice::ModelConfig cfg;
   cfg.max_seq_len = 4096;
   auto engine = load_packed(kPacked1B, cfg);
   run_teacher_forced(engine, fixture("canonical", ""), cfg.max_prefill_chunk, 3);
@@ -122,7 +123,7 @@ TEST(GpuModel, Canonical1BTeacherForced) {
 TEST(GpuModel, Canonical8BTeacherForced) {
   if (!have_packed(kPacked8B, "canonical_8b"))
     GTEST_SKIP() << "no packed 8B model or canonical_8b fixtures";
-  alice::EngineConfig cfg;
+  alice::ModelConfig cfg;
   cfg.max_seq_len = 4096;
   auto engine = load_packed(kPacked8B, cfg);
   run_teacher_forced(engine, fixture("canonical_8b", ""), cfg.max_prefill_chunk, 3);
@@ -150,7 +151,7 @@ void run_long_case(const std::string& model_file, const std::string& fixture_dir
   bin.read(reinterpret_cast<char*>(ref.data()), ref.size() * sizeof(float));
   ASSERT_EQ(size_t(bin.gcount()), ref.size() * sizeof(float));
 
-  alice::EngineConfig cfg;
+  alice::ModelConfig cfg;
   cfg.max_seq_len = 8192;
   auto engine = load_packed(model_file, cfg);
 
@@ -247,7 +248,7 @@ TEST(GpuModel, CanonicalEnvTeacherForced) {
   const char* file = getenv("ALICE_CANONICAL_MODEL_FILE");
   const char* fix = getenv("ALICE_CANONICAL_FIXTURES");
   if (!file || !fix) GTEST_SKIP() << "ALICE_CANONICAL_* not set";
-  alice::EngineConfig cfg;
+  alice::ModelConfig cfg;
   cfg.max_seq_len = 8192;
   const char* chunk_env = getenv("ALICE_CANONICAL_CHUNK");
   if (chunk_env) cfg.max_prefill_chunk = uint32_t(atoi(chunk_env));

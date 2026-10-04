@@ -21,12 +21,12 @@ class GqaAttentionBF16Factory final : public BlockFactory {
                                                  const nlohmann::json& config);
 
   uint64_t derived_bytes() const override;
-  uint64_t device_bytes(const EngineConfig& ec) const override;
-  size_t scratch_bytes(const EngineConfig& ec) const override;
+  uint64_t device_bytes(const ModelConfig& mc) const override;
+  size_t scratch_bytes(const ModelConfig& mc) const override;
   std::string interface_sig() const override;
   std::unique_ptr<Block> construct(std::span<const std::byte> data,
                                    gpu::Resources& res,
-                                   const EngineConfig& ec) const override;
+                                   const ModelConfig& mc) const override;
 
  private:
   GqaAttentionConfig cfg_;

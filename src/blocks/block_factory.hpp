@@ -45,13 +45,13 @@ class BlockFactory {
   // §15 fit-check. Must be >= the constructor's actual alloc total (an
   // underestimate overflows the arena → loud failure; an overestimate just
   // wastes arena slack).
-  virtual uint64_t device_bytes(const EngineConfig& ec) const = 0;
+  virtual uint64_t device_bytes(const ModelConfig& mc) const = 0;
 
   // Scratch requirement: a pure function of (type, version, config, engine
   // knobs). The loader takes the max over factories and allocates once.
   // [open: scratch is a kernel-impl property, not a (type,version) one —
   // moves to the implementation with the factory round; learnings §5.]
-  virtual size_t scratch_bytes(const EngineConfig& ec) const = 0;
+  virtual size_t scratch_bytes(const ModelConfig& mc) const = 0;
 
   // Composition invariant (docs/model-loader.md §1): factories may state
   // the interface they present to the stream (e.g. "io:2048"); empty = no
@@ -65,7 +65,7 @@ class BlockFactory {
   // this call (construction is the last use of it in the load loop).
   virtual std::unique_ptr<Block> construct(std::span<const std::byte> data,
                                            gpu::Resources& res,
-                                           const EngineConfig& ec) const = 0;
+                                           const ModelConfig& mc) const = 0;
 };
 
 // resolve: (version, config) -> BlockFactory. Version validation + config

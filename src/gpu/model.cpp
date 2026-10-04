@@ -55,7 +55,7 @@ const engine::MemberDecl& require_member(const engine::Descriptor& d,
 
 }  // namespace
 
-Model::Model(const EngineConfig& cfg) : cfg_(cfg) {}
+Model::Model(const ModelConfig& cfg) : cfg_(cfg) {}
 
 Model::~Model() {
   if (nccl_comm_) (void)ncclCommDestroy(nccl_comm_);

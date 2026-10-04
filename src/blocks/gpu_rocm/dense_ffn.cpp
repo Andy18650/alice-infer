@@ -31,9 +31,9 @@ namespace {
 }  // namespace
 
 DenseFfnBF16::DenseFfnBF16(TensorView<bf16> w_gate, TensorView<bf16> w_up, TensorView<bf16> w_down,
-                           const block::DenseFfnConfig& cfg, const EngineConfig& ec,
+                           const block::DenseFfnConfig& cfg, const ModelConfig& mc,
                            gpu::Resources& res)
-    : d_(cfg.io_dim), mpc_(ec.max_prefill_chunk) {
+    : d_(cfg.io_dim), mpc_(mc.max_prefill_chunk) {
   // Derive the tensor-parallel-local intermediate dim from the staged views.
   if (w_gate.cols() != d_ || w_up.cols() != d_ || w_down.rows() != d_ ||
       w_gate.rows() != w_up.rows() || w_down.cols() != w_gate.rows())

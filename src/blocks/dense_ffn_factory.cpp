@@ -28,16 +28,16 @@ uint64_t DenseFfnBF16Factory::derived_bytes() const {
   return 3 * uint64_t(cfg_.io_dim) * cfg_.intermediate_dim * sizeof(bf16);
 }
 
-uint64_t DenseFfnBF16Factory::device_bytes(const EngineConfig& ec) const {
+uint64_t DenseFfnBF16Factory::device_bytes(const ModelConfig& mc) const {
   // Mirrors the constructor's allocations (dense_ffn.cpp), but sized for this
   // rank's tensor-parallel shard. Each padded to gpu::kDeviceAlign so the
   // arena total is exactly predictable.
   const auto pad = [](size_t n) {
     return (n + gpu::kDeviceAlign - 1) & ~(gpu::kDeviceAlign - 1);
   };
-  const uint32_t tp = ec.tp_degree ? ec.tp_degree : 1;
+  const uint32_t tp = mc.tp_degree ? mc.tp_degree : 1;
   const uint32_t io = cfg_.io_dim, inter = cfg_.intermediate_dim / tp;
-  const uint32_t mpc = ec.max_prefill_chunk;
+  const uint32_t mpc = mc.max_prefill_chunk;
   uint64_t total = 0;
   total += pad(size_t(2) * inter * io * sizeof(bf16));          // dw_gup_ [2I/tp,d] fused
   total += pad(size_t(io) * inter * sizeof(bf16));               // dw_down_ [d,I/tp]
@@ -50,18 +50,18 @@ uint64_t DenseFfnBF16Factory::device_bytes(const EngineConfig& ec) const {
   return total;
 }
 
-size_t DenseFfnBF16Factory::scratch_bytes(const EngineConfig&) const { return 0; }
+size_t DenseFfnBF16Factory::scratch_bytes(const ModelConfig&) const { return 0; }
 
 std::string DenseFfnBF16Factory::interface_sig() const {
   return "io:" + std::to_string(cfg_.io_dim);
 }
 
 std::unique_ptr<Block> DenseFfnBF16Factory::construct(
-    std::span<const std::byte> data, gpu::Resources& res, const EngineConfig& ec) const {
+    std::span<const std::byte> data, gpu::Resources& res, const ModelConfig& mc) const {
   if (data.size() != derived_bytes())
     fail("dense_ffn_bf16: decoded chunk is " + std::to_string(data.size()) +
          " bytes but the v1 layout derives " + std::to_string(derived_bytes()));
-  const uint32_t tp = ec.tp_degree ? ec.tp_degree : 1;
+  const uint32_t tp = mc.tp_degree ? mc.tp_degree : 1;
   const uint32_t rank = static_cast<uint32_t>(res.rank());
   const uint32_t io = cfg_.io_dim, inter = cfg_.intermediate_dim;
   if (inter % tp != 0)
@@ -77,7 +77,7 @@ std::unique_ptr<Block> DenseFfnBF16Factory::construct(
   TensorView<bf16> up(base_up + rank * size_t(inter_local) * io, inter_local, io);
   // Row-parallel down: strided slice along the input dim.
   TensorView<bf16> down(base_down + rank * inter_local, io, inter_local, inter);
-  return std::make_unique<gpu_rocm::DenseFfnBF16>(gate, up, down, cfg_, ec, res);
+  return std::make_unique<gpu_rocm::DenseFfnBF16>(gate, up, down, cfg_, mc, res);
 }
 
 std::unique_ptr<BlockFactory> DenseFfnBF16Factory::from_spec(uint32_t version,

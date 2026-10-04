@@ -18,7 +18,7 @@
 namespace {
 
 using alice::bf16;
-using alice::EngineConfig;
+using alice::ModelConfig;
 using alice::gpu::Resources;
 using alice::block::GqaAttentionConfig;
 using alice::Tensor;
@@ -44,7 +44,7 @@ std::vector<float> mat_vals(uint32_t r, uint32_t c) {
   return v;
 }
 
-size_t prefill_scratch_bytes(const GqaAttentionConfig& cfg, const EngineConfig& ec) {
+size_t prefill_scratch_bytes(const GqaAttentionConfig& cfg, const ModelConfig& ec) {
   return size_t(cfg.num_q_heads) * ec.max_prefill_chunk *
          ((ec.max_seq_len + 63) / 64) * (cfg.qk_dim + 2) * 4;
 }
@@ -81,7 +81,7 @@ TEST(GpuBlocks, AttentionIncrementalEqualsBatched) {
   cfg.num_q_heads = 2;
   cfg.num_kv_heads = 1;
   cfg.rope_theta = 10000.0;
-  EngineConfig ec;
+  ModelConfig ec;
   ec.max_seq_len = 8;
   ec.max_prefill_chunk = 4;
   res.init_scratch(prefill_scratch_bytes(cfg, ec));
@@ -118,7 +118,7 @@ TEST(GpuBlocks, AttentionResetRestartsPosition) {
   cfg.num_q_heads = 2;
   cfg.num_kv_heads = 1;
   cfg.rope_theta = 10000.0;
-  EngineConfig ec;
+  ModelConfig ec;
   ec.max_seq_len = 8;
   ec.max_prefill_chunk = 4;
   Bf16Mat wq(8, 8, mat_vals(8, 8)), wk(4, 8, mat_vals(9, 9)), wv(4, 8, mat_vals(10, 10)),

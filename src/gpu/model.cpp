@@ -55,15 +55,14 @@ const engine::MemberDecl& require_member(const engine::Descriptor& d,
 
 }  // namespace
 
-Model::Model(int rank, int world_size, const EngineConfig& cfg)
-    : rank_(rank), world_size_(world_size), cfg_(cfg) {}
+Model::Model(const EngineConfig& cfg) : cfg_(cfg) {}
 
 Model::~Model() {
   if (nccl_comm_) (void)ncclCommDestroy(nccl_comm_);
 }
 
 void Model::allreduce(float* io, uint32_t S) {
-  if (world_size_ <= 1) return;
+  if (resources_->world_size() <= 1) return;
   if (!nccl_comm_) fail("allreduce called before NCCL communicator init");
   const size_t count = size_t(S) * hidden_dim_;
   ncclResult_t nr = ncclAllReduce(io, io, count, ncclFloat, ncclSum, nccl_comm_, 0);
@@ -134,17 +133,18 @@ void Model::execute(const WorkItem& work) {
   }
 }
 
-void Model::load(const engine::Descriptor& descriptor,
+void Model::load(int rank, int world_size,
+                 const engine::Descriptor& descriptor,
                  const loader::LocalFileDataLoader& data_loader,
                  engine::LoadStats& st, ncclUniqueId nccl_id) {
   // Resources must be constructed in the worker thread so hipSetDevice is
   // thread-local; ncclCommInitRank uses the current thread's device.
-  resources_ = std::make_unique<Resources>(rank_, world_size_);
+  resources_ = std::make_unique<Resources>(rank, world_size);
 
-  if (world_size_ > 1) {
-    ncclResult_t nr = ncclCommInitRank(&nccl_comm_, world_size_, nccl_id, rank_);
+  if (world_size > 1) {
+    ncclResult_t nr = ncclCommInitRank(&nccl_comm_, world_size, nccl_id, rank);
     if (nr != ncclSuccess)
-      fail("ncclCommInitRank failed for rank " + std::to_string(rank_) + ": " +
+      fail("ncclCommInitRank failed for rank " + std::to_string(rank) + ": " +
            ncclGetErrorString(nr));
   }
 

@@ -147,7 +147,7 @@ void Engine::submit_work(const gpu::WorkItem& work) {
   }
 }
 
-void worker_main(Engine* engine, int rank, gpu::Model* model,
+void worker_main(Engine* engine, int rank, int world_size, gpu::Model* model,
                  const Descriptor& descriptor,
                  const loader::LocalFileDataLoader& data_loader,
                  LoadStats& st) {
@@ -155,7 +155,7 @@ void worker_main(Engine* engine, int rank, gpu::Model* model,
 
   // Load this rank's weights.
   try {
-    model->load(descriptor, data_loader, st, ts.nccl_id);
+    model->load(rank, world_size, descriptor, data_loader, st, ts.nccl_id);
   } catch (...) {
     model->set_error(std::current_exception());
     {
@@ -293,10 +293,10 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
   ts.worker_generations.assign(ec.tp_degree, 0);
 
   for (uint32_t r = 0; r < ec.tp_degree; ++r) {
-    out.models_.push_back(std::make_unique<gpu::Model>(r, ec.tp_degree, ec));
+    out.models_.push_back(std::make_unique<gpu::Model>(ec));
     gpu::Model* m = out.models_.back().get();
-    out.workers_.emplace_back(worker_main, &out, r, m,
-                              std::cref(descriptor), std::cref(data_loader),
+    out.workers_.emplace_back(worker_main, &out, r, static_cast<int>(ec.tp_degree),
+                              m, std::cref(descriptor), std::cref(data_loader),
                               std::ref(st));
   }
 

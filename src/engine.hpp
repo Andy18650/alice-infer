@@ -208,8 +208,8 @@ class Engine {
 
   void submit_work(const gpu::WorkItem& work);
 
-  friend void worker_main(Engine* engine, int rank, gpu::Model* model,
-                          const Descriptor& descriptor,
+  friend void worker_main(Engine* engine, int rank, int world_size,
+                          gpu::Model* model, const Descriptor& descriptor,
                           const loader::LocalFileDataLoader& data_loader,
                           LoadStats& st);
 };

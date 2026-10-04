@@ -48,14 +48,14 @@ struct WorkItem {
 
 class Model {
  public:
-  Model(int rank, int world_size, const EngineConfig& cfg);
+  explicit Model(const EngineConfig& cfg);
   ~Model();
   Model(const Model&) = delete;
   Model& operator=(const Model&) = delete;
 
   // Load this rank's weights from the descriptor and data loader. Must be
   // called once in the worker thread before any execute() call.
-  void load(const engine::Descriptor& descriptor,
+  void load(int rank, int world_size, const engine::Descriptor& descriptor,
             const loader::LocalFileDataLoader& data_loader,
             engine::LoadStats& st, ncclUniqueId nccl_id);
 
@@ -67,12 +67,7 @@ class Model {
   std::exception_ptr error() const { return error_; }
   void set_error(std::exception_ptr e) { error_ = e; }
 
-  int rank() const { return rank_; }
-  int world_size() const { return world_size_; }
-
  private:
-  int rank_ = 0;
-  int world_size_ = 1;
   EngineConfig cfg_;
 
   std::unique_ptr<Resources> resources_;

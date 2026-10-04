@@ -280,6 +280,7 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
   out.max_context_ = descriptor.max_context;
 
   // Device models: one per rank, each loaded in its own worker thread.
+  Timer load_timer;
   ncclUniqueId nccl_id{};
   if (mc.tp_degree > 1) {
     ncclResult_t nr = ncclGetUniqueId(&nccl_id);
@@ -306,6 +307,10 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
       return ts.loaded_count == static_cast<int>(mc.tp_degree);
     });
   }
+  st.load_ms = load_timer.ms();
+  std::fprintf(stderr,
+               "[model loader] device models loaded in %.2f ms (%.2f s)\n",
+               st.load_ms, st.load_ms / 1000.0);
 
   std::exception_ptr err;
   for (auto& m : out.models_) {

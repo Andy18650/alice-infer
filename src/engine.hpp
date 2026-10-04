@@ -128,6 +128,7 @@ struct LoadStats {
   size_t specs = 0;
   uint64_t bytes_read = 0;
   double parse_ms = 0, read_ms = 0, hash_ms = 0, construct_ms = 0;
+  double load_ms = 0;  // overall device-model load wall time (sync + overhead)
   size_t scratch_bytes = 0;
   size_t hash_verifications = 0;
 };

@@ -130,3 +130,24 @@ Findings:
    unaligned); qkv/o would rather run chunks=2 (1073/1024) than today's
    chunks=8 (853/847). Per-shape best from the sweep: qkv 2, o 2,
    gup 3-aligned, down 4.
+
+## [8] Naive thread-per-row GEMV study (2026-10, user design)
+
+`gemv_naive.hip`: one thread per output row (blocks of 64 = native wave),
+each thread streams its entire row with 4 FMA accumulators, no split-K, no
+shuffle. Tests whether the hardware's high-bit XOR channel swizzle spreads a
+wave's 64 lanes (reading addresses one full row apart) across HBM channels.
+
+Results (GCD 0, 50 iters, correctness verified exact):
+- gup N=14336 K=8192: **398 GB/s** (pure-read twin: 398 — the limit is the
+  access pattern, not the math) = 31% of the 1290 ceiling, vs the split-K
+  warp-per-row's 1017 (CK-aligned). down 346, qkv 148, o 119 — thread-count
+  scaling, but even 14336 threads cap at ~400.
+- Padded stride (16640 B/row): ~415 — no rescue. The problem is not the
+  row-start phase: a wave's 64 lanes each pull 8 B from 64 different 256 B
+  stripes per step = 64 uncoalesced transactions per wave-instruction (~4
+  coalesced ones in the split-K). Transaction-granularity waste (~8x
+  payload/stripe) matches the ~3x deficit.
+- block=64 > 128 > 256, as predicted (native wave).
+- **Verdict: hardware swizzle does NOT enable the naive pattern.** VRAM
+  utilization insufficient; the coalesced warp-per-row split-K stands.

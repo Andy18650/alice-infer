@@ -1,3 +1,4 @@
 bench_decode
 gemv_ref.o
 gemv_70b_sweep
+gemv_naive

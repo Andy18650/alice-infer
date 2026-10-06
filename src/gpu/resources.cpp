@@ -4,6 +4,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <mutex>
 
 #include <hip/hip_runtime_api.h>
 #include <rocblas/rocblas.h>
@@ -45,6 +46,11 @@ Resources::Resources(int rank, int world_size)
   arch_ = arch_.substr(0, arch_.find(':'));
   if (rocblas_create_handle(&handle_) != rocblas_status_success)
     fail("rocblas_create_handle failed");
+  // Note: hipDeviceEnablePeerAccess is NOT called here. Enabling the HSA peer
+  // mapping racing the 4 concurrent per-rank hipMallocs during weight load
+  // trips a runtime MappedHandleAllowedAgent assert on this stack. The
+  // hand-rolled allreduce uses hipMemcpyPeer, which the HIP runtime services
+  // without the persistent peer-access mapping (and without the race).
 }
 
 Resources::~Resources() {

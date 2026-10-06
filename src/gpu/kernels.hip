@@ -121,4 +121,134 @@ void argmax(const float* x, size_t n, int32_t* out) {
   k_argmax<<<1, 1024>>>(x, n, (int*)out);
 }
 
+// ---------------------------------------------------------------------------
+// Device-flag P2P allreduce (research/p2p-allreduce, atomics.md). Cross-GCD
+// synchronization WITHOUT host API calls: fine-grained device-memory flags +
+// system-scope atomic release/acquire. Writer: RELEASE/SYSTEM flag store
+// (emits buffer_wbl2 — L2 writeback to HBM; load-bearing because XGMI reads
+// are served by HBM, not the owner's L2). Reader: RELAXED/SYSTEM glc-poll of
+// peers' flags, then ONE ACQUIRE/SYSTEM load (emits buffer_invl2, broadcast
+// to all L2 slices + L1 writeback-invalidate) before touching data. This is
+// the probe-verified protocol (atomicprobe/flagprobe: 0 mismatches, ws=2-8).
+// ---------------------------------------------------------------------------
+
+__device__ __forceinline__ void ar_flag_release(unsigned long long* f,
+                                                unsigned long long v) {
+  __hip_atomic_store(f, v, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_SYSTEM);
+}
+__device__ __forceinline__ unsigned long long ar_flag_poll(
+    const unsigned long long* f) {
+  return __hip_atomic_load((unsigned long long*)f, __ATOMIC_RELAXED,
+                           __HIP_MEMORY_SCOPE_SYSTEM);
+}
+__device__ __forceinline__ void ar_flag_acquire(const unsigned long long* f) {
+  (void)__hip_atomic_load((unsigned long long*)f, __ATOMIC_ACQUIRE,
+                          __HIP_MEMORY_SCOPE_SYSTEM);
+}
+
+// One-block cross-GCD barrier at `value` (epoch counters never repeat).
+__global__ void k_ar_flagbar(unsigned long long* my_flag,
+                             unsigned long long* const* flags, int ws, int rank,
+                             unsigned long long value) {
+  if (threadIdx.x != 0) return;
+  ar_flag_release(my_flag, value);
+  for (int j = 0; j < ws; ++j)
+    if (j != rank) while (ar_flag_poll(flags[j]) < value) {
+    }
+  ar_flag_acquire(my_flag);
+}
+
+// Wide read-gather: out[i] = sum_j contribs[j][i], float4. Writes a SEPARATE
+// out buffer (the pipe-path scratch), so no in-place hazard.
+__global__ void k_ar_gather_f4(float* const* contribs, float* __restrict__ out,
+                               int ws, uint32_t n) {
+  const uint32_t n4 = n / 4;
+  float4* o4 = (float4*)out;
+  const uint32_t stride = gridDim.x * blockDim.x;
+  for (uint32_t i4 = blockIdx.x * blockDim.x + threadIdx.x; i4 < n4;
+       i4 += stride) {
+    float4 s = make_float4(0.f, 0.f, 0.f, 0.f);
+    for (int j = 0; j < ws; ++j) {
+      const float4 v = ((const float4*)contribs[j])[i4];
+      s.x += v.x; s.y += v.y; s.z += v.z; s.w += v.w;
+    }
+    o4[i4] = s;
+  }
+}
+
+// Fused single-block allreduce (latency regime, n <= kArFusedMaxFloats):
+// produce barrier -> read all ranks' contribs into REGISTERS -> consume
+// barrier -> write io in place. The register hold across the consume barrier
+// is what makes the in-place write safe: peers are still reading my io during
+// my gather; my overwrite waits until every rank has finished reading
+// (consume flag), and my sums sit in registers in between. Sum order j =
+// 0..ws-1 on every rank => bitwise-identical results everywhere.
+constexpr uint32_t kArMaxHoldF4 = 4;  // = kArFusedMaxFloats/4/1024
+__global__ void k_ar_fused_f4(float* io, float* const* contribs,
+                              unsigned long long* my_flag,
+                              unsigned long long* const* flags, int ws,
+                              int rank, uint32_t n, unsigned long long vprod,
+                              unsigned long long vcons) {
+  const uint32_t n4 = n / 4;
+  if (threadIdx.x == 0) {
+    ar_flag_release(my_flag, vprod);
+    for (int j = 0; j < ws; ++j)
+      if (j != rank) while (ar_flag_poll(flags[j]) < vprod) {
+      }
+    ar_flag_acquire(my_flag);
+  }
+  __syncthreads();
+  float4 hold[kArMaxHoldF4];
+#pragma unroll
+  for (uint32_t u = 0; u < kArMaxHoldF4; ++u) {
+    const uint32_t i4 = threadIdx.x + u * blockDim.x;
+    if (i4 >= n4) break;
+    float4 s = make_float4(0.f, 0.f, 0.f, 0.f);
+    for (int j = 0; j < ws; ++j) {
+      const float4 v = ((const float4*)contribs[j])[i4];
+      s.x += v.x; s.y += v.y; s.z += v.z; s.w += v.w;
+    }
+    hold[u] = s;
+  }
+  __syncthreads();
+  if (threadIdx.x == 0) {
+    ar_flag_release(my_flag, vcons);
+    for (int j = 0; j < ws; ++j)
+      if (j != rank) while (ar_flag_poll(flags[j]) < vcons) {
+      }
+    ar_flag_acquire(my_flag);
+  }
+  __syncthreads();
+  float4* o4 = (float4*)io;
+#pragma unroll
+  for (uint32_t u = 0; u < kArMaxHoldF4; ++u) {
+    const uint32_t i4 = threadIdx.x + u * blockDim.x;
+    if (i4 >= n4) break;
+    o4[i4] = hold[u];
+  }
+}
+
+void ar_flagbar(uint64_t* my_flag, uint64_t* const* flags, int ws, int rank,
+                uint64_t value) {
+  k_ar_flagbar<<<1, 32>>>((unsigned long long*)my_flag,
+                          (unsigned long long* const*)flags, ws, rank,
+                          (unsigned long long)value);
+}
+
+void ar_gather_f4(float* const* contribs, float* out, int ws, uint32_t n) {
+  uint32_t grid = (n / 4 + 255) / 256;
+  if (grid > 220) grid = 220;
+  if (grid < 1) grid = 1;
+  k_ar_gather_f4<<<grid, 256>>>(contribs, out, ws, n);
+}
+
+void ar_fused_f4(float* io, float* const* contribs, uint64_t* my_flag,
+                 uint64_t* const* flags, int ws, int rank, uint32_t n,
+                 uint64_t vprod, uint64_t vcons) {
+  k_ar_fused_f4<<<1, 1024>>>(io, contribs, (unsigned long long*)my_flag,
+                             (unsigned long long* const*)flags, ws, rank, n,
+                             (unsigned long long)vprod,
+                             (unsigned long long)vcons);
+}
+
 }  // namespace alice::gpu::kernels

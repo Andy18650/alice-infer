@@ -105,8 +105,6 @@ struct Engine::ThreadState {
   std::condition_variable load_cv;
   int loaded_count = 0;
   std::exception_ptr load_error;
-
-  ncclUniqueId nccl_id{};
 };
 
 Engine::Engine() : ts_(std::make_unique<ThreadState>()) {}
@@ -155,7 +153,7 @@ void worker_main(Engine* engine, int rank, int world_size, gpu::Model* model,
 
   // Load this rank's weights.
   try {
-    model->load(rank, world_size, descriptor, data_loader, st, ts.nccl_id);
+    model->load(rank, world_size, descriptor, data_loader, st);
   } catch (...) {
     model->set_error(std::current_exception());
     {
@@ -281,13 +279,6 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
 
   // Device models: one per rank, each loaded in its own worker thread.
   Timer load_timer;
-  ncclUniqueId nccl_id{};
-  if (mc.tp_degree > 1) {
-    ncclResult_t nr = ncclGetUniqueId(&nccl_id);
-    if (nr != ncclSuccess)
-      fail("ncclGetUniqueId failed: " + std::string(ncclGetErrorString(nr)));
-  }
-  ts.nccl_id = nccl_id;
 
   out.models_.reserve(mc.tp_degree);
   out.workers_.reserve(mc.tp_degree);
@@ -328,6 +319,24 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
     for (auto& t : out.workers_)
       if (t.joinable()) t.join();
     std::rethrow_exception(err);
+  }
+
+  // Broker the cross-rank pointer exchange: every rank's Trunk io buffer and
+  // allreduce flag word are allocated and stable now, so collect the
+  // pointers and broadcast a SetPeerIo work item (each Model builds its
+  // device-side pointer tables + pipe-path scratch from them). This must
+  // happen before the first ForwardRun. (Single-process: device pointers are
+  // plain shareable values; the main thread reads them with no device call.)
+  if (mc.tp_degree > 1) {
+    gpu::WorkItem w;
+    w.kind = gpu::WorkItem::Kind::SetPeerIo;
+    w.peer_io.resize(mc.tp_degree);
+    w.peer_flags.resize(mc.tp_degree);
+    for (uint32_t r = 0; r < mc.tp_degree; ++r) {
+      w.peer_io[r] = out.models_[r]->io_ptr();
+      w.peer_flags[r] = out.models_[r]->ar_flag_ptr();
+    }
+    out.submit_work(w);
   }
 
   out.sampler_ = std::make_unique<Sampler>(sc);

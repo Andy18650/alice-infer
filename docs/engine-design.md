@@ -9,10 +9,13 @@ data loader is thread-safe, the Model layer spawns one worker thread per
 tensor-parallel rank, TensorView carries a per-row stride with a host-side
 gather helper, block factories shard weights by tp_degree, blocks derive
 their local dimensions from the staged views, Model performs an in-place
-fp32 sum AllReduce after every block via RCCL, and sampling now runs on
-the host inside Engine. The Canonical system RCCL build is broken for
-multi-rank collectives, so TP>1 runtime requires an AMD-lineage RCCL
-overlay in LD_LIBRARY_PATH (see research/rocm-overlay-method.md).
+fp32 sum AllReduce after every block with a **device-flag P2P allreduce**
+(fine-grained device flags + system-scope atomic release/acquire,
+dispatched by payload: fused single-block kernel ≤64 KB, 4-kernel pipeline
+above — research/p2p-allreduce/atomics.md; RCCL is retired from the
+engine), and sampling now runs on the host inside Engine. The Canonical
+system RCCL build is broken for multi-rank collectives (validated via the
+AMD-lineage overlay in research/rocm-overlay-method.md).
 
 ## 1. Purpose & target
 
@@ -280,8 +283,7 @@ Narrow entry that sniffs format by content and delegates
 - Device-side determinism: fixed kernel schedules; vendor BLAS invoked
   with fixed algorithms (no run-to-run autotuning).
 - The model loop is strictly sequential; intra-op parallelism is each
-  implementation's private business. Host threading (OpenMP, static
-  scheduling only) is confined to the load path and host glue.
+  implementation's private business.
 
 ## 11. Extensibility targets (designed for, not built)
 

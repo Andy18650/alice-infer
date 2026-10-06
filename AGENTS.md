@@ -73,7 +73,7 @@ safetensors + loader_staging path is RETIRED. The host-side math helpers
   TOLERANCE-based; within-impl determinism per (impl, S, schedule); the
   teacher-forced canonical test (gate 0.75) is the equivalence gate.
 - **Threading**: model loop strictly sequential; intra-op parallelism is
-  each impl's private business; host OpenMP static only (user decision).
+  each impl's private business.
 - **C++20 pinned**. Use industry-standard dependencies when appropriate;
   the CMake script is the source of truth for what the project links.
   (Rationale, user 2026-09: compile time is not a concern at this scale.
@@ -92,11 +92,9 @@ ctest --test-dir build                             # must stay 100% green
 cmake --build build-release -j                     # Release: measure here
 ```
 
-- Tests run pinned at `OMP_NUM_THREADS=48` (gtest_discover_tests
-  ENVIRONMENT in CMakeLists — the single discoverable place) and require
-  a GPU, as the engine does.
-- Perf numbers only from `build-release`; state thread count, numactl
-  placement, and context length with every number — each flips winners.
+- Tests require a GPU, as the engine does.
+- Perf numbers only from `build-release`; state numactl placement and
+  context length with every number — each flips winners.
 - **Stale-binary trap**: after editing CMake/source, rebuild BOTH trees
   before benchmarking (build-release does not track build).
 - Canonical fixtures (`tests/canonical*`) are committed; regenerate only
@@ -145,13 +143,31 @@ cmake --build build-release -j                     # Release: measure here
   S>1. CTA target 4096, swept (1024/2048/4096/8192 -> 13.37/13.37/12.99/
   14.44 ms/token floor). Same kernel family is the model for the lm_head
   site (still gemm_ex, ~1.1 ms/token) when that is worth taking.
-- Next: 70B multi-die (needs ≥3 GCDs; the TP/PP research is in
+- Multi-GCD allreduce (2026-10, research/p2p-allreduce): RCCL RETIRED from
+  the engine in favor of a device-flag P2P allreduce — fine-grained device
+  flags + system-scope atomic release/acquire (probe-verified coherency:
+  release emits buffer_wbl2 = L2→HBM writeback, which XGMI reads are served
+  by; acquire emits broadcast buffer_invl2), read-gather float4 dataflow,
+  zero host API on the critical path. Dispatch by payload (measured
+  crossover ~64 KB at ws=4): fused single-block kernel (produce/gather-in-
+  registers/consume/in-place write) for S*hidden*4B ≤ 64 KB; 4-launch
+  pipeline (flagbar / wide gather→scratch / flagbar / copy) above. Harness:
+  8.1 µs ws=2 / 17.9 µs ws=4 at 32 KB vs RCCL 41.6/53.3 µs sync-per-call.
+  Engine (Release, numactl node 0): 70B TP=4 decode 51.6 ms/tok = 19.4
+  tok/s (was 63 hand-rolled hipMemcpyPeer, 57.25 RCCL); 8B TP=2 91.2 tok/s
+  (tp=1: 64.9); 1B TP=2 310 tok/s (tp=1: 261.7). Peer access must be
+  enabled PRE-alloc, serial, owner-thread (post-load enable deterministically
+  aborts via HSA MappedHandleAllowedAgent — enableprobe series).
+- Next: 70B multi-die beyond tp=4 (needs ≥3 GCDs; the TP/PP research is in
   research/rccl-single-process/), then §11 quantization; on the horizon:
   MFMA variant of the v4 tile structure (hd=128), fp16/bf16 KV cache,
-  decode-overhead campaign (GEMV + launch diet).
+  decode-overhead campaign (GEMV + launch diet), TP allreduce for the
+  100 KB–MB band (persistent-CTA fused wide kernel, deferred).
 - RCCL on this box: Canonical build broken (any ≥2-rank collective
   segfaults — vendor unit tests confirm); AMD-overlay RCCL validated as
-  replacement; hand-rolled P2P validated (134.7 GB/s intra-card). See
+  replacement; hand-rolled P2P validated (134.7 GB/s intra-card). **RCCL is
+  RETIRED from the engine** (2026-10): the device-flag P2P allreduce beats
+  it at decode sizes (see the allreduce bullet above). See
   research/rccl-single-process/README.md and research/rocm-overlay-method.md.
 
 ## Hardware context

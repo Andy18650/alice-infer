@@ -36,4 +36,25 @@ void embed_gather(const void* table, const int32_t* ids, float* out, uint32_t S,
 // *out = index of the largest element (ties: lowest index). Single block.
 void argmax(const float* x, size_t n, int32_t* out);
 
+// --- Device-flag P2P allreduce (world_size > 1). ---------------------------
+// Cross-GCD sync without host API calls: fine-grained device flags +
+// system-scope atomic release/poll/acquire (research/p2p-allreduce
+// atomics.md; probe-verified). Flags are 64-bit epoch counters (never wrap).
+
+// Cross-GCD barrier at `value` (one block).
+void ar_flagbar(uint64_t* my_flag, uint64_t* const* flags, int ws, int rank,
+                uint64_t value);
+
+// out[i] = sum_j contribs[j][i] (float4, wide grid; out must be a separate
+// buffer, not any of the contribs). n divisible by 4.
+void ar_gather_f4(float* const* contribs, float* out, int ws, uint32_t n);
+
+// Fused single-block in-place allreduce (latency regime): produce barrier,
+// gather all ranks' contribs into registers, consume barrier, write io.
+// n divisible by 4 and <= 16384 floats (64 KB; 4 float4/thread at 1024
+// threads). vprod/vcons = this call's produce/consume epoch values.
+void ar_fused_f4(float* io, float* const* contribs, uint64_t* my_flag,
+                 uint64_t* const* flags, int ws, int rank, uint32_t n,
+                 uint64_t vprod, uint64_t vcons);
+
 }  // namespace alice::gpu::kernels

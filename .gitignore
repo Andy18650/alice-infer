@@ -15,3 +15,4 @@ tests/hf_oracle/
 # Only .gitkeep is tracked; contents are never committed.
 /temp/*
 !/temp/.gitkeep
+.rocprofv3/

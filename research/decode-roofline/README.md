@@ -172,3 +172,27 @@ Results (GCD 0, 50 iters, exact correctness at all shapes):
   the cap. Naive variants abandoned; the split-K stands. (Next knob in this
   direction would be wider packed units — uint64/uint128 — i.e. the
   [e1..128 row1][e1..128 row2] packing.)
+
+## [10] Packed naive GEMV + split-K: saturates VRAM (2026-10, user direction)
+
+`gemv_cm_sk.hip`: the "almost column-major" packed layout (uint32 column
+pairs, [9]) with K split into {256, 512, 1024}-element chunks computed in
+parallel (one thread per (row, chunk); partials only — the question was
+bandwidth, a tiny combine verifies correctness). Occupancy was the missing
+piece: gup's 14336 threads are half the 28160-thread GCD fill
+(110 CU x 4 SIMD x 64).
+
+Results (GCD 0, 50 iters, exact correctness at all shapes):
+| shape | CW=256 | CW=512 | CW=1024 | threads at best |
+|---|---|---|---|---|
+| gup  | **1276.6 GB/s (99% ceiling)** | 1231 | 1254 | 458752 |
+| down | 1191 | **1297** | 1149 | 114688 |
+| qkv  | 1116 | 940 | 592 (20K threads) | 81920 |
+| o    | 1025 | 801 | 490 (16K threads) | 65536 |
+
+Bandwidth tracks thread count until saturation (qkv/o at CW=1024 fall below
+the 28160 fill and collapse). gup 507 -> 1277 GB/s vs the engine split-K's
+1017 (+26%); down 1175 -> 1297 (+10%). Combine traffic is ~0.8% (gup CW=256:
+1.9 MB partials vs 235 MB weights). Engine adoption = weight-layout change
+(pack at load/pack time) + a per-shape CW rule that keeps threads >= ~2x
+the 28160 fill.

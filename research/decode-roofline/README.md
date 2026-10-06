@@ -151,3 +151,24 @@ Results (GCD 0, 50 iters, correctness verified exact):
 - block=64 > 128 > 256, as predicted (native wave).
 - **Verdict: hardware swizzle does NOT enable the naive pattern.** VRAM
   utilization insufficient; the coalesced warp-per-row split-K stands.
+
+## [9] "Almost column-major" packed naive GEMV (2026-10, user design)
+
+`gemv_cm.hip`: matrix packed as interleaved column-pairs
+(`Wp[p*N+n] = W[n][2p] | W[n][2p+1]<<16`, one uint32 = 2 bf16), so the naive
+thread-per-row kernel's wave reads a contiguous 256 B per step (fully
+coalesced). Same naive kernel otherwise (one thread/row, 4 accumulators, no
+split-K, no shuffle).
+
+Results (GCD 0, 50 iters, exact correctness at all shapes):
+- gup: 398 -> **507 GB/s** (+27%) — coalescing was PART of the problem.
+- down 346 -> 300, qkv 148 -> 95, o 119 -> 77 — pack HURTS smaller-N shapes
+  (fewer waves -> tiny instantaneous footprint; per-thread contiguity lost).
+- Even gup only reaches 39% of ceiling, 2x below the split-K warp-per-row
+  (1017). Remaining limit: per-thread bytes in flight — 4 B/load x ~10
+  outstanding x 14336 threads ~ 570 KB, vs ~900 KB needed to cover HBM
+  latency at 1.29 TB/s. Split-K lanes load 8 B with 21-deep streams (2x+).
+- Verdict: coalescing is necessary but NOT sufficient; per-thread MLP is
+  the cap. Naive variants abandoned; the split-K stands. (Next knob in this
+  direction would be wider packed units — uint64/uint128 — i.e. the
+  [e1..128 row1][e1..128 row2] packing.)

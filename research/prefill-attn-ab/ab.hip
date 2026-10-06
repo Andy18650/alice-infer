@@ -386,7 +386,13 @@ __global__ void k_v2_combine(const float* __restrict__ partials, float* __restri
 // goes to global memory. Fully-masked chunk-blocks (causality) return before
 // touching K/V. Zero __syncthreads: every score row is thread-private.
 template <uint32_t HD, uint32_t QT, uint32_t CK>
-__global__ void __launch_bounds__(64, 4)  // 256-VGPR budget: no acc scratch spill
+// NOTE: (64, 4) is NOT met on gfx90a — see docs/amd-gpu-notes.md. On HIP
+// the 2nd arg is waves-per-EU (per SIMD) = 4 waves/SIMD = 16/CU, but the
+// 16 KB LDS tile caps co-resident blocks at 4/CU = 1 wave/SIMD, so the
+// compiler emits -Wpass-failed and lands at Occupancy 1 wave/SIMD =
+// 4 blocks/CU (the actual design target). Kept as-is to preserve the
+// recorded A/B numbers; the engine's k_prefill_split uses (64, 1).
+__global__ void __launch_bounds__(64, 4)
     k_v4(const float* __restrict__ q, const float* __restrict__ kc,
                      const float* __restrict__ vc, float* __restrict__ partials,
                      uint32_t S, uint32_t T, float scale, uint32_t max_chunks) {

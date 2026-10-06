@@ -36,17 +36,6 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(PCRE2 REQUIRED IMPORTED_TARGET libpcre2-8)
 target_link_libraries(alice PRIVATE PkgConfig::PCRE2)
 
-# OpenMP for intra-op kernel parallelism (design §10: each implementation's
-# private business). Sequential fallback when unavailable (pragma macro
-# compiles to nothing); OMP_NUM_THREADS=1 reproduces the baseline.
-find_package(OpenMP QUIET)
-if(OpenMP_CXX_FOUND)
-  target_link_libraries(alice PRIVATE OpenMP::OpenMP_CXX)
-  message(STATUS "alice: OpenMP enabled (${OpenMP_CXX_VERSION})")
-else()
-  message(STATUS "alice: OpenMP not found, kernels run sequentially")
-endif()
-
 # ROCm GPU (mandatory, design §3: the engine requires a GPU). Platform
 # plumbing + GPU-resident model (device stream, SIMT kernels, device
 # blocks, device trunk/model). The .hip TUs are first-class HIP sources
@@ -134,9 +123,5 @@ if(ALICE_BUILD_TESTS)
     -Wl,--whole-archive alice -Wl,--no-whole-archive GTest::gtest_main nlohmann_json::nlohmann_json)
   target_compile_definitions(alice_tests PRIVATE ALICE_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
   include(GoogleTest)
-  # Easy win from the thread sweep (tools/omp_sweep.sh, docs §10): on this
-  # box decode peaks at one thread per physical core (48), while all 96 is
-  # slower and unstable. Set here so every ctest run gets it automatically;
-  # override per-run with CTEST_ENVIRONMENT or by editing this line.
-  gtest_discover_tests(alice_tests PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=48")
+  gtest_discover_tests(alice_tests)
 endif()

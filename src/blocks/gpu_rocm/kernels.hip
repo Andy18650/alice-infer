@@ -201,11 +201,20 @@ __global__ void k_attention_combine(const float* __restrict__ partials,
 // in both phases), exp is deferred until the single-chunk max is known, and
 // the partial (acc, max, sum_exp) goes to the shared scratch. vec[] holds q
 // in the dot phase and is reused as acc in the value phase (one array, one
-// register budget); __launch_bounds__(64, 4) gives a 256-VGPR budget so
-// nothing spills at hd=128. Zero __syncthreads (score rows are
-// thread-private); fully-masked chunk-blocks return before touching K/V.
+// register budget); see docs/amd-gpu-notes.md for the full occupancy
+// accounting. __launch_bounds__'s 2nd arg on HIP is waves-per-EU (per SIMD),
+// NOT per CU (a CUDA divergence): (64, 1) targets 1 wavefront/SIMD =
+// 4 wavefronts/CU = 4 blocks/CU (a 64-thread block is one wavefront on
+// gfx9) — the design target and the achieved occupancy (the resource report
+// shows Occupancy 1 wave/SIMD; the 16 KB LDS tile is the binding resource).
+// VGPR use is 116 (hd=64) / 183 (hd=128), under the 256 archVGPR ceiling,
+// and the kernel has no MFMA (AGPRs: 0) so it gets the full VGPR budget —
+// no spill (ScratchSize 0). (64, 4) would request 4 waves/SIMD = 16/CU,
+// unachievable here, and only produced a spurious -Wpass-failed.
+// Zero __syncthreads (score rows are thread-private); fully-masked
+// chunk-blocks return before touching K/V.
 template <uint32_t HD>
-__global__ void __launch_bounds__(64, 4)
+__global__ void __launch_bounds__(64, 1)
     k_prefill_split(const float* __restrict__ qkv, const float* __restrict__ kcache,
                     const float* __restrict__ vcache, float* __restrict__ partials,
                     uint32_t pos0, uint32_t S, uint32_t nh, uint32_t nkv, float scale,

@@ -143,6 +143,14 @@ cmake --build build-release -j                     # Release: measure here
   S>1. CTA target 4096, swept (1024/2048/4096/8192 -> 13.37/13.37/12.99/
   14.44 ms/token floor). Same kernel family is the model for the lm_head
   site (still gemm_ex, ~1.1 ms/token) when that is worth taking.
+  **CK alignment fix (2026-10)**: CK now rounds to 128 elements (256 B),
+  not 4 — chunks=3/6 left chunk starts mid-stripe, so every 256 B warp
+  read straddled two stripes (gemv_70b_sweep: gate+up 772 -> 1017 GB/s,
+  down chunks=6 929 -> 1173; qkv/o best at chunks=2, ~1024-1073).
+  End-to-end: 70B TP=4 decode 51.6 -> 45.4 ms/tok. Separately measured:
+  the 16 KB row stride (K=8192 bf16) hits an HBM channel-phase lockstep
+  (16 KB ≡ 0 mod 32×256 B; padded-stride gup reaches ~1193 GB/s) — the
+  next ~18% on that shape, user-owned idea.
 - Multi-GCD allreduce (2026-10, research/p2p-allreduce): RCCL RETIRED from
   the engine in favor of a device-flag P2P allreduce — fine-grained device
   flags + system-scope atomic release/acquire (probe-verified coherency:
@@ -153,9 +161,10 @@ cmake --build build-release -j                     # Release: measure here
   registers/consume/in-place write) for S*hidden*4B ≤ 64 KB; 4-launch
   pipeline (flagbar / wide gather→scratch / flagbar / copy) above. Harness:
   8.1 µs ws=2 / 17.9 µs ws=4 at 32 KB vs RCCL 41.6/53.3 µs sync-per-call.
-  Engine (Release, numactl node 0): 70B TP=4 decode 51.6 ms/tok = 19.4
-  tok/s (was 63 hand-rolled hipMemcpyPeer, 57.25 RCCL); 8B TP=2 91.2 tok/s
-  (tp=1: 64.9); 1B TP=2 310 tok/s (tp=1: 261.7). Peer access must be
+  Engine (Release, numactl node 0): 70B TP=4 decode 45.4 ms/tok = 22.0
+  tok/s (51.6 before the CK-alignment GEMV fix, 63 hand-rolled
+  hipMemcpyPeer, 57.25 RCCL); 8B TP=2 97.9 tok/s (tp=1: 66.8); 1B TP=2 310
+  tok/s (tp=1: 263.7). Peer access must be
   enabled PRE-alloc, serial, owner-thread (post-load enable deterministically
   aborts via HSA MappedHandleAllowedAgent — enableprobe series).
 - Next: 70B multi-die beyond tp=4 (needs ≥3 GCDs; the TP/PP research is in

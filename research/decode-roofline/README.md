@@ -104,3 +104,29 @@ Prefill unchanged (same code path for S>1): 8B 2182 tok/s at 3640 ctx,
 ms/token), SIMT tail ~2 ms, launch/sync overhead — the launch-diet half
 of the campaign. The honest roofline remains ~86 tok/s (8B, measured
 1290 GB/s read ceiling / 15.01 GB per token).
+
+## [7] 70B TP=4 GEMV sweep + CK alignment fix (2026-10)
+
+`gemv_70b_sweep.hip` (engine kernel verbatim, GCD 0, 50 iters) sweeps chunk
+count on the 70B TP=4 shapes (qkv N=2560, o N=2048, gup N=14336, down
+N=8192 — all K=8192 except down K=7168).
+
+Findings:
+1. **chunks=3/6 lose everywhere; 1/2/4/8 are fine.** The discriminator is CK
+   alignment to the 256 B warp transaction: CK=2732/1368 (chunks 3/6) leaves
+   chunk starts mid-stripe so every coalesced 256 B warp-read straddles two
+   stripes. Rounding CK to 128 elements: gup chunks=3 772 -> 1017 GB/s
+   (+32%), down chunks=6 929 -> 1173, qkv/o chunks=3 ~705 -> ~840-867.
+   Landed in the engine (`gemv_launch`, kernels.hip) — 70B TP=4 decode
+   51.6 -> 45.4 ms/tok end-to-end.
+2. **Row-stride channel lockstep (secondary)**: K=8192 bf16 = 16 KB row
+   stride ≡ 0 mod (32 channels × 256 B) — all rows start at the same HBM
+   channel phase, warps march through channels in lockstep. down (K=7168,
+   14 KB stride ≡ 24 mod 32) rotates phases and runs 1175-1231 GB/s (~95%
+   ceiling) vs the 16 KB shapes' 775-1023. Padded-stride gup (16640 B/row)
+   reaches ~1193 GB/s at chunks=1 — the next ~18% on that shape.
+3. The engine's `gemv_chunks` policy (CTA target 4096, swept on 8B shapes)
+   picks poorly for 70B shapes: gup got the worst case (chunks=3
+   unaligned); qkv/o would rather run chunks=2 (1073/1024) than today's
+   chunks=8 (853/847). Per-shape best from the sweep: qkv 2, o 2,
+   gup 3-aligned, down 4.

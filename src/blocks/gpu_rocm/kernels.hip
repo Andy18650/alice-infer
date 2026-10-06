@@ -439,7 +439,12 @@ void gemv_launch(const void* W, const void* x, float* y, float* partials, uint32
     throw std::runtime_error(
         "gpu_rocm::kernels::gemv: K must be a multiple of 4 (uint64/float4 loads)");
   const uint32_t chunks = gemv_chunks(N, K);
-  const uint32_t CK = (((K + chunks - 1) / chunks) + 3) & ~3u;  // multiple of 4
+  // CK rounded to 128 elements (256 B): chunk starts stay on the warp's
+  // coalesced-read stripe. Rounding to 4 left chunks=3/6 misaligned
+  // (CK 5464/2736 B) — every 256 B warp-read straddled two stripes,
+  // costing gate+up 32% (772 -> 1017 GB/s in research/decode-roofline
+  // gemv_70b_sweep; down chunks=6 929 -> 1173).
+  const uint32_t CK = (((K + chunks - 1) / chunks) + 127) & ~127u;
   const dim3 grid((N + 7) / 8, chunks);
   if (x_f32)
     k_gemv_partial<true><<<grid, 256>>>((const unsigned short*)W, x, partials, N, K, CK);

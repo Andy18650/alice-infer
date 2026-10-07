@@ -145,4 +145,20 @@ void* Resources::named(const std::string& name, size_t bytes) {
   return p;
 }
 
+void* Resources::named_at_least(const std::string& name, size_t bytes) {
+  for (auto& [n, np] : named_) {
+    if (n == name) {
+      if (np.second >= bytes) return np.first;
+      void* p = nullptr;
+      if (hipMalloc(&p, bytes) != hipSuccess)
+        fail("named_at_least hipMalloc(" + std::to_string(bytes) +
+             ") failed for '" + name + "'");
+      ledger_.push_back({p, bytes});
+      np = {p, bytes};  // old buffer stays in the ledger (freed at teardown)
+      return p;
+    }
+  }
+  return named(name, bytes);
+}
+
 }  // namespace alice::gpu

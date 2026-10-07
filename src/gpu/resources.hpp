@@ -76,6 +76,13 @@ class Resources {
   // sharing contract. (Reserved for future shared transients; unused in v1.)
   void* named(const std::string& name, size_t bytes);
 
+  // Like named(), but a request smaller than the existing buffer succeeds
+  // (returns it); a request LARGER than the existing buffer allocates a
+  // bigger replacement (the old one stays in the ledger, freed at teardown).
+  // For shared load-time staging (the col-major weight repack) whose size
+  // varies by matrix: first big allocation wins.
+  void* named_at_least(const std::string& name, size_t bytes);
+
  private:
   int rank_ = 0;
   int world_size_ = 1;

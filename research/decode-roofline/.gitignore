@@ -4,3 +4,5 @@ gemv_70b_sweep
 gemv_naive
 gemv_cm
 gemv_cm_sk
+gemv_cm_ab
+gemv_cm_8b

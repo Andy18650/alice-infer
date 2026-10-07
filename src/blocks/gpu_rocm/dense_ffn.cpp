@@ -58,7 +58,6 @@ DenseFfnBF16::DenseFfnBF16(TensorView<bf16> w_gate, TensorView<bf16> w_up, Tenso
   const size_t gemv_floats = std::max(kernels::gemv_partial_floats(2 * inter_, d_),
                                       kernels::gemv_partial_floats(d_, inter_));
   dgemv_ = static_cast<float*>(res.alloc(gemv_floats * sizeof(float)));
-  HIP_CHECK(hipMemcpy(dw_gup_, gup.data(), gup.size() * sizeof(bf16), hipMemcpyHostToDevice));
   // w_down may be a strided row-parallel shard: gather to contiguous host
   // memory before the single H2D copy.
   std::vector<bf16> down_contig(size_t(d_) * inter_);
@@ -66,8 +65,20 @@ DenseFfnBF16::DenseFfnBF16(TensorView<bf16> w_gate, TensorView<bf16> w_up, Tenso
     std::memcpy(down_contig.data() + size_t(r) * inter_,
                 w_down.data() + size_t(r) * w_down.stride(), inter_ * sizeof(bf16));
   }
-  HIP_CHECK(hipMemcpy(dw_down_, down_contig.data(), down_contig.size() * sizeof(bf16),
+
+  // Column-major repack (2026-10, research/decode-roofline [10]): the S=1
+  // GEMV reads W_cm[k*N+n] as uint32 row-pairs (coalesced 256 B wave
+  // accesses); the S>1 gemm_ex consumes the same layout with op=N, lda=N.
+  // Repack on device: H2D the row-major blob into the shared staging, then
+  // the repack kernel writes the final col-major weight. Stream-ordered, so
+  // the staging is reusable immediately.
+  void* staging = res.named_at_least("wpack_stage", gup.size() * sizeof(bf16));
+  HIP_CHECK(hipMemcpy(staging, gup.data(), gup.size() * sizeof(bf16),
                       hipMemcpyHostToDevice));
+  kernels::repack_to_col_major(staging, dw_gup_, 2 * inter_, d_);
+  HIP_CHECK(hipMemcpy(staging, down_contig.data(), down_contig.size() * sizeof(bf16),
+                      hipMemcpyHostToDevice));
+  kernels::repack_to_col_major(staging, dw_down_, d_, inter_);
 }
 
 DenseFfnBF16::~DenseFfnBF16() {
@@ -79,30 +90,31 @@ void DenseFfnBF16::forward(float* io, uint32_t S) {
     throw std::runtime_error("gpu::DenseFfnBF16::forward: S out of range");
 
   if (S == 1) {
-    // Decode dispatch (design §15; measured in research/decode-roofline:
-    // gemm_ex S=1 runs gup at 727 and down at 313 GB/s; the split-K GEMV at
-    // 1265 / 1172). The fp32 stream is quantized in-register (gup site),
-    // so the f32_to_bf16 launch disappears from the decode path.
-    kernels::gemv_x_f32(dw_gup_, io, dgu_, dgemv_, 2 * inter_, d_);
-    kernels::silu_mul(dgu_, dact_, S, inter_);
-    kernels::gemv_x_bf16(dw_down_, dact_, io, dgemv_, d_, inter_);
+    // Decode dispatch (design §15; the S=1 GEMV reads the column-major
+    // weights — see kernels.hpp; the fp32 stream is quantized in-register
+    // (gup site), so the f32_to_bf16 launch disappears from the decode
+    // path. The gup combine is fused with SiLU+mul: one launch, no dgu_
+    // round-trip.)
+    kernels::gemv_cm_partial_x_f32(dw_gup_, io, dgemv_, 2 * inter_, d_);
+    kernels::gemv_cm_combine_silu(dgemv_, dact_, inter_, d_);
+    kernels::gemv_cm_x_bf16(dw_down_, dact_, io, dgemv_, d_, inter_);
     return;
   }
 
   kernels::f32_to_bf16(io, dx_, size_t(S) * d_);
   const float alpha = 1.0f, beta = 0.0f;
-  // gate/up fused: C'[2I, S] = [Wg;Wu] . x^T (col-major view of row-major)
-  RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_transpose, rocblas_operation_none,
-                           2 * inter_, S, d_, &alpha, dw_gup_, rocblas_datatype_bf16_r, d_,
-                           dx_, rocblas_datatype_bf16_r, d_, &beta, dgu_,
+  // gate/up fused, col-major weights: C'[2I, S] = [Wg;Wu]_cm . x^T (op=N)
+  RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_none, rocblas_operation_none,
+                           2 * inter_, S, d_, &alpha, dw_gup_, rocblas_datatype_bf16_r,
+                           2 * inter_, dx_, rocblas_datatype_bf16_r, d_, &beta, dgu_,
                            rocblas_datatype_f32_r, 2 * inter_, dgu_,
                            rocblas_datatype_f32_r, 2 * inter_, rocblas_datatype_f32_r,
                            rocblas_gemm_algo_standard, 0, 0));
   kernels::silu_mul(dgu_, dact_, S, inter_);
-  // down, straight into io: C'[d, S] = Wd . act^T
-  RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_transpose, rocblas_operation_none,
+  // down, straight into io, col-major weights: C'[d, S] = Wd_cm . act^T
+  RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_none, rocblas_operation_none,
                            d_, S, inter_, &alpha, dw_down_, rocblas_datatype_bf16_r,
-                           inter_, dact_, rocblas_datatype_bf16_r, inter_, &beta, io,
+                           d_, dact_, rocblas_datatype_bf16_r, inter_, &beta, io,
                            rocblas_datatype_f32_r, d_, io, rocblas_datatype_f32_r, d_,
                            rocblas_datatype_f32_r, rocblas_gemm_algo_standard, 0, 0));
 }

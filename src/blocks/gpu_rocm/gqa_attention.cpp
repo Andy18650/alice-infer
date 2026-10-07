@@ -92,7 +92,6 @@ GqaAttentionBF16::GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, Ten
 
   dw_qkv_ = res.alloc(qkv.size() * sizeof(bf16));
   dw_o_ = res.alloc(size_t(d_) * qd * sizeof(bf16));
-  HIP_CHECK(hipMemcpy(dw_qkv_, qkv.data(), qkv.size() * sizeof(bf16), hipMemcpyHostToDevice));
   // wo may be a strided row-parallel shard: gather to contiguous host memory
   // before the single H2D copy.
   std::vector<bf16> wo_contig(size_t(d_) * qd);
@@ -100,8 +99,20 @@ GqaAttentionBF16::GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, Ten
     std::memcpy(wo_contig.data() + size_t(r) * qd,
                 wo.data() + size_t(r) * wo.stride(), qd * sizeof(bf16));
   }
-  HIP_CHECK(hipMemcpy(dw_o_, wo_contig.data(), wo_contig.size() * sizeof(bf16),
+
+  // Column-major repack (2026-10, research/decode-roofline [10]): the S=1
+  // GEMV reads W_cm[k*N+n] as uint32 row-pairs (coalesced 256 B wave
+  // accesses); the S>1 gemm_ex consumes the same layout with op=N, lda=N.
+  // H2D row-major into the shared staging, repack kernel writes the final
+  // col-major weight. Stream-ordered; staging is immediately reusable.
+  const uint32_t qkvd_ = qd + 2 * kvd;
+  void* staging = res.named_at_least("wpack_stage", qkv.size() * sizeof(bf16));
+  HIP_CHECK(hipMemcpy(staging, qkv.data(), qkv.size() * sizeof(bf16),
                       hipMemcpyHostToDevice));
+  kernels::repack_to_col_major(staging, dw_qkv_, qkvd_, d_);
+  HIP_CHECK(hipMemcpy(staging, wo_contig.data(), wo_contig.size() * sizeof(bf16),
+                      hipMemcpyHostToDevice));
+  kernels::repack_to_col_major(staging, dw_o_, d_, qd);
 
   dkcache_ = static_cast<float*>(res.alloc(size_t(max_seq_) * kvd * sizeof(float)));
   dvcache_ = static_cast<float*>(res.alloc(size_t(max_seq_) * kvd * sizeof(float)));
@@ -144,25 +155,25 @@ void GqaAttentionBF16::forward(float* io, uint32_t S) {
   const uint32_t qd = nh_ * hd_, kvd = nkv_ * hd_, qkvd = qd + 2 * kvd;
 
   if (S == 1) {
-    // Decode dispatch (design §15; measured in research/decode-roofline:
-    // gemm_ex S=1 runs the FFN shapes at 313-727 GB/s; the split-K GEMV at
-    // 946-1265). The fp32 stream is quantized in-register (qkv site), so
-    // the f32_to_bf16 launch disappears from the decode path.
-    kernels::gemv_x_f32(dw_qkv_, io, dqkv_, dgemv_, qkvd, d_);
+    // Decode dispatch (design §15; the S=1 GEMV reads the column-major
+    // weights — see kernels.hpp; the fp32 stream is quantized in-register
+    // (qkv site), so the f32_to_bf16 launch disappears from the decode
+    // path).
+    kernels::gemv_cm_x_f32(dw_qkv_, io, dqkv_, dgemv_, qkvd, d_);
     kernels::rope_append(dqkv_, dkcache_, dvcache_, drope_cos_, drope_sin_, pos_, S, nh_,
                          nkv_, hd_);
     kernels::attention(dqkv_, dkcache_, dvcache_, dattn_, dsplit_, prefill_scratch_,
                        pos_, S, nh_, nkv_, hd_, scale_);
-    kernels::gemv_x_bf16(dw_o_, dattn_, io, dgemv_, d_, qd);
+    kernels::gemv_cm_x_bf16(dw_o_, dattn_, io, dgemv_, d_, qd);
     pos_ += S;
     return;
   }
 
   kernels::f32_to_bf16(io, dx_, size_t(S) * d_);
   const float alpha = 1.0f, beta = 0.0f;
-  // fused QKV: C'[qkvd, S] = [Wq;Wk;Wv] . x^T
-  RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_transpose, rocblas_operation_none,
-                           qkvd, S, d_, &alpha, dw_qkv_, rocblas_datatype_bf16_r, d_, dx_,
+  // fused QKV, col-major weights: C'[qkvd, S] = [Wq;Wk;Wv]_cm . x^T (op=N)
+  RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_none, rocblas_operation_none,
+                           qkvd, S, d_, &alpha, dw_qkv_, rocblas_datatype_bf16_r, qkvd, dx_,
                            rocblas_datatype_bf16_r, d_, &beta, dqkv_,
                            rocblas_datatype_f32_r, qkvd, dqkv_, rocblas_datatype_f32_r,
                            qkvd, rocblas_datatype_f32_r, rocblas_gemm_algo_standard, 0, 0));
@@ -170,9 +181,9 @@ void GqaAttentionBF16::forward(float* io, uint32_t S) {
                        nkv_, hd_);
   kernels::attention(dqkv_, dkcache_, dvcache_, dattn_, dsplit_, prefill_scratch_, pos_,
                      S, nh_, nkv_, hd_, scale_);
-  // o_proj into io: C'[d, S] = Wo . attn^T
-  RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_transpose, rocblas_operation_none,
-                           d_, S, qd, &alpha, dw_o_, rocblas_datatype_bf16_r, qd, dattn_,
+  // o_proj into io, col-major weights: C'[d, S] = Wo_cm . attn^T (op=N)
+  RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_none, rocblas_operation_none,
+                           d_, S, qd, &alpha, dw_o_, rocblas_datatype_bf16_r, d_, dattn_,
                            rocblas_datatype_bf16_r, qd, &beta, io,
                            rocblas_datatype_f32_r, d_, io, rocblas_datatype_f32_r, d_,
                            rocblas_datatype_f32_r, rocblas_gemm_algo_standard, 0, 0));

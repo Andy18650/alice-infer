@@ -53,28 +53,34 @@ inline constexpr uint32_t kPrefillChunkKeys = 64;
 // At S==1 rocBLAS gemm_ex picks no-split-K GEMM kernels that leave most of
 // the HBM bandwidth on the table on the FFN shapes (down [4096x14336] at
 // 313 GB/s, gup [28672x4096] at 727 GB/s, vs a measured 1290 GB/s pure-read
-// ceiling; GEMMs were 26.0 of 29.6 ms/token). These family-private split-K
-// GEMVs replace gemm_ex at S==1 in both blocks: warp-per-row over K-chunks
-// (chunk count chosen by gemv_chunks to occupy the GCD), uint64 weight
-// loads (4 bf16 per lane per step), partials + combine, fp32 accumulation
-// over bf16 operands — same operand-quantization contract as the GEMM path.
+// ceiling; GEMMs were 26.0 of 29.6 ms/token). The family-private split-K
+// GEMVs replace gemm_ex at S==1 in both blocks. 2026-10 revision
+// (research/decode-roofline [8-10]): the warp-per-row split-K was retired
+// for a COLUMN-MAJOR thread-per-row-pair GEMV — weights are repacked at
+// load (repack_to_col_major) so one thread loads a uint32 covering two
+// adjacent rows of one column; a wave's 64 lanes then read a contiguous
+// 256 B per step (fully coalesced), and K is split into 256-element chunks
+// so thread count = (N/2)*(K/256) keeps the GCD occupied (gup's 14336
+// threads were half the 28160-thread fill). Measured: gup 1277 GB/s (99%
+// of the read ceiling) vs 1017 for the retired warp-per-row; fp32
+// accumulation over bf16 operands — same operand-quantization contract as
+// the GEMM path. The S>1 gemm_ex path consumes the same column-major
+// layout with op=N, lda=N.
 //
 // x is either fp32 (qkv/gup: the fp32 stream — operand quantization is
 // fused in-register, bit-identical to the standalone f32_to_bf16 kernel,
 // so the separate conversion launch disappears) or bf16 (o/down: the
-// attention/activation outputs are already bf16). K must be a multiple of
-// 4 (uint64/float4 loads); N has no constraint. Fixed schedule per
-// (N, K): deterministic (design §10).
+// attention/activation outputs are already bf16). K % 4 == 0 and N even
+// required. Fixed schedule per (N, K): deterministic (design §10).
 
-// Split count for the S=1 GEMV: enough (row-block, chunk) blocks to occupy
-// the GCD without splitting K below ~1024 per chunk. Single tuning knob;
-// the target constant is measured (see the study).
-uint32_t gemv_chunks(uint32_t N, uint32_t K);
+// Chunk count for the S=1 GEMV: 256-element K-chunks (fixed; the sweep
+// showed bandwidth tracks thread count until VRAM saturation).
+uint32_t gemv_cm_chunks(uint32_t K);
 
 // Partials scratch a GEMV site needs (floats; produced and consumed within
 // one call — block-private allocation today, §14 scratch-pool candidate).
 inline size_t gemv_partial_floats(uint32_t N, uint32_t K) {
-  return size_t(gemv_chunks(N, K)) * N;
+  return size_t(gemv_cm_chunks(K)) * N;
 }
 
 // y[N] (fp32) = W (bf16 [N,K] row-major) . x. partials: gemv_partial_floats(N,K)
@@ -87,12 +93,27 @@ void attention(const float* qkv, const float* kcache, const float* vcache, void*
                float* split_scratch, float* prefill_scratch, uint32_t pos0, uint32_t S,
                uint32_t nh, uint32_t nkv, uint32_t hd, float scale);
 
-// y[N] (fp32) = W (bf16 [N,K] row-major) . x — see the S=1 GEMV block above.
+// y[N] (fp32) = W (bf16 [N,K] COLUMN-major — see the S=1 GEMV block
+// above) . x. partials: gemv_partial_floats(N,K) floats.
 // fp32 x: quantized in-register (bit-identical to f32_to_bf16).
-void gemv_x_f32(const void* W, const float* x, float* y, float* partials, uint32_t N,
-                uint32_t K);
+void gemv_cm_x_f32(const void* W, const float* x, float* y, float* partials, uint32_t N,
+                   uint32_t K);
 // bf16 x: already-quantized operand (attention/activation output).
-void gemv_x_bf16(const void* W, const void* x, float* y, float* partials, uint32_t N,
-                 uint32_t K);
+void gemv_cm_x_bf16(const void* W, const void* x, float* y, float* partials, uint32_t N,
+                    uint32_t K);
+
+// Fused gup decode path (one launch saved + the fp32 dgu_ round-trip
+// eliminated): partial phase for the fp32-stream site, then a fused
+// combine+SiLU writing bf16 act directly (act[i] = silu(g_i)*u_i, gate/up
+// = rows [0,I)/[I,2I) of the fused gup partials). Bit-identical math to
+// combine + silu_mul.
+void gemv_cm_partial_x_f32(const void* W, const float* x, float* partials, uint32_t N,
+                           uint32_t K);
+void gemv_cm_combine_silu(const float* partials, void* act_bf16, uint32_t I, uint32_t K);
+
+// Load-time weight repack: row-major [N,K] bf16 -> column-major [N,K] bf16
+// (W_cm[k*N+n]), consumed by the S=1 GEMV and by the S>1 gemm_ex (op=N,
+// lda=N). Async on the caller's stream (subsequent stream work is ordered).
+void repack_to_col_major(const void* W_rm, void* W_cm, uint32_t N, uint32_t K);
 
 }  // namespace alice::gpu_rocm::kernels

@@ -196,3 +196,25 @@ the 28160 fill and collapse). gup 507 -> 1277 GB/s vs the engine split-K's
 1.9 MB partials vs 235 MB weights). Engine adoption = weight-layout change
 (pack at load/pack time) + a per-shape CW rule that keeps threads >= ~2x
 the 28160 fill.
+
+## [11] Column-major engine landing + combine latency-chain fix (2026-10)
+
+The packed thread-per-(pair,chunk) GEMV landed in the engine as PURE
+column-major weights (repack_to_col_major at load, shared named staging;
+S>1 gemm_ex consumes the same layout with op=N, lda=N — no 2x memory).
+Thread-per-row-pair (uint32 = rows 2t,2t+1 of one column), 8 accumulators,
+CW=256. gemv_cm_ab.hip: col-major == pair-pack within 2%.
+
+Combine saga (the hidden decode regression): the fused combine+SiLU
+(kernel + launch saved, no dgu_ round-trip) went in clean, but walls
+regressed 8B/1B. Root cause found by SASS: the combine's per-iteration
+global_load + s_waitcnt vmcnt(0) serialized FULL memory latency per chunk
+per thread (no load pipelining; C=16-56 chunks => 11-39 us serial per
+thread). Fixed with 8 batched independent loads/accumulators per
+iteration (graduated waitcnts) — combine ~10% -> ~2% of decode busy.
+(Lockstep/rotation theory for the combine was falsified and reverted.)
+
+Walls (Release, numactl node 0, greedy): 70B TP=4 44.1 ms/tok = 22.7
+tok/s (51.6 pre-col-major, 57.25 RCCL era); 8B tp=1 64.4 (66.8 pre);
+1B tp=1 241.6 (263.7 pre — o/qkv sites occupancy-starved at CW=256:
+8192 threads < 28160 fill; per-shape CW clamp is the open knob).

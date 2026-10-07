@@ -458,21 +458,23 @@ unsigned grid_for(size_t n, unsigned block) {
 
 namespace alice::gpu_rocm::kernels {
 
-void f32_to_bf16(const float* src, void* dst, size_t n) {
-  k_f32_to_bf16<<<grid_for(n, 256), 256>>>(src, (unsigned short*)dst, n);
+void f32_to_bf16(hipStream_t stream, const float* src, void* dst, size_t n) {
+  k_f32_to_bf16<<<grid_for(n, 256), 256, 0, stream>>>(src, (unsigned short*)dst, n);
 }
 
-void silu_mul(const float* gu, void* act, uint32_t S, uint32_t I) {
-  k_silu_mul<<<grid_for((size_t)S * I, 256), 256>>>(gu, (unsigned short*)act, S, I);
+void silu_mul(hipStream_t stream, const float* gu, void* act, uint32_t S, uint32_t I) {
+  k_silu_mul<<<grid_for((size_t)S * I, 256), 256, 0, stream>>>(gu, (unsigned short*)act, S, I);
 }
 
-void rope_append(float* qkv, float* kcache, float* vcache, const float* cos_t,
+void rope_append(hipStream_t stream, float* qkv, float* kcache, float* vcache,
+                     const float* cos_t,
                  const float* sin_t, uint32_t pos0, uint32_t S, uint32_t nh, uint32_t nkv,
                  uint32_t hd) {
-  k_rope_append<<<S, 256>>>(qkv, kcache, vcache, cos_t, sin_t, pos0, nh, nkv, hd);
+  k_rope_append<<<S, 256, 0, stream>>>(qkv, kcache, vcache, cos_t, sin_t, pos0, nh, nkv, hd);
 }
 
-void attention(const float* qkv, const float* kcache, const float* vcache, void* attn_bf16,
+void attention(hipStream_t stream, const float* qkv, const float* kcache,
+                   const float* vcache, void* attn_bf16,
                float* split_scratch, float* prefill_scratch, uint32_t pos0, uint32_t S,
                uint32_t nh, uint32_t nkv, uint32_t hd, float scale) {
   const uint32_t T = pos0 + S;
@@ -483,14 +485,14 @@ void attention(const float* qkv, const float* kcache, const float* vcache, void*
     const dim3 g((S + 63) / 64, max_chunks, nh);
     const dim3 gc(S, nh);
     if (hd == 64) {
-      k_prefill_split<64><<<g, 64>>>(qkv, kcache, vcache, prefill_scratch, pos0, S, nh,
+      k_prefill_split<64><<<g, 64, 0, stream>>>(qkv, kcache, vcache, prefill_scratch, pos0, S, nh,
                                      nkv, scale, max_chunks);
-      k_prefill_combine<64><<<gc, 128>>>((const float*)prefill_scratch,
+      k_prefill_combine<64><<<gc, 128, 0, stream>>>((const float*)prefill_scratch,
                                          (unsigned short*)attn_bf16, pos0, S, nh, max_chunks);
     } else if (hd == 128) {
-      k_prefill_split<128><<<g, 64>>>(qkv, kcache, vcache, prefill_scratch, pos0, S, nh,
+      k_prefill_split<128><<<g, 64, 0, stream>>>(qkv, kcache, vcache, prefill_scratch, pos0, S, nh,
                                       nkv, scale, max_chunks);
-      k_prefill_combine<128><<<gc, 128>>>((const float*)prefill_scratch,
+      k_prefill_combine<128><<<gc, 128, 0, stream>>>((const float*)prefill_scratch,
                                           (unsigned short*)attn_bf16, pos0, S, nh,
                                           max_chunks);
     } else {
@@ -507,9 +509,9 @@ void attention(const float* qkv, const float* kcache, const float* vcache, void*
       splits = kAttnMaxSplits;
       rps = (T + splits - 1) / splits;  // keep full coverage of [0, T)
     }
-    k_attention_split<<<dim3(splits, S * nh), 256>>>(qkv, kcache, vcache, split_scratch,
+    k_attention_split<<<dim3(splits, S * nh), 256, 0, stream>>>(qkv, kcache, vcache, split_scratch,
                                                      pos0, nh, nkv, hd, scale, rps);
-    k_attention_combine<<<S * nh, 128>>>((const float*)split_scratch,
+    k_attention_combine<<<S * nh, 128, 0, stream>>>((const float*)split_scratch,
                                          (unsigned short*)attn_bf16, hd, splits);
   }
 }
@@ -517,8 +519,8 @@ void attention(const float* qkv, const float* kcache, const float* vcache, void*
 uint32_t gemv_cm_chunks(uint32_t K) { return (K + 255) / 256; }
 
 namespace {
-void gemv_cm_partial_launch(const void* W, const void* x, float* partials, uint32_t N,
-                            uint32_t K, bool x_f32) {
+void gemv_cm_partial_launch(hipStream_t stream, const void* W, const void* x,
+                                float* partials, uint32_t N, uint32_t K, bool x_f32) {
   if (N == 0 || K == 0) throw std::runtime_error("gpu_rocm::kernels::gemv: empty shape");
   if (N % 2)
     throw std::runtime_error(
@@ -529,19 +531,20 @@ void gemv_cm_partial_launch(const void* W, const void* x, float* partials, uint3
   const uint32_t threads = (N / 2) * gemv_cm_chunks(K);
   const dim3 grid((threads + 63) / 64);
   if (x_f32)
-    k_gemvcm_partial<true><<<grid, 64>>>((const uint32_t*)W, x, partials, N, K);
+    k_gemvcm_partial<true><<<grid, 64, 0, stream>>>((const uint32_t*)W, x, partials, N, K);
   else
-    k_gemvcm_partial<false><<<grid, 64>>>((const uint32_t*)W, x, partials, N, K);
+    k_gemvcm_partial<false><<<grid, 64, 0, stream>>>((const uint32_t*)W, x, partials, N, K);
 }
 
-void gemv_cm_launch(const void* W, const void* x, float* y, float* partials, uint32_t N,
-                    uint32_t K, bool x_f32) {
-  gemv_cm_partial_launch(W, x, partials, N, K, x_f32);
-  k_gemv_combine<<<grid_for(N, 256), 256>>>(partials, y, N, gemv_cm_chunks(K));
+void gemv_cm_launch(hipStream_t stream, const void* W, const void* x, float* y,
+                        float* partials, uint32_t N, uint32_t K, bool x_f32) {
+  gemv_cm_partial_launch(stream, W, x, partials, N, K, x_f32);
+  k_gemv_combine<<<grid_for(N, 256), 256, 0, stream>>>(partials, y, N, gemv_cm_chunks(K));
 }
 }  // namespace
 
-void repack_to_col_major(const void* W_rm, void* W_cm, uint32_t N, uint32_t K) {
+void repack_to_col_major(hipStream_t stream, const void* W_rm, void* W_cm, uint32_t N,
+                             uint32_t K) {
   if (N % 2 || K % 2)
     throw std::runtime_error("gpu_rocm::kernels::repack: N, K must be even");
   const uint32_t threads = N * (K / 2);
@@ -549,28 +552,29 @@ void repack_to_col_major(const void* W_rm, void* W_cm, uint32_t N, uint32_t K) {
   // repacks (8B gup needs 229376 blocks — the cap repacked only 28% of the
   // matrix). x-dimension allows 2^31-1.
   const uint32_t blocks = (threads + 255) / 256;
-  k_repack_cm<<<blocks, 256>>>((const uint32_t*)W_rm, (unsigned short*)W_cm, N, K);
+  k_repack_cm<<<blocks, 256, 0, stream>>>((const uint32_t*)W_rm, (unsigned short*)W_cm, N, K);
   // Async on the caller's stream: the next H2D into the staging buffer is
   // stream-ordered after this kernel, no host sync needed.
 }
 
-void gemv_cm_x_f32(const void* W, const float* x, float* y, float* partials, uint32_t N,
-                   uint32_t K) {
-  gemv_cm_launch(W, x, y, partials, N, K, true);
+void gemv_cm_x_f32(hipStream_t stream, const void* W, const float* x, float* y,
+                       float* partials, uint32_t N, uint32_t K) {
+  gemv_cm_launch(stream, W, x, y, partials, N, K, true);
 }
 
-void gemv_cm_x_bf16(const void* W, const void* x, float* y, float* partials, uint32_t N,
-                    uint32_t K) {
-  gemv_cm_launch(W, x, y, partials, N, K, false);
+void gemv_cm_x_bf16(hipStream_t stream, const void* W, const void* x, float* y,
+                        float* partials, uint32_t N, uint32_t K) {
+  gemv_cm_launch(stream, W, x, y, partials, N, K, false);
 }
 
-void gemv_cm_partial_x_f32(const void* W, const float* x, float* partials, uint32_t N,
-                           uint32_t K) {
-  gemv_cm_partial_launch(W, x, partials, N, K, true);
+void gemv_cm_partial_x_f32(hipStream_t stream, const void* W, const float* x,
+                               float* partials, uint32_t N, uint32_t K) {
+  gemv_cm_partial_launch(stream, W, x, partials, N, K, true);
 }
 
-void gemv_cm_combine_silu(const float* partials, void* act_bf16, uint32_t I, uint32_t K) {
-  k_gemvcm_combine_silu<<<grid_for(I, 256), 256>>>(partials,
+void gemv_cm_combine_silu(hipStream_t stream, const float* partials, void* act_bf16,
+                          uint32_t I, uint32_t K) {
+  k_gemvcm_combine_silu<<<grid_for(I, 256), 256, 0, stream>>>(partials,
                                                    (unsigned short*)act_bf16, I,
                                                    gemv_cm_chunks(K));
 }

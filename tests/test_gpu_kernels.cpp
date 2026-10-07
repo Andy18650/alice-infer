@@ -52,7 +52,7 @@ TEST(GpuKernels, F32ToBf16MatchesFromF32) {
   float* d_in = dev_upload(host);
   unsigned short* d_out = nullptr;
   ASSERT_EQ(hipMalloc(&d_out, host.size() * 2), hipSuccess);
-  gk::f32_to_bf16(d_in, d_out, host.size());
+  gk::f32_to_bf16(0, d_in, d_out, host.size());
   auto got = dev_download(d_out, host.size());
   for (size_t i = 0; i < host.size(); ++i)
     EXPECT_EQ(got[i], bf16::from_f32(host[i]).bits) << "element " << i;
@@ -70,7 +70,7 @@ TEST(GpuKernels, RmsnormMatchesOracle) {
   float* d_g = dev_upload(g);
   float* d_out = nullptr;
   ASSERT_EQ(hipMalloc(&d_out, x.size() * 4), hipSuccess);
-  gk::rmsnorm(d_in, d_g, d_out, S, d, 1e-5f);
+  gk::rmsnorm(0, d_in, d_g, d_out, S, d, 1e-5f);
   auto got = dev_download(d_out, x.size());
   for (size_t i = 0; i < x.size(); ++i) EXPECT_NEAR(got[i], oracle[i], 1e-5f) << i;
   dev_free(d_in);
@@ -84,7 +84,7 @@ TEST(GpuKernels, AddRowsMatchesOracle) {
   om::add_rows(oracle.data(), b.data(), 1, 777);
   float* d_a = dev_upload(a);
   float* d_b = dev_upload(b);
-  gk::add_rows(d_a, d_b, 777);
+  gk::add_rows(0, d_a, d_b, 777);
   auto got = dev_download(d_a, 777);
   for (size_t i = 0; i < 777; ++i) EXPECT_FLOAT_EQ(got[i], oracle[i]) << i;
   dev_free(d_a);
@@ -101,7 +101,7 @@ TEST(GpuKernels, EmbedGatherMatchesHost) {
   int32_t* d_ids = dev_upload(ids);
   float* d_out = nullptr;
   ASSERT_EQ(hipMalloc(&d_out, ids.size() * d * 4), hipSuccess);
-  gk::embed_gather(d_tab, d_ids, d_out, uint32_t(ids.size()), d);
+  gk::embed_gather(0, d_tab, d_ids, d_out, uint32_t(ids.size()), d);
   auto got = dev_download(d_out, ids.size() * d);
   for (size_t s = 0; s < ids.size(); ++s)
     for (uint32_t i = 0; i < d; ++i)
@@ -118,7 +118,7 @@ TEST(GpuKernels, SiluMulMatchesHost) {
   float* d_gu = dev_upload(gu);
   unsigned short* d_act = nullptr;
   ASSERT_EQ(hipMalloc(&d_act, size_t(S) * I * 2), hipSuccess);
-  gbk::silu_mul(d_gu, d_act, S, I);
+  gbk::silu_mul(0, d_gu, d_act, S, I);
   auto got = dev_download(d_act, size_t(S) * I);
   for (uint32_t s = 0; s < S; ++s)
     for (uint32_t i = 0; i < I; ++i) {
@@ -138,7 +138,7 @@ TEST(GpuKernels, ArgmaxFindsMaxAndBreaksTiesLow) {
   float* d_x = dev_upload(x);
   int32_t* d_out = nullptr;
   ASSERT_EQ(hipMalloc(&d_out, 4), hipSuccess);
-  gk::argmax(d_x, x.size(), d_out);
+  gk::argmax(0, d_x, x.size(), d_out);
   auto got = dev_download(d_out, 1);
   EXPECT_EQ(got[0], 13);
   dev_free(d_x);
@@ -177,7 +177,7 @@ TEST(GpuKernels, RopeAppendMatchesOracle) {
   ASSERT_EQ(hipMalloc(&d_vc, ovc.size() * 4), hipSuccess);
   ASSERT_EQ(hipMemset(d_kc, 0, okc.size() * 4), hipSuccess);
   ASSERT_EQ(hipMemset(d_vc, 0, ovc.size() * 4), hipSuccess);
-  gbk::rope_append(d_qkv, d_kc, d_vc, d_cos, d_sin, pos0, S, nh, nkv, hd);
+  gbk::rope_append(0, d_qkv, d_kc, d_vc, d_cos, d_sin, pos0, S, nh, nkv, hd);
   auto got_q = dev_download(d_qkv, qkv.size());
   auto got_kc = dev_download(d_kc, okc.size());
   auto got_vc = dev_download(d_vc, ovc.size());

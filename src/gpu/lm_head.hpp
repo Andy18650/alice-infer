@@ -6,6 +6,9 @@
 
 #include <cstdint>
 
+// hipStream_t forward declaration (matches hip_runtime_api.h).
+typedef struct ihipStream_t* hipStream_t;
+
 #include "blas.hpp"
 #include "alice/tensor.hpp"
 
@@ -14,7 +17,9 @@ namespace alice::gpu {
 class LmHead {
  public:
   // weight: staged bf16 [vocab, d] weights, moved in and freed on return.
-  LmHead(Tensor<bf16> weight, uint32_t max_prefill_chunk,
+  // stream: the rank's compute stream (Resources; BLAS handle is bound to
+  // the same stream).
+  LmHead(hipStream_t stream, Tensor<bf16> weight, uint32_t max_prefill_chunk,
          rocblas_handle handle);
   ~LmHead();
 
@@ -26,6 +31,7 @@ class LmHead {
   uint32_t hidden() const { return d_; }
 
  private:
+  hipStream_t stream_ = nullptr;
   uint32_t vocab_ = 0, d_ = 0, mpc_ = 0;
   void* w_ = nullptr;        // bf16 [V, d]
   void* dx_ = nullptr;       // bf16 [mpc, d]

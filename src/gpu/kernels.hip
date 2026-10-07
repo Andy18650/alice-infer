@@ -99,26 +99,26 @@ unsigned grid_for(size_t n, unsigned block) {
 
 namespace alice::gpu::kernels {
 
-void f32_to_bf16(const float* src, void* dst, size_t n) {
-  k_f32_to_bf16<<<grid_for(n, 256), 256>>>(src, (unsigned short*)dst, n);
+void f32_to_bf16(hipStream_t stream, const float* src, void* dst, size_t n) {
+  k_f32_to_bf16<<<grid_for(n, 256), 256, 0, stream>>>(src, (unsigned short*)dst, n);
 }
 
-void rmsnorm(const float* in, const float* gamma, float* out, uint32_t S, uint32_t d,
-             float eps) {
-  k_rmsnorm<<<S, 256>>>(in, gamma, out, d, eps);
+void rmsnorm(hipStream_t stream, const float* in, const float* gamma, float* out,
+             uint32_t S, uint32_t d, float eps) {
+  k_rmsnorm<<<S, 256, 0, stream>>>(in, gamma, out, d, eps);
 }
 
-void add_rows(float* dst, const float* src, size_t n) {
-  k_add_rows<<<grid_for(n, 256), 256>>>(dst, src, n);
+void add_rows(hipStream_t stream, float* dst, const float* src, size_t n) {
+  k_add_rows<<<grid_for(n, 256), 256, 0, stream>>>(dst, src, n);
 }
 
-void embed_gather(const void* table, const int32_t* ids, float* out, uint32_t S,
-                  uint32_t d) {
-  k_embed_gather<<<S, 256>>>((const unsigned short*)table, (const int*)ids, out, d);
+void embed_gather(hipStream_t stream, const void* table, const int32_t* ids,
+                  float* out, uint32_t S, uint32_t d) {
+  k_embed_gather<<<S, 256, 0, stream>>>((const unsigned short*)table, (const int*)ids, out, d);
 }
 
-void argmax(const float* x, size_t n, int32_t* out) {
-  k_argmax<<<1, 1024>>>(x, n, (int*)out);
+void argmax(hipStream_t stream, const float* x, size_t n, int32_t* out) {
+  k_argmax<<<1, 1024, 0, stream>>>(x, n, (int*)out);
 }
 
 // ---------------------------------------------------------------------------
@@ -228,24 +228,25 @@ __global__ void k_ar_fused_f4(float* io, float* const* contribs,
   }
 }
 
-void ar_flagbar(uint64_t* my_flag, uint64_t* const* flags, int ws, int rank,
-                uint64_t value) {
-  k_ar_flagbar<<<1, 32>>>((unsigned long long*)my_flag,
+void ar_flagbar(hipStream_t stream, uint64_t* my_flag, uint64_t* const* flags,
+                int ws, int rank, uint64_t value) {
+  k_ar_flagbar<<<1, 32, 0, stream>>>((unsigned long long*)my_flag,
                           (unsigned long long* const*)flags, ws, rank,
                           (unsigned long long)value);
 }
 
-void ar_gather_f4(float* const* contribs, float* out, int ws, uint32_t n) {
+void ar_gather_f4(hipStream_t stream, float* const* contribs, float* out, int ws,
+                uint32_t n) {
   uint32_t grid = (n / 4 + 255) / 256;
   if (grid > 220) grid = 220;
   if (grid < 1) grid = 1;
-  k_ar_gather_f4<<<grid, 256>>>(contribs, out, ws, n);
+  k_ar_gather_f4<<<grid, 256, 0, stream>>>(contribs, out, ws, n);
 }
 
-void ar_fused_f4(float* io, float* const* contribs, uint64_t* my_flag,
-                 uint64_t* const* flags, int ws, int rank, uint32_t n,
-                 uint64_t vprod, uint64_t vcons) {
-  k_ar_fused_f4<<<1, 1024>>>(io, contribs, (unsigned long long*)my_flag,
+void ar_fused_f4(hipStream_t stream, float* io, float* const* contribs,
+                 uint64_t* my_flag, uint64_t* const* flags, int ws, int rank,
+                 uint32_t n, uint64_t vprod, uint64_t vcons) {
+  k_ar_fused_f4<<<1, 1024, 0, stream>>>(io, contribs, (unsigned long long*)my_flag,
                              (unsigned long long* const*)flags, ws, rank, n,
                              (unsigned long long)vprod,
                              (unsigned long long)vcons);

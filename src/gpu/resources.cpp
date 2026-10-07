@@ -46,6 +46,18 @@ Resources::Resources(int rank, int world_size)
   arch_ = arch_.substr(0, arch_.find(':'));
   if (rocblas_create_handle(&handle_) != rocblas_status_success)
     fail("rocblas_create_handle failed");
+  // The rank's explicit compute stream (never the legacy default stream —
+  // see stream() in resources.hpp). BLOCKING (default flags) on purpose:
+  // the legacy default stream implicitly synchronizes with blocking
+  // streams, so all existing hipMemcpy/hipStreamSynchronize(0) call sites
+  // keep their ordering guarantees unchanged; and regular streams are
+  // still capturable for the S=1 decode graph (hipStreamNonBlocking would
+  // silently break blocking-memcpy ordering — found via the GpuBlocks
+  // reset-test failure, 2026-10).
+  if (hipStreamCreate(&stream_) != hipSuccess)
+    fail("hipStreamCreate failed");
+  if (rocblas_set_stream(handle_, stream_) != rocblas_status_success)
+    fail("rocblas_set_stream failed");
   // Note: hipDeviceEnablePeerAccess is NOT called here. Enabling the HSA peer
   // mapping racing the 4 concurrent per-rank hipMallocs during weight load
   // trips a runtime MappedHandleAllowedAgent assert on this stack. The
@@ -54,6 +66,7 @@ Resources::Resources(int rank, int world_size)
 }
 
 Resources::~Resources() {
+  if (stream_) (void)hipStreamDestroy(stream_);
   for (auto& [p, n] : ledger_)
     if (p) (void)hipFree(p);
   for (auto& [name, np] : named_)

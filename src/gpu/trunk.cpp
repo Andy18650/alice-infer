@@ -28,10 +28,11 @@ void h2d_f32_from_bf16(const Tensor<bf16>& src, float* dst_dev, uint32_t d,
 }
 }  // namespace
 
-RmsNormAddTrunk::RmsNormAddTrunk(std::vector<Tensor<bf16>> pre_norms,
+RmsNormAddTrunk::RmsNormAddTrunk(hipStream_t stream,
+                                 std::vector<Tensor<bf16>> pre_norms,
                                  Tensor<bf16> final_norm, float eps, uint32_t hidden,
                                  uint32_t max_prefill_chunk)
-    : d_(hidden), mpc_(max_prefill_chunk), eps_(eps) {
+    : stream_(stream), d_(hidden), mpc_(max_prefill_chunk), eps_(eps) {
   HIP_CHECK(hipMalloc(&residual_, size_t(mpc_) * d_ * sizeof(float)));
   HIP_CHECK(hipMalloc(&io_, size_t(mpc_) * d_ * sizeof(float)));
   HIP_CHECK(hipMalloc(&norms_, pre_norms.size() * d_ * sizeof(float)));
@@ -56,13 +57,15 @@ float* RmsNormAddTrunk::begin_pass(uint32_t S) {
 }
 
 void RmsNormAddTrunk::read(size_t block) {
-  kernels::rmsnorm(residual_, norms_ + block * d_, io_, S_, d_, eps_);
+  kernels::rmsnorm(stream_, residual_, norms_ + block * d_, io_, S_, d_, eps_);
 }
 
 void RmsNormAddTrunk::write(size_t /*block*/) {
-  kernels::add_rows(residual_, io_, size_t(S_) * d_);
+  kernels::add_rows(stream_, residual_, io_, size_t(S_) * d_);
 }
 
-void RmsNormAddTrunk::output() { kernels::rmsnorm(residual_, final_, io_, S_, d_, eps_); }
+void RmsNormAddTrunk::output() {
+  kernels::rmsnorm(stream_, residual_, final_, io_, S_, d_, eps_);
+}
 
 }  // namespace alice::gpu

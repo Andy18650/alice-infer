@@ -93,6 +93,8 @@ std::vector<float> run_gpu_block(Block& b, const std::vector<float>& io, uint32_
     throw std::runtime_error("H2D failed");
   b.forward(d_io, S);
   std::vector<float> out(io.size());
+  if (hipDeviceSynchronize() != hipSuccess)  // covers the NonBlocking compute stream
+    throw std::runtime_error("sync failed");
   if (hipMemcpy(out.data(), d_io, io.size() * sizeof(float), hipMemcpyDeviceToHost) !=
       hipSuccess)
     throw std::runtime_error("D2H failed");

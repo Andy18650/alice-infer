@@ -33,6 +33,10 @@ T* dev_upload(const std::vector<T>& host) {
 template <typename T>
 std::vector<T> dev_download(const T* p, size_t n) {
   std::vector<T> host(n);
+  // Device-wide sync: covers work on any stream (the rank's compute stream
+  // is hipStreamNonBlocking — a blocking hipMemcpy on the legacy stream
+  // would NOT wait for its kernels).
+  if (hipDeviceSynchronize() != hipSuccess) throw std::runtime_error("sync failed");
   if (hipMemcpy(host.data(), p, n * sizeof(T), hipMemcpyDeviceToHost) != hipSuccess)
     throw std::runtime_error("D2H failed");
   return host;

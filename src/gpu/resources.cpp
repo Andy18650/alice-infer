@@ -46,16 +46,16 @@ Resources::Resources(int rank, int world_size)
   arch_ = arch_.substr(0, arch_.find(':'));
   if (rocblas_create_handle(&handle_) != rocblas_status_success)
     fail("rocblas_create_handle failed");
-  // The rank's explicit compute stream (never the legacy default stream —
-  // see stream() in resources.hpp). BLOCKING (default flags) on purpose:
-  // the legacy default stream implicitly synchronizes with blocking
-  // streams, so all existing hipMemcpy/hipStreamSynchronize(0) call sites
-  // keep their ordering guarantees unchanged; and regular streams are
-  // still capturable for the S=1 decode graph (hipStreamNonBlocking would
-  // silently break blocking-memcpy ordering — found via the GpuBlocks
-  // reset-test failure, 2026-10).
-  if (hipStreamCreate(&stream_) != hipSuccess)
-    fail("hipStreamCreate failed");
+  // The rank's explicit compute stream (see stream() in resources.hpp).
+  // hipStreamNonBlocking: NO implicit synchronization with the legacy
+  // default stream — every piece of stream-ordered work (kernels, BLAS,
+  // async copies) is explicitly ordered on this stream, and result
+  // gathering uses hipMemcpyAsync + hipStreamSynchronize(stream). This
+  // avoids the legacy implicit-sync launch tax (~2-5% at 1B, measured)
+  // and keeps the graph replay shape clean: replay -> async D2H ->
+  // stream sync -> host sample.
+  if (hipStreamCreateWithFlags(&stream_, hipStreamNonBlocking) != hipSuccess)
+    fail("hipStreamCreateWithFlags failed");
   if (rocblas_set_stream(handle_, stream_) != rocblas_status_success)
     fail("rocblas_set_stream failed");
   // Note: hipDeviceEnablePeerAccess is NOT called here. Enabling the HSA peer

@@ -103,7 +103,8 @@ struct Engine::ThreadState {
 
   std::mutex load_mutex;
   std::condition_variable load_cv;
-  int loaded_count = 0;
+  int loaded_count = 0;  // weights/io/flags exist; workers may install peers
+  int ready_count = 0;   // initialization finished (including failed ranks)
   std::exception_ptr load_error;
 };
 
@@ -156,19 +157,35 @@ void worker_main(Engine* engine, int rank, int world_size, gpu::Model* model,
     model->load(rank, world_size, descriptor, data_loader, st);
   } catch (...) {
     model->set_error(std::current_exception());
-    {
-      std::lock_guard<std::mutex> lock(ts.load_mutex);
-      ts.loaded_count++;
-    }
-    ts.load_cv.notify_one();
-    return;
+    std::lock_guard<std::mutex> lock(ts.load_mutex);
+    ts.load_error = model->error();
   }
 
+  // Initialization barrier: publish all rank buffers before reading peers.
+  // If any rank failed, none may dereference its incomplete model.
+  {
+    std::unique_lock<std::mutex> lock(ts.load_mutex);
+    ++ts.loaded_count;
+    ts.load_cv.notify_all();
+    ts.load_cv.wait(lock, [&] { return ts.loaded_count == world_size; });
+    if (ts.load_error) {
+      ++ts.ready_count;
+      ts.load_cv.notify_all();
+      return;
+    }
+  }
+
+  try {
+    model->initialize_peers(engine->models_);
+  } catch (...) {
+    model->set_error(std::current_exception());
+  }
   {
     std::lock_guard<std::mutex> lock(ts.load_mutex);
-    ts.loaded_count++;
+    ++ts.ready_count;
   }
-  ts.load_cv.notify_one();
+  ts.load_cv.notify_all();
+  if (model->error()) return;
 
   // Work loop.
   while (true) {
@@ -295,7 +312,7 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
   {
     std::unique_lock<std::mutex> lock(ts.load_mutex);
     ts.load_cv.wait(lock, [&] {
-      return ts.loaded_count == static_cast<int>(mc.tp_degree);
+      return ts.ready_count == static_cast<int>(mc.tp_degree);
     });
   }
   st.load_ms = load_timer.ms();
@@ -319,24 +336,6 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
     for (auto& t : out.workers_)
       if (t.joinable()) t.join();
     std::rethrow_exception(err);
-  }
-
-  // Broker the cross-rank pointer exchange: every rank's Trunk io buffer and
-  // allreduce flag word are allocated and stable now, so collect the
-  // pointers and broadcast a SetPeerIo work item (each Model builds its
-  // device-side pointer tables + pipe-path scratch from them). This must
-  // happen before the first ForwardRun. (Single-process: device pointers are
-  // plain shareable values; the main thread reads them with no device call.)
-  if (mc.tp_degree > 1) {
-    gpu::WorkItem w;
-    w.kind = gpu::WorkItem::Kind::SetPeerIo;
-    w.peer_io.resize(mc.tp_degree);
-    w.peer_flags.resize(mc.tp_degree);
-    for (uint32_t r = 0; r < mc.tp_degree; ++r) {
-      w.peer_io[r] = out.models_[r]->io_ptr();
-      w.peer_flags[r] = out.models_[r]->ar_flag_ptr();
-    }
-    out.submit_work(w);
   }
 
   out.sampler_ = std::make_unique<Sampler>(sc);

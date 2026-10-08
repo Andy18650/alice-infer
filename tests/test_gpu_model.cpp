@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <gtest/gtest.h>
+#include <hip/hip_runtime_api.h>
 #include <nlohmann/json.hpp>
 
 #include "alice/engine_config.hpp"
@@ -118,6 +119,23 @@ TEST(GpuModel, Canonical1BTeacherForced) {
   cfg.max_seq_len = 4096;
   auto engine = load_packed(kPacked1B, cfg);
   run_teacher_forced(engine, fixture("canonical", ""), cfg.max_prefill_chunk, 3);
+}
+
+TEST(GpuModel, Canonical1BTp2Initialization) {
+  if (!have_packed(kPacked1B, "canonical"))
+    GTEST_SKIP() << "no packed 1B model or canonical fixtures";
+  int devices = 0;
+  ASSERT_EQ(hipGetDeviceCount(&devices), hipSuccess);
+  if (devices < 2) GTEST_SKIP() << "requires two GPUs";
+  alice::ModelConfig cfg;
+  cfg.max_seq_len = 4096;
+  cfg.tp_degree = 2;
+  // Reinitialize in the same process: peer tables must be installed before
+  // the first forward on each fresh engine, without a setup WorkItem.
+  for (int attempt = 0; attempt < 2; ++attempt) {
+    auto engine = load_packed(kPacked1B, cfg);
+    run_teacher_forced(engine, fixture("canonical", ""), cfg.max_prefill_chunk, 3);
+  }
 }
 
 TEST(GpuModel, Canonical8BTeacherForced) {

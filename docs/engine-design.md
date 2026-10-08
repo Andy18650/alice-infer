@@ -21,7 +21,12 @@ workspace (user clarification, 2026-10). The grow API is removed; ROCm
 weight constructors now allocate/free their own temporary device repack
 staging during loading. Named allocations have one owner (`named_`),
 separate from the arena/on-demand allocation ledger, fixing double-free
-at teardown.
+at teardown. P2P peer-table installation is now part of worker
+initialization: all ranks finish loading before workers read peer pointers,
+then each installs its tables on its owner thread before reporting ready.
+`WorkItem` carries only execution commands and tokens, not a one-time
+`SetPeerIo` operation or peer-pointer payloads. The engine waits for complete
+initialization before accepting forward work; graph launch remains deferred.
 
 ## 1. Purpose & target
 

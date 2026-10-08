@@ -160,39 +160,42 @@ void Model::execute(const WorkItem& work) {
             sb->reset_state();
         break;
       }
-      case WorkItem::Kind::SetPeerIo: {
-        // One-time cross-rank pointer exchange (brokered by the Engine after
-        // load). Build the device-side io/flag pointer tables the allreduce
-        // kernels index, and the pipe-path result scratch (sized for the
-        // largest pass). Peer access was already enabled pairwise by the
-        // Engine (serially, post-load — concurrent enable + hipMalloc trips
-        // an HSA assert).
-        auto ck = [](hipError_t e, const char* what) {
-          if (e != hipSuccess)
-            fail(std::string(what) + ": " + hipGetErrorString(e));
-        };
-        ck(hipMalloc(&ar_ios_dev_, sizeof(float*) * world_size_),
-           "ar_ios_dev hipMalloc");
-        ck(hipMemcpy(ar_ios_dev_, work.peer_io.data(),
-                     sizeof(float*) * world_size_, hipMemcpyHostToDevice),
-           "ar_ios_dev hipMemcpy");
-        ck(hipMalloc(&ar_flags_dev_, sizeof(uint64_t*) * world_size_),
-           "ar_flags_dev hipMalloc");
-        ck(hipMemcpy(ar_flags_dev_, work.peer_flags.data(),
-                     sizeof(uint64_t*) * world_size_, hipMemcpyHostToDevice),
-           "ar_flags_dev hipMemcpy");
-        ck(hipMalloc(&ar_scratch_,
-                     size_t(cfg_.max_prefill_chunk) * hidden_dim_ *
-                         sizeof(float)),
-           "ar_scratch hipMalloc");
-        break;
-      }
       case WorkItem::Kind::Stop:
         break;
     }
   } catch (...) {
     error_ = std::current_exception();
   }
+}
+
+void Model::initialize_peers(std::span<const std::unique_ptr<Model>> peers) {
+  if (world_size_ <= 1) return;
+  if (peers.size() != static_cast<size_t>(world_size_))
+    fail("peer count does not match world_size");
+
+  // Every rank has loaded; its io and flag addresses are stable. Peer access
+  // was enabled before allocations. Only pointer tables are copied here,
+  // not peer data; remote reads happen in the allreduce kernels.
+  std::vector<float*> ios;
+  std::vector<uint64_t*> flags;
+  for (const auto& peer : peers) {
+    ios.push_back(peer->trunk_->io());
+    flags.push_back(peer->ar_flag_);
+  }
+  auto ck = [](hipError_t e, const char* what) {
+    if (e != hipSuccess)
+      fail(std::string(what) + ": " + hipGetErrorString(e));
+  };
+  ck(hipMalloc(&ar_ios_dev_, sizeof(float*) * world_size_),
+     "ar_ios_dev hipMalloc");
+  ck(hipMemcpy(ar_ios_dev_, ios.data(), sizeof(float*) * world_size_,
+               hipMemcpyHostToDevice), "ar_ios_dev hipMemcpy");
+  ck(hipMalloc(&ar_flags_dev_, sizeof(uint64_t*) * world_size_),
+     "ar_flags_dev hipMalloc");
+  ck(hipMemcpy(ar_flags_dev_, flags.data(), sizeof(uint64_t*) * world_size_,
+               hipMemcpyHostToDevice), "ar_flags_dev hipMemcpy");
+  ck(hipMalloc(&ar_scratch_, size_t(cfg_.max_prefill_chunk) * hidden_dim_ *
+                              sizeof(float)), "ar_scratch hipMalloc");
 }
 
 void Model::load(int rank, int world_size,
@@ -352,7 +355,7 @@ void Model::load(int rank, int world_size,
   st.blocks = blocks_.size();
 
   // Device-flag allreduce: my fine-grained flag word (world_size > 1). Must
-  // exist before the Engine brokers the SetPeerIo pointer exchange; zeroed
+  // exist before the load barrier and initialize_peers(); zeroed
   // (epoch counters start at 0, first allreduce uses values 1 and 2).
   if (world_size_ > 1) {
     hipError_t e = hipExtMallocWithFlags(reinterpret_cast<void**>(&ar_flag_),

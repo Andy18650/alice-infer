@@ -38,17 +38,10 @@ struct WorkItem {
     ForwardLogits,
     ForwardLogitsAll,
     Reset,
-    SetPeerIo,  // one-time: hand every rank the io + flag pointer arrays for
-                // the device-flag allreduce
     Stop,
   };
   Kind kind = Kind::Stop;
   std::vector<int32_t> tokens;
-  // SetPeerIo payload (stable for the session). peer_io[r] is rank r's
-  // device io pointer (allocated once in the Trunk ctor); peer_flags[r] is
-  // rank r's fine-grained device flag word for the device-flag allreduce.
-  std::vector<float*> peer_io;
-  std::vector<uint64_t*> peer_flags;
 };
 
 class Model {
@@ -66,12 +59,9 @@ class Model {
   // Execute one work item. Called by the worker thread.
   void execute(const WorkItem& work);
 
-  // This rank's device io pointer (the Trunk buffer, stable for the session).
-  // The Engine reads it after load to broker the cross-rank pointer exchange.
-  float* io_ptr() const { return trunk_->io(); }
-  // This rank's fine-grained allreduce flag word (allocated at load when
-  // world_size > 1; stable for the session). Same brokering as io_ptr.
-  uint64_t* ar_flag_ptr() const { return ar_flag_; }
+  // Complete initialization in the owner worker, after every rank has loaded.
+  // Installs device pointer tables for P2P allreduce; not a runtime command.
+  void initialize_peers(std::span<const std::unique_ptr<Model>> peers);
 
   // Result/error accessors (read by the Engine after the completion barrier).
   const std::vector<float>& last_logits() const { return result_logits_; }

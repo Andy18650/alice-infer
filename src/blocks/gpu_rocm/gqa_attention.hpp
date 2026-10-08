@@ -5,9 +5,6 @@
 // attention over the device-resident fp32 KV cache, o_proj (rocBLAS) into
 // io. State: KV cache + private position counter (StatefulBlock).
 
-// hipStream_t forward declaration (matches hip_runtime_api.h).
-typedef struct ihipStream_t* hipStream_t;
-
 #include "../block.hpp"
 
 #include "../../gpu/resources.hpp"
@@ -50,7 +47,6 @@ class GqaAttentionBF16 final : public block::StatefulBlock {
   float* dsplit_ = nullptr;  // split-T partials [kAttnMaxSplits*nh*kAttnSplitMaxS*(hd+2)]
   float* dgemv_ = nullptr;   // S=1 GEMV partials (max of the two sites' needs)
   float* prefill_scratch_ = nullptr;  // shared v4 prefill partials (not owned)
-  hipStream_t stream_ = nullptr;  // rank compute stream (Resources)
   rocblas_handle handle_ = nullptr;   // borrowed from the Model's Resources
 };
 

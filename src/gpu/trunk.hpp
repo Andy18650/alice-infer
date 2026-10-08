@@ -7,9 +7,6 @@
 #include <cstdint>
 #include <vector>
 
-// hipStream_t forward declaration (matches hip_runtime_api.h).
-typedef struct ihipStream_t* hipStream_t;
-
 #include "alice/tensor.hpp"
 
 namespace alice::gpu {
@@ -21,8 +18,7 @@ class RmsNormAddTrunk {
   // trunk is the one component whose weights are a homogeneous set — it
   // takes the staging vector itself, unlike few-role blocks that take
   // single staged tensors positionally.)
-  RmsNormAddTrunk(hipStream_t stream, std::vector<Tensor<bf16>> pre_norms,
-                   Tensor<bf16> final_norm, float eps,
+  RmsNormAddTrunk(std::vector<Tensor<bf16>> pre_norms, Tensor<bf16> final_norm, float eps,
                   uint32_t hidden, uint32_t max_prefill_chunk);
   ~RmsNormAddTrunk();
 
@@ -36,7 +32,6 @@ class RmsNormAddTrunk {
   void output();             // io = rmsnorm(residual, gamma_final)
 
  private:
-  hipStream_t stream_ = nullptr;  // the rank's compute stream (Resources)
   uint32_t d_ = 0, mpc_ = 0, S_ = 0;
   float eps_ = 0;
   float* residual_ = nullptr;

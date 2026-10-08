@@ -6,9 +6,6 @@
 // silu-mul, down GEMM into io), no host staging — the stream never leaves
 // the device.
 
-// hipStream_t forward declaration (matches hip_runtime_api.h).
-typedef struct ihipStream_t* hipStream_t;
-
 #include "../block.hpp"
 
 #include "../../gpu/resources.hpp"
@@ -40,7 +37,6 @@ class DenseFfnBF16 final : public block::Block {
   float* dgu_ = nullptr;     // fp32 [mpc, 2I] (col-major [2I, S] view)
   void* dact_ = nullptr;     // bf16 [mpc, I]
   float* dgemv_ = nullptr;   // S=1 GEMV partials (max of the two sites' needs)
-  hipStream_t stream_ = nullptr;  // rank compute stream (Resources)
   rocblas_handle handle_ = nullptr;  // borrowed from the Model's Resources
 };
 

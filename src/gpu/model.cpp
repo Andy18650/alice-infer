@@ -95,18 +95,14 @@ void Model::allreduce(float* io, uint32_t S) {
   ar_epoch_ += 2;
   constexpr uint32_t kFusedMaxFloats = 16384;  // 64 KB (measured crossover)
   if (n <= kFusedMaxFloats) {
-    kernels::ar_fused_f4(resources_->stream(), io, ar_ios_dev_, ar_flag_,
-                         ar_flags_dev_, world_size_, rank_, n, vprod, vcons);
+    kernels::ar_fused_f4(io, ar_ios_dev_, ar_flag_, ar_flags_dev_, world_size_,
+                         rank_, n, vprod, vcons);
   } else {
-    kernels::ar_flagbar(resources_->stream(), ar_flag_, ar_flags_dev_, world_size_,
-                        rank_, vprod);
-    kernels::ar_gather_f4(resources_->stream(), ar_ios_dev_, ar_scratch_, world_size_,
-                          n);
-    kernels::ar_flagbar(resources_->stream(), ar_flag_, ar_flags_dev_, world_size_,
-                        rank_, vcons);
+    kernels::ar_flagbar(ar_flag_, ar_flags_dev_, world_size_, rank_, vprod);
+    kernels::ar_gather_f4(ar_ios_dev_, ar_scratch_, world_size_, n);
+    kernels::ar_flagbar(ar_flag_, ar_flags_dev_, world_size_, rank_, vcons);
     const hipError_t e = hipMemcpyAsync(io, ar_scratch_, size_t(n) * 4,
-                                        hipMemcpyDeviceToDevice,
-                                        resources_->stream());
+                                        hipMemcpyDeviceToDevice, 0);
     if (e != hipSuccess)
       fail(std::string("allreduce copy: ") + hipGetErrorString(e));
   }
@@ -142,9 +138,8 @@ void Model::execute(const WorkItem& work) {
         const float* logits = run(work.tokens, false);
         const size_t v = lm_head_->vocab();
         result_logits_.resize(v);
-        hipError_t e = hipMemcpyAsync(result_logits_.data(), logits, v * sizeof(float),
-                                      hipMemcpyDeviceToHost, resources_->stream());
-        if (e == hipSuccess) e = hipStreamSynchronize(resources_->stream());
+        const hipError_t e = hipMemcpy(result_logits_.data(), logits, v * sizeof(float),
+                                       hipMemcpyDeviceToHost);
         if (e != hipSuccess)
           fail(std::string("logits D2H failed: ") + hipGetErrorString(e));
         break;
@@ -153,9 +148,8 @@ void Model::execute(const WorkItem& work) {
         const float* logits = run(work.tokens, true);
         const size_t n = work.tokens.size() * size_t(lm_head_->vocab());
         result_logits_.resize(n);
-        hipError_t e = hipMemcpyAsync(result_logits_.data(), logits, n * sizeof(float),
-                                      hipMemcpyDeviceToHost, resources_->stream());
-        if (e == hipSuccess) e = hipStreamSynchronize(resources_->stream());
+        const hipError_t e = hipMemcpy(result_logits_.data(), logits, n * sizeof(float),
+                                       hipMemcpyDeviceToHost);
         if (e != hipSuccess)
           fail(std::string("logits D2H failed: ") + hipGetErrorString(e));
         break;
@@ -308,8 +302,7 @@ void Model::load(int rank, int world_size,
     data_loader.fetch(mm.id, [&](std::span<const std::byte> blob) {
       Timer tc;
       embedder_ = std::make_unique<Embedder>(
-          resources_->stream(), blob_to_tensor(blob, vocab, d, "embedder"),
-          cfg_.max_prefill_chunk);
+          blob_to_tensor(blob, vocab, d, "embedder"), cfg_.max_prefill_chunk);
       st.construct_ms += tc.ms();
     });
     hidden_dim_ = d;
@@ -334,8 +327,8 @@ void Model::load(int rank, int world_size,
         pre_norms.push_back(Tensor<bf16>::copy_of(p + i * d, 1, d));
       auto final_norm = Tensor<bf16>::copy_of(p + npre * d, 1, d);
       trunk_ = std::make_unique<RmsNormAddTrunk>(
-          resources_->stream(), std::move(pre_norms), std::move(final_norm), eps,
-          d, cfg_.max_prefill_chunk);
+          std::move(pre_norms), std::move(final_norm), eps, d,
+          cfg_.max_prefill_chunk);
       st.construct_ms += tc.ms();
     });
   }
@@ -346,7 +339,7 @@ void Model::load(int rank, int world_size,
     data_loader.fetch(mm.id, [&](std::span<const std::byte> blob) {
       Timer tc;
       lm_head_ = std::make_unique<LmHead>(
-          resources_->stream(), blob_to_tensor(blob, vocab, d, "language_head"),
+          blob_to_tensor(blob, vocab, d, "language_head"),
           cfg_.max_prefill_chunk, resources_->handle());
       st.construct_ms += tc.ms();
     });

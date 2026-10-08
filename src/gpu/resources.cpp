@@ -46,18 +46,6 @@ Resources::Resources(int rank, int world_size)
   arch_ = arch_.substr(0, arch_.find(':'));
   if (rocblas_create_handle(&handle_) != rocblas_status_success)
     fail("rocblas_create_handle failed");
-  // The rank's explicit compute stream (see stream() in resources.hpp).
-  // hipStreamNonBlocking: NO implicit synchronization with the legacy
-  // default stream — every piece of stream-ordered work (kernels, BLAS,
-  // async copies) is explicitly ordered on this stream, and result
-  // gathering uses hipMemcpyAsync + hipStreamSynchronize(stream). This
-  // avoids the legacy implicit-sync launch tax (~2-5% at 1B, measured)
-  // and keeps the graph replay shape clean: replay -> async D2H ->
-  // stream sync -> host sample.
-  if (hipStreamCreateWithFlags(&stream_, hipStreamNonBlocking) != hipSuccess)
-    fail("hipStreamCreateWithFlags failed");
-  if (rocblas_set_stream(handle_, stream_) != rocblas_status_success)
-    fail("rocblas_set_stream failed");
   // Note: hipDeviceEnablePeerAccess is NOT called here. Enabling the HSA peer
   // mapping racing the 4 concurrent per-rank hipMallocs during weight load
   // trips a runtime MappedHandleAllowedAgent assert on this stack. The
@@ -66,7 +54,6 @@ Resources::Resources(int rank, int world_size)
 }
 
 Resources::~Resources() {
-  if (stream_) (void)hipStreamDestroy(stream_);
   for (auto& [p, n] : ledger_)
     if (p) (void)hipFree(p);
   for (auto& [name, np] : named_)

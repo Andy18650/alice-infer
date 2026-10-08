@@ -66,8 +66,7 @@ void build_rope_tables(float* cos_t, float* sin_t, uint32_t max_seq, uint32_t he
 GqaAttentionBF16::GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, TensorView<bf16> wv,
                                    TensorView<bf16> wo, const block::GqaAttentionConfig& cfg,
                                    const ModelConfig& mc, gpu::Resources& res)
-    : stream_(res.stream()),
-      hd_(cfg.qk_dim),
+    : hd_(cfg.qk_dim),
       d_(cfg.io_dim),
       max_seq_(mc.max_seq_len),
       mpc_(mc.max_prefill_chunk),
@@ -110,10 +109,10 @@ GqaAttentionBF16::GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, Ten
   void* staging = res.named_at_least("wpack_stage", qkv.size() * sizeof(bf16));
   HIP_CHECK(hipMemcpy(staging, qkv.data(), qkv.size() * sizeof(bf16),
                       hipMemcpyHostToDevice));
-  kernels::repack_to_col_major(stream_, staging, dw_qkv_, qkvd_, d_);
+  kernels::repack_to_col_major(staging, dw_qkv_, qkvd_, d_);
   HIP_CHECK(hipMemcpy(staging, wo_contig.data(), wo_contig.size() * sizeof(bf16),
                       hipMemcpyHostToDevice));
-  kernels::repack_to_col_major(stream_, staging, dw_o_, d_, qd);
+  kernels::repack_to_col_major(staging, dw_o_, d_, qd);
 
   dkcache_ = static_cast<float*>(res.alloc(size_t(max_seq_) * kvd * sizeof(float)));
   dvcache_ = static_cast<float*>(res.alloc(size_t(max_seq_) * kvd * sizeof(float)));
@@ -160,19 +159,17 @@ void GqaAttentionBF16::forward(float* io, uint32_t S) {
     // weights — see kernels.hpp; the fp32 stream is quantized in-register
     // (qkv site), so the f32_to_bf16 launch disappears from the decode
     // path).
-    kernels::gemv_cm_x_f32(stream_, dw_qkv_, io, dqkv_, dgemv_, qkvd, d_);
-    kernels::rope_append(stream_, dqkv_, dkcache_, dvcache_, drope_cos_, drope_sin_,
-                         pos_, S, nh_,
+    kernels::gemv_cm_x_f32(dw_qkv_, io, dqkv_, dgemv_, qkvd, d_);
+    kernels::rope_append(dqkv_, dkcache_, dvcache_, drope_cos_, drope_sin_, pos_, S, nh_,
                          nkv_, hd_);
-    kernels::attention(stream_, dqkv_, dkcache_, dvcache_, dattn_, dsplit_,
-                       prefill_scratch_,
+    kernels::attention(dqkv_, dkcache_, dvcache_, dattn_, dsplit_, prefill_scratch_,
                        pos_, S, nh_, nkv_, hd_, scale_);
-    kernels::gemv_cm_x_bf16(stream_, dw_o_, dattn_, io, dgemv_, d_, qd);
+    kernels::gemv_cm_x_bf16(dw_o_, dattn_, io, dgemv_, d_, qd);
     pos_ += S;
     return;
   }
 
-  kernels::f32_to_bf16(stream_, io, dx_, size_t(S) * d_);
+  kernels::f32_to_bf16(io, dx_, size_t(S) * d_);
   const float alpha = 1.0f, beta = 0.0f;
   // fused QKV, col-major weights: C'[qkvd, S] = [Wq;Wk;Wv]_cm . x^T (op=N)
   RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_none, rocblas_operation_none,
@@ -180,11 +177,9 @@ void GqaAttentionBF16::forward(float* io, uint32_t S) {
                            rocblas_datatype_bf16_r, d_, &beta, dqkv_,
                            rocblas_datatype_f32_r, qkvd, dqkv_, rocblas_datatype_f32_r,
                            qkvd, rocblas_datatype_f32_r, rocblas_gemm_algo_standard, 0, 0));
-  kernels::rope_append(stream_, dqkv_, dkcache_, dvcache_, drope_cos_, drope_sin_, pos_,
-                       S, nh_,
+  kernels::rope_append(dqkv_, dkcache_, dvcache_, drope_cos_, drope_sin_, pos_, S, nh_,
                        nkv_, hd_);
-  kernels::attention(stream_, dqkv_, dkcache_, dvcache_, dattn_, dsplit_,
-                     prefill_scratch_, pos_,
+  kernels::attention(dqkv_, dkcache_, dvcache_, dattn_, dsplit_, prefill_scratch_, pos_,
                      S, nh_, nkv_, hd_, scale_);
   // o_proj into io, col-major weights: C'[d, S] = Wo_cm . attn^T (op=N)
   RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_none, rocblas_operation_none,

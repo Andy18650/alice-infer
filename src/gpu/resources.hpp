@@ -70,14 +70,6 @@ class Resources {
   void init_scratch(size_t bytes);
   float* scratch() const { return scratch_; }
 
-  // The rank's compute stream: ALL rank kernels, BLAS calls, and async
-  // copies are ordered on this stream (never the legacy default stream —
-  // the legacy stream is implicitly synchronizing AND not capturable;
-  // the S=1 decode graph captures on this stream at init). Created
-  // non-blocking after hipSetDevice(rank); the rocBLAS handle is bound to
-  // it at construction.
-  hipStream_t stream() const { return stream_; }
-
   // Named-buffer interner (workspace pattern): same name + size -> same ptr
   // (intended sharing; the strictly-sequential model loop makes time-sharing
   // safe); same name + different size -> loud failure. The name is the
@@ -93,7 +85,6 @@ class Resources {
 
  private:
   int rank_ = 0;
-  hipStream_t stream_ = nullptr;
   int world_size_ = 1;
   std::string arch_;
   BlasHandle handle_ = nullptr;

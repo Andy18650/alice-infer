@@ -112,12 +112,19 @@ process, i.e. the library era).
 A per-context object (one per device/thread context; multi-GPU later)
 passed down through the factories. Two facilities:
 
-**Named buffers** — `named(name, bytes) → device ptr`: an interner
-(workspace pattern). Same name + same size → same pointer (intended
-sharing; the strictly-sequential model loop makes time-sharing safe).
-Same name + different size → loud load failure. **The name is the
-sharing contract**: a collision is always intended aliasing, never an
-accident to disambiguate.
+**Named buffers** — `named(name, bytes) → device ptr`: fixed-size state
+for layers to communicate beyond the residual stream (user clarification,
+2026-10), not temporary workspace. Same name + same size → same stable
+pointer. Same name + different size → loud load failure; there is no grow
+API. **The name is the sharing contract**: a collision is always intended
+aliasing, never an accident to disambiguate. The named-buffer table owns
+these allocations until teardown; they are not also owned by the arena /
+on-demand allocation ledger.
+
+Temporary device staging for column-major weight repacking is allocated
+with `hipMalloc` in each ROCm block's weight-loading constructor and freed
+with scoped `hipFree` after the repack completes, also on exception. It
+never enters the named-buffer table or survives into inference.
 
 **The scratch buffer** — one anonymous per-GPU buffer, assumed fully
 overwritten during each block's `forward()`. Sizing is **max over

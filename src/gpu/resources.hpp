@@ -10,7 +10,7 @@
 // handle()/scratch() at construction; forward() uses the borrowed values,
 // never the Resources object. Session-scoped: destroyed after the components
 // (Model's member order puts resources_ ahead of blocks_), freeing
-// everything in the ledger.
+// its arena/on-demand allocations, named layer buffers, and scratch.
 //
 // This first cut is on-demand allocation (hipMalloc per alloc, ledger-tracked
 // + OOM context). The arena optimization — plan via factory device_bytes(),
@@ -70,18 +70,11 @@ class Resources {
   void init_scratch(size_t bytes);
   float* scratch() const { return scratch_; }
 
-  // Named-buffer interner (workspace pattern): same name + size -> same ptr
-  // (intended sharing; the strictly-sequential model loop makes time-sharing
-  // safe); same name + different size -> loud failure. The name is the
-  // sharing contract. (Reserved for future shared transients; unused in v1.)
+  // Fixed-size named buffers let layers share information beyond the residual
+  // stream. Same name + size -> same ptr; same name + different size -> loud
+  // failure. The name is the sharing contract; pointers never grow or change.
+  // Resources owns them until teardown. Not for temporary loading workspace.
   void* named(const std::string& name, size_t bytes);
-
-  // Like named(), but a request smaller than the existing buffer succeeds
-  // (returns it); a request LARGER than the existing buffer allocates a
-  // bigger replacement (the old one stays in the ledger, freed at teardown).
-  // For shared load-time staging (the col-major weight repack) whose size
-  // varies by matrix: first big allocation wins.
-  void* named_at_least(const std::string& name, size_t bytes);
 
  private:
   int rank_ = 0;
@@ -94,9 +87,10 @@ class Resources {
   std::byte* arena_ = nullptr;
   size_t arena_cap_ = 0;
   size_t arena_offset_ = 0;
-  // Owned allocations freed at teardown (on-demand alloc + named + the arena
-  // base). scratch_ is freed separately (it carries the §14 poison invariant).
+  // Arena base + on-demand alloc() allocations, owned until teardown.
+  // scratch_ and named_ own their separate allocations, outside this ledger.
   std::vector<std::pair<void*, size_t>> ledger_;
+  // Fixed-size inter-layer buffers, indexed by name and owned here.
   std::vector<std::pair<std::string, std::pair<void*, size_t>>> named_;
 };
 

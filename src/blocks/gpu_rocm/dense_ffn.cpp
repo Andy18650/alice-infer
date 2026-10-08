@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
@@ -69,16 +70,20 @@ DenseFfnBF16::DenseFfnBF16(TensorView<bf16> w_gate, TensorView<bf16> w_up, Tenso
   // Column-major repack (2026-10, research/decode-roofline [10]): the S=1
   // GEMV reads W_cm[k*N+n] as uint32 row-pairs (coalesced 256 B wave
   // accesses); the S>1 gemm_ex consumes the same layout with op=N, lda=N.
-  // Repack on device: H2D the row-major blob into the shared staging, then
-  // the repack kernel writes the final col-major weight. Stream-ordered, so
-  // the staging is reusable immediately.
-  void* staging = res.named_at_least("wpack_stage", gup.size() * sizeof(bf16));
-  HIP_CHECK(hipMemcpy(staging, gup.data(), gup.size() * sizeof(bf16),
+  // Temporary device staging belongs to weight loading, not named layer
+  // state. The fused gate/up matrix is the larger upload. Copies and repacks
+  // use the default stream; complete the repack before releasing staging.
+  void* staging_ptr = nullptr;
+  HIP_CHECK(hipMalloc(&staging_ptr, gup.size() * sizeof(bf16)));
+  std::unique_ptr<void, decltype(&hipFree)> staging(staging_ptr, &hipFree);
+  HIP_CHECK(hipMemcpy(staging.get(), gup.data(), gup.size() * sizeof(bf16),
                       hipMemcpyHostToDevice));
-  kernels::repack_to_col_major(staging, dw_gup_, 2 * inter_, d_);
-  HIP_CHECK(hipMemcpy(staging, down_contig.data(), down_contig.size() * sizeof(bf16),
+  kernels::repack_to_col_major(staging.get(), dw_gup_, 2 * inter_, d_);
+  HIP_CHECK(hipMemcpy(staging.get(), down_contig.data(), down_contig.size() * sizeof(bf16),
                       hipMemcpyHostToDevice));
-  kernels::repack_to_col_major(staging, dw_down_, d_, inter_);
+  kernels::repack_to_col_major(staging.get(), dw_down_, d_, inter_);
+  HIP_CHECK(hipStreamSynchronize(nullptr));
+  // staging's RAII deleter calls hipFree on success or exception.
 }
 
 DenseFfnBF16::~DenseFfnBF16() {

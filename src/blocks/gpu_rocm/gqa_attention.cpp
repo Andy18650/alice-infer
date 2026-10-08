@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
@@ -103,16 +104,23 @@ GqaAttentionBF16::GqaAttentionBF16(TensorView<bf16> wq, TensorView<bf16> wk, Ten
   // Column-major repack (2026-10, research/decode-roofline [10]): the S=1
   // GEMV reads W_cm[k*N+n] as uint32 row-pairs (coalesced 256 B wave
   // accesses); the S>1 gemm_ex consumes the same layout with op=N, lda=N.
-  // H2D row-major into the shared staging, repack kernel writes the final
-  // col-major weight. Stream-ordered; staging is immediately reusable.
-  const uint32_t qkvd_ = qd + 2 * kvd;
-  void* staging = res.named_at_least("wpack_stage", qkv.size() * sizeof(bf16));
-  HIP_CHECK(hipMemcpy(staging, qkv.data(), qkv.size() * sizeof(bf16),
-                      hipMemcpyHostToDevice));
-  kernels::repack_to_col_major(staging, dw_qkv_, qkvd_, d_);
-  HIP_CHECK(hipMemcpy(staging, wo_contig.data(), wo_contig.size() * sizeof(bf16),
-                      hipMemcpyHostToDevice));
-  kernels::repack_to_col_major(staging, dw_o_, d_, qd);
+  // Temporary device staging belongs to weight loading, not named layer
+  // state. QKV is the larger upload. Copies and repacks use the default
+  // stream; release staging before allocating the attention state below.
+  {
+    const uint32_t qkvd_ = qd + 2 * kvd;
+    void* staging_ptr = nullptr;
+    HIP_CHECK(hipMalloc(&staging_ptr, qkv.size() * sizeof(bf16)));
+    std::unique_ptr<void, decltype(&hipFree)> staging(staging_ptr, &hipFree);
+    HIP_CHECK(hipMemcpy(staging.get(), qkv.data(), qkv.size() * sizeof(bf16),
+                        hipMemcpyHostToDevice));
+    kernels::repack_to_col_major(staging.get(), dw_qkv_, qkvd_, d_);
+    HIP_CHECK(hipMemcpy(staging.get(), wo_contig.data(), wo_contig.size() * sizeof(bf16),
+                        hipMemcpyHostToDevice));
+    kernels::repack_to_col_major(staging.get(), dw_o_, d_, qd);
+    HIP_CHECK(hipStreamSynchronize(nullptr));
+    // staging's RAII deleter calls hipFree on success or exception.
+  }
 
   dkcache_ = static_cast<float*>(res.alloc(size_t(max_seq_) * kvd * sizeof(float)));
   dvcache_ = static_cast<float*>(res.alloc(size_t(max_seq_) * kvd * sizeof(float)));

@@ -16,6 +16,12 @@ above — research/p2p-allreduce/atomics.md; RCCL is retired from the
 engine), and sampling now runs on the host inside Engine. The Canonical
 system RCCL build is broken for multi-rank collectives (validated via the
 AMD-lineage overlay in research/rocm-overlay-method.md).
+Named buffers are fixed-size inter-layer communication state, not loading
+workspace (user clarification, 2026-10). The grow API is removed; ROCm
+weight constructors now allocate/free their own temporary device repack
+staging during loading. Named allocations have one owner (`named_`),
+separate from the arena/on-demand allocation ledger, fixing double-free
+at teardown.
 
 ## 1. Purpose & target
 
@@ -254,6 +260,14 @@ Narrow entry that sniffs format by content and delegates
 - No allocation during `forward`; everything is sized at load.
 - Private buffers per component — device allocations now: weights,
   state, transients.
+- Named buffers allow layers to communicate beyond the residual stream.
+  Same name + size returns the same stable pointer; any size disagreement
+  fails loudly. They never grow and live until model teardown. They are
+  separate from the block arena and attention scratch, and are not a
+  temporary-workspace allocator.
+- Column-major weight repacking uses constructor-local device staging
+  (`hipMalloc`, scoped `hipFree`), released after repack completion during
+  loading, including on exception. No repack staging survives into inference.
 - The shared stream buffers (residual, io) are device allocations owned
   by the Trunk, `[max_prefill_chunk, d]` fp32. One more cross-block
   sharing instance exists (2026-09, first §14 scratch-pool use): the v4

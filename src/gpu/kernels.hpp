@@ -45,16 +45,17 @@ void argmax(const float* x, size_t n, int32_t* out);
 void ar_flagbar(uint64_t* my_flag, uint64_t* const* flags, int ws, int rank,
                 uint64_t value);
 
-// out[i] = sum_j contribs[j][i] (float4, wide grid; out must be a separate
-// buffer, not any of the contribs). n divisible by 4.
-void ar_gather_f4(float* const* contribs, float* out, int ws, uint32_t n);
+// out[i] = sum_j contribs[j][slot_offset + i] (float4, wide grid).
+// out must not alias any published slot. n and slot_offset divisible by 4.
+// Slots remain immutable until all ranks complete the forward.
+void ar_gather_f4(float* const* contribs, float* out, int ws, uint32_t n,
+                  size_t slot_offset);
 
-// Fused single-block in-place allreduce (latency regime): produce barrier,
-// gather all ranks' contribs into registers, consume barrier, write io.
-// n divisible by 4 and <= 16384 floats (64 KB; 4 float4/thread at 1024
-// threads). vprod/vcons = this call's produce/consume epoch values.
-void ar_fused_f4(float* io, float* const* contribs, uint64_t* my_flag,
+// Fused single-block out-of-place allreduce: produced barrier + gather.
+// n divisible by 4 and <= 16384 floats (64 KB); slot_offset in floats,
+// divisible by 4. vprod identifies this collective; no consumed epoch.
+void ar_fused_f4(float* out, float* const* contribs, uint64_t* my_flag,
                  uint64_t* const* flags, int ws, int rank, uint32_t n,
-                 uint64_t vprod, uint64_t vcons);
+                 size_t slot_offset, uint64_t vprod);
 
 }  // namespace alice::gpu::kernels

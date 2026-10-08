@@ -55,8 +55,8 @@ float* RmsNormAddTrunk::begin_pass(uint32_t S) {
   return residual_;
 }
 
-void RmsNormAddTrunk::read(size_t block) {
-  kernels::rmsnorm(residual_, norms_ + block * d_, io_, S_, d_, eps_);
+void RmsNormAddTrunk::read(size_t block, float* dst) {
+  kernels::rmsnorm(residual_, norms_ + block * d_, dst, S_, d_, eps_);
 }
 
 void RmsNormAddTrunk::write(size_t /*block*/) {

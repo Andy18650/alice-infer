@@ -61,8 +61,8 @@ Model::Model(const ModelConfig& cfg) : cfg_(cfg) {}
 Model::~Model() {
   if (ar_flag_) (void)hipFree(ar_flag_);
   if (ar_flags_dev_) (void)hipFree(ar_flags_dev_);
-  if (ar_ios_dev_) (void)hipFree(ar_ios_dev_);
-  if (ar_scratch_) (void)hipFree(ar_scratch_);
+  if (ar_slabs_dev_) (void)hipFree(ar_slabs_dev_);
+  if (ar_contributions_) (void)hipFree(ar_contributions_);
 }
 
 // Device-flag P2P allreduce (replaces the retired rank-0 hipMemcpyPeer
@@ -74,37 +74,26 @@ Model::~Model() {
 // acquire per barrier emits a broadcast buffer_invl2 + L1 invalidate so the
 // reader can't hit stale lines). No host API on the critical path at all.
 //
-// Read-gather dataflow (producers only ever write their own io locally;
-// consumers do all cross-GCD traffic as float4 remote READS, the measured
-// fast path): every rank sums all ranks' io in slot order j = 0..ws-1, so
-// the result is bitwise-identical on all ranks.
+// Read-gather uses a distinct contribution slot for each block. Published
+// slots remain unchanged until every rank completes the forward; reductions
+// write the trunk's separate local io. No consumed epoch or copy-back is
+// needed. Every rank sums peers in j = 0..ws-1 order (bitwise-identical).
 //
-// Dispatch by payload (= S * hidden_dim_ * 4B), measured crossover at ~64
-// KB (flagprobe, ws=4):
-//   <= 64 KB (decode / tiny S): fused single-block kernel — produce
-//       barrier, gather into registers, consume barrier, in-place write.
-//       1 launch, ~18 us at ws=4 32 KB (vs RCCL ~53 us sync-per-call).
-//   > 64 KB (prefill): 4-launch pipe — flagbar, wide gather -> scratch,
-//       flagbar, copy scratch -> io. Wide grid scales LSU bandwidth
-//       (single block is one CU's memory pipe: 5-12x slower at MB sizes).
-void Model::allreduce(float* io, uint32_t S) {
+// The 64 KB crossover comes from research/p2p-allreduce's original in-place
+// implementation; retained provisionally for the out-of-place variant:
+//   <= 64 KB: one fused produced-barrier + gather kernel.
+//   > 64 KB: produced-barrier kernel + wide gather directly into local io.
+void Model::allreduce(float* out, uint32_t S, size_t slot_offset) {
   if (world_size_ <= 1) return;
   const uint32_t n = S * hidden_dim_;
-  const uint64_t vprod = ar_epoch_ + 1;
-  const uint64_t vcons = ar_epoch_ + 2;
-  ar_epoch_ += 2;
-  constexpr uint32_t kFusedMaxFloats = 16384;  // 64 KB (measured crossover)
+  const uint64_t vprod = ++ar_epoch_;
+  constexpr uint32_t kFusedMaxFloats = 16384;
   if (n <= kFusedMaxFloats) {
-    kernels::ar_fused_f4(io, ar_ios_dev_, ar_flag_, ar_flags_dev_, world_size_,
-                         rank_, n, vprod, vcons);
+    kernels::ar_fused_f4(out, ar_slabs_dev_, ar_flag_, ar_flags_dev_, world_size_,
+                         rank_, n, slot_offset, vprod);
   } else {
     kernels::ar_flagbar(ar_flag_, ar_flags_dev_, world_size_, rank_, vprod);
-    kernels::ar_gather_f4(ar_ios_dev_, ar_scratch_, world_size_, n);
-    kernels::ar_flagbar(ar_flag_, ar_flags_dev_, world_size_, rank_, vcons);
-    const hipError_t e = hipMemcpyAsync(io, ar_scratch_, size_t(n) * 4,
-                                        hipMemcpyDeviceToDevice, 0);
-    if (e != hipSuccess)
-      fail(std::string("allreduce copy: ") + hipGetErrorString(e));
+    kernels::ar_gather_f4(ar_slabs_dev_, out, world_size_, n, slot_offset);
   }
 }
 
@@ -116,9 +105,11 @@ const float* Model::run(std::span<const int32_t> tokens, bool all_positions) {
   float* residual = trunk_->begin_pass(S);
   embedder_->embed(tokens, residual);
   for (size_t i = 0; i < blocks_.size(); ++i) {
-    trunk_->read(i);
-    blocks_[i]->forward(trunk_->io(), S);
-    allreduce(trunk_->io(), S);
+    const size_t offset = i * ar_slot_stride_;
+    float* contribution = world_size_ > 1 ? ar_contributions_ + offset : trunk_->io();
+    trunk_->read(i, contribution);
+    blocks_[i]->forward(contribution, S);
+    allreduce(trunk_->io(), S, offset);
     trunk_->write(i);
   }
   trunk_->output();
@@ -132,6 +123,11 @@ void Model::execute(const WorkItem& work) {
     switch (work.kind) {
       case WorkItem::Kind::ForwardRun: {
         (void)run(work.tokens, false);
+        // Completion, not just submission: Engine waits for all workers before
+        // the next forward may overwrite any rank's published slab slots.
+        const hipError_t e = hipStreamSynchronize(nullptr);
+        if (e != hipSuccess)
+          fail(std::string("ForwardRun sync failed: ") + hipGetErrorString(e));
         break;
       }
       case WorkItem::Kind::ForwardLogits: {
@@ -173,29 +169,29 @@ void Model::initialize_peers(std::span<const std::unique_ptr<Model>> peers) {
   if (peers.size() != static_cast<size_t>(world_size_))
     fail("peer count does not match world_size");
 
-  // Every rank has loaded; its io and flag addresses are stable. Peer access
+  // Every rank has loaded; its slab and flag addresses are stable. Peer access
   // was enabled before allocations. Only pointer tables are copied here,
   // not peer data; remote reads happen in the allreduce kernels.
-  std::vector<float*> ios;
+  std::vector<float*> slabs;
   std::vector<uint64_t*> flags;
   for (const auto& peer : peers) {
-    ios.push_back(peer->trunk_->io());
+    if (peer->ar_slot_stride_ != ar_slot_stride_ || peer->blocks_.size() != blocks_.size())
+      fail("peer contribution slab layout does not match");
+    slabs.push_back(peer->ar_contributions_);
     flags.push_back(peer->ar_flag_);
   }
   auto ck = [](hipError_t e, const char* what) {
     if (e != hipSuccess)
       fail(std::string(what) + ": " + hipGetErrorString(e));
   };
-  ck(hipMalloc(&ar_ios_dev_, sizeof(float*) * world_size_),
-     "ar_ios_dev hipMalloc");
-  ck(hipMemcpy(ar_ios_dev_, ios.data(), sizeof(float*) * world_size_,
-               hipMemcpyHostToDevice), "ar_ios_dev hipMemcpy");
+  ck(hipMalloc(&ar_slabs_dev_, sizeof(float*) * world_size_),
+     "ar_slabs_dev hipMalloc");
+  ck(hipMemcpy(ar_slabs_dev_, slabs.data(), sizeof(float*) * world_size_,
+               hipMemcpyHostToDevice), "ar_slabs_dev hipMemcpy");
   ck(hipMalloc(&ar_flags_dev_, sizeof(uint64_t*) * world_size_),
      "ar_flags_dev hipMalloc");
   ck(hipMemcpy(ar_flags_dev_, flags.data(), sizeof(uint64_t*) * world_size_,
                hipMemcpyHostToDevice), "ar_flags_dev hipMemcpy");
-  ck(hipMalloc(&ar_scratch_, size_t(cfg_.max_prefill_chunk) * hidden_dim_ *
-                              sizeof(float)), "ar_scratch hipMalloc");
 }
 
 void Model::load(int rank, int world_size,
@@ -354,11 +350,26 @@ void Model::load(int rank, int world_size,
   st.hash_verifications = data_loader.hash_verifications();
   st.blocks = blocks_.size();
 
-  // Device-flag allreduce: my fine-grained flag word (world_size > 1). Must
-  // exist before the load barrier and initialize_peers(); zeroed
-  // (epoch counters start at 0, first allreduce uses values 1 and 2).
+  // TP contribution slots and my fine-grained flag must exist before the
+  // load barrier and initialize_peers(). One fixed slot per block; no slab
+  // for TP=1. Flags start at zero and increase once per collective.
   if (world_size_ > 1) {
-    hipError_t e = hipExtMallocWithFlags(reinterpret_cast<void**>(&ar_flag_),
+    if (hidden_dim_ % 4 != 0)
+      fail("P2P allreduce requires hidden_dim divisible by 4");
+    ar_slot_stride_ = size_t(cfg_.max_prefill_chunk) * hidden_dim_;
+    const size_t slab_bytes = blocks_.size() * ar_slot_stride_ * sizeof(float);
+    size_t free = 0, total = 0;
+    hipError_t e = hipMemGetInfo(&free, &total);
+    if (e != hipSuccess)
+      fail(std::string("contribution slab hipMemGetInfo: ") + hipGetErrorString(e));
+    if (slab_bytes > free)
+      fail("contribution slab needs " + std::to_string(slab_bytes) +
+           " bytes, only " + std::to_string(free) +
+           " free — reduce max_prefill_chunk");
+    e = hipMalloc(&ar_contributions_, slab_bytes);
+    if (e != hipSuccess)
+      fail(std::string("contribution slab hipMalloc: ") + hipGetErrorString(e));
+    e = hipExtMallocWithFlags(reinterpret_cast<void**>(&ar_flag_),
                                          sizeof(uint64_t),
                                          hipDeviceMallocFinegrained);
     if (e != hipSuccess)

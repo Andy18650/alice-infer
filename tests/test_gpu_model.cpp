@@ -133,8 +133,21 @@ TEST(GpuModel, Canonical1BTp2Initialization) {
   // Reinitialize in the same process: peer tables must be installed before
   // the first forward on each fresh engine, without a setup WorkItem.
   for (int attempt = 0; attempt < 2; ++attempt) {
+    cfg.max_prefill_chunk = attempt == 0 ? 512 : 4;
     auto engine = load_packed(kPacked1B, cfg);
+    // Large chunks exercise the wide collective; small chunks exercise the
+    // fused path and repeated slab reuse, with S=1 tested explicitly below.
     run_teacher_forced(engine, fixture("canonical", ""), cfg.max_prefill_chunk, 3);
+    if (attempt == 1) {
+      run_teacher_forced(engine, fixture("canonical", ""), 1, 3);
+      // Non-final prefill chunks use ForwardRun (no logits download). Those
+      // work items must complete GPU reads before the next chunk reuses slots.
+      const alice::engine::Engine::GenerateOptions opts{4, cfg.max_seq_len, 2};
+      const auto first = engine.generate("The capital of France is", opts);
+      const auto again = engine.generate("The capital of France is", opts);
+      EXPECT_EQ(first.text, again.text);
+      EXPECT_EQ(first.generated_tokens, again.generated_tokens);
+    }
   }
 }
 

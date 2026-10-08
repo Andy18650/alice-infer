@@ -85,14 +85,15 @@ class Model {
   int world_size_ = 1;
   uint64_t* ar_flag_ = nullptr;      // my fine-grained flag word (device)
   uint64_t** ar_flags_dev_ = nullptr;  // device table: flag ptr per rank
-  float** ar_ios_dev_ = nullptr;     // device table: io ptr per rank
-  float* ar_scratch_ = nullptr;      // pipe path: gather result (max_n floats)
-  uint64_t ar_epoch_ = 0;            // +2 per allreduce (produce/consume)
+  float** ar_slabs_dev_ = nullptr;   // device table: contribution slab per rank
+  float* ar_contributions_ = nullptr;  // one immutable published slot per block
+  size_t ar_slot_stride_ = 0;          // floats per slot, sized for max_prefill_chunk
+  uint64_t ar_epoch_ = 0;              // +1 per allreduce (produced only)
 
   std::vector<float> result_logits_;
   std::exception_ptr error_;
 
-  void allreduce(float* io, uint32_t S);
+  void allreduce(float* out, uint32_t S, size_t slot_offset);
   const float* run(std::span<const int32_t> tokens, bool all_positions);
 };
 

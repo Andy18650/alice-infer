@@ -109,6 +109,7 @@ if(ALICE_BUILD_TESTS)
   )
   target_sources(alice_tests PRIVATE tests/test_gpu_kernels.cpp
                                      tests/test_gpu_resources.cpp
+                                     tests/test_gpu_allreduce.cpp
                                      tests/test_gpu_blocks.cpp
                                      tests/test_gpu_model.cpp
                                      tests/test_hf_block_oracle.cpp

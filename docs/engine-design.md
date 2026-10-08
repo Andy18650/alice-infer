@@ -8,11 +8,13 @@ has moved into the engine, BOS/EOS metadata lives in the tokenizer, the
 data loader is thread-safe, the Model layer spawns one worker thread per
 tensor-parallel rank, TensorView carries a per-row stride with a host-side
 gather helper, block factories shard weights by tp_degree, blocks derive
-their local dimensions from the staged views, Model performs an in-place
+their local dimensions from the staged views, Model performs an out-of-place
 fp32 sum AllReduce after every block with a **device-flag P2P allreduce**
-(fine-grained device flags + system-scope atomic release/acquire,
-dispatched by payload: fused single-block kernel ≤64 KB, 4-kernel pipeline
-above — research/p2p-allreduce/atomics.md; RCCL is retired from the
+(fine-grained device flags + system-scope atomic release/acquire;
+one immutable contribution slot per block in a rank-local slab,
+produced-only epochs, no consumed barrier; fused single-block kernel
+≤64 KB, barrier + wide gather above. The original in-place protocol is
+recorded in research/p2p-allreduce/atomics.md; RCCL is retired from the
 engine), and sampling now runs on the host inside Engine. The Canonical
 system RCCL build is broken for multi-rank collectives (validated via the
 AMD-lineage overlay in research/rocm-overlay-method.md).
@@ -27,6 +29,13 @@ then each installs its tables on its owner thread before reporting ready.
 `WorkItem` carries only execution commands and tokens, not a one-time
 `SetPeerIo` operation or peer-pointer payloads. The engine waits for complete
 initialization before accepting forward work; graph launch remains deferred.
+The per-forward contribution slab (user direction, 2026-10) separates
+published data from the trunk's reduced result. Slots are fixed at load,
+not a ring or a growable pool; no rocSHMEM dependency. The worker waits
+for GPU completion even for `ForwardRun`, and Engine waits for every
+worker before another forward reuses slots. The consume epoch and the
+large-path scratch/copy-back are removed. The old 64 KB dispatch boundary
+is retained provisionally, pending measurements of this out-of-place variant.
 
 ## 1. Purpose & target
 
@@ -183,8 +192,10 @@ contract.
 ```
 io = embedder.embed(token_ids)          // gather into the fp32 stream
 for block in blocks:
-    trunk.read(i)                       // residual → io, apply norm (SIMT)
-    block.forward(stream)               // in place on the device stream
+    contribution = slot(i) if TP > 1 else io
+    trunk.read(i, contribution)          // residual → contribution, apply norm
+    block.forward(contribution)         // in place; publish immutable TP slot
+    if TP > 1: allreduce(slot(i), io)    // produced barrier, gather → local io
     trunk.write(i)                      // residual += io
 token = sampler.sample(lm_head.project(trunk.output()))   // on device
 ```
@@ -274,8 +285,14 @@ Narrow entry that sniffs format by content and delegates
   (`hipMalloc`, scoped `hipFree`), released after repack completion during
   loading, including on exception. No repack staging survives into inference.
 - The shared stream buffers (residual, io) are device allocations owned
-  by the Trunk, `[max_prefill_chunk, d]` fp32. One more cross-block
-  sharing instance exists (2026-09, first §14 scratch-pool use): the v4
+  by the Trunk, `[max_prefill_chunk, d]` fp32. Under TP, Model additionally
+  owns a contribution slab `[n_blocks, max_prefill_chunk, d]` fp32 per rank
+  (no slab at TP=1). Each block normalizes into and computes in its slot;
+  once published, the slot is immutable through forward completion.
+  Allreduce reads peer slab bases plus the same fixed slot offset and writes
+  local trunk io, never a published slot. Slab allocation checks current
+  free memory and reports its footprint / max_prefill_chunk on failure.
+  One more cross-block sharing instance exists (2026-09, first §14 scratch-pool use): the v4
   prefill attention partials buffer, loader-allocated once
   (`nh × max_prefill_chunk × ceil(max_seq/64) × (hd+2)` fp32) and reused
   by every attention block — each block's partials are produced and
@@ -302,7 +319,11 @@ Narrow entry that sniffs format by content and delegates
 - Device-side determinism: fixed kernel schedules; vendor BLAS invoked
   with fixed algorithms (no run-to-run autotuning).
 - The model loop is strictly sequential; intra-op parallelism is each
-  implementation's private business.
+  implementation's private business. A forward work item completes GPU
+  execution before its worker reports done: logits paths use blocking D2H,
+  and `ForwardRun` explicitly synchronizes the default stream. The Engine's
+  all-worker completion barrier therefore protects contribution-slot reuse
+  across forwards. No host synchronization is added inside the block loop.
 
 ## 11. Extensibility targets (designed for, not built)
 
@@ -369,6 +390,10 @@ Narrow entry that sniffs format by content and delegates
   mismatch, fails loud); the real packed `.model` files as fixtures.
   Ad-hoc models validate with zero recompile via `CanonicalEnv`
   (`ALICE_CANONICAL_{MODEL_FILE,FIXTURES[,CHUNK]}`).
+- Slab allreduce: four-rank kernel test covers separate output, unchanged
+  published slots/padding, both sides of the 64 KB boundary, and successive
+  forward epochs. TP=2 canonical validation covers wide prefill, S≤4 and S=1,
+  reinitialization, and chunked `generate()` with `ForwardRun` completion.
 - Tests require a GPU, as the engine does.
 
 ## 14. Open questions

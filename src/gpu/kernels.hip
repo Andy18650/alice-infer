@@ -158,10 +158,9 @@ __global__ void k_ar_flagbar(unsigned long long* my_flag,
   ar_flag_acquire(my_flag);
 }
 
-// Wide read-gather: out[i] = sum_j contribs[j][i], float4. Writes a SEPARATE
-// out buffer (the pipe-path scratch), so no in-place hazard.
+// Wide read-gather from immutable published slots to a separate local result.
 __global__ void k_ar_gather_f4(float* const* contribs, float* __restrict__ out,
-                               int ws, uint32_t n) {
+                               int ws, uint32_t n, size_t slot_offset) {
   const uint32_t n4 = n / 4;
   float4* o4 = (float4*)out;
   const uint32_t stride = gridDim.x * blockDim.x;
@@ -169,26 +168,21 @@ __global__ void k_ar_gather_f4(float* const* contribs, float* __restrict__ out,
        i4 += stride) {
     float4 s = make_float4(0.f, 0.f, 0.f, 0.f);
     for (int j = 0; j < ws; ++j) {
-      const float4 v = ((const float4*)contribs[j])[i4];
+      const float4 v = ((const float4*)(contribs[j] + slot_offset))[i4];
       s.x += v.x; s.y += v.y; s.z += v.z; s.w += v.w;
     }
     o4[i4] = s;
   }
 }
 
-// Fused single-block allreduce (latency regime, n <= kArFusedMaxFloats):
-// produce barrier -> read all ranks' contribs into REGISTERS -> consume
-// barrier -> write io in place. The register hold across the consume barrier
-// is what makes the in-place write safe: peers are still reading my io during
-// my gather; my overwrite waits until every rank has finished reading
-// (consume flag), and my sums sit in registers in between. Sum order j =
-// 0..ws-1 on every rank => bitwise-identical results everywhere.
-constexpr uint32_t kArMaxHoldF4 = 4;  // = kArFusedMaxFloats/4/1024
-__global__ void k_ar_fused_f4(float* io, float* const* contribs,
+// Fused single-block allreduce: produced barrier -> gather -> separate out.
+// Published slots are never overwritten in this forward, so no consumed
+// barrier or register hold is required. Sum j = 0..ws-1 on every rank.
+__global__ void k_ar_fused_f4(float* out, float* const* contribs,
                               unsigned long long* my_flag,
                               unsigned long long* const* flags, int ws,
-                              int rank, uint32_t n, unsigned long long vprod,
-                              unsigned long long vcons) {
+                              int rank, uint32_t n, size_t slot_offset,
+                              unsigned long long vprod) {
   const uint32_t n4 = n / 4;
   if (threadIdx.x == 0) {
     ar_flag_release(my_flag, vprod);
@@ -198,33 +192,14 @@ __global__ void k_ar_fused_f4(float* io, float* const* contribs,
     ar_flag_acquire(my_flag);
   }
   __syncthreads();
-  float4 hold[kArMaxHoldF4];
-#pragma unroll
-  for (uint32_t u = 0; u < kArMaxHoldF4; ++u) {
-    const uint32_t i4 = threadIdx.x + u * blockDim.x;
-    if (i4 >= n4) break;
+  float4* o4 = (float4*)out;
+  for (uint32_t i4 = threadIdx.x; i4 < n4; i4 += blockDim.x) {
     float4 s = make_float4(0.f, 0.f, 0.f, 0.f);
     for (int j = 0; j < ws; ++j) {
-      const float4 v = ((const float4*)contribs[j])[i4];
+      const float4 v = ((const float4*)(contribs[j] + slot_offset))[i4];
       s.x += v.x; s.y += v.y; s.z += v.z; s.w += v.w;
     }
-    hold[u] = s;
-  }
-  __syncthreads();
-  if (threadIdx.x == 0) {
-    ar_flag_release(my_flag, vcons);
-    for (int j = 0; j < ws; ++j)
-      if (j != rank) while (ar_flag_poll(flags[j]) < vcons) {
-      }
-    ar_flag_acquire(my_flag);
-  }
-  __syncthreads();
-  float4* o4 = (float4*)io;
-#pragma unroll
-  for (uint32_t u = 0; u < kArMaxHoldF4; ++u) {
-    const uint32_t i4 = threadIdx.x + u * blockDim.x;
-    if (i4 >= n4) break;
-    o4[i4] = hold[u];
+    o4[i4] = s;
   }
 }
 
@@ -235,20 +210,20 @@ void ar_flagbar(uint64_t* my_flag, uint64_t* const* flags, int ws, int rank,
                           (unsigned long long)value);
 }
 
-void ar_gather_f4(float* const* contribs, float* out, int ws, uint32_t n) {
+void ar_gather_f4(float* const* contribs, float* out, int ws, uint32_t n,
+                  size_t slot_offset) {
   uint32_t grid = (n / 4 + 255) / 256;
   if (grid > 220) grid = 220;
   if (grid < 1) grid = 1;
-  k_ar_gather_f4<<<grid, 256>>>(contribs, out, ws, n);
+  k_ar_gather_f4<<<grid, 256>>>(contribs, out, ws, n, slot_offset);
 }
 
-void ar_fused_f4(float* io, float* const* contribs, uint64_t* my_flag,
+void ar_fused_f4(float* out, float* const* contribs, uint64_t* my_flag,
                  uint64_t* const* flags, int ws, int rank, uint32_t n,
-                 uint64_t vprod, uint64_t vcons) {
-  k_ar_fused_f4<<<1, 1024>>>(io, contribs, (unsigned long long*)my_flag,
+                 size_t slot_offset, uint64_t vprod) {
+  k_ar_fused_f4<<<1, 1024>>>(out, contribs, (unsigned long long*)my_flag,
                              (unsigned long long* const*)flags, ws, rank, n,
-                             (unsigned long long)vprod,
-                             (unsigned long long)vcons);
+                             slot_offset, (unsigned long long)vprod);
 }
 
 }  // namespace alice::gpu::kernels

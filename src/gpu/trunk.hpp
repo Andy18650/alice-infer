@@ -27,7 +27,7 @@ class RmsNormAddTrunk {
   float* io() { return io_; }
   uint32_t S() const { return S_; }
 
-  void read(size_t block);   // io = rmsnorm(residual, gamma_block)
+  void read(size_t block, float* dst);  // dst = rmsnorm(residual, gamma_block)
   void write(size_t block);  // residual += io
   void output();             // io = rmsnorm(residual, gamma_final)
 

@@ -59,6 +59,9 @@ const engine::MemberDecl& require_member(const engine::Descriptor& d,
 Model::Model(const ModelConfig& cfg) : cfg_(cfg) {}
 
 Model::~Model() {
+  if (decode_exec_) (void)hipGraphExecDestroy(decode_exec_);
+  if (decode_graph_) (void)hipGraphDestroy(decode_graph_);
+  if (decode_epoch_base_) (void)hipFree(decode_epoch_base_);
   if (ar_flag_) (void)hipFree(ar_flag_);
   if (ar_flags_dev_) (void)hipFree(ar_flags_dev_);
   if (ar_slabs_dev_) (void)hipFree(ar_slabs_dev_);
@@ -89,11 +92,14 @@ void Model::allreduce(float* out, uint32_t S, size_t slot_offset) {
   const uint64_t vprod = ++ar_epoch_;
   constexpr uint32_t kFusedMaxFloats = 16384;
   if (n <= kFusedMaxFloats) {
-    kernels::ar_fused_f4(out, ar_slabs_dev_, ar_flag_, ar_flags_dev_, world_size_,
-                         rank_, n, slot_offset, vprod);
+    kernels::ar_fused_f4(resources_->stream(), out, ar_slabs_dev_, ar_flag_,
+                         ar_flags_dev_, world_size_, rank_, n, slot_offset, vprod,
+                         recording_decode_ ? decode_epoch_base_ : nullptr);
   } else {
-    kernels::ar_flagbar(ar_flag_, ar_flags_dev_, world_size_, rank_, vprod);
-    kernels::ar_gather_f4(ar_slabs_dev_, out, world_size_, n, slot_offset);
+    kernels::ar_flagbar(resources_->stream(), ar_flag_, ar_flags_dev_, world_size_,
+                        rank_, vprod, recording_decode_ ? decode_epoch_base_ : nullptr);
+    kernels::ar_gather_f4(resources_->stream(), ar_slabs_dev_, out, world_size_, n,
+                          slot_offset);
   }
 }
 
@@ -104,6 +110,26 @@ const float* Model::run(std::span<const int32_t> tokens, bool all_positions) {
   const uint32_t S = uint32_t(tokens.size());
   float* residual = trunk_->begin_pass(S);
   embedder_->embed(tokens, residual);
+  if (S == 1 && decode_exec_) {
+    for (auto& b : blocks_)
+      if (auto* sb = dynamic_cast<block::StatefulBlock*>(b.get()))
+        sb->advance_decode_state();
+    if (world_size_ > 1) {
+      decode_epoch_base_host_ = ar_epoch_;
+      const auto e = hipMemcpyAsync(decode_epoch_base_, &decode_epoch_base_host_,
+                                    sizeof(uint64_t), hipMemcpyHostToDevice,
+                                    resources_->stream());
+      if (e != hipSuccess) fail(std::string("decode epoch upload: ") + hipGetErrorString(e));
+      ar_epoch_ += blocks_.size();
+    }
+    const auto e = hipGraphLaunch(decode_exec_, resources_->stream());
+    if (e != hipSuccess) fail(std::string("decode graph launch: ") + hipGetErrorString(e));
+    return decode_logits_;  // S=1 project_all and project_last have identical shape
+  }
+  return run_compute(S, all_positions);
+}
+
+const float* Model::run_compute(uint32_t S, bool all_positions) {
   for (size_t i = 0; i < blocks_.size(); ++i) {
     const size_t offset = i * ar_slot_stride_;
     float* contribution = world_size_ > 1 ? ar_contributions_ + offset : trunk_->io();
@@ -125,7 +151,7 @@ void Model::execute(const WorkItem& work) {
         (void)run(work.tokens, false);
         // Completion, not just submission: Engine waits for all workers before
         // the next forward may overwrite any rank's published slab slots.
-        const hipError_t e = hipStreamSynchronize(nullptr);
+        const hipError_t e = hipStreamSynchronize(resources_->stream());
         if (e != hipSuccess)
           fail(std::string("ForwardRun sync failed: ") + hipGetErrorString(e));
         break;
@@ -134,8 +160,9 @@ void Model::execute(const WorkItem& work) {
         const float* logits = run(work.tokens, false);
         const size_t v = lm_head_->vocab();
         result_logits_.resize(v);
-        const hipError_t e = hipMemcpy(result_logits_.data(), logits, v * sizeof(float),
-                                       hipMemcpyDeviceToHost);
+        hipError_t e = hipMemcpyAsync(result_logits_.data(), logits, v * sizeof(float),
+                                      hipMemcpyDeviceToHost, resources_->stream());
+        if (e == hipSuccess) e = hipStreamSynchronize(resources_->stream());
         if (e != hipSuccess)
           fail(std::string("logits D2H failed: ") + hipGetErrorString(e));
         break;
@@ -144,8 +171,9 @@ void Model::execute(const WorkItem& work) {
         const float* logits = run(work.tokens, true);
         const size_t n = work.tokens.size() * size_t(lm_head_->vocab());
         result_logits_.resize(n);
-        const hipError_t e = hipMemcpy(result_logits_.data(), logits, n * sizeof(float),
-                                       hipMemcpyDeviceToHost);
+        hipError_t e = hipMemcpyAsync(result_logits_.data(), logits, n * sizeof(float),
+                                      hipMemcpyDeviceToHost, resources_->stream());
+        if (e == hipSuccess) e = hipStreamSynchronize(resources_->stream());
         if (e != hipSuccess)
           fail(std::string("logits D2H failed: ") + hipGetErrorString(e));
         break;
@@ -164,8 +192,11 @@ void Model::execute(const WorkItem& work) {
   }
 }
 
-void Model::initialize_peers(std::span<const std::unique_ptr<Model>> peers) {
-  if (world_size_ <= 1) return;
+void Model::finish_initialization(std::span<const std::unique_ptr<Model>> peers) {
+  if (world_size_ <= 1) {
+    if (cfg_.decode_graph) initialize_decode_graph();
+    return;
+  }
   if (peers.size() != static_cast<size_t>(world_size_))
     fail("peer count does not match world_size");
 
@@ -192,6 +223,48 @@ void Model::initialize_peers(std::span<const std::unique_ptr<Model>> peers) {
      "ar_flags_dev hipMalloc");
   ck(hipMemcpy(ar_flags_dev_, flags.data(), sizeof(uint64_t*) * world_size_,
                hipMemcpyHostToDevice), "ar_flags_dev hipMemcpy");
+  if (cfg_.decode_graph) initialize_decode_graph();
+}
+
+void Model::initialize_decode_graph() {
+  auto ck = [](hipError_t e, const char* what) {
+    if (e != hipSuccess) fail(std::string(what) + ": " + hipGetErrorString(e));
+  };
+  const auto stream = resources_->stream();
+  if (world_size_ > 1)
+    ck(hipMalloc(&decode_epoch_base_, sizeof(uint64_t)), "decode epoch hipMalloc");
+
+  // Warm only the vendor head, not a full forward (a rank waiting in its
+  // allreduce before peers are submitted would deadlock). No model state
+  // is advanced. All blocks' custom kernels are precompiled.
+  ck(hipMemsetAsync(trunk_->io(), 0, size_t(hidden_dim_) * sizeof(float), stream),
+     "decode warm input");
+  (void)lm_head_->project_last(trunk_->io(), 1);
+  ck(hipStreamSynchronize(stream), "decode warm sync");
+  trunk_->begin_pass(1);
+  const uint64_t old_epoch = ar_epoch_;
+  ar_epoch_ = 0;  // captured kernel values are ordinals, not absolute epochs
+  ck(hipStreamBeginCapture(stream, hipStreamCaptureModeThreadLocal), "decode begin capture");
+  recording_decode_ = true;
+  try {
+    decode_logits_ = run_compute(1, false);
+  } catch (...) {
+    recording_decode_ = false;
+    hipGraph_t discarded = nullptr;
+    (void)hipStreamEndCapture(stream, &discarded);
+    if (discarded) (void)hipGraphDestroy(discarded);
+    throw;
+  }
+  recording_decode_ = false;
+  ck(hipStreamEndCapture(stream, &decode_graph_), "decode end capture");
+  ck(hipGraphInstantiate(&decode_exec_, decode_graph_, nullptr, nullptr, 0),
+     "decode instantiate");
+  // Recording executes host bookkeeping but no model kernels. Restore host
+  // cursors, and initialize private device cursors on the execution stream.
+  ar_epoch_ = old_epoch;
+  for (auto& b : blocks_)
+    if (auto* sb = dynamic_cast<block::StatefulBlock*>(b.get())) sb->reset_state();
+  ck(hipStreamSynchronize(stream), "decode cursor reset sync");
 }
 
 void Model::load(int rank, int world_size,
@@ -301,7 +374,8 @@ void Model::load(int rank, int world_size,
     data_loader.fetch(mm.id, [&](std::span<const std::byte> blob) {
       Timer tc;
       embedder_ = std::make_unique<Embedder>(
-          blob_to_tensor(blob, vocab, d, "embedder"), cfg_.max_prefill_chunk);
+          resources_->stream(), blob_to_tensor(blob, vocab, d, "embedder"),
+          cfg_.max_prefill_chunk);
       st.construct_ms += tc.ms();
     });
     hidden_dim_ = d;
@@ -326,8 +400,8 @@ void Model::load(int rank, int world_size,
         pre_norms.push_back(Tensor<bf16>::copy_of(p + i * d, 1, d));
       auto final_norm = Tensor<bf16>::copy_of(p + npre * d, 1, d);
       trunk_ = std::make_unique<RmsNormAddTrunk>(
-          std::move(pre_norms), std::move(final_norm), eps, d,
-          cfg_.max_prefill_chunk);
+          resources_->stream(), std::move(pre_norms), std::move(final_norm), eps,
+          d, cfg_.max_prefill_chunk);
       st.construct_ms += tc.ms();
     });
   }
@@ -338,7 +412,7 @@ void Model::load(int rank, int world_size,
     data_loader.fetch(mm.id, [&](std::span<const std::byte> blob) {
       Timer tc;
       lm_head_ = std::make_unique<LmHead>(
-          blob_to_tensor(blob, vocab, d, "language_head"),
+          resources_->stream(), blob_to_tensor(blob, vocab, d, "language_head"),
           cfg_.max_prefill_chunk, resources_->handle());
       st.construct_ms += tc.ms();
     });
@@ -351,7 +425,7 @@ void Model::load(int rank, int world_size,
   st.blocks = blocks_.size();
 
   // TP contribution slots and my fine-grained flag must exist before the
-  // load barrier and initialize_peers(). One fixed slot per block; no slab
+  // load barrier and finish_initialization(). One fixed slot per block; no slab
   // for TP=1. Flags start at zero and increase once per collective.
   if (world_size_ > 1) {
     if (hidden_dim_ % 4 != 0)

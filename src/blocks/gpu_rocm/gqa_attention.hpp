@@ -5,6 +5,9 @@
 // attention over the device-resident fp32 KV cache, o_proj (rocBLAS) into
 // io. State: KV cache + private position counter (StatefulBlock).
 
+// hipStream_t forward declaration (matches hip_runtime_api.h).
+typedef struct ihipStream_t* hipStream_t;
+
 #include "../block.hpp"
 
 #include "../../gpu/resources.hpp"
@@ -27,11 +30,15 @@ class GqaAttentionBF16 final : public block::StatefulBlock {
   ~GqaAttentionBF16() override;
 
   void forward(float* io, uint32_t S) override;
-  void reset_state() override { pos_ = 0; }
+  void reset_state() override;
+  void advance_decode_state() override;
 
   uint32_t position() const { return pos_; }  // test introspection
 
  private:
+  hipStream_t stream_ = nullptr;  // rank compute stream (Resources)
+  bool fixed_decode_ = false;
+  uint32_t* dpos_ = nullptr;     // private device cursor, read by captured kernels
   uint32_t nh_ = 0, nkv_ = 0, hd_ = 0, d_ = 0, group_ = 0;
   uint32_t max_seq_ = 0, mpc_ = 0, pos_ = 0;
   float scale_ = 0;

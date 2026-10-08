@@ -12,6 +12,8 @@
 namespace {
 
 constexpr uint32_t kCK = alice::gpu_rocm::kernels::kPrefillChunkKeys;
+constexpr uint32_t kDecodeRows = alice::gpu_rocm::kernels::kAttnRowsPerSplit;
+constexpr uint32_t kDecodeSplits = alice::gpu_rocm::kernels::kAttnMaxSplits;
 
 __device__ __forceinline__ unsigned short f2b(float f) {
   return (unsigned short)(__float_as_uint(f) >> 16);
@@ -51,10 +53,13 @@ __global__ void k_silu_mul(const float* __restrict__ gu, unsigned short* __restr
   act[idx] = f2b(g / (1.0f + expf(-g)) * u);
 }
 
+template <bool DynamicPosition>
 __global__ void k_rope_append(float* __restrict__ qkv, float* __restrict__ kcache,
                               float* __restrict__ vcache, const float* __restrict__ cos_t,
                               const float* __restrict__ sin_t, uint32_t pos0, uint32_t nh,
-                              uint32_t nkv, uint32_t hd) {
+                              uint32_t nkv, uint32_t hd, const uint32_t* position,
+                              uint32_t* next_position) {
+  if constexpr (DynamicPosition) pos0 = *position;
   const uint32_t s = blockIdx.x;
   const uint32_t pos = pos0 + s, half = hd / 2, qd = nh * hd, kvd = nkv * hd;
   const uint32_t qkvd = qd + 2 * kvd;
@@ -80,6 +85,10 @@ __global__ void k_rope_append(float* __restrict__ qkv, float* __restrict__ kcach
   // v: plain append
   for (uint32_t e = threadIdx.x; e < kvd; e += blockDim.x)
     vcache[(size_t)pos * kvd + e] = row[qd + kvd + e];
+  // Prefill publishes the next device cursor without an extra launch.
+  // Decode advances it later, after attention, in o_proj's combine.
+  if (next_position && s == 0 && threadIdx.x == 0)
+    *next_position = pos0 + gridDim.x;
 }
 
 // Flash-decoding v2, phase 1: one block per (split, query, head); 4 warps of
@@ -88,15 +97,23 @@ __global__ void k_rope_append(float* __restrict__ qkv, float* __restrict__ kcach
 // are written unnormalized in units of the block max: [acc(hd), m, l] per
 // (query*head, split). Empty splits (short query in a multi-query call)
 // write l = 0 and are skipped by the combine.
+template <bool DynamicPosition>
 __global__ void k_attention_split(const float* __restrict__ qkv,
                                   const float* __restrict__ kcache,
                                   const float* __restrict__ vcache,
                                   float* __restrict__ partials, uint32_t pos0, uint32_t nh,
                                   uint32_t nkv, uint32_t hd, float scale,
-                                  uint32_t rows_per_split) {
+                                  uint32_t rows_per_split, const uint32_t* position) {
+  if constexpr (DynamicPosition) pos0 = *position;
   const uint32_t sh = blockIdx.y, h = sh % nh, s = sh / nh;
   const uint32_t T = pos0 + s + 1;
   const uint32_t split = blockIdx.x;
+  if constexpr (DynamicPosition) {
+    const uint32_t active = min((T + kDecodeRows - 1) / kDecodeRows, kDecodeSplits);
+    if (split >= active) return;  // combine excludes these unwritten slots
+    rows_per_split = T <= kDecodeRows * kDecodeSplits
+                         ? kDecodeRows : (T + kDecodeSplits - 1) / kDecodeSplits;
+  }
   const uint32_t r0 = split * rows_per_split;
   const uint32_t r1 = min(T, r0 + rows_per_split);
   const uint32_t group = nh / nkv, g = h / group;
@@ -170,11 +187,15 @@ __global__ void k_attention_split(const float* __restrict__ qkv,
 // Phase 2: one block per (query, head), lane i owns output element i
 // (i < hd <= 128); merge the split partials and write bf16 attn. Output
 // index sh*hd + i == s*(nh*hd) + h*hd + i.
+template <bool DynamicPosition>
 __global__ void k_attention_combine(const float* __restrict__ partials,
                                     unsigned short* __restrict__ attn, uint32_t hd,
-                                    uint32_t splits) {
+                                    uint32_t splits, const uint32_t* position) {
   const uint32_t sh = blockIdx.x;
-  const float* base = partials + (size_t)sh * splits * (hd + 2);
+  const uint32_t stride = splits;
+  if constexpr (DynamicPosition)
+    splits = min((*position + 1 + kDecodeRows - 1) / kDecodeRows, kDecodeSplits);
+  const float* base = partials + (size_t)sh * stride * (hd + 2);
   float M = -INFINITY, L = 0.0f;
   for (uint32_t sp = 0; sp < splits; ++sp) {
     const float l = base[sp * (hd + 2) + hd + 1];
@@ -392,7 +413,7 @@ __global__ void k_gemvcm_partial(const uint32_t* __restrict__ Wcm,
 // 2026-10: one global_load + s_waitcnt vmcnt(0) per iteration, no
 // pipelining. The combine was ~10% of decode busy time as a result.)
 __global__ void k_gemv_combine(const float* __restrict__ partials, float* __restrict__ y,
-                               uint32_t N, uint32_t chunks) {
+                               uint32_t N, uint32_t chunks, uint32_t* next_position) {
   const uint32_t n = blockIdx.x * blockDim.x + threadIdx.x;
   if (n >= N) return;
   float a0 = 0.0f, a1 = 0.0f, a2 = 0.0f, a3 = 0.0f;
@@ -412,6 +433,7 @@ __global__ void k_gemv_combine(const float* __restrict__ partials, float* __rest
   }
   for (; c < chunks; ++c) a0 += partials[(size_t)c * N + n];
   y[n] = (a0 + a1) + (a2 + a3) + (a4 + a5) + (a6 + a7);
+  if (next_position && n == 0) ++*next_position;
 }
 
 // Phase 2, fused gup variant: act[i] = bf16(silu(g_i) * u_i) where
@@ -458,21 +480,31 @@ unsigned grid_for(size_t n, unsigned block) {
 
 namespace alice::gpu_rocm::kernels {
 
-void f32_to_bf16(const float* src, void* dst, size_t n) {
-  k_f32_to_bf16<<<grid_for(n, 256), 256>>>(src, (unsigned short*)dst, n);
+void f32_to_bf16(hipStream_t stream, const float* src, void* dst, size_t n) {
+  k_f32_to_bf16<<<grid_for(n, 256), 256, 0, stream>>>(src, (unsigned short*)dst, n);
 }
 
-void silu_mul(const float* gu, void* act, uint32_t S, uint32_t I) {
-  k_silu_mul<<<grid_for((size_t)S * I, 256), 256>>>(gu, (unsigned short*)act, S, I);
+void silu_mul(hipStream_t stream, const float* gu, void* act, uint32_t S, uint32_t I) {
+  k_silu_mul<<<grid_for((size_t)S * I, 256), 256, 0, stream>>>(gu, (unsigned short*)act, S, I);
 }
 
-void rope_append(float* qkv, float* kcache, float* vcache, const float* cos_t,
+void rope_append(hipStream_t stream, float* qkv, float* kcache, float* vcache,
+                     const float* cos_t,
                  const float* sin_t, uint32_t pos0, uint32_t S, uint32_t nh, uint32_t nkv,
-                 uint32_t hd) {
-  k_rope_append<<<S, 256>>>(qkv, kcache, vcache, cos_t, sin_t, pos0, nh, nkv, hd);
+                 uint32_t hd, uint32_t* next_position) {
+  k_rope_append<false><<<S, 256, 0, stream>>>(qkv, kcache, vcache, cos_t, sin_t,
+                                            pos0, nh, nkv, hd, nullptr, next_position);
 }
 
-void attention(const float* qkv, const float* kcache, const float* vcache, void* attn_bf16,
+void rope_append_decode(hipStream_t stream, float* qkv, float* kcache, float* vcache,
+                        const float* cos_t, const float* sin_t,
+                        const uint32_t* position, uint32_t nh, uint32_t nkv, uint32_t hd) {
+  k_rope_append<true><<<1, 256, 0, stream>>>(qkv, kcache, vcache, cos_t, sin_t,
+                                           0, nh, nkv, hd, position, nullptr);
+}
+
+void attention(hipStream_t stream, const float* qkv, const float* kcache,
+                   const float* vcache, void* attn_bf16,
                float* split_scratch, float* prefill_scratch, uint32_t pos0, uint32_t S,
                uint32_t nh, uint32_t nkv, uint32_t hd, float scale) {
   const uint32_t T = pos0 + S;
@@ -483,14 +515,14 @@ void attention(const float* qkv, const float* kcache, const float* vcache, void*
     const dim3 g((S + 63) / 64, max_chunks, nh);
     const dim3 gc(S, nh);
     if (hd == 64) {
-      k_prefill_split<64><<<g, 64>>>(qkv, kcache, vcache, prefill_scratch, pos0, S, nh,
+      k_prefill_split<64><<<g, 64, 0, stream>>>(qkv, kcache, vcache, prefill_scratch, pos0, S, nh,
                                      nkv, scale, max_chunks);
-      k_prefill_combine<64><<<gc, 128>>>((const float*)prefill_scratch,
+      k_prefill_combine<64><<<gc, 128, 0, stream>>>((const float*)prefill_scratch,
                                          (unsigned short*)attn_bf16, pos0, S, nh, max_chunks);
     } else if (hd == 128) {
-      k_prefill_split<128><<<g, 64>>>(qkv, kcache, vcache, prefill_scratch, pos0, S, nh,
+      k_prefill_split<128><<<g, 64, 0, stream>>>(qkv, kcache, vcache, prefill_scratch, pos0, S, nh,
                                       nkv, scale, max_chunks);
-      k_prefill_combine<128><<<gc, 128>>>((const float*)prefill_scratch,
+      k_prefill_combine<128><<<gc, 128, 0, stream>>>((const float*)prefill_scratch,
                                           (unsigned short*)attn_bf16, pos0, S, nh,
                                           max_chunks);
     } else {
@@ -507,18 +539,28 @@ void attention(const float* qkv, const float* kcache, const float* vcache, void*
       splits = kAttnMaxSplits;
       rps = (T + splits - 1) / splits;  // keep full coverage of [0, T)
     }
-    k_attention_split<<<dim3(splits, S * nh), 256>>>(qkv, kcache, vcache, split_scratch,
-                                                     pos0, nh, nkv, hd, scale, rps);
-    k_attention_combine<<<S * nh, 128>>>((const float*)split_scratch,
-                                         (unsigned short*)attn_bf16, hd, splits);
+    k_attention_split<false><<<dim3(splits, S * nh), 256, 0, stream>>>(
+        qkv, kcache, vcache, split_scratch, pos0, nh, nkv, hd, scale, rps, nullptr);
+    k_attention_combine<false><<<S * nh, 128, 0, stream>>>(
+        split_scratch, (unsigned short*)attn_bf16, hd, splits, nullptr);
   }
+}
+
+void attention_decode(hipStream_t stream, const float* qkv, const float* kcache,
+                      const float* vcache, void* attn_bf16, float* split_scratch,
+                      const uint32_t* position, uint32_t nh, uint32_t nkv,
+                      uint32_t hd, float scale) {
+  k_attention_split<true><<<dim3(kAttnMaxSplits, nh), 256, 0, stream>>>(
+      qkv, kcache, vcache, split_scratch, 0, nh, nkv, hd, scale, 0, position);
+  k_attention_combine<true><<<nh, 128, 0, stream>>>(
+      split_scratch, (unsigned short*)attn_bf16, hd, kAttnMaxSplits, position);
 }
 
 uint32_t gemv_cm_chunks(uint32_t K) { return (K + 255) / 256; }
 
 namespace {
-void gemv_cm_partial_launch(const void* W, const void* x, float* partials, uint32_t N,
-                            uint32_t K, bool x_f32) {
+void gemv_cm_partial_launch(hipStream_t stream, const void* W, const void* x,
+                                float* partials, uint32_t N, uint32_t K, bool x_f32) {
   if (N == 0 || K == 0) throw std::runtime_error("gpu_rocm::kernels::gemv: empty shape");
   if (N % 2)
     throw std::runtime_error(
@@ -529,19 +571,22 @@ void gemv_cm_partial_launch(const void* W, const void* x, float* partials, uint3
   const uint32_t threads = (N / 2) * gemv_cm_chunks(K);
   const dim3 grid((threads + 63) / 64);
   if (x_f32)
-    k_gemvcm_partial<true><<<grid, 64>>>((const uint32_t*)W, x, partials, N, K);
+    k_gemvcm_partial<true><<<grid, 64, 0, stream>>>((const uint32_t*)W, x, partials, N, K);
   else
-    k_gemvcm_partial<false><<<grid, 64>>>((const uint32_t*)W, x, partials, N, K);
+    k_gemvcm_partial<false><<<grid, 64, 0, stream>>>((const uint32_t*)W, x, partials, N, K);
 }
 
-void gemv_cm_launch(const void* W, const void* x, float* y, float* partials, uint32_t N,
-                    uint32_t K, bool x_f32) {
-  gemv_cm_partial_launch(W, x, partials, N, K, x_f32);
-  k_gemv_combine<<<grid_for(N, 256), 256>>>(partials, y, N, gemv_cm_chunks(K));
+void gemv_cm_launch(hipStream_t stream, const void* W, const void* x, float* y,
+                        float* partials, uint32_t N, uint32_t K, bool x_f32,
+                        uint32_t* next_position = nullptr) {
+  gemv_cm_partial_launch(stream, W, x, partials, N, K, x_f32);
+  k_gemv_combine<<<grid_for(N, 256), 256, 0, stream>>>(partials, y, N, gemv_cm_chunks(K),
+                                                  next_position);
 }
 }  // namespace
 
-void repack_to_col_major(const void* W_rm, void* W_cm, uint32_t N, uint32_t K) {
+void repack_to_col_major(hipStream_t stream, const void* W_rm, void* W_cm, uint32_t N,
+                             uint32_t K) {
   if (N % 2 || K % 2)
     throw std::runtime_error("gpu_rocm::kernels::repack: N, K must be even");
   const uint32_t threads = N * (K / 2);
@@ -549,28 +594,29 @@ void repack_to_col_major(const void* W_rm, void* W_cm, uint32_t N, uint32_t K) {
   // repacks (8B gup needs 229376 blocks — the cap repacked only 28% of the
   // matrix). x-dimension allows 2^31-1.
   const uint32_t blocks = (threads + 255) / 256;
-  k_repack_cm<<<blocks, 256>>>((const uint32_t*)W_rm, (unsigned short*)W_cm, N, K);
+  k_repack_cm<<<blocks, 256, 0, stream>>>((const uint32_t*)W_rm, (unsigned short*)W_cm, N, K);
   // Async on the caller's stream: the next H2D into the staging buffer is
   // stream-ordered after this kernel, no host sync needed.
 }
 
-void gemv_cm_x_f32(const void* W, const float* x, float* y, float* partials, uint32_t N,
-                   uint32_t K) {
-  gemv_cm_launch(W, x, y, partials, N, K, true);
+void gemv_cm_x_f32(hipStream_t stream, const void* W, const float* x, float* y,
+                       float* partials, uint32_t N, uint32_t K) {
+  gemv_cm_launch(stream, W, x, y, partials, N, K, true);
 }
 
-void gemv_cm_x_bf16(const void* W, const void* x, float* y, float* partials, uint32_t N,
-                    uint32_t K) {
-  gemv_cm_launch(W, x, y, partials, N, K, false);
+void gemv_cm_x_bf16(hipStream_t stream, const void* W, const void* x, float* y,
+                        float* partials, uint32_t N, uint32_t K, uint32_t* next_position) {
+  gemv_cm_launch(stream, W, x, y, partials, N, K, false, next_position);
 }
 
-void gemv_cm_partial_x_f32(const void* W, const float* x, float* partials, uint32_t N,
-                           uint32_t K) {
-  gemv_cm_partial_launch(W, x, partials, N, K, true);
+void gemv_cm_partial_x_f32(hipStream_t stream, const void* W, const float* x,
+                               float* partials, uint32_t N, uint32_t K) {
+  gemv_cm_partial_launch(stream, W, x, partials, N, K, true);
 }
 
-void gemv_cm_combine_silu(const float* partials, void* act_bf16, uint32_t I, uint32_t K) {
-  k_gemvcm_combine_silu<<<grid_for(I, 256), 256>>>(partials,
+void gemv_cm_combine_silu(hipStream_t stream, const float* partials, void* act_bf16,
+                          uint32_t I, uint32_t K) {
+  k_gemvcm_combine_silu<<<grid_for(I, 256), 256, 0, stream>>>(partials,
                                                    (unsigned short*)act_bf16, I,
                                                    gemv_cm_chunks(K));
 }

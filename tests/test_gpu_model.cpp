@@ -18,6 +18,7 @@
 
 #include "alice/engine_config.hpp"
 #include "../src/engine.hpp"
+#include "../src/gpu/model.hpp"
 
 namespace {
 
@@ -151,6 +152,63 @@ TEST(GpuModel, Canonical1BTp2Initialization) {
   }
 }
 
+TEST(GpuModel, DecodeGraphMatchesEagerAcrossPrefillResetAndBounds) {
+  if (!std::filesystem::exists(kPacked1B)) GTEST_SKIP() << "no packed 1B model";
+  int devices = 0;
+  ASSERT_EQ(hipGetDeviceCount(&devices), hipSuccess);
+  if (devices < 2) GTEST_SKIP() << "requires two GPUs";
+  alice::ModelConfig cfg;
+  cfg.tp_degree = 2;
+  cfg.max_seq_len = 160;
+  cfg.max_prefill_chunk = 64;
+  std::vector<std::vector<float>> reference;
+  for (bool graph : {false, true}) {
+    cfg.decode_graph = graph;
+    auto engine = load_packed(kPacked1B, cfg);
+    ASSERT_EQ(engine.model(0)->decode_graph_enabled(), graph);
+    std::vector<std::vector<float>> rows;
+    const std::vector<int32_t> prompt(60, 791);
+    rows.push_back(engine.forward_logits(prompt));
+    for (int step = 0; step < 70; ++step) {
+      const int32_t token = step % 2 ? 315 : 6864;
+      rows.push_back(engine.forward_logits(std::span<const int32_t>(&token, 1)));
+      if (step == 10) {  // prefill after replay must use the correct host cursor
+        const std::vector<int32_t> appended{791, 315, 6864};
+        rows.push_back(engine.forward_logits(appended));
+      }
+    }
+    // Reset must restore both host and device cursors; epochs must NOT reset.
+    engine.reset();
+    const int32_t token = 791;
+    rows.push_back(engine.forward_logits(std::span<const int32_t>(&token, 1)));
+    engine.reset();
+    rows.push_back(engine.forward_logits(std::span<const int32_t>(&token, 1)));
+    EXPECT_EQ(rows[rows.size() - 1], rows[rows.size() - 2]);
+    engine.reset();
+    for (size_t off = 0; off < cfg.max_seq_len; off += cfg.max_prefill_chunk) {
+      const std::vector<int32_t> ids(
+          std::min<size_t>(cfg.max_prefill_chunk, cfg.max_seq_len - off), token);
+      (void)engine.forward_logits(ids);
+    }
+    EXPECT_THROW(engine.forward_logits(std::span<const int32_t>(&token, 1)),
+                 std::runtime_error);
+    if (!graph) {
+      reference = std::move(rows);
+    } else {
+      ASSERT_EQ(rows.size(), reference.size());
+      float max_drift = 0.0f;
+      for (size_t i = 0; i < rows.size(); ++i) {
+        ASSERT_EQ(rows[i].size(), reference[i].size());
+        for (size_t v = 0; v < rows[i].size(); ++v) {
+          ASSERT_TRUE(std::isfinite(rows[i][v]));
+          max_drift = std::max(max_drift, std::fabs(rows[i][v] - reference[i][v]));
+        }
+      }
+      EXPECT_LT(max_drift, 1e-4f) << "graph replay diverged from eager";
+    }
+  }
+}
+
 TEST(GpuModel, Canonical8BTeacherForced) {
   if (!have_packed(kPacked8B, "canonical_8b"))
     GTEST_SKIP() << "no packed 8B model or canonical_8b fixtures";
@@ -274,7 +332,7 @@ TEST(GpuModel, CanonicalLong8B) {
 }
 
 // Ad-hoc model validation without recompile (mirrors CanonicalEnv for the
-// host path): ALICE_CANONICAL_{MODEL_FILE,FIXTURES[,CHUNK]}.
+// host path): ALICE_CANONICAL_{MODEL_FILE,FIXTURES[,CHUNK,TP,DECODE_GRAPH]}.
 TEST(GpuModel, CanonicalEnvTeacherForced) {
   const char* file = getenv("ALICE_CANONICAL_MODEL_FILE");
   const char* fix = getenv("ALICE_CANONICAL_FIXTURES");
@@ -283,6 +341,9 @@ TEST(GpuModel, CanonicalEnvTeacherForced) {
   cfg.max_seq_len = 8192;
   const char* chunk_env = getenv("ALICE_CANONICAL_CHUNK");
   if (chunk_env) cfg.max_prefill_chunk = uint32_t(atoi(chunk_env));
+  if (const char* tp = getenv("ALICE_CANONICAL_TP")) cfg.tp_degree = uint32_t(atoi(tp));
+  if (const char* graph = getenv("ALICE_CANONICAL_DECODE_GRAPH"))
+    cfg.decode_graph = std::string(graph) != "0";
   auto engine = load_packed(file, cfg);
   run_teacher_forced(engine, fix, cfg.max_prefill_chunk, 3);
 }

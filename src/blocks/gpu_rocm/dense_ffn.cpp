@@ -34,7 +34,7 @@ namespace {
 DenseFfnBF16::DenseFfnBF16(TensorView<bf16> w_gate, TensorView<bf16> w_up, TensorView<bf16> w_down,
                            const block::DenseFfnConfig& cfg, const ModelConfig& mc,
                            gpu::Resources& res)
-    : d_(cfg.io_dim), mpc_(mc.max_prefill_chunk) {
+    : stream_(res.stream()), d_(cfg.io_dim), mpc_(mc.max_prefill_chunk) {
   // Derive the tensor-parallel-local intermediate dim from the staged views.
   if (w_gate.cols() != d_ || w_up.cols() != d_ || w_down.rows() != d_ ||
       w_gate.rows() != w_up.rows() || w_down.cols() != w_gate.rows())
@@ -72,17 +72,18 @@ DenseFfnBF16::DenseFfnBF16(TensorView<bf16> w_gate, TensorView<bf16> w_up, Tenso
   // accesses); the S>1 gemm_ex consumes the same layout with op=N, lda=N.
   // Temporary device staging belongs to weight loading, not named layer
   // state. The fused gate/up matrix is the larger upload. Copies and repacks
-  // use the default stream; complete the repack before releasing staging.
+  // use the rank stream; complete the repack before releasing staging.
   void* staging_ptr = nullptr;
   HIP_CHECK(hipMalloc(&staging_ptr, gup.size() * sizeof(bf16)));
   std::unique_ptr<void, decltype(&hipFree)> staging(staging_ptr, &hipFree);
-  HIP_CHECK(hipMemcpy(staging.get(), gup.data(), gup.size() * sizeof(bf16),
-                      hipMemcpyHostToDevice));
-  kernels::repack_to_col_major(staging.get(), dw_gup_, 2 * inter_, d_);
-  HIP_CHECK(hipMemcpy(staging.get(), down_contig.data(), down_contig.size() * sizeof(bf16),
-                      hipMemcpyHostToDevice));
-  kernels::repack_to_col_major(staging.get(), dw_down_, d_, inter_);
-  HIP_CHECK(hipStreamSynchronize(nullptr));
+  HIP_CHECK(hipMemcpyAsync(staging.get(), gup.data(), gup.size() * sizeof(bf16),
+                           hipMemcpyHostToDevice, stream_));
+  kernels::repack_to_col_major(stream_, staging.get(), dw_gup_, 2 * inter_, d_);
+  HIP_CHECK(hipMemcpyAsync(staging.get(), down_contig.data(),
+                           down_contig.size() * sizeof(bf16),
+                           hipMemcpyHostToDevice, stream_));
+  kernels::repack_to_col_major(stream_, staging.get(), dw_down_, d_, inter_);
+  HIP_CHECK(hipStreamSynchronize(stream_));
   // staging's RAII deleter calls hipFree on success or exception.
 }
 
@@ -100,13 +101,13 @@ void DenseFfnBF16::forward(float* io, uint32_t S) {
     // (gup site), so the f32_to_bf16 launch disappears from the decode
     // path. The gup combine is fused with SiLU+mul: one launch, no dgu_
     // round-trip.)
-    kernels::gemv_cm_partial_x_f32(dw_gup_, io, dgemv_, 2 * inter_, d_);
-    kernels::gemv_cm_combine_silu(dgemv_, dact_, inter_, d_);
-    kernels::gemv_cm_x_bf16(dw_down_, dact_, io, dgemv_, d_, inter_);
+    kernels::gemv_cm_partial_x_f32(stream_, dw_gup_, io, dgemv_, 2 * inter_, d_);
+    kernels::gemv_cm_combine_silu(stream_, dgemv_, dact_, inter_, d_);
+    kernels::gemv_cm_x_bf16(stream_, dw_down_, dact_, io, dgemv_, d_, inter_);
     return;
   }
 
-  kernels::f32_to_bf16(io, dx_, size_t(S) * d_);
+  kernels::f32_to_bf16(stream_, io, dx_, size_t(S) * d_);
   const float alpha = 1.0f, beta = 0.0f;
   // gate/up fused, col-major weights: C'[2I, S] = [Wg;Wu]_cm . x^T (op=N)
   RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_none, rocblas_operation_none,
@@ -115,7 +116,7 @@ void DenseFfnBF16::forward(float* io, uint32_t S) {
                            rocblas_datatype_f32_r, 2 * inter_, dgu_,
                            rocblas_datatype_f32_r, 2 * inter_, rocblas_datatype_f32_r,
                            rocblas_gemm_algo_standard, 0, 0));
-  kernels::silu_mul(dgu_, dact_, S, inter_);
+  kernels::silu_mul(stream_, dgu_, dact_, S, inter_);
   // down, straight into io, col-major weights: C'[d, S] = Wd_cm . act^T
   RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_none, rocblas_operation_none,
                            d_, S, inter_, &alpha, dw_down_, rocblas_datatype_bf16_r,

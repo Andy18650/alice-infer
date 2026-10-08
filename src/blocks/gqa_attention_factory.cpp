@@ -61,6 +61,7 @@ uint64_t GqaAttentionBF16Factory::device_bytes(const ModelConfig& mc) const {
   const size_t gemv = std::max(gpu_rocm::kernels::gemv_partial_floats(qkvd, io),
                                gpu_rocm::kernels::gemv_partial_floats(io, qd));
   total += pad(gemv * sizeof(float));                                // dgemv_
+  total += pad(sizeof(uint32_t));                                    // dpos_
   return total;
 }
 

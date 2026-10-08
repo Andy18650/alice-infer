@@ -28,12 +28,14 @@ initialization: all ranks finish loading before workers read peer pointers,
 then each installs its tables on its owner thread before reporting ready.
 `WorkItem` carries only execution commands and tokens, not a one-time
 `SetPeerIo` operation or peer-pointer payloads. The engine waits for complete
-initialization before accepting forward work; graph launch remains deferred.
+initialization before accepting forward work. Each rank now records and
+instantiates an S=1 HIP compute graph during initialization (2026-10);
+prefill stays eager and rank workers are retained.
 The per-forward contribution slab (user direction, 2026-10) separates
 published data from the trunk's reduced result. Slots are fixed at load,
 not a ring or a growable pool; no rocSHMEM dependency. The worker waits
-for GPU completion even for `ForwardRun`, and Engine waits for every
-worker before another forward reuses slots. The consume epoch and the
+for GPU completion on its explicit execution stream even for `ForwardRun`,
+and Engine waits for every worker before another forward reuses slots. The consume epoch and the
 large-path scratch/copy-back are removed. The old 64 KB dispatch boundary
 is retained provisionally, pending measurements of this out-of-place variant.
 
@@ -320,8 +322,9 @@ Narrow entry that sniffs format by content and delegates
   with fixed algorithms (no run-to-run autotuning).
 - The model loop is strictly sequential; intra-op parallelism is each
   implementation's private business. A forward work item completes GPU
-  execution before its worker reports done: logits paths use blocking D2H,
-  and `ForwardRun` explicitly synchronizes the default stream. The Engine's
+  execution before its worker reports done: logits paths use async D2H plus
+  synchronization on the rank stream, and `ForwardRun` synchronizes that
+  same stream. The Engine's
   all-worker completion barrier therefore protects contribution-slot reuse
   across forwards. No host synchronization is added inside the block loop.
 
@@ -484,6 +487,70 @@ swapping to a leaner kernel under memory pressure — that would be an
 unmeasured silent regression; if a model cannot fit at any reasonable
 config, a leaner dispatch entry is a deliberate user-signed decision,
 not a runtime adaptation.
+
+## 16. S=1 HIP graph replay (2026-10)
+
+One graph per rank records the block loop, final norm, and language head;
+token upload/embedding and logits download remain outside capture, ordered
+on the same explicit rank stream. The language head is warmed separately
+before capture (never warm a full rank while its peers are idle at an
+allreduce). No allocations occur during replay. Graph creation failure is
+loud, not an eager fallback. `ModelConfig::decode_graph=false` is the
+explicit eager A/B baseline; the REPL exposes `ALICE_DECODE_GRAPH=0`.
+
+Replay parameters are instance-owned device allocations, not process-wide
+constant symbols. Each attention block has a private device position cursor:
+prefill RoPE publishes the next position, decode reads the cursor, and the
+output-projection combine increments it without an extra launch. A private
+host mirror validates context limits / supports subsequent eager prefill;
+`StatefulBlock::advance_decode_state()` advances that mirror before replay.
+Recording executes host bookkeeping but not kernels, so initialization
+restores cursors after capture. Reset clears both position mirrors, but never
+resets collective epochs.
+
+Decode attention has a fixed physical grid of 64 splits per local query
+head. Kernels read the current device position to derive active splits and
+rows per split, preserving the old logical partition: 64 rows/split through
+T=4096, then ceil(T/64). Partial stride is always 64; inactive split blocks
+return and combine excludes their unwritten entries. This avoids per-token
+graph updates/recapture. The overlaunch cost at short contexts is provisional;
+smaller-capacity graph variants remain a measured future optimization.
+
+Captured collectives use immutable per-block slab offsets and static
+collective ordinals plus a device epoch base uploaded once before each
+replay. Host epochs advance by the block count; eager prefill and graph
+replay therefore share one monotonically increasing sequence. Flags are
+never cleared per replay (an independently cleared peer could still expose
+stale readiness). Only the first produced barrier remains in each collective.
+
+Execution initially uses regular blocking streams for a conservative
+migration. Load-time repack uploads and kernels nevertheless explicitly use
+the same rank stream and synchronize before scoped staging release, fixing
+the previous nonblocking-stream staging race rather than relying on implicit
+ordering. Input/output copies and replay completion also name the rank stream.
+
+Validation includes one captured attention graph replayed across T=64/128
+and 4096 boundaries for hd=64/128 with NaN-poisoned inactive scratch, plus
+TP=2 graph/eager logits comparison through changing tokens, prefill after
+replay, reset, and context overflow. CanonicalEnv supports optional TP and
+decode-graph config (`ALICE_CANONICAL_{TP,DECODE_GRAPH}`).
+
+Initial A/B (Release, `numactl --cpunodebind=0 --membind=0`, 70B, 28-token
+prompt + 128 decode steps, attention context T=29..156, max_seq=8192):
+
+| TP | Eager decode | Graph decode |
+|---|---|---|
+| 4 | 45.22 ms/tok, 22.1 tok/s | 44.29 ms/tok, 22.6 tok/s |
+| 8 | 36.15 ms/tok, 27.7 tok/s | 34.91 ms/tok, 28.6 tok/s |
+
+One run per configuration, not a variance-controlled sweep; all four
+128-token generated texts were identical. Logs are in
+`temp/graph-decode-ab/` (not committed). 70B S=1 canonical replay passed at
+TP=4 (worst max drift 0.4951) and TP=8 (0.5040), gate 0.75. Full Debug
+suite: 35 passed + one optional CanonicalEnv skip; targeted Release replay
+and long-context tests passed three consecutive runs. The fixed-64 grid
+is a correctness-first baseline; overlaunch at short T can offset some
+host-submission savings.
 
 ## Retired decisions (kept so they are not re-litigated)
 

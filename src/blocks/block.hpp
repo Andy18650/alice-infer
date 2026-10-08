@@ -21,6 +21,10 @@ class Block {
 class StatefulBlock : public Block {
  public:
   virtual void reset_state() = 0;
+  // Graph replay bypasses forward(): validate/advance the private host state
+  // once before a decode replay. Device state progression is recorded in the
+  // graph. No position is exposed through the block boundary.
+  virtual void advance_decode_state() = 0;
 };
 
 }  // namespace alice::block

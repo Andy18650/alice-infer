@@ -8,29 +8,40 @@
 // g++-safe host side (raw pointers only).
 //
 // bf16 buffers are passed as void* (truncating conversion, bit-identical to
-// host bf16::from_f32). Everything launches on the default stream of the
-// current device; callers set the device.
+// host bf16::from_f32). Callers select the device and explicitly pass its
+// rank execution stream; tests may pass the default stream.
 
 #include <cstddef>
 #include <cstdint>
 
+// Forward declaration (matches hip_runtime_api.h; keeps this header
+// g++-safe). Every launcher takes the rank's compute stream first
+// (gpu::Resources::stream()).
+typedef struct ihipStream_t* hipStream_t;
+
 namespace alice::gpu_rocm::kernels {
 
 // dst[i] = bf16(src[i]) (truncation). n elements.
-void f32_to_bf16(const float* src, void* dst, size_t n);
+void f32_to_bf16(hipStream_t stream, const float* src, void* dst, size_t n);
 
 // act[s*I+i] = bf16(silu(gu[s*2I+i]) * gu[s*2I+I+i]); gu is the fused
 // gate/up GEMM output (col-major [2I, S] == row-major [S, 2I]);
 // act is row-major [S, I] bf16.
-void silu_mul(const float* gu, void* act, uint32_t S, uint32_t I);
+void silu_mul(hipStream_t stream, const float* gu, void* act, uint32_t S, uint32_t I);
 
 // RoPE-rotate q (in place) and k at absolute positions [pos0, pos0+S), then
 // append k,v to the caches at those positions. qkv is the fused projection
 // output row-major [S, (nh+2*nkv)*hd]; caches are [max_seq, nkv*hd] fp32.
 // cos_t/sin_t are [max_seq, hd/2] device tables (HF/Llama convention).
-void rope_append(float* qkv, float* kcache, float* vcache, const float* cos_t,
+void rope_append(hipStream_t stream, float* qkv, float* kcache, float* vcache,
+                  const float* cos_t,
                  const float* sin_t, uint32_t pos0, uint32_t S, uint32_t nh, uint32_t nkv,
-                 uint32_t hd);
+                 uint32_t hd, uint32_t* next_position = nullptr);
+
+// S=1 graph path: read the private device cursor, never a captured position.
+void rope_append_decode(hipStream_t stream, float* qkv, float* kcache, float* vcache,
+                        const float* cos_t, const float* sin_t,
+                        const uint32_t* position, uint32_t nh, uint32_t nkv, uint32_t hd);
 
 // Attention dispatch (all measured in research/prefill-attn-ab; v1 retired):
 //   S > kAttnSplitMaxS  -> v4 split-T prefill: one block per (query-tile,
@@ -89,31 +100,44 @@ inline size_t gemv_partial_floats(uint32_t N, uint32_t K) {
 // Causal attention with online softmax. Query s at absolute position pos0+s
 // attends cache rows [0, pos0+s]. GQA: q-head h reads kv-head h/(nh/nkv).
 // Output written as bf16 row-major [S, nh*hd] (o_proj GEMM consumes bf16).
-void attention(const float* qkv, const float* kcache, const float* vcache, void* attn_bf16,
+void attention(hipStream_t stream, const float* qkv, const float* kcache,
+                const float* vcache, void* attn_bf16,
                float* split_scratch, float* prefill_scratch, uint32_t pos0, uint32_t S,
                uint32_t nh, uint32_t nkv, uint32_t hd, float scale);
+
+// Fixed 64-split physical grid, dynamic active splits/rows from *position.
+// Scratch stride is always 64; combine never reads inactive split entries.
+void attention_decode(hipStream_t stream, const float* qkv, const float* kcache,
+                      const float* vcache, void* attn_bf16, float* split_scratch,
+                      const uint32_t* position, uint32_t nh, uint32_t nkv,
+                      uint32_t hd, float scale);
 
 // y[N] (fp32) = W (bf16 [N,K] COLUMN-major — see the S=1 GEMV block
 // above) . x. partials: gemv_partial_floats(N,K) floats.
 // fp32 x: quantized in-register (bit-identical to f32_to_bf16).
-void gemv_cm_x_f32(const void* W, const float* x, float* y, float* partials, uint32_t N,
+void gemv_cm_x_f32(hipStream_t stream, const void* W, const float* x, float* y,
+                    float* partials, uint32_t N,
                    uint32_t K);
 // bf16 x: already-quantized operand (attention/activation output).
-void gemv_cm_x_bf16(const void* W, const void* x, float* y, float* partials, uint32_t N,
-                    uint32_t K);
+void gemv_cm_x_bf16(hipStream_t stream, const void* W, const void* x, float* y,
+                     float* partials, uint32_t N,
+                    uint32_t K, uint32_t* next_position = nullptr);
 
 // Fused gup decode path (one launch saved + the fp32 dgu_ round-trip
 // eliminated): partial phase for the fp32-stream site, then a fused
 // combine+SiLU writing bf16 act directly (act[i] = silu(g_i)*u_i, gate/up
 // = rows [0,I)/[I,2I) of the fused gup partials). Bit-identical math to
 // combine + silu_mul.
-void gemv_cm_partial_x_f32(const void* W, const float* x, float* partials, uint32_t N,
+void gemv_cm_partial_x_f32(hipStream_t stream, const void* W, const float* x,
+                            float* partials, uint32_t N,
                            uint32_t K);
-void gemv_cm_combine_silu(const float* partials, void* act_bf16, uint32_t I, uint32_t K);
+void gemv_cm_combine_silu(hipStream_t stream, const float* partials, void* act_bf16,
+                           uint32_t I, uint32_t K);
 
 // Load-time weight repack: row-major [N,K] bf16 -> column-major [N,K] bf16
 // (W_cm[k*N+n]), consumed by the S=1 GEMV and by the S>1 gemm_ex (op=N,
 // lda=N). Async on the caller's stream (subsequent stream work is ordered).
-void repack_to_col_major(const void* W_rm, void* W_cm, uint32_t N, uint32_t K);
+void repack_to_col_major(hipStream_t stream, const void* W_rm, void* W_cm, uint32_t N,
+                          uint32_t K);
 
 }  // namespace alice::gpu_rocm::kernels

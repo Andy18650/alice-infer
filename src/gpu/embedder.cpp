@@ -19,8 +19,8 @@ namespace {
   } while (0)
 }  // namespace
 
-Embedder::Embedder(Tensor<bf16> table, uint32_t max_prefill_chunk)
-    : vocab_(table.rows()), d_(table.cols()), mpc_(max_prefill_chunk) {
+Embedder::Embedder(hipStream_t stream, Tensor<bf16> table, uint32_t max_prefill_chunk)
+    : stream_(stream), vocab_(table.rows()), d_(table.cols()), mpc_(max_prefill_chunk) {
   HIP_CHECK(hipMalloc(&table_, table.nbytes()));
   HIP_CHECK(hipMalloc(&ids_dev_, mpc_ * sizeof(int32_t)));
   HIP_CHECK(hipMemcpy(table_, table.data(), table.nbytes(), hipMemcpyHostToDevice));
@@ -37,9 +37,9 @@ void Embedder::embed(std::span<const int32_t> ids, float* residual) {
   for (int32_t id : ids)
     if (uint32_t(id) >= vocab_)
       throw std::out_of_range("gpu::Embedder::embed: token id out of vocab");
-  HIP_CHECK(hipMemcpy(ids_dev_, ids.data(), ids.size() * sizeof(int32_t),
-                      hipMemcpyHostToDevice));
-  kernels::embed_gather(table_, ids_dev_, residual, uint32_t(ids.size()), d_);
+  HIP_CHECK(hipMemcpyAsync(ids_dev_, ids.data(), ids.size() * sizeof(int32_t),
+                           hipMemcpyHostToDevice, stream_));
+  kernels::embed_gather(stream_, table_, ids_dev_, residual, uint32_t(ids.size()), d_);
 }
 
 }  // namespace alice::gpu

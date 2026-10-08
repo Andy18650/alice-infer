@@ -176,7 +176,7 @@ void worker_main(Engine* engine, int rank, int world_size, gpu::Model* model,
   }
 
   try {
-    model->initialize_peers(engine->models_);
+    model->finish_initialization(engine->models_);
   } catch (...) {
     model->set_error(std::current_exception());
   }

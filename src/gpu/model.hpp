@@ -11,6 +11,8 @@
 #include <span>
 #include <vector>
 
+#include <hip/hip_runtime_api.h>
+
 #include "alice/engine_config.hpp"
 #include "../blocks/block.hpp"
 #include "embedder.hpp"
@@ -60,8 +62,9 @@ class Model {
   void execute(const WorkItem& work);
 
   // Complete initialization in the owner worker, after every rank has loaded.
-  // Installs device pointer tables for P2P allreduce; not a runtime command.
-  void initialize_peers(std::span<const std::unique_ptr<Model>> peers);
+  // Installs P2P tables and optionally records S=1 compute; not a work item.
+  void finish_initialization(std::span<const std::unique_ptr<Model>> peers);
+  bool decode_graph_enabled() const { return decode_exec_ != nullptr; }
 
   // Result/error accessors (read by the Engine after the completion barrier).
   const std::vector<float>& last_logits() const { return result_logits_; }
@@ -90,11 +93,20 @@ class Model {
   size_t ar_slot_stride_ = 0;          // floats per slot, sized for max_prefill_chunk
   uint64_t ar_epoch_ = 0;              // +1 per allreduce (produced only)
 
+  hipGraph_t decode_graph_ = nullptr;
+  hipGraphExec_t decode_exec_ = nullptr;
+  const float* decode_logits_ = nullptr;
+  uint64_t* decode_epoch_base_ = nullptr;  // device parameter, updated before replay
+  uint64_t decode_epoch_base_host_ = 0;    // stable source until completion
+  bool recording_decode_ = false;
+
   std::vector<float> result_logits_;
   std::exception_ptr error_;
 
   void allreduce(float* out, uint32_t S, size_t slot_offset);
   const float* run(std::span<const int32_t> tokens, bool all_positions);
+  const float* run_compute(uint32_t S, bool all_positions);
+  void initialize_decode_graph();
 };
 
 }  // namespace gpu

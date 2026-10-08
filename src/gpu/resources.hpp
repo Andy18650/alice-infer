@@ -70,6 +70,12 @@ class Resources {
   void init_scratch(size_t bytes);
   float* scratch() const { return scratch_; }
 
+  // Explicit rank execution stream; kernels, BLAS and runtime copies are
+  // ordered here. A regular blocking stream is capturable and preserves
+  // legacy ordering for load-time copies. No implicit ordering is relied
+  // on when temporary repack staging is reused: those copies use this stream.
+  hipStream_t stream() const { return stream_; }
+
   // Fixed-size named buffers let layers share information beyond the residual
   // stream. Same name + size -> same ptr; same name + different size -> loud
   // failure. The name is the sharing contract; pointers never grow or change.
@@ -78,6 +84,7 @@ class Resources {
 
  private:
   int rank_ = 0;
+  hipStream_t stream_ = nullptr;
   int world_size_ = 1;
   std::string arch_;
   BlasHandle handle_ = nullptr;

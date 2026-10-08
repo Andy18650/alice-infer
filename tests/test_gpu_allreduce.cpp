@@ -105,11 +105,11 @@ TEST(GpuAllreduce, SlabSlotsPreservedAcrossCollectivesAndForwards) {
         const uint64_t epoch = forward * sizes.size() + slot + 1;
         const size_t offset = slot * stride;
         if (sizes[slot] <= 16384) {
-          gk::ar_fused_f4(rank.out + offset, rank.slabs, rank.flag, rank.flags,
+          gk::ar_fused_f4(nullptr, rank.out + offset, rank.slabs, rank.flag, rank.flags,
                           ws, r, sizes[slot], offset, epoch);
         } else {
-          gk::ar_flagbar(rank.flag, rank.flags, ws, r, epoch);
-          gk::ar_gather_f4(rank.slabs, rank.out + offset, ws, sizes[slot], offset);
+          gk::ar_flagbar(nullptr, rank.flag, rank.flags, ws, r, epoch);
+          gk::ar_gather_f4(nullptr, rank.slabs, rank.out + offset, ws, sizes[slot], offset);
         }
       }
     }

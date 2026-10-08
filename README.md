@@ -47,7 +47,7 @@ reference) are NOT committed (777 MB each). Regenerate with:
 ## Run
 
 ```sh
-./build-release/alice_repl <model.model> [max_new=64] [max_seq=8192] [prompt]
+./build-release/alice_repl <model.model> [max_new=64] [max_seq=8192] [tp_degree=1] [prompt]
 # no prompt -> interactive REPL; with prompt -> single non-interactive round
 ```
 
@@ -55,11 +55,16 @@ Examples:
 
 ```sh
 ./build-release/alice_repl /opt/models/alice/Llama-3.2-1B-Instruct/model.model \
-    32 8192 "The capital of France is"
+    32 8192 1 "The capital of France is"
 
 ./build-release/alice_repl /opt/models/alice/deepseek-r1-distill-llama-8b/model.model \
-    32 8192 "The capital of France is"
+    32 8192 1 "The capital of France is"
 ```
+
+S=1 forwards use a per-rank HIP compute graph by default; prefill is eager.
+Set `ALICE_DECODE_GRAPH=0` for the eager decode A/B baseline (library callers:
+`ModelConfig::decode_graph=false`). Replay uses fixed 64-split attention grids
+with device-side position/active-split handling and monotonic collective epochs.
 
 Models are loaded via the alice model format (a packed `.model` descriptor +
 `weights.bin`); pack a HuggingFace llama-family model with

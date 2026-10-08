@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 
@@ -68,6 +69,8 @@ int main(int argc, char** argv) {
     cfg.max_prefill_chunk = 512;
     sc.temperature = 0.0f;
     cfg.tp_degree = tp_degree;
+    if (const char* graph = std::getenv("ALICE_DECODE_GRAPH"))
+      cfg.decode_graph = std::string(graph) != "0";
     alice::engine::Engine eng = alice::engine::init_engine(model_file, cfg, sc);
     std::fprintf(stderr,
                  "[alice] model loaded (vocab %u, GPU-resident). /quit to exit, "

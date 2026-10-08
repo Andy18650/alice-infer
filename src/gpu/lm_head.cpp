@@ -27,9 +27,10 @@ namespace {
   } while (0)
 }  // namespace
 
-LmHead::LmHead(Tensor<bf16> weight, uint32_t max_prefill_chunk,
+LmHead::LmHead(hipStream_t stream, Tensor<bf16> weight, uint32_t max_prefill_chunk,
                rocblas_handle handle)
-    : vocab_(weight.rows()), d_(weight.cols()), mpc_(max_prefill_chunk), handle_(handle) {
+    : stream_(stream), vocab_(weight.rows()), d_(weight.cols()), mpc_(max_prefill_chunk),
+      handle_(handle) {
   HIP_CHECK(hipMalloc(&w_, weight.nbytes()));
   HIP_CHECK(hipMalloc(&dx_, size_t(mpc_) * d_ * sizeof(bf16)));
   HIP_CHECK(hipMalloc(&logits_, size_t(mpc_) * vocab_ * sizeof(float)));
@@ -44,7 +45,7 @@ LmHead::~LmHead() {
 
 const float* LmHead::project_last(const float* io, uint32_t S) {
   if (S == 0 || S > mpc_) throw std::runtime_error("gpu::LmHead: S out of range");
-  kernels::f32_to_bf16(io + size_t(S - 1) * d_, dx_, d_);
+  kernels::f32_to_bf16(stream_, io + size_t(S - 1) * d_, dx_, d_);
   const float alpha = 1.0f, beta = 0.0f;
   // logits[V] = W . x  (C'[V, 1] col-major)
   RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_transpose, rocblas_operation_none,
@@ -58,7 +59,7 @@ const float* LmHead::project_last(const float* io, uint32_t S) {
 
 const float* LmHead::project_all(const float* io, uint32_t S) {
   if (S == 0 || S > mpc_) throw std::runtime_error("gpu::LmHead: S out of range");
-  kernels::f32_to_bf16(io, dx_, size_t(S) * d_);
+  kernels::f32_to_bf16(stream_, io, dx_, size_t(S) * d_);
   const float alpha = 1.0f, beta = 0.0f;
   // C'[V, S] col-major = row-major [S, V]
   RB_CHECK(rocblas_gemm_ex(handle_, rocblas_operation_transpose, rocblas_operation_none,

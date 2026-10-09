@@ -42,7 +42,21 @@ release increments versus serial ~5.58/5.65; neighbor-only readiness is
 ~1.00/1.16. These are native O3, CPU+memory NUMA node 0, no attention context,
 10,000 timed steps after 64 warm steps, nine samples. They are synchronization
 skeleton costs, not one-way propagation or a claimed ring-AllReduce floor.
-No production synchronization changes were made.
+No production synchronization changes were made. A separate single-GCD
+entry-timestamp study (`research/kernel-launch/`) records raw core and steady
+clocks per wave with no entry barrier. Many CTAs begin close together below
+residency, but zero-hold bodies can finish before later CTAs enter; 1664 CTAs
+with a 100 us hold show ~102 us admission spread versus a kernel-specific
+832-CTA capacity. This describes GPU scheduling, not a CPU per-CTA setup
+loop or an exact hardware-allocation timestamp. At 256 one-CTA markers,
+eager/graph start gaps are ~2.24/1.28 us (native O3, GCD 0, CPU+memory NUMA
+node 0, no attention context). The extended identical-kernel cooperative
+control is slower (~19.36 us start gaps versus normal graph ~1.60 for 256
+one-CTA markers). Direct oversize cooperative launch rejects at the measured
+832-CTA capacity, but captured replay accepts 1664 with device cooperative
+context valid. The probe records this API inconsistency as unexpected, with
+no grid.sync() and no valid timing claim; applications must enforce residency
+before cooperative grid synchronization. No production launch changes made.
 
 ## 1. Purpose & target
 

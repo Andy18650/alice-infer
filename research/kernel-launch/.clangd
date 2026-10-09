@@ -1,0 +1,2 @@
+CompileFlags:
+  Add: [-D__HIP_PLATFORM_AMD__, -std=c++20]

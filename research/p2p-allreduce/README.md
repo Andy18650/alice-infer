@@ -419,11 +419,21 @@ not an instruction to replace the engine's decode path. No production
 collective/dispatch/dependency changed, and real producer/cache/numerical
 validation remains necessary before adoption.
 
+## Counter visibility / synchronization skeleton
+
+A separate persistent counter probe implements the user-requested
+increment → wait for peers → increment loop, with no payload or per-step
+launch/host synchronization. See [counter.md](counter.md) for code/timing
+semantics, measured serial/parallel all-peer and neighbor controls, and
+limitations. Build with `build.sh --counter`; run `run_counter.sh`.
+It does not change the collective kernels or the engine.
+
 ## Files
 
 - `study.cpp`: P2P setup, capture/replay, validation/timing; explicit startup selection.
 - `rccl.cpp`: optional grouped out-of-place vendor baseline, no P2P dispatch changes.
 - `run_rccl.sh`: validated overlay + NUMA placement + two reusable-comm sweeps.
+- `counter.hip` / `counter.md` / `run_counter.sh`: persistent atomic visibility probe.
 - `kernels.hip` / `kernels.hpp`: ready barrier and readable traversal variants.
 - `build.sh`: standalone O3 build. `sweep.py`: bounded serial NUMA-pinned runs.
 - `atomics.md` and existing coherency/peer-enable probes: historical evidence.

@@ -5,6 +5,11 @@ cd "$(dirname "$0")"
 root=$(CDPATH= cd ../.. && pwd)
 out="$root/temp/p2p-allreduce"
 mkdir -p "$out"
+if [ "${1:-}" = "--counter" ]; then
+  hipcc -O3 -std=c++20 --offload-arch=gfx90a counter.hip -o "$out/counter"
+  echo "built $out/counter"
+  exit 0
+fi
 hipcc -O3 -std=c++20 --offload-arch=gfx90a -c kernels.hip -o "$out/kernels.o"
 g++ -O3 -std=c++20 -Wall -Wextra -Wpedantic -D__HIP_PLATFORM_AMD__ \
   study.cpp "$out/kernels.o" -lamdhip64 -o "$out/study"

@@ -35,6 +35,14 @@ lookahead, register-tile, and vendor results plus limitations are recorded in
 Only the selected simple decode gather and vendor prefill are integrated;
 other variants stay research candidates. Cross-implementation numerics are
 tolerance-based; canonical gates and end-to-end measurements are in §17.
+A standalone persistent counter probe now measures increment/wait progress
+without payload or per-step launches (`research/p2p-allreduce/counter.md`).
+At ws=8, parallel all-peer polling is ~1.81/2.07 us per cycle for relaxed /
+release increments versus serial ~5.58/5.65; neighbor-only readiness is
+~1.00/1.16. These are native O3, CPU+memory NUMA node 0, no attention context,
+10,000 timed steps after 64 warm steps, nine samples. They are synchronization
+skeleton costs, not one-way propagation or a claimed ring-AllReduce floor.
+No production synchronization changes were made.
 
 ## 1. Purpose & target
 

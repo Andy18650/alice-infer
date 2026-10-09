@@ -37,7 +37,13 @@ not a ring or a growable pool; no rocSHMEM dependency. The worker waits
 for GPU completion on its explicit execution stream even for `ForwardRun`,
 and Engine waits for every worker before another forward reuses slots. The consume epoch and the
 large-path scratch/copy-back are removed. The old 64 KB dispatch boundary
-is retained provisionally, pending measurements of this out-of-place variant.
+is retained provisionally. The rewritten standalone study in
+`research/p2p-allreduce/` now measures out-of-place geometry and cooperative
+launch without depending on production code. Same-kernel pipeline tests show
+32×256 outperforming 220×256 at 1/4 MiB for ws=4/8; ordinary 2×1024 wide
+kernels are promising at 32 KiB. Cooperative launch works but loses these
+comparisons, including the identical-kernel `coop-wide` control. These remain
+research candidates, not changed production dispatch rules.
 
 ## 1. Purpose & target
 

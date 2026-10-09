@@ -27,7 +27,7 @@ are now done as GPU kernels, not host blocks). Loading is via the alice
 model format (`init_engine` / `Model::load_from_format`); the manifest +
 safetensors + loader_staging path is RETIRED. The host-side math helpers
 (RoPE tables, the kernel oracle) survive as `src/host_math.{hpp,cpp}`. The
-70B is intentionally dark until multi-die (it never fit one GCD).
+70B requires multi-die (it never fit one GCD); TP=4/8 is now validated.
 
 ## How constraints work here (read first)
 
@@ -151,32 +151,33 @@ cmake --build build-release -j                     # Release: measure here
   the 16 KB row stride (K=8192 bf16) hits an HBM channel-phase lockstep
   (16 KB ≡ 0 mod 32×256 B; padded-stride gup reaches ~1193 GB/s) — the
   next ~18% on that shape, user-owned idea.
-- Multi-GCD allreduce (2026-10, research/p2p-allreduce): RCCL RETIRED from
-  the engine in favor of a device-flag P2P allreduce — fine-grained device
-  flags + system-scope atomic release/acquire (probe-verified coherency:
-  release emits buffer_wbl2 = L2→HBM writeback, which XGMI reads are served
-  by; acquire emits broadcast buffer_invl2), read-gather float4 dataflow,
-  zero host API on the critical path. Dispatch by payload (measured
-  crossover ~64 KB at ws=4): fused single-block kernel (produce/gather-in-
-  registers/consume/in-place write) for S*hidden*4B ≤ 64 KB; 4-launch
-  pipeline (flagbar / wide gather→scratch / flagbar / copy) above. Harness:
-  8.1 µs ws=2 / 17.9 µs ws=4 at 32 KB vs RCCL 41.6/53.3 µs sync-per-call.
-  Engine (Release, numactl node 0): 70B TP=4 decode 45.4 ms/tok = 22.0
-  tok/s (51.6 before the CK-alignment GEMV fix, 63 hand-rolled
-  hipMemcpyPeer, 57.25 RCCL); 8B TP=2 97.9 tok/s (tp=1: 66.8); 1B TP=2 310
-  tok/s (tp=1: 263.7). Peer access must be
-  enabled PRE-alloc, serial, owner-thread (post-load enable deterministically
-  aborts via HSA MappedHandleAllowedAgent — enableprobe series).
-- Next: 70B multi-die beyond tp=4 (needs ≥3 GCDs; the TP/PP research is in
-  research/rccl-single-process/), then §11 quantization; on the horizon:
+- Multi-GCD allreduce (2026-10, design §17): HYBRID. Immutable per-block
+  contribution slabs, separate trunk output, no consume epoch or copy-back.
+  S=1 / <=16 KiB retains native fused single-CTA; 70B's 32 KiB row uses
+  produced barrier + pointer-hoisted/dephased 2×1024 gather. S>1 uses
+  out-of-place AMD-overlay RCCL. Graphs capture decode only; host collective
+  counters remain monotonic across vendor gaps and reset. The own-flag
+  acquire is a gfx90a cache-invalidation idiom, not a portable peer HB proof.
+  Worker load initialization installs peer tables and creates one prefill
+  communicator per rank, never a setup WorkItem. Runtime symbol-path guard
+  and CMake `ALICE_RCCL_LIBRARY` prevent accidental Canonical RCCL use.
+  Release, numactl CPU+memory node 0, 128 generation steps, max_seq=8192:
+  70B TP=4/8 short ctx T=29..156 22.63/30.12 tok/s; long T=1668..1795
+  21.46/28.64. At 1667 prompt tokens, prefill 1150/1818 tok/s (old P2P
+  900/743). These are matched initial runs, not a variance-controlled sweep.
+  Small-model improvements are not universal; see design §17 caveats.
+  Peer access remains PRE-alloc, serial, owner-thread (post-load enable
+  deterministically aborts via HSA MappedHandleAllowedAgent).
+- Next: §11 quantization (70B TP=4/8 now validated; TP/PP history is in
+  research/rccl-single-process/); on the horizon:
   MFMA variant of the v4 tile structure (hd=128), fp16/bf16 KV cache,
   decode-overhead campaign (GEMV + launch diet), TP allreduce for the
   100 KB–MB band (persistent-CTA fused wide kernel, deferred).
 - RCCL on this box: Canonical build broken (any ≥2-rank collective
   segfaults — vendor unit tests confirm); AMD-overlay RCCL validated as
   replacement; hand-rolled P2P validated (134.7 GB/s intra-card). **RCCL is
-  RETIRED from the engine** (2026-10): the device-flag P2P allreduce beats
-  it at decode sizes (see the allreduce bullet above). See
+  used for prefill; native P2P remains decode** after the out-of-place
+  comparison (see the hybrid bullet above). See
   research/rccl-single-process/README.md and research/rocm-overlay-method.md.
 
 ## Hardware context

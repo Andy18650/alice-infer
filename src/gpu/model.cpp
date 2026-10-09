@@ -59,8 +59,10 @@ const engine::MemberDecl& require_member(const engine::Descriptor& d,
 Model::Model(const ModelConfig& cfg) : cfg_(cfg) {}
 
 Model::~Model() {
+  if (resources_) (void)hipSetDevice(rank_);
   if (decode_exec_) (void)hipGraphExecDestroy(decode_exec_);
   if (decode_graph_) (void)hipGraphDestroy(decode_graph_);
+  if (prefill_comm_) (void)ncclCommDestroy(prefill_comm_);
   if (decode_epoch_base_) (void)hipFree(decode_epoch_base_);
   if (ar_flag_) (void)hipFree(ar_flag_);
   if (ar_flags_dev_) (void)hipFree(ar_flags_dev_);
@@ -77,30 +79,35 @@ Model::~Model() {
 // acquire per barrier emits a broadcast buffer_invl2 + L1 invalidate so the
 // reader can't hit stale lines). No host API on the critical path at all.
 //
-// Read-gather uses a distinct contribution slot for each block. Published
-// slots remain unchanged until every rank completes the forward; reductions
-// write the trunk's separate local io. No consumed epoch or copy-back is
-// needed. Every rank sums peers in j = 0..ws-1 order (bitwise-identical).
-//
-// The 64 KB crossover comes from research/p2p-allreduce's original in-place
-// implementation; retained provisionally for the out-of-place variant:
-//   <= 64 KB: one fused produced-barrier + gather kernel.
-//   > 64 KB: produced-barrier kernel + wide gather directly into local io.
+// Immutable per-block input slots, separate trunk output; no consume epoch.
+// S=1: tiny rows retain fused single-CTA; 32 KiB uses the measured
+// pointer-hoisted/dephased data-major decode (ready + gather).
+// S>1: out-of-place RCCL, the vendor prefill winner. Both enqueue on the rank
+// stream. Gaps in P2P epochs from RCCL are intentional; counters never reset.
+// Dephasing changes FP32 summation order (including across ranks); equivalence
+// is tolerance-based and validated by canonical fixtures, not bit identity.
 void Model::allreduce(float* out, uint32_t S, size_t slot_offset) {
   if (world_size_ <= 1) return;
   const uint32_t n = S * hidden_dim_;
   const uint64_t vprod = ++ar_epoch_;
-  constexpr uint32_t kFusedMaxFloats = 16384;
-  if (n <= kFusedMaxFloats) {
-    kernels::ar_fused_f4(resources_->stream(), out, ar_slabs_dev_, ar_flag_,
-                         ar_flags_dev_, world_size_, rank_, n, slot_offset, vprod,
-                         recording_decode_ ? decode_epoch_base_ : nullptr);
-  } else {
-    kernels::ar_flagbar(resources_->stream(), ar_flag_, ar_flags_dev_, world_size_,
-                        rank_, vprod, recording_decode_ ? decode_epoch_base_ : nullptr);
-    kernels::ar_gather_f4(resources_->stream(), ar_slabs_dev_, out, world_size_, n,
-                          slot_offset);
+  if (S > 1) {
+    const auto e = ncclAllReduce(ar_contributions_ + slot_offset, out, n, ncclFloat,
+                                 ncclSum, prefill_comm_, resources_->stream());
+    if (e != ncclSuccess) fail(std::string("prefill allreduce: ") + ncclGetErrorString(e));
+    return;
   }
+  // The 8/16 KiB shapes do not benefit from a second launch/CU; end-to-end
+  // 1B validation caught a regression when using the 32 KiB strategy there.
+  if (n <= 4096) {
+    kernels::ar_fused_f4(resources_->stream(), out, ar_slabs_dev_, ar_flag_, ar_flags_dev_,
+                         world_size_, rank_, n, slot_offset, vprod,
+                         recording_decode_ ? decode_epoch_base_ : nullptr);
+    return;
+  }
+  kernels::ar_flagbar(resources_->stream(), ar_flag_, ar_flags_dev_, world_size_,
+                      rank_, vprod, recording_decode_ ? decode_epoch_base_ : nullptr);
+  kernels::ar_decode_gather_f4(resources_->stream(), ar_slabs_dev_, out, world_size_,
+                               rank_, n, slot_offset);
 }
 
 const float* Model::run(std::span<const int32_t> tokens, bool all_positions) {
@@ -192,7 +199,8 @@ void Model::execute(const WorkItem& work) {
   }
 }
 
-void Model::finish_initialization(std::span<const std::unique_ptr<Model>> peers) {
+void Model::finish_initialization(std::span<const std::unique_ptr<Model>> peers,
+                                  const ncclUniqueId& prefill_id) {
   if (world_size_ <= 1) {
     if (cfg_.decode_graph) initialize_decode_graph();
     return;
@@ -223,6 +231,10 @@ void Model::finish_initialization(std::span<const std::unique_ptr<Model>> peers)
      "ar_flags_dev hipMalloc");
   ck(hipMemcpy(ar_flags_dev_, flags.data(), sizeof(uint64_t*) * world_size_,
                hipMemcpyHostToDevice), "ar_flags_dev hipMemcpy");
+  // Every worker binds its own device and enters initialization concurrently.
+  // The ID was created once by Engine after validating the runtime library.
+  const auto e = ncclCommInitRank(&prefill_comm_, world_size_, prefill_id, rank_);
+  if (e != ncclSuccess) fail(std::string("prefill communicator: ") + ncclGetErrorString(e));
   if (cfg_.decode_graph) initialize_decode_graph();
 }
 

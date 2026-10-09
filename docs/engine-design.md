@@ -1,77 +1,40 @@
 # Alice Inference Engine — Design
 
-Status: living document. This revision (2026-09) commits the engine to
-GPU-resident execution and retires the CPU-first bring-up architecture.
-The tree is mid-migration; AGENTS.md tracks the state of play. TP-first
-multi-GPU bring-up is complete for the forward path: the generation loop
-has moved into the engine, BOS/EOS metadata lives in the tokenizer, the
-data loader is thread-safe, the Model layer spawns one worker thread per
-tensor-parallel rank, TensorView carries a per-row stride with a host-side
-gather helper, block factories shard weights by tp_degree, blocks derive
-their local dimensions from the staged views, Model performs an out-of-place
-fp32 sum AllReduce after every block with a **device-flag P2P allreduce**
-(fine-grained device flags + system-scope atomic release/acquire;
-one immutable contribution slot per block in a rank-local slab,
-produced-only epochs, no consumed barrier; fused single-block kernel
-≤64 KB, barrier + wide gather above. The original in-place protocol is
-recorded in research/p2p-allreduce/atomics.md; RCCL is retired from the
-engine), and sampling now runs on the host inside Engine. The Canonical
-system RCCL build is broken for multi-rank collectives (validated via the
-AMD-lineage overlay in research/rocm-overlay-method.md).
+Status: living document. GPU-resident execution is the only path; CPU
+bring-up is retired. AGENTS.md tracks the machine and state of play.
+Engine owns generation, host sampling, tokenizer metadata, and one worker /
+Model per tensor-parallel rank. Factories shard weights; TensorView supports
+strided host shards. Model state and the FP32 residual stream stay on device.
+
+**TP collective integration (2026-10, user-directed, §17):** every block
+publishes an immutable slot in a rank-local contribution slab and reduces
+out-of-place into trunk io. S=1 uses native device-flag P2P: fused single-CTA
+for <=16 KiB rows, pointer-hoisted/dephased data-major 2×1024 gather plus
+ready barrier for the 32 KiB 70B row. S>1 uses out-of-place RCCL prefill.
+There is no consumed epoch or copy-back. All workers complete GPU execution
+before the next forward reuses slots. P2P epochs remain monotonic across
+RCCL prefill gaps, graph replay, and reset. No rocSHMEM dependency.
+
+Canonical's RCCL build is still broken. CMake selects the existing validated
+AMD 7.1 overlay through `ALICE_RCCL_LIBRARY`; executable build RUNPATH and a
+runtime symbol-path guard prevent accidental use of the wrong build. Engine
+creates one load-phase communicator ID; workers initialize their own rank's
+communicator after all models load, then record the S=1 compute graph.
+`WorkItem` contains only execution commands/tokens, never initialization
+payloads. Prefill remains eager; graph replay and rank threads are retained.
+
 Named buffers are fixed-size inter-layer communication state, not loading
-workspace (user clarification, 2026-10). The grow API is removed; ROCm
-weight constructors now allocate/free their own temporary device repack
-staging during loading. Named allocations have one owner (`named_`),
-separate from the arena/on-demand allocation ledger, fixing double-free
-at teardown. P2P peer-table installation is now part of worker
-initialization: all ranks finish loading before workers read peer pointers,
-then each installs its tables on its owner thread before reporting ready.
-`WorkItem` carries only execution commands and tokens, not a one-time
-`SetPeerIo` operation or peer-pointer payloads. The engine waits for complete
-initialization before accepting forward work. Each rank now records and
-instantiates an S=1 HIP compute graph during initialization (2026-10);
-prefill stays eager and rank workers are retained.
-The per-forward contribution slab (user direction, 2026-10) separates
-published data from the trunk's reduced result. Slots are fixed at load,
-not a ring or a growable pool; no rocSHMEM dependency. The worker waits
-for GPU completion on its explicit execution stream even for `ForwardRun`,
-and Engine waits for every worker before another forward reuses slots. The consume epoch and the
-large-path scratch/copy-back are removed. The old 64 KB dispatch boundary
-is retained provisionally. The rewritten standalone study in
-`research/p2p-allreduce/` now measures out-of-place geometry and cooperative
-launch without depending on production code. Same-kernel pipeline tests show
-32×256 outperforming 220×256 at 1/4 MiB for ws=4/8; ordinary 2×1024 wide
-kernels are promising at 32 KiB. Cooperative launch works but loses these
-comparisons, including the identical-kernel `coop-wide` control. These remain
-research candidates, not changed production dispatch rules. The next
-standalone traversal pass removes cooperative/election variants from the
-active code, tests metadata pointer hoisting + cyclic peer dephasing, and
-compares data-major with peer-major chunks. Pointer hoisting is the robust
-bulk gain; dephasing is workload-dependent and not a stable decode win.
-The flipped loop's local partial-output traffic generally loses. Routine
-search is pruned to 30 cases (~50 s), with poor few-lane points and peer-major
-available only explicitly. User-requested 2/4-load lookahead is now tested
-as a separate 32-case suite (~54 s): data-major batches adjacent peers,
-peer-major batches successive vectors from one peer. ISA confirms bounded
-outstanding loads and no register spills; compiler unrolling/address-wait
-interleaving is controlled. Results are geometry-dependent: no stable decode
-win, modest bulk gains in some cases, and peer-major remains slower despite
-lookahead. No production dispatch changed; reordered FP32 numerics still
-require real canonical validation before adoption. Register-backed
-peer-major tiles (1/4/8/32 float4 accumulators per thread) now have zero
-spills confirmed in ISA metadata; the 32-vector tile uses a <=256-thread
-launch bound and 204 VGPRs. A targeted 40-case matrix through 4 MiB (16 MiB
-excluded) shows no general bulk advantage even after eliminating partial
-output traffic and repeated full-tile bounds masks. Tile-four decode at
-ws=8/2×256 is a narrow retained candidate; conclusions and controls remain
-in the standalone study, not production dispatch. A separate optional
-out-of-place RCCL baseline now uses the documented AMD 7.1 overlay (loaded
-library path verified; Canonical's broken build refused). At matched O3,
-NUMA-node-0, graph-mode settings, 32 KiB still favors P2P; RCCL wins 1 MiB
-and 4 MiB, with ws=8/4 MiB 123.38 us versus the flat reference's 558.52 us
-(producer-inclusive, no attention context, 64 slots, 15 samples). Grouped
-single-process init is reused across payloads/modes. This is research only:
-no RCCL dependency, collective, or dispatch change in the production engine.
+workspace. Their table is their sole owner; no grow API or duplicate ledger
+registration. ROCm weight constructors own scoped device repack staging and
+release it after completion during loading. All runtime work names the rank
+execution stream; temporary upload/repack reuse is explicitly ordered.
+
+Research remains standalone. Detailed cooperative, geometry, traversal,
+lookahead, register-tile, and vendor results plus limitations are recorded in
+`research/p2p-allreduce/README.md` and `findings.md` (research commit ba8eb92).
+Only the selected simple decode gather and vendor prefill are integrated;
+other variants stay research candidates. Cross-implementation numerics are
+tolerance-based; canonical gates and end-to-end measurements are in §17.
 
 ## 1. Purpose & target
 
@@ -428,7 +391,7 @@ Narrow entry that sniffs format by content and delegates
   Ad-hoc models validate with zero recompile via `CanonicalEnv`
   (`ALICE_CANONICAL_{MODEL_FILE,FIXTURES[,CHUNK]}`).
 - Slab allreduce: four-rank kernel test covers separate output, unchanged
-  published slots/padding, both sides of the 64 KB boundary, and successive
+  published slots/padding, tiny fused / 32 KiB gather paths and tails, and successive
   forward epochs. TP=2 canonical validation covers wide prefill, S≤4 and S=1,
   reinitialization, and chunked `generate()` with `ForwardRun` completion.
 - Tests require a GPU, as the engine does.
@@ -550,7 +513,7 @@ return and combine excludes their unwritten entries. This avoids per-token
 graph updates/recapture. The overlaunch cost at short contexts is provisional;
 smaller-capacity graph variants remain a measured future optimization.
 
-Captured collectives use immutable per-block slab offsets and static
+Captured native decode collectives use immutable per-block slab offsets and static
 collective ordinals plus a device epoch base uploaded once before each
 replay. Host epochs advance by the block count; eager prefill and graph
 replay therefore share one monotonically increasing sequence. Flags are
@@ -585,6 +548,68 @@ suite: 35 passed + one optional CanonicalEnv skip; targeted Release replay
 and long-context tests passed three consecutive runs. The fixed-64 grid
 is a correctness-first baseline; overlaunch at short T can offset some
 host-submission savings.
+
+## 17. Hybrid TP collectives: integration and validation (2026-10)
+
+User-directed integration after standalone research commit ba8eb92:
+
+- S=1 / <=16 KiB: retain the existing fused single-CTA ready+gather kernel.
+  The initial extrapolation of the larger row's two-launch strategy regressed
+  1B decode; the small-row path is not silently replaced.
+- S=1 / 32 KiB: produced flag barrier + pointer-hoisted/dephased data-major
+  gather, 2×1024. Contiguous CTA chunks; 64 B LDS peer-address cache; no
+  payload prefetch or register-heavy peer-major tiling in production.
+- S>1: out-of-place `ncclAllReduce` from the immutable block slot to trunk io,
+  using one rank-owned prefill communicator on the rank stream. No added
+  per-block host synchronization. The all-worker forward completion boundary
+  still protects source reuse.
+- Host collective counters advance for RCCL as well as native calls; RCCL
+  leaves P2P flags alone. Next replay uses a higher base, so gaps are safe.
+  Reset clears attention state, never collective counters.
+- CMake links `ALICE_RCCL_LIBRARY` (default: the documented existing AMD 7.1
+  overlay), with executable build RUNPATH. A symbol-path guard rejects a
+  different loaded library before worker/communicator initialization. Version
+  equality cannot detect Canonical's known launch-path bug. UID lives only in
+  the load-phase ThreadState; owner workers call `ncclCommInitRank` after load.
+  Decoder graphs are destroyed before communicator teardown, with rank device
+  binding restored for cleanup. No initialization WorkItem was reintroduced.
+
+Dephased FP32 addition order can differ across ranks. It is not a bitwise
+replica claim: every implementation must pass the signed numerical gates.
+1B TP=2, 70B TP=4 and TP=8 pass committed canonical cases for eager prefill
+(chunk=512) and S=1 graph replay (chunk=1). Worst 70B drift is 0.547702,
+below 0.75; 1B max is 0.356657. Existing graph/eager, reset, overflow, and
+chunked-generation tests cover switching between vendor/native collectives.
+The runtime wrong-library guard is tested with an explicit system-library
+LD override and fails safely before a collective.
+
+### Matched engine A/B
+
+Baseline ba8eb92 built separately with the same Release flags; new hybrid
+built in build-release. Public Engine API driver loads once, validates all
+three 70B fixtures in both chunk modes, then generates 128 tokens per round.
+No streaming callback or per-token text printing. CPU and memory are bound
+with `numactl --cpunodebind=0 --membind=0`; max_seq=8192, chunk=512.
+Short prompt is 28 tokens (attention T=29..156), long prompt 1667 tokens
+(T=1668..1795). Short table uses the second warm round; these are matched
+initial runs, not a variance-controlled campaign.
+
+| TP | short decode baseline → hybrid | long decode baseline → hybrid | 1667-token prefill baseline → hybrid |
+|---|---|---|---|
+| 4 | 44.72 → 44.18 ms/tok (22.36 → 22.63 tok/s) | 46.89 → 46.59 ms/tok (21.33 → 21.46 tok/s) | 1.853 → 1.449 s (900 → 1150 tok/s) |
+| 8 | 34.99 → 33.20 ms/tok (28.58 → 30.12 tok/s) | 36.76 → 34.92 ms/tok (27.20 → 28.64 tok/s) | 2.244 → 0.917 s (743 → 1818 tok/s) |
+
+TP=8 long prefill improves ~2.45×. All short generated texts match the old
+binary; long TP=4 matches, long TP=8 differs. The committed teacher-forced
+canonical gate passes; no fp32-ideal long-70B greedy-margin fixture was used,
+so do not claim exact long greedy equivalence. Small-model results are not
+universally faster: final 1B TP=2 warm short decode 246.6 → 239.6 tok/s,
+long 219.1 → 213.8, despite retaining its fused native decode. Vendor prefill
+and communicator resources are part of this hybrid; the small regression's
+precise cause is not isolated.
+
+Logs, the temporary public-API driver, and the detached baseline worktree are
+under temp/hybrid-collectives/ and temp/hybrid-baseline/ (not committed).
 
 ## Retired decisions (kept so they are not re-litigated)
 

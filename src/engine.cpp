@@ -22,6 +22,7 @@
 #include <mutex>
 #include <span>
 #include <stdexcept>
+#include <dlfcn.h>
 
 #include <nlohmann/json.hpp>
 #include <rccl/rccl.h>
@@ -37,6 +38,19 @@ namespace {  // private helpers
 
 [[noreturn]] void fail(const std::string& what) {
   throw std::runtime_error("model loader: " + what);
+}
+
+// Canonical's same-version RCCL build is known to crash multi-rank kernels.
+// Link to the CMake-selected validated library and reject an LD override before
+// communicator initialization. Version alone does not identify build lineage.
+void verify_rccl_library() {
+  Dl_info info{};
+  if (!dladdr(reinterpret_cast<const void*>(&ncclAllReduce), &info) || !info.dli_fname)
+    fail("cannot identify loaded RCCL library");
+  if (std::filesystem::canonical(info.dli_fname) !=
+      std::filesystem::canonical(ALICE_RCCL_EXPECTED_LIBRARY))
+    fail("unexpected RCCL library '" + std::string(info.dli_fname) +
+         "'; use the validated ALICE_RCCL_LIBRARY (research/rocm-overlay-method.md)");
 }
 
 struct Timer {
@@ -106,6 +120,7 @@ struct Engine::ThreadState {
   int loaded_count = 0;  // weights/io/flags exist; workers may install peers
   int ready_count = 0;   // initialization finished (including failed ranks)
   std::exception_ptr load_error;
+  ncclUniqueId prefill_id{};  // load-phase only; never part of WorkItem
 };
 
 Engine::Engine() : ts_(std::make_unique<ThreadState>()) {}
@@ -176,7 +191,7 @@ void worker_main(Engine* engine, int rank, int world_size, gpu::Model* model,
   }
 
   try {
-    model->finish_initialization(engine->models_);
+    model->finish_initialization(engine->models_, ts.prefill_id);
   } catch (...) {
     model->set_error(std::current_exception());
   }
@@ -293,6 +308,19 @@ Engine init_engine_impl(const std::filesystem::path& model_file,
   out.license_url_ = descriptor.license_url;
   out.license_text_ = descriptor.license_text;
   out.max_context_ = descriptor.max_context;
+
+  // Fail before launching workers, rather than strand a peer-enable or RCCL
+  // initialization barrier on an invalid rank count/library.
+  int devices = 0;
+  const auto hip_status = hipGetDeviceCount(&devices);
+  if (hip_status != hipSuccess) fail(std::string("device count: ") + hipGetErrorString(hip_status));
+  if (mc.tp_degree == 0 || mc.tp_degree > static_cast<uint32_t>(devices) || mc.tp_degree > 8)
+    fail("tp_degree must be within the available 1..8 GPU ranks");
+  if (mc.tp_degree > 1) {
+    verify_rccl_library();
+    const auto e = ncclGetUniqueId(&ts.prefill_id);
+    if (e != ncclSuccess) fail(std::string("prefill communicator id: ") + ncclGetErrorString(e));
+  }
 
   // Device models: one per rank, each loaded in its own worker thread.
   Timer load_timer;

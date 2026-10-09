@@ -14,6 +14,13 @@ The full design rationale lives in `docs/engine-design.md`.
 
 - CMake, a C++20 compiler (developed with GCC 15), **ROCm (rocBLAS + HIP
   runtime) and hipcc** — required, the engine does not build without them
+- **RCCL** for tensor-parallel prefill. This machine's Canonical build is
+  broken; CMake defaults `ALICE_RCCL_LIBRARY` to the validated AMD 7.1
+  overlay under `~/scratch/rocm-debs/amd-7.1/opt/rocm-7.1.0/lib/`.
+  See `research/rocm-overlay-method.md`; an existing alternative library can
+  be selected with `-DALICE_RCCL_LIBRARY=/path/to/librccl.so.1`.
+  Build RUNPATH selects it automatically; an unexpected runtime override
+  fails loudly before communicator initialization.
 - **PCRE2** (`libpcre2-dev`; discovered via pkg-config) — required, for the
   tokenizer's pre-tokenizer regex
 - Tests: GoogleTest (fetched automatically), models under `/opt/models`
@@ -62,6 +69,9 @@ Examples:
 ```
 
 S=1 forwards use a per-rank HIP compute graph by default; prefill is eager.
+TP decode uses native P2P (small rows fused, 70B's row hoisted/dephased);
+S>1 uses out-of-place RCCL. Contributions remain immutable through forward
+completion. Communicators are initialized once per loaded engine/rank.
 Set `ALICE_DECODE_GRAPH=0` for the eager decode A/B baseline (library callers:
 `ModelConfig::decode_graph=false`). Replay uses fixed 64-split attention grids
 with device-side position/active-split handling and monotonic collective epochs.

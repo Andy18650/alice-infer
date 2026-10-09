@@ -51,8 +51,8 @@ TEST(GpuAllreduce, SlabSlotsPreservedAcrossCollectivesAndForwards) {
     }
   }
 
-  constexpr std::array<uint32_t, 3> sizes{8, 16384, 16388};
-  constexpr size_t stride = 16448;  // fixed, float4-aligned; includes padding
+  constexpr std::array<uint32_t, 4> sizes{8, 4096, 8192, 8196};
+  constexpr size_t stride = 8256;  // fixed, float4-aligned; includes padding
   constexpr size_t elements = sizes.size() * stride;
   constexpr size_t bytes = elements * sizeof(float);
   std::array<RankBuffers, ws> ranks;
@@ -104,12 +104,13 @@ TEST(GpuAllreduce, SlabSlotsPreservedAcrossCollectivesAndForwards) {
       for (size_t slot = 0; slot < sizes.size(); ++slot) {
         const uint64_t epoch = forward * sizes.size() + slot + 1;
         const size_t offset = slot * stride;
-        if (sizes[slot] <= 16384) {
+        if (sizes[slot] <= 4096) {
           gk::ar_fused_f4(nullptr, rank.out + offset, rank.slabs, rank.flag, rank.flags,
                           ws, r, sizes[slot], offset, epoch);
         } else {
           gk::ar_flagbar(nullptr, rank.flag, rank.flags, ws, r, epoch);
-          gk::ar_gather_f4(nullptr, rank.slabs, rank.out + offset, ws, sizes[slot], offset);
+          gk::ar_decode_gather_f4(nullptr, rank.slabs, rank.out + offset, ws, r,
+                                  sizes[slot], offset);
         }
       }
     }

@@ -136,8 +136,8 @@ TEST(GpuModel, Canonical1BTp2Initialization) {
   for (int attempt = 0; attempt < 2; ++attempt) {
     cfg.max_prefill_chunk = attempt == 0 ? 512 : 4;
     auto engine = load_packed(kPacked1B, cfg);
-    // Large chunks exercise the wide collective; small chunks exercise the
-    // fused path and repeated slab reuse, with S=1 tested explicitly below.
+    // S>1 chunks use out-of-place RCCL; S=1 below uses native decode gather.
+    // Switching between them must preserve slab reuse and monotonic epochs.
     run_teacher_forced(engine, fixture("canonical", ""), cfg.max_prefill_chunk, 3);
     if (attempt == 1) {
       run_teacher_forced(engine, fixture("canonical", ""), 1, 3);

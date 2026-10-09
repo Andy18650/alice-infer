@@ -45,14 +45,19 @@ target_link_libraries(alice PRIVATE PkgConfig::PCRE2)
 find_library(ALICE_BLAKE3_LIB blake3)
 find_library(ALICE_ROCBLAS_LIB rocblas)
 find_library(ALICE_HIP_LIB amdhip64)
-find_library(ALICE_RCCL_LIB rccl)
+# Canonical's RCCL build is broken for multi-rank collectives on this stack.
+# Use the existing, user-validated AMD overlay (research/rocm-overlay-method.md).
+# CMake adds its directory to executable build RUNPATH; no library vendoring.
+set(ALICE_RCCL_LIBRARY
+    "$ENV{HOME}/scratch/rocm-debs/amd-7.1/opt/rocm-7.1.0/lib/librccl.so.1"
+    CACHE FILEPATH "Validated RCCL library for tensor-parallel prefill")
 if(NOT ALICE_ROCBLAS_LIB OR NOT ALICE_HIP_LIB OR NOT ALICE_BLAKE3_LIB OR
    NOT EXISTS "/usr/include/rocblas/rocblas.h" OR
    NOT EXISTS "/usr/include/blake3.h")
   message(FATAL_ERROR "alice: ROCm (rocBLAS + HIP runtime) required — the engine is GPU-mandatory (design §3)")
 endif()
-if(NOT ALICE_RCCL_LIB OR NOT EXISTS "/usr/include/rccl/rccl.h")
-  message(FATAL_ERROR "alice: RCCL required for tensor-parallel collectives")
+if(NOT EXISTS "${ALICE_RCCL_LIBRARY}" OR NOT EXISTS "/usr/include/rccl/rccl.h")
+  message(FATAL_ERROR "alice: validated RCCL required for TP prefill; set ALICE_RCCL_LIBRARY (see research/rocm-overlay-method.md)")
 endif()
 set(ALICE_GPU_ARCH "gfx90a" CACHE STRING "HIP offload architecture for the device TUs")
 set(CMAKE_HIP_ARCHITECTURES "${ALICE_GPU_ARCH}")
@@ -80,8 +85,10 @@ target_sources(alice PRIVATE
     src/blocks/gpu_rocm/kernels.hip
     src/engine.cpp)
 target_compile_definitions(alice PUBLIC JSON_DIAGNOSTICS=1)  # json exceptions carry the JSON pointer path
-target_compile_definitions(alice PRIVATE __HIP_PLATFORM_AMD__)
-target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}" "${ALICE_HIP_LIB}" "${ALICE_BLAKE3_LIB}" "${ALICE_RCCL_LIB}")
+target_compile_definitions(alice PRIVATE __HIP_PLATFORM_AMD__
+    ALICE_RCCL_EXPECTED_LIBRARY="${ALICE_RCCL_LIBRARY}")
+target_link_libraries(alice PRIVATE "${ALICE_ROCBLAS_LIB}" "${ALICE_HIP_LIB}"
+    "${ALICE_BLAKE3_LIB}" "${ALICE_RCCL_LIBRARY}" ${CMAKE_DL_LIBS})
 message(STATUS "alice: HIP language enabled (${CMAKE_HIP_COMPILER}, arch ${CMAKE_HIP_ARCHITECTURES})")
 
 # Minimal REPL PoC (design §12: the CLI owns the whole loop for now)

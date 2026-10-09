@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <hip/hip_runtime_api.h>
+#include <rccl/rccl.h>
 
 #include "alice/engine_config.hpp"
 #include "../blocks/block.hpp"
@@ -62,8 +63,10 @@ class Model {
   void execute(const WorkItem& work);
 
   // Complete initialization in the owner worker, after every rank has loaded.
-  // Installs P2P tables and optionally records S=1 compute; not a work item.
-  void finish_initialization(std::span<const std::unique_ptr<Model>> peers);
+  // Installs P2P tables, initializes the prefill communicator, and optionally
+  // records S=1 compute; not a work item or a runtime payload.
+  void finish_initialization(std::span<const std::unique_ptr<Model>> peers,
+                             const ncclUniqueId& prefill_id);
   bool decode_graph_enabled() const { return decode_exec_ != nullptr; }
 
   // Result/error accessors (read by the Engine after the completion barrier).
@@ -91,7 +94,8 @@ class Model {
   float** ar_slabs_dev_ = nullptr;   // device table: contribution slab per rank
   float* ar_contributions_ = nullptr;  // one immutable published slot per block
   size_t ar_slot_stride_ = 0;          // floats per slot, sized for max_prefill_chunk
-  uint64_t ar_epoch_ = 0;              // +1 per allreduce (produced only)
+  uint64_t ar_epoch_ = 0;              // +1 per collective, including RCCL gaps
+  ncclComm_t prefill_comm_ = nullptr;  // owner-thread init, S>1 only
 
   hipGraph_t decode_graph_ = nullptr;
   hipGraphExec_t decode_exec_ = nullptr;

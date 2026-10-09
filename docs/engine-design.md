@@ -43,7 +43,35 @@ launch without depending on production code. Same-kernel pipeline tests show
 32×256 outperforming 220×256 at 1/4 MiB for ws=4/8; ordinary 2×1024 wide
 kernels are promising at 32 KiB. Cooperative launch works but loses these
 comparisons, including the identical-kernel `coop-wide` control. These remain
-research candidates, not changed production dispatch rules.
+research candidates, not changed production dispatch rules. The next
+standalone traversal pass removes cooperative/election variants from the
+active code, tests metadata pointer hoisting + cyclic peer dephasing, and
+compares data-major with peer-major chunks. Pointer hoisting is the robust
+bulk gain; dephasing is workload-dependent and not a stable decode win.
+The flipped loop's local partial-output traffic generally loses. Routine
+search is pruned to 30 cases (~50 s), with poor few-lane points and peer-major
+available only explicitly. User-requested 2/4-load lookahead is now tested
+as a separate 32-case suite (~54 s): data-major batches adjacent peers,
+peer-major batches successive vectors from one peer. ISA confirms bounded
+outstanding loads and no register spills; compiler unrolling/address-wait
+interleaving is controlled. Results are geometry-dependent: no stable decode
+win, modest bulk gains in some cases, and peer-major remains slower despite
+lookahead. No production dispatch changed; reordered FP32 numerics still
+require real canonical validation before adoption. Register-backed
+peer-major tiles (1/4/8/32 float4 accumulators per thread) now have zero
+spills confirmed in ISA metadata; the 32-vector tile uses a <=256-thread
+launch bound and 204 VGPRs. A targeted 40-case matrix through 4 MiB (16 MiB
+excluded) shows no general bulk advantage even after eliminating partial
+output traffic and repeated full-tile bounds masks. Tile-four decode at
+ws=8/2×256 is a narrow retained candidate; conclusions and controls remain
+in the standalone study, not production dispatch. A separate optional
+out-of-place RCCL baseline now uses the documented AMD 7.1 overlay (loaded
+library path verified; Canonical's broken build refused). At matched O3,
+NUMA-node-0, graph-mode settings, 32 KiB still favors P2P; RCCL wins 1 MiB
+and 4 MiB, with ws=8/4 MiB 123.38 us versus the flat reference's 558.52 us
+(producer-inclusive, no attention context, 64 slots, 15 samples). Grouped
+single-process init is reused across payloads/modes. This is research only:
+no RCCL dependency, collective, or dispatch change in the production engine.
 
 ## 1. Purpose & target
 

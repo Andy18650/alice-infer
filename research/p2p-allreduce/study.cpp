@@ -28,19 +28,26 @@ struct Skip : std::runtime_error { using std::runtime_error::runtime_error; };
 struct Operation {
   const char* name;
   p2p_ar::Launch launch;
-  p2p_ar::Capacity capacity;
   int fixed_blocks, fixed_threads;
   bool has_result;
 };
 const Operation operations[] = {
-    {"fill", p2p_ar::producer_only, nullptr, 0, 0, false},
-    {"barrier", p2p_ar::barrier, nullptr, 1, 32, false},
-    {"fused", p2p_ar::fused, nullptr, 1, 1024, true},
-    {"pipe", p2p_ar::pipe, nullptr, 0, 0, true},
-    {"wide", p2p_ar::wide, nullptr, 0, 0, true},
-    {"elected", p2p_ar::elected, nullptr, 0, 0, true},
-    {"coop", p2p_ar::coop, p2p_ar::coop_capacity, 0, 0, true},
-    {"coop-wide", p2p_ar::coop_wide, p2p_ar::coop_wide_capacity, 0, 0, true},
+    {"fill", p2p_ar::producer_only, 0, 0, false},
+    {"fused", p2p_ar::fused, 1, 1024, true},
+    {"pipe", p2p_ar::pipe, 0, 0, true},
+    {"chunk", p2p_ar::chunk, 0, 0, true},
+    {"hoisted", p2p_ar::hoisted, 0, 0, true},
+    {"phase", p2p_ar::phase, 0, 0, true},
+    {"peer-major", p2p_ar::peer_major, 0, 0, true},
+    {"prefetch2", p2p_ar::prefetch2, 0, 0, true},
+    {"prefetch4", p2p_ar::prefetch4, 0, 0, true},
+    {"hoist-prefetch2", p2p_ar::hoist_prefetch2, 0, 0, true},
+    {"peer-prefetch2", p2p_ar::peer_prefetch2, 0, 0, true},
+    {"peer-prefetch4", p2p_ar::peer_prefetch4, 0, 0, true},
+    {"peer-reg1", p2p_ar::peer_reg1, 0, 0, true},
+    {"peer-reg4", p2p_ar::peer_reg4, 0, 0, true},
+    {"peer-reg8", p2p_ar::peer_reg8, 0, 0, true},
+    {"peer-reg32", p2p_ar::peer_reg32, 0, 0, true},
 };
 const Operation& operation(const std::string& name) {
   for (const auto& op : operations) if (name == op.name) return op;
@@ -49,7 +56,7 @@ const Operation& operation(const std::string& name) {
 struct Config {
   const Operation* op = nullptr;
   std::string mode = "graph";
-  int ws = 0, blocks = 0, threads = 256, slots = 160, samples = 7, base = 0;
+  int ws = 0, blocks = 0, threads = 256, slots = 64, samples = 5, base = 0;
   size_t bytes = 0;
 };
 long long number(const char* text) {
@@ -78,7 +85,7 @@ struct Rank {
   hipEvent_t start = nullptr, stop = nullptr;
   float *input = nullptr, *out = nullptr;
   float** peers = nullptr;
-  uint64_t *flag = nullptr, *claim = nullptr, *epoch_base = nullptr;
+  uint64_t *flag = nullptr, *epoch_base = nullptr;
   uint64_t** flags = nullptr;
   uint64_t host_base = 0;
   std::unique_ptr<Graph> validation, timed;
@@ -93,7 +100,6 @@ struct Rank {
     if (peers) (void)hipFree(peers);
     if (flag) (void)hipFree(flag);
     if (flags) (void)hipFree(flags);
-    if (claim) (void)hipFree(claim);
     if (epoch_base) (void)hipFree(epoch_base);
   }
 };
@@ -103,7 +109,7 @@ Args args_for(Rank& r, const Config& c, int rank, int slot, bool validation) {
   Args a;
   a.input = r.input; a.out = r.out;
   a.peers = r.peers; a.flag = r.flag; a.flags = r.flags;
-  a.claim = r.claim; a.epoch_base = r.epoch_base;
+  a.epoch_base = r.epoch_base;
   a.offset = size_t(slot) * (c.bytes / 4);
   if (validation) a.out += a.offset;
   a.ordinal = uint64_t(slot + 1);
@@ -115,8 +121,6 @@ void enqueue(Rank& r, const Config& c, int rank, int slots, bool validation) {
     const auto a = args_for(r, c, rank, slot, validation);
     p2p_ar::fill(r.stream, a);  // prior kernel writes dirty L2; release is load-bearing
     const auto e = c.op->launch(r.stream, a, c.blocks, c.threads);
-    if (c.op->capacity && (e == hipErrorNotSupported || e == hipErrorStreamCaptureUnsupported))
-      throw Skip("cooperative kernel not supported in this launch/capture mode");
     check(e, c.op->name);
   }
 }
@@ -218,7 +222,8 @@ double median(std::vector<double> x) {
 void study(Config c) {
   int devices = 0;
   check(hipGetDeviceCount(&devices), "device count");
-  if (c.ws < 2 || c.base < 0 || c.base > devices || c.ws > devices - c.base)
+  if (c.ws < 2 || c.ws > p2p_ar::kMaxPeers || c.base < 0 ||
+      c.base > devices || c.ws > devices - c.base)
     throw std::runtime_error("invalid device range");
   // All pairwise enables complete serially before allocations on ANY rank.
   for (int rank = 0; rank < c.ws; ++rank) {
@@ -232,28 +237,16 @@ void study(Config c) {
       if (e != hipErrorPeerAccessAlreadyEnabled) check(e, "peer enable");
     }
   }
-  const bool cooperative = c.op->capacity != nullptr;
-  int coop_limit = std::numeric_limits<int>::max();
   for (int rank = 0; rank < c.ws; ++rank) {
     check(hipSetDevice(c.base + rank), "property device");
     hipDeviceProp_t prop{};
     check(hipGetDeviceProperties(&prop, c.base + rank), "properties");
-    std::fprintf(stderr, "device=%d arch=%s CUs=%d cooperative=%d\n", c.base + rank,
-                  prop.gcnArchName, prop.multiProcessorCount, prop.cooperativeLaunch);
-    if (cooperative) {
-      int limit = 0;
-      const auto e = c.op->capacity(c.threads, &limit);
-      if (e == hipErrorNotSupported) throw Skip("cooperative launch unsupported");
-      check(e, "cooperative occupancy");
-      coop_limit = std::min(coop_limit, limit);
-    }
+    std::fprintf(stderr, "device=%d arch=%s CUs=%d\n", c.base + rank,
+                  prop.gcnArchName, prop.multiProcessorCount);
   }
   if (c.blocks == 0) {
     c.blocks = std::min(220, int((c.bytes / 16 + c.threads - 1) / c.threads));
-    if (cooperative) c.blocks = std::min(c.blocks, coop_limit);
   }
-  if (cooperative && c.blocks > coop_limit)
-    throw Skip("requested cooperative grid exceeds residency limit " + std::to_string(coop_limit));
   if (c.op->fixed_blocks) {
     c.blocks = c.op->fixed_blocks;
     c.threads = c.op->fixed_threads;
@@ -285,12 +278,10 @@ void study(Config c) {
     check(hipMalloc(&r->out, c.bytes * size_t(check_slots)), "separate output");
     check(hipExtMallocWithFlags(reinterpret_cast<void**>(&r->flag), sizeof(uint64_t),
                                 hipDeviceMallocFinegrained), "fine-grained flag");
-    check(hipMalloc(&r->claim, sizeof(uint64_t)), "local election word");
     check(hipMalloc(&r->epoch_base, sizeof(uint64_t)), "epoch parameter");
     check(hipMalloc(&r->peers, size_t(c.ws) * sizeof(float*)), "peer table");
     check(hipMalloc(&r->flags, size_t(c.ws) * sizeof(uint64_t*)), "flag table");
     check(hipMemset(r->flag, 0, sizeof(uint64_t)), "initial flag");
-    check(hipMemset(r->claim, 0, sizeof(uint64_t)), "initial claim");
     // Time on each device's own clock. Disable event system fences: the event
     // must not pre-flush data or repair a broken release/acquire protocol.
     check(hipEventCreateWithFlags(&r->start, hipEventDisableSystemFence), "start event");
@@ -332,18 +323,20 @@ void study(Config c) {
   const size_t p90 = size_t(std::ceil(0.9 * sorted.size())) - 1;
   const double us = median(gpu);
   const double output_gbs = double(c.ws) * c.bytes / (us * 1000);
-  std::puts("backend,mode,ws,bytes,blocks,threads,coop_limit,slots,samples,gpu_median_us,gpu_min_us,gpu_p90_us,wall_median_us,output_GBs,correct");
-  std::printf("%s,%s,%d,%zu,%d,%d,%d,%d,%d,%.4f,%.4f,%.4f,%.4f,%.3f,OK\n",
+  std::puts("backend,mode,ws,bytes,blocks,threads,slots,samples,gpu_median_us,gpu_min_us,gpu_p90_us,wall_median_us,output_GBs,correct");
+  std::printf("%s,%s,%d,%zu,%d,%d,%d,%d,%.4f,%.4f,%.4f,%.4f,%.3f,OK\n",
                c.op->name, c.mode.c_str(), c.ws, c.bytes, c.blocks, c.threads,
-               cooperative ? coop_limit : 0, c.slots, c.samples,
+               c.slots, c.samples,
                us, sorted.front(), sorted[p90], median(wall), output_gbs);
 }
 }  // namespace
 
 int main(int argc, char** argv) {
   if (argc < 4 || argc > 10) {
-    std::fprintf(stderr, "usage: %s backend ws bytes [blocks=0] [threads=256] [slots=160] [samples=7] [device_base=0] [graph|eager]\n"
-                        "operations: fused pipe wide elected coop coop-wide fill barrier\n", argv[0]);
+    std::fprintf(stderr, "usage: %s operation ws bytes [blocks=0] [threads=256] [slots=64] [samples=5] [device_base=0] [graph|eager]\n"
+                        "operations: fused pipe chunk hoisted phase peer-major fill\n"
+                        "            prefetch2 prefetch4 hoist-prefetch2 peer-prefetch2 peer-prefetch4\n"
+                        "            peer-reg1 peer-reg4 peer-reg8 peer-reg32\n", argv[0]);
     return 1;
   }
   try {

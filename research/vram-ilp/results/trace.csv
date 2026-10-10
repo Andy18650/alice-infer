@@ -1,0 +1,8 @@
+sample,reported_regs,capacity_CTAs_per_CU,CUs_seen,max_CTAs_assigned_one_CU,wave_entry_spread_us,all_wave_common_interval_us
+0,40,8,104,1,0.16,725.6
+1,40,8,104,1,0.32,683.52
+2,40,8,104,1,0.16,681.28
+3,40,8,104,1,0.16,685.6
+4,40,8,104,1,0.16,685.12
+5,40,8,104,1,0.16,685.76
+6,40,8,104,1,0.16,683.68

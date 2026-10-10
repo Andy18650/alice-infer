@@ -1,0 +1,4 @@
+pattern,original_regs,marked_regs,original_CTAs_per_CU,marked_CTAs_per_CU,original_device_capacity,marked_device_capacity
+A_vector_contiguous,50,50,8,8,832,832
+B_scalar_striped,52,52,8,8,832,832
+C_scalar_contiguous,52,52,8,8,832,832

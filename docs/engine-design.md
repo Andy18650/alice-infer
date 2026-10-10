@@ -58,6 +58,65 @@ context valid. The probe records this API inconsistency as unexpected, with
 no grid.sync() and no valid timing claim; applications must enforce residency
 before cooperative grid synchronization. No production launch changes made.
 
+A standalone local VRAM ceiling sweep (`research/vram-ceiling/`) now exceeds
+that earlier decode study's 1290 GB/s reference. Native O3 HIP/C++20,
+HIP logical device 0 (PCI 0000:31:00.0, 104 CUs), CPU+memory NUMA node 0,
+no model/context: 576 checked configurations vary load width, independent
+chains, grid/block geometry and traversal. Two final process runs confirm
+1 GiB best medians 1530.5/1509.3 GB/s; the same 8-byte-load configuration
+sustains 1462.8/1460.2 GB/s medians at 4 GiB across nine randomized rounds.
+Actual-code-object disassembly preserves wide loads; sampled active clocks
+are 1700/1600 MHz core/memory without setting overrides. Treat ~1.46 TB/s
+as a provisional multi-GiB local-read reference, not a GEMV/all-GCD ceiling;
+size-dependent ranking and timing variance remain. An exact-code-object
+occupancy query finds 59 VGPRs, no LDS/scratch, and 8×256-thread CTAs/CU
+(832 across 104 CUs). A same-occupancy timestamped twin confirms all 3328
+waves overlap at the 832-CTA launch, whereas a 1664-CTA control does not
+fit the whole grid simultaneously. This is observed reproduction plus
+capacity evidence, not a historical hardware-counter trace. No production
+changes.
+
+The follow-up `research/vram-addressing/` probes fixed-payload tile strides,
+base alignment and disjoint paired streams on that same GCD/placement,
+without a model/context. Native O3, 256 B tiles, 32 MiB useful reads:
+8 KiB stride is ~1100 GB/s; 16/32/64 KiB fall to ~889/557/304, while +256 B
+padding restores ~1105/1085/1070. Seven randomized rounds and independent
+32/64 MiB process repeats retain the losses. Paired streams show periodic
+half-stride relief and a reproducible difference between 8/16/24 GiB plane
+gaps. These are effective contention signatures, not proof of a 256 B
+physical HBM interleave or an XOR swizzle. Counter collection is blocked by
+AQL-profile extension initialization; no system workaround or production
+change was made. See the study for codegen, checksum and mapping caveats.
+
+`research/vram-ilp/` now separates addressing from compiler scheduling at
+104×256 threads on that same GCD/NUMA placement, native O3, no model/context.
+The preserved U=16 global reader emits load→vmcnt(0)→consume repeatedly;
+U=8 batches loads. A scheduling-constrained U=16 reader keeps addresses
+unchanged and restores ~559→1396 GB/s at 1 GiB (nine rounds of 12 reads).
+Wave-local 4 KiB tiles reach repeated ~1480 GB/s medians at 1 GiB and
+~1420 at 4 GiB; one 1502.9 median repeats at 1486.4, not a stable 1500+
+claim. A timestamped twin places one CTA on each of 104 CUs with four
+waves/CU. Larger unrolls, launch bounds and ping-pong banks are not uniform
+wins. Matched unchanged 832-CTA controls run ~1400 here, below their earlier
+1530.5; that cross-campaign shift is not isolated. No production changes.
+
+`research/vram-coalescing/` compares equal 256-float wave tiles using A:
+per-lane 16 B vector loads, B: four adjacent-lane scalar passes, and C:
+four per-lane contiguous scalar loads. Same GCD/NUMA placement, native O3,
+no model/context, 1 GiB, 104×256, four independent tiles: A/B repeat at
+~1430 GB/s, controlled scalar C ~676. B/C have identical scalar load counts,
+graduated waits, resource capacity and cache flags; more batching or 832
+CTAs does not rescue C. Normal LLVM optimization widens C into A's 16 B
+loads and restores ~1430. This isolates instruction/address-pattern
+sensitivity, not physical HBM traffic or a channel map. A same-capacity
+hardware-ID/timestamp follow-up (`research/vram-coalescing/packing.md`)
+finds identical CU/SIMD spreading for A/B/C: 104/208/416/832 CTAs give
+1/2/4/8 overlapping CTAs per CU, each CTA's four waves split one per SIMD.
+A 1664-CTA control peaks at 3328 waves, with later assignment as work
+finishes. Two process runs × seven samples confirm this workload's balanced
+packing, not a general memory-contention-minimization policy. No production
+changes.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

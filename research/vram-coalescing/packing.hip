@@ -22,7 +22,7 @@ __device__ __forceinline__ uint32_t hardware_id() {
 
 template<class Reader>
 __global__ __launch_bounds__(256,1)
-void read_placed(const uint32_t* __restrict__ input,size_t count,uint32_t* __restrict__ sink,
+void read_placed(const float* __restrict__ input,size_t count,uint32_t* __restrict__ sink,
                  Stamp* __restrict__ stamps) {
   const size_t wave=(size_t(blockIdx.x)*blockDim.x+threadIdx.x)/64;
   const uint64_t start=wall_clock64();
@@ -53,7 +53,7 @@ template<class Reader> void add(std::vector<Case>& cases) {
 
 struct Context {
   hipStream_t stream{};
-  uint32_t* input{}; uint32_t* sink{}; Stamp* stamps{};
+  float* input{}; uint32_t* sink{}; Stamp* stamps{};
   size_t count=(size_t(1)<<30)/4;
   Context(const std::string& out) {
     HIP(hipSetDevice(0));
@@ -68,8 +68,7 @@ struct Context {
     std::ofstream metadata(out+"/device.txt");
     metadata<<"device=0 PCI="<<pci<<" name="<<p.name<<" arch="<<p.gcnArchName
             <<" CUs="<<p.multiProcessorCount<<" wave="<<p.warpSize<<" wall_clock_khz="<<rate
-            <<" max_threads_per_CU="<<p.maxThreadsPerMultiProcessor
-            <<" input=uint32_t vector=uint4 generator=affine_mod2^32 scheduling_barriers="<<RESEARCH_SCHED_BARRIERS<<'\n';
+            <<" max_threads_per_CU="<<p.maxThreadsPerMultiProcessor<<'\n';
     initialize<<<832,256,0,stream>>>(input,count);
     HIP(hipGetLastError()); HIP(hipStreamSynchronize(stream));
   }

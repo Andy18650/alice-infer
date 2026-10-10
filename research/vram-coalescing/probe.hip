@@ -1,5 +1,5 @@
-// A/B/C: same 256-dword wave tiles, different per-instruction addresses.
-// Native gfx90a HIP/C++20, uint32_t input and built-in uint4 loads/checksums.
+// A/B/C: same 256-float wave tiles, different per-instruction addresses.
+// Native gfx90a HIP/C++20. Float bits are checksummed without FP arithmetic.
 #include "readers.hpp"
 #include <algorithm>
 #include <cstdint>
@@ -35,7 +35,7 @@ struct Context {
   hipDeviceProp_t device{};
   hipStream_t stream{};
   hipEvent_t start{},end{};
-  uint32_t* input{}; uint32_t* sink{};
+  float* input{}; uint32_t* sink{};
   Context(const std::string& out) {
     HIP(hipSetDevice(0)); HIP(hipGetDeviceProperties(&device,0));
     if(device.warpSize!=64 || device.multiProcessorCount!=104) throw std::runtime_error("requires 104-CU wave64 device");
@@ -45,7 +45,7 @@ struct Context {
     std::ofstream meta(out+"/device.txt");
     meta<<"device=0 PCI="<<pci<<" name="<<device.name<<" arch="<<device.gcnArchName
         <<" CUs="<<device.multiProcessorCount<<" wave="<<device.warpSize
-        <<" pointer="<<static_cast<void*>(input)<<" input=uint32_t vector=uint4 generator=affine_mod2^32 scheduling_barriers="<<RESEARCH_SCHED_BARRIERS<<'\n'; meta.close();
+        <<" pointer="<<static_cast<void*>(input)<<'\n'; meta.close();
     initialize<<<832,256,0,stream>>>(input,(size_t(4)<<30)/4);
     HIP(hipGetLastError()); HIP(hipStreamSynchronize(stream));
   }
@@ -72,21 +72,17 @@ struct Context {
 };
 
 int main(int argc,char** argv) try {
-  if(argc<2 || argc>4) throw std::runtime_error("usage: probe OUT [quick|sweep|blocks] [ROUNDS=9]");
+  if(argc<2 || argc>4) throw std::runtime_error("usage: probe OUT [quick|sweep] [ROUNDS=9]");
   const std::string out=argv[1],phase=argc>2?argv[2]:"quick";
   const int rounds=argc>3?std::stoi(argv[3]):9;
-  if((phase!="quick" && phase!="sweep" && phase!="blocks") || rounds<3 || rounds%2==0) throw std::runtime_error("invalid phase/rounds");
+  if((phase!="quick" && phase!="sweep") || rounds<3 || rounds%2==0) throw std::runtime_error("invalid phase/rounds");
   std::filesystem::create_directories(out);
   Context context(out);
   std::vector<Case> cases;
-  if(phase=="blocks") {
-    for(int grid:{104,208,416}) { add<A,4>(cases,grid); add<B,4>(cases,grid); }
-  } else {
-    add_abc<1>(cases,104);
-    if(phase=="sweep") {
-      add_abc<2>(cases,104); add_abc<4>(cases,104); add_abc<8>(cases,104);
-      add_abc<1>(cases,832); add_abc<2>(cases,832); add_abc<4>(cases,832); add_abc<8>(cases,832);
-    }
+  add_abc<1>(cases,104);
+  if(phase=="sweep") {
+    add_abc<2>(cases,104); add_abc<4>(cases,104); add_abc<8>(cases,104);
+    add_abc<1>(cases,832); add_abc<2>(cases,832); add_abc<4>(cases,832); add_abc<8>(cases,832);
   }
   std::ofstream resources(out+"/resources.csv");
   resources<<"pattern,chunks,grid,block,reported_regs,capacity_CTAs_per_CU,private_bytes\n";
@@ -104,7 +100,7 @@ int main(int argc,char** argv) try {
   std::vector<Work> work;
   for(size_t i=0;i<cases.size();++i) {
     work.push_back({i,size_t(1)<<30});
-    if(phase!="quick") { work.push_back({i,size_t(2)<<30}); work.push_back({i,size_t(4)<<30}); }
+    if(phase=="sweep") { work.push_back({i,size_t(2)<<30}); work.push_back({i,size_t(4)<<30}); }
   }
   std::ofstream raw(out+"/raw.csv");
   raw<<"pattern,chunks,grid,block,bytes,round,iters,ms,GB_s\n"<<std::setprecision(10);

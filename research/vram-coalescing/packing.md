@@ -121,13 +121,3 @@ and checksum smoke test also pass. Historical snapshots remain intact.
 Local `.clangd` flags supply HIP context for this research directory, which
 is outside the engine's compilation database. No production engine or
 system changes.
-
-### Raw-integer revalidation
-
-The shared body now uses raw `uint32_t` input, built-in `uint4` loads and
-accumulation, with no float conversions or custom vector aliases. The
-original two-run tables above remain historical evidence. A new seven-sample
-process (`temp/vram-coalescing/uint-packing/`) repeats all three readers and
-six grid sizes: CU/SIMD spreading and capacities are unchanged, with A at
-50 registers and B/C at 52, both marked and unmarked. New summary/resource
-copies are `results/uint-packing*.csv`.

@@ -1,44 +1,12 @@
 # A / B / C: coalescing per instruction versus eventual byte coverage
 
-User-directed comparison. One wave owns a 256-dword (1 KiB) tile; every
-variant eventually reads exactly that tile, once. The current code uses
-raw `uint32_t` input and HIP's built-in `uint4`, with an exact modulo-2^32
-checksum. There are no float bitcasts or custom compiler-vector types.
-The current default has no compiler scheduling barriers; see the
-[barrier-removal and block-count follow-ups](tuning.md) for matched controls.
-The [rotating register-buffer experiment](ring.md) adds a depth-four ordered
-B ring with a small repeatable gain at 104×256; A does not improve.
+User-directed comparison. One wave owns a 256-float (1 KiB) tile; every
+variant eventually reads exactly that tile, once. No floating-point math:
+finite float values are loaded, their bits are accumulated as a checked
+modulo-2^32 checksum. This keeps numerical reduction differences out of a
+memory-access experiment.
 
-## Raw-integer simplification and revalidation
-
-The initial comparison used float-bit data and Clang vector aliases. Those
-historical tables and snapshots below remain intact; they are not relabeled
-as measurements of the new implementation. The integer rewrite uses
-`p[i] = uint32_t(i)*1664525 + 1013904223` and an analytic triangular-sum
-checksum, removing the float/mantissa initialization and conversion helpers.
-
-Raw-integer conversion checkpoint with scheduling barriers enabled: one
-process per build, nine shuffled rounds × 12 reads, 1 GiB, 104×256,
-chunks=4, same device/placement conditions as below:
-
-| Reader | Controlled build | Normal O3 build |
-|---|---:|---:|
-| A, built-in uint4 | 1428.9 | 1454.4 |
-| B, striped uint32_t | 1427.4 | 1433.8 |
-| C, contiguous uint32_t | 674.6 | 1454.8 |
-
-All short/tail and full-payload checks pass across the 1/2/4 GiB sweep.
-At chunks=4, A retains 16-byte loads; controlled B/C remain scalar; normal
-C widens to 16-byte loads. At chunks=1 in the controlled build, HIP `uint4`
-lowers to **two 8-byte loads**, not one 16-byte load. The checker records
-actual widths and permits this explicit split instead of forcing a custom
-vector type. A logical vector type is not a hardware instruction guarantee.
-
-A seven-sample packing rerun preserves the previous 1/2/4/8 CTA-per-CU
-spreading at grids 104/208/416/832. These new summaries are named `uint-*`
-in `results/` and `temp/vram-coalescing/`. No historical data is overwritten.
-
-## Original comparison results
+## Result
 
 **A and B perform similarly once there is enough independent work. Explicitly
 scalar C is about half as fast and is not rescued by more concurrency.**
@@ -57,10 +25,10 @@ controlled repeats were about 56–68 C.
 
 For lane l and component k:
 
-| Reader | Dword index | Intended hot memory instructions per tile |
+| Reader | Float index | Intended hot memory instructions per tile |
 |---|---|---|
 | A, vector contiguous | `4*l + [0,1,2,3]` | one 16-byte vector load per lane |
-| B, scalar striped | `l + 64*k` | four scalar loads, adjacent lanes adjacent dwords |
+| B, scalar striped | `l + 64*k` | four scalar loads, adjacent lanes adjacent floats |
 | C, scalar contiguous | `4*l + k` | four scalar loads, adjacent lanes 16 bytes apart |
 
 A/C have the same per-lane ownership; B transposes ownership within the
@@ -101,9 +69,8 @@ Controlled mode applies these flags equally to all readers:
 -fno-vectorize -fno-slp-vectorize -mllvm -amdgpu-load-store-vectorizer=false
 ```
 
-The original A used a Clang vector type and retained `global_load_dwordx4`.
-Current A uses HIP `uint4`; the actual 16-byte or split 8-byte loads are
-reported explicitly. Controlled B/C retain scalar `global_load_dword`. No volatile loads or altered cache
+A uses an explicit vector type and retains `global_load_dwordx4`.
+B/C retain scalar `global_load_dword`. No volatile loads or altered cache
 policies are used. AMD scheduling constraints prevent the staged results
 being consumed before the intended load batch; they are compiler controls,
 not GPU synchronization. Earlier IR vectorization can still merge C's
@@ -152,16 +119,16 @@ for repeated traces, resource checks and instrumentation caveats.
 
 Three named readers (`A`, `B`, `C`) in private `readers.hpp` make their
 accesses explicit, with one shared traversal/checksum used by the bandwidth
-and packing probes. No W=1/2/4 element-width branch ladder. HIP's built-in
-`uint4` keeps the four-component accumulation concise.
+and packing probes. No W=1/2/4 element-width branch ladder. Native
+Clang vector types keep the four-component accumulation concise.
 
 All readers use identical full-tile traversal: start at the global wave
 index, stage `chunks` tiles separated by the number of launched waves, then
 advance by `chunks * waves`. Every wave tile is disjoint. One unique checksum
 output per wave avoids races; the host checks the sum of all wave outputs.
-Current initialization generates raw 32-bit words with an affine sequence;
-the host checksum sums that sequence analytically with modulo-2^32
-arithmetic. It is synthetic data, not a model or realistic arithmetic cost.
+Float initialization generates nonzero finite values in [0.5,1), with a
+permutation of 23-bit mantissas and an analytic whole-buffer checksum.
+It is synthetic data, not a model or a claim of realistic FMA cost.
 
 One ordinary hipMalloc 4 GiB input, initialized outside timing. Small/tail
 checks: 64 B, 4160 B, 1 MiB+64 B. Full checksum after every timed batch.
@@ -175,14 +142,11 @@ in each round. 250 preheat reads, two case warmups, nine rounds of twelve
 reads. Two controlled and two normal compiler process repeats are retained.
 No scratch-using candidate is accepted.
 
-`check-loads.py` inspects load/wait sequences, cache flags and scratch
-instructions **before** future runs. Barrier-on controls enforce expected
-load shapes; barrier-free runs record scheduling and merging changes instead
-of rejecting the changes under test. Cache/scratch checks remain strict.
+`inspect.py` checks hot-loop widths, cache flags and scratch instructions
+**before** future runs, failing loudly if a controlled reader changes.
 It separates the first hot load batch from masked tail instructions, which
-are scalar even for A. `load-widths.csv` records the actual widths for A
-and C rather than assuming one uint4 expression means one instruction.
-The checker was renamed to avoid shadowing Python's standard `inspect` module.
+are scalar even for A. `load-widths.csv` records what the normal build
+actually emits for C rather than assuming vectorization is guaranteed.
 The recorded runs were also inspected retrospectively with this checker.
 
 ## Artifacts and reproduction
@@ -194,14 +158,12 @@ default-b,quick-a}/` (gitignored, durable repository-local storage).
 
 ```sh
 research/vram-coalescing/build.sh
-research/vram-coalescing/run.sh temp/vram-coalescing/new-quick controlled quick 9 on
-research/vram-coalescing/run.sh temp/vram-coalescing/new-sweep controlled sweep 9 on
-research/vram-coalescing/run.sh temp/vram-coalescing/new-normal default sweep 9 off
-research/vram-coalescing/run.sh temp/vram-coalescing/new-blocks default blocks 9 off
+research/vram-coalescing/run.sh temp/vram-coalescing/new-quick controlled quick 9
+research/vram-coalescing/run.sh temp/vram-coalescing/new-sweep controlled sweep 9
+research/vram-coalescing/run.sh temp/vram-coalescing/new-normal default sweep 9
 ```
 
-All binaries use O3 C++20/gfx90a. The final argument selects scheduling
-barriers off (default) or on (matched control). The runner rejects stale binaries,
+Both binaries use O3 C++20/gfx90a. The runner rejects stale binaries,
 verifies generated load shapes, records metadata and reuses the ceiling
 study's read-only telemetry helper. Python is standard-library only.
 No production engine, package or system changes.

@@ -100,7 +100,7 @@ waves/CU. Larger unrolls, launch bounds and ping-pong banks are not uniform
 wins. Matched unchanged 832-CTA controls run ~1400 here, below their earlier
 1530.5; that cross-campaign shift is not isolated. No production changes.
 
-`research/vram-coalescing/` compares equal 256-float wave tiles using A:
+`research/vram-coalescing/` compares equal 256-dword wave tiles using A:
 per-lane 16 B vector loads, B: four adjacent-lane scalar passes, and C:
 four per-lane contiguous scalar loads. Same GCD/NUMA placement, native O3,
 no model/context, 1 GiB, 104×256, four independent tiles: A/B repeat at
@@ -114,8 +114,31 @@ finds identical CU/SIMD spreading for A/B/C: 104/208/416/832 CTAs give
 1/2/4/8 overlapping CTAs per CU, each CTA's four waves split one per SIMD.
 A 1664-CTA control peaks at 3328 waves, with later assignment as work
 finishes. Two process runs × seven samples confirm this workload's balanced
-packing, not a general memory-contention-minimization policy. No production
-changes.
+packing, not a general memory-contention-minimization policy. The current
+probe now uses raw uint32_t input and HIP uint4, with no float bitcasts or
+custom vector aliases. Revalidation retains the A/B ~1430 versus controlled
+C ~675 GB/s pattern and the same CU/SIMD packing; historical float-bit
+snapshots remain separately labeled. A uint4 expression can split into two
+64-bit loads in the controlled build, which the ISA checker records rather
+than treating the source type as an instruction guarantee. Barrier removal
+is now the default research path, with separate compiler-barrier controls:
+A/chunks=8 and optimized C/chunks=4 return to serial load/wait/use and slow
+to ~1020 GB/s, while A/B at four chunks retain batching. The narrowed
+barrier-free A/B four-chunk test repeats at grids 104/208/416: 1 GiB A is
+~1435/1355/1309 GB/s, B ~1444/1417/1371; more blocks do not improve the
+winner. These are native O3, same GCD/NUMA placement, no model/context,
+two process runs of nine rounds; grid count also changes address spacing.
+See `research/vram-coalescing/tuning.md`. A rotating register-buffer
+follow-up (`ring.md`) finds that unconstrained C++ is rebatch-scheduled;
+per-slot compiler constraints retain steady waits at vmcnt(3) for A and
+15..12 for B, with no steady-state drain to zero. Ordered B depth 4 at
+104×256 repeats at 1470.3/1465.6 GB/s versus batch B 1426.6/1434.9 at
+1 GiB; at 4 GiB 1423.7/1424.0 versus 1401.8/1398.9, winning all paired
+rounds. A does not improve. The exact historical uint2/U16 code object,
+interleaved on the same input, still runs ~1400 rather than 1530. These
+are native O3, same GPU/NUMA placement, no model/context. The small B gain
+retains the experiment rather than triggering the requested failure/revert
+path; the original source remains unchanged for inspection. No production changes.
 
 ## 1. Purpose & target
 

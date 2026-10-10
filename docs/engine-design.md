@@ -138,7 +138,69 @@ rounds. A does not improve. The exact historical uint2/U16 code object,
 interleaved on the same input, still runs ~1400 rather than 1530. These
 are native O3, same GPU/NUMA placement, no model/context. The small B gain
 retains the experiment rather than triggering the requested failure/revert
-path; the original source remains unchanged for inspection. No production changes.
+path; the original source remains unchanged for inspection. A block/thread
+indexing follow-up (`indexing.md`) keeps the A/B four-chunk, 104×256 rates
+within ~1% of wave controls at 1/4 GiB (~1425/~1436 and ~1399/~1386 GB/s),
+so the research baseline now uses block/thread IDs for loads. B uses four
+block-wide stripes; A/C preserve their addresses. Wave arithmetic remains
+only in the checksum and a separate historical control; the ring experiment
+retains its original wave mapping. The smaller-grid sweep (`small-grid.md`),
+with unchanged GPU code and A/B four-chunk baselines, finds 80 CTAs retain
+near-full throughput (1 GiB A 1461/1455, B 1442/1442 GB/s); 64 decline to
+~1344/~1317 and 32 to ~1002/~827. Two processes, nine shuffled rounds,
+1/2/4 GiB, same GPU/NUMA placement and no model/context. Grid-stride changes
+alongside concurrency, so this is not proof of an intrinsic active-CU knee.
+Increasing the staged window with compiler constraints (`inflight.md`)
+recovers A/64/chunks8 near-full (~1.4 TB/s), and A/32/chunks16 to
+~1.35 TB/s at 1 GiB / ~1.3 at 4 GiB. B peaks at chunks8 and regresses at
+16. ISA verifies full 4/8/16 wide or 16/32/64 scalar load batches before
+consumption waits; B16 has heavy SGPR-to-VGPR lane spilling despite zero
+scratch. Phase-only constraints shorten code but do not eliminate the
+spills. Flipping the chunk/grid axes (`chunk-order.md`) stages adjacent
+CTA tiles instead of grid-spaced tiles: phase-only controls repeat A/64/
+chunks4 at 1420/1423 versus 1339/1331 GB/s, but A/64/chunks8 falls to
+1359/1361 from 1417/1425. B/32/chunks16 improves 713/714 -> 1049/1063;
+its old hot-loop SGPR lane-spill code disappears, with higher reported
+register allocation instead. Both layouts retain complete load batches,
+so this is an address-order plus codegen/resource comparison, not isolated
+cache or channel evidence. Four nine-round 1/2/4 GiB runs cover phase-only
+and per-load constraints; expanded partial-record/group tail checks pass.
+The full 36-case A/B × 104/80/64 × 4/8/16 × both-order matrix
+(`order-matrix.md`) is now measured in two new phase-constrained process
+runs (nine rounds each, 1/2/4 GiB), with GPU code identical to the prior
+order smoke. Pooled 1 GiB medians favor adjacent/four chunks at 104/80
+for A (~1469/1461 GB/s); A/64 favors grid/eight (~1438). B/104's larger
+batches catch up at 4 GiB (~1387/1397 adjacent chunks8/16). All partial-
+record/group and timed checks pass; no grids above 104 are in this matrix.
+A same-allocation 1 GiB-window + sustained-warmup study (`windows.md`)
+finds no consistently slow quarter: adjacent A/104/chunks4 individual
+windows remain ~1440-1480 versus full 4 GiB ~1409; four short kernels
+recover part (~1430), not all, of the difference. B/104/chunks16 grid keeps
+the opposite size effect. Two rich-clock repeats, a basic-monitor control
+and a 30 s bandwidth timeline show no progressive decline. Firmware current
+GFX/SoC/memory reports 1700/1090/1600 MHz; averages ~1600/999/1599 remain
+similar across sizes/stages, with zero reported throttle masks. FCLK remains
+0 in a deep-sleep DPM entry even under load, so hidden fabric changes are
+not excluded. Window restarts also change traversal/CTA assignment and
+translation/cache reuse; no unique hardware cause is identified.
+A four-body-in-one-grid control (`body-control.md`) now measures equal
+4 GiB payloads including launches, reductions and completion boundaries.
+Runtime outer loops are not unrolled and add no grid/CTA synchronization.
+A's four-kernel streaming path saves ~1-2% net wall time, while single-
+operation paired latency wins are irregular; repeating bodies in one grid
+mostly does not recover A's short-window rate. B is layout/chunk dependent.
+Inlining changes resources (B/adjacent/chunks16 reports 262 -> 400 regs
+with more accumulator moves, still zero scratch), so this is not pure
+kernel-boundary causality. Six processes cover twelve-operation throughput
+and one-operation latency, with all separate-output/tail checks passing.
+The user closes this kernel-loop campaign here and sets VRAM layout as the
+next standalone research focus: multiple well-coalesced, sufficiently
+batched readers reach ~1350–1450 GB/s, and the remaining small differences
+do not by themselves justify production fission/dispatch changes. This is
+a research priority, not a unique hardware-bottleneck attribution. A durable
+post-power-cycle ceiling replay note now records the byte-identical old
+executable's ~1406–1413 GB/s versus its historical 1530 confirmation.
+The barrier-free baseline and production selection remain unchanged.
 
 ## 1. Purpose & target
 

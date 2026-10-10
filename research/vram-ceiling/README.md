@@ -6,6 +6,11 @@ peer access, copy bandwidth, or an engine optimization.
 
 ## Result
 
+These are the original campaign's historical results. A [post-power-cycle
+replay](replay.md) rebuilds a byte-identical executable but measures the exact
+old winner at ~1406–1413 GB/s. The earlier 1530 result is not a reproducible
+current baseline; the cause of the shift remains unisolated.
+
 **1290 GB/s is not the local streaming-read ceiling.** Two final independent
 process runs confirm >1500 GB/s on a 1 GiB working set and approximately
 1460 GB/s on a 4 GiB working set. The best nine-round 1 GiB confirmation

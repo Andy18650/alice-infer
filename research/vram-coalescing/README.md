@@ -1,9 +1,35 @@
 # A / B / C: coalescing per instruction versus eventual byte coverage
 
-User-directed comparison. One wave owns a 256-dword (1 KiB) tile; every
-variant eventually reads exactly that tile, once. The current code uses
-raw `uint32_t` input and HIP's built-in `uint4`, with an exact modulo-2^32
-checksum. There are no float bitcasts or custom compiler-vector types.
+**Research checkpoint:** user-directed kernel-loop exploration is closed for
+now. Several coalesced, sufficiently batched readers sustain roughly
+1350–1450 GB/s, with shape/size-dependent excursions. The next study will
+focus on VRAM layout constraints in practical kernels. This is a research
+priority, not proof of one hardware bottleneck or a production dispatch rule.
+
+User-directed comparison. The current baseline uses block/thread load
+indexing: one CTA owns `4*blockDim.x` dwords (4 KiB at 256 threads), and
+every reader covers that region once. It uses raw `uint32_t` input, HIP's
+built-in `uint4` and an exact modulo-2^32 checksum. There are no float
+bitcasts or custom compiler-vector types. See the [indexing comparison](indexing.md)
+for the measured equivalence and the separate historical wave control.
+The [smaller-grid sweep](small-grid.md) finds 80 blocks retain near-full
+bandwidth, 64 begin losing it, and 32 fall sharply, with A/B otherwise fixed.
+The [larger-window follow-up](inflight.md) recovers near-full throughput
+for A at 64 blocks/eight chunks; B's sixteen-chunk code spills SGPRs into
+VGPR lanes despite retaining full load batches and no scratch traffic.
+The [chunk-order comparison](chunk-order.md) gives each CTA adjacent tiles:
+A/four chunks at 64 blocks improves, larger A batches often lose, and
+B/sixteen chunks becomes much faster as the hot SGPR-lane spill code disappears.
+The [complete order matrix](order-matrix.md) covers A/B at all 104/80/64
+blocks × 4/8/16 chunks × both orderings, with matched 1/2/4 GiB results.
+The [window/warmup study](windows.md) reads each 1 GiB quarter of one
+4 GiB allocation, monitors firmware average/current clocks, and finds no
+warmup-linked bandwidth decline or consistently bad quarter. FCLK reporting
+remains ambiguous; absence of a fabric-clock change is not proven.
+The [four-body control](body-control.md) compares one 4 GiB traversal,
+four body calls in one grid, and four separate kernels, including GPU and
+CPU wall time. A's streaming gain is small; single-operation latency wins
+are irregular, and the multi-body wrapper changes register allocation.
 The current default has no compiler scheduling barriers; see the
 [barrier-removal and block-count follow-ups](tuning.md) for matched controls.
 The [rotating register-buffer experiment](ring.md) adds a depth-four ordered
@@ -53,7 +79,7 @@ HIP/hipcc 7.1, Ubuntu clang 21.1.8. No clock/power changes; sampled active
 clocks 1700/1600 MHz core/memory. Sampled memory temperatures in the
 controlled repeats were about 56–68 C.
 
-### Accesses within one tile
+### Original wave-based accesses within one tile
 
 For lane l and component k:
 
@@ -152,19 +178,31 @@ for repeated traces, resource checks and instrumentation caveats.
 
 Three named readers (`A`, `B`, `C`) in private `readers.hpp` make their
 accesses explicit, with one shared traversal/checksum used by the bandwidth
-and packing probes. No W=1/2/4 element-width branch ladder. HIP's built-in
-`uint4` keeps the four-component accumulation concise.
+and packing probes. The baseline load loop uses only block/thread IDs;
+wave arithmetic is confined to the final checksum and `wave-control.hpp`.
+No W=1/2/4 element-width branch ladder. HIP's built-in `uint4` keeps the
+four-component accumulation concise.
 
-All readers use identical full-tile traversal: start at the global wave
-index, stage `chunks` tiles separated by the number of launched waves, then
-advance by `chunks * waves`. Every wave tile is disjoint. One unique checksum
-output per wave avoids races; the host checks the sum of all wave outputs.
+Scheduling constraints are opt-in. `RESEARCH_SCHED_BARRIERS=1` enables
+load/consume phase barriers; `RESEARCH_LOAD_BARRIERS` defaults to the same
+value and also constrains each load. Setting the latter to zero retains
+only phase boundaries (`phase` runner option). These are compiler controls,
+not GPU synchronization or memory-completion waits.
+
+The baseline starts at `blockIdx.x * block_words`, where
+`block_words=4*blockDim.x`. It stages `chunks` CTA regions separated by
+`gridDim.x*block_words`, then advances by `chunks` times that stride.
+A/C read `base+4*thread+component`; B reads
+`base+thread+component*blockDim.x`. One unique checksum output per native
+wave avoids races; the host checks the sum of all wave outputs.
 Current initialization generates raw 32-bit words with an affine sequence;
 the host checksum sums that sequence analytically with modulo-2^32
 arithmetic. It is synthetic data, not a model or realistic arithmetic cost.
 
 One ordinary hipMalloc 4 GiB input, initialized outside timing. Small/tail
-checks: 64 B, 4160 B, 1 MiB+64 B. Full checksum after every timed batch.
+checks now include 0/4/64/68 B, 4160 B, 1 MiB+64 B and four bytes below/
+above a full staged-grid batch. Earlier reports used the original three
+sizes. Full checksum after every timed batch.
 No allocations or host transfers inside the event interval. Reduction and
 sparse checksum writes are timed. No explicit cache flush; 1/2/4 GiB working
 sets exceed L2. No host/io/model/attention activity inside the benchmark.
@@ -198,6 +236,17 @@ research/vram-coalescing/run.sh temp/vram-coalescing/new-quick controlled quick 
 research/vram-coalescing/run.sh temp/vram-coalescing/new-sweep controlled sweep 9 on
 research/vram-coalescing/run.sh temp/vram-coalescing/new-normal default sweep 9 off
 research/vram-coalescing/run.sh temp/vram-coalescing/new-blocks default blocks 9 off
+research/vram-coalescing/run.sh temp/vram-coalescing/new-index default index 9 off
+research/vram-coalescing/run.sh temp/vram-coalescing/new-small-grid default small-grid 9 off
+research/vram-coalescing/run.sh temp/vram-coalescing/new-inflight default inflight 9 on
+research/vram-coalescing/run.sh temp/vram-coalescing/new-inflight-phase default inflight 9 phase
+research/vram-coalescing/run.sh temp/vram-coalescing/new-order default order 9 phase
+research/vram-coalescing/run.sh temp/vram-coalescing/new-order-all default order 9 on
+research/vram-coalescing/run.sh temp/vram-coalescing/new-order-matrix default order-matrix 9 phase
+research/vram-coalescing/run.sh temp/vram-coalescing/new-windows default windows 9 phase rich
+research/vram-coalescing/run.sh temp/vram-coalescing/new-windows-basic default windows 9 phase basic
+research/vram-coalescing/run.sh temp/vram-coalescing/new-body-control default body-control 9 phase rich 12
+research/vram-coalescing/run.sh temp/vram-coalescing/new-body-latency default body-control 9 phase basic 1
 ```
 
 All binaries use O3 C++20/gfx90a. The final argument selects scheduling

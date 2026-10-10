@@ -1,6 +1,6 @@
 // Rotating register-buffer reads, matched against batch A/B and the exact
 // historical uint2/U=16 code object. Compare free and ordering-constrained rings.
-#include "readers.hpp"
+#include "wave-control.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
@@ -26,14 +26,14 @@ void read_ring(const uint32_t* __restrict__ input,size_t count,uint32_t* __restr
   if(wave+(Depth-1)*waves<full_tiles) {
     uint4 buffer[Depth];
 #pragma unroll
-    for(int slot=0;slot<Depth;++slot) buffer[slot]=Reader::load(input,(wave+slot*waves)*256,lane);
+    for(int slot=0;slot<Depth;++slot) buffer[slot]=Reader::load(input,(wave+slot*waves)*256,lane,64);
     if constexpr(Ordered) __builtin_amdgcn_sched_barrier(0);
     next+=Depth*waves;
     for(;next+(Depth-1)*waves<full_tiles;next+=Depth*waves) {
 #pragma unroll
       for(int slot=0;slot<Depth;++slot) {
         sums[slot]+=buffer[slot];
-        buffer[slot]=Reader::load(input,(next+slot*waves)*256,lane);
+        buffer[slot]=Reader::load(input,(next+slot*waves)*256,lane,64);
         if constexpr(Ordered) __builtin_amdgcn_sched_barrier(0);
       }
     }
@@ -42,7 +42,7 @@ void read_ring(const uint32_t* __restrict__ input,size_t count,uint32_t* __restr
     for(int slot=0;slot<Depth;++slot) sums[slot]+=buffer[slot];
   }
   // Covers short inputs, partial batches, and the final partial tile.
-  for(;next*256<count;next+=waves) sums[0]+=Reader::tail(input,next*256,lane,count);
+  for(;next*256<count;next+=waves) sums[0]+=Reader::tail(input,next*256,lane,count,64);
   uint4 total={};
 #pragma unroll
   for(int slot=0;slot<Depth;++slot) total+=sums[slot];
@@ -66,7 +66,7 @@ template<class Reader,int Depth,bool Ordered=false> void add_ring(std::vector<Ca
   cases.push_back({std::string(Reader::name)+(Ordered?"_ring_ordered":"_ring"),Depth,104,fn,nullptr,a.numRegs,capacity,a.localSizeBytes});
 }
 template<class Reader> void add_reader(std::vector<Case>& cases) {
-  const void* fn=reinterpret_cast<const void*>(read_tiles<Reader,4>);
+  const void* fn=reinterpret_cast<const void*>(read_wave_tiles<Reader,4>);
   hipFuncAttributes a{}; HIP(hipFuncGetAttributes(&a,fn));
   int capacity; HIP(hipOccupancyMaxActiveBlocksPerMultiprocessor(&capacity,fn,256,0));
   cases.push_back({std::string(Reader::name)+"_batch",4,104,fn,nullptr,a.numRegs,capacity,a.localSizeBytes});

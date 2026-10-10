@@ -98,4 +98,8 @@ retain the final results. Full source/binary snapshots, hashes, raw rounds,
 resource queries, disassembly and telemetry are under
 `temp/vram-coalescing/ring-{b,c}/`. `ring-a/` is the initial unrestricted
 experiment. Extracted ordered depth-four loop ISA is under `ring-b/`.
+The ring remains wave indexed after the later [baseline indexing
+simplification](indexing.md). Its batch controls use `read_wave_tiles` from
+`wave-control.hpp` and its reader calls explicitly pass component stride 64,
+so these comparisons do not silently switch B to block-wide stripes.
 No production engine, package or system changes.

@@ -1,0 +1,13 @@
+pattern,chunks,grid,block,reported_regs,capacity_CTAs_per_CU,private_bytes
+A_vector_contiguous_wave,4,104,256,54,8,0
+A_vector_contiguous_block,4,104,256,52,8,0
+B_scalar_striped_wave,4,104,256,55,8,0
+B_scalar_striped_block,4,104,256,54,8,0
+A_vector_contiguous_wave,4,208,256,54,8,0
+A_vector_contiguous_block,4,208,256,52,8,0
+B_scalar_striped_wave,4,208,256,55,8,0
+B_scalar_striped_block,4,208,256,54,8,0
+A_vector_contiguous_wave,4,416,256,54,8,0
+A_vector_contiguous_block,4,416,256,52,8,0
+B_scalar_striped_wave,4,416,256,55,8,0
+B_scalar_striped_block,4,416,256,54,8,0

@@ -1,0 +1,9 @@
+pattern,chunks,grid,block,reported_regs,capacity_CTAs_per_CU,private_bytes
+A_vector_contiguous,4,104,256,52,8,0
+B_scalar_striped,4,104,256,54,8,0
+A_vector_contiguous,4,80,256,52,8,0
+B_scalar_striped,4,80,256,54,8,0
+A_vector_contiguous,4,64,256,52,8,0
+B_scalar_striped,4,64,256,54,8,0
+A_vector_contiguous,4,32,256,52,8,0
+B_scalar_striped,4,32,256,54,8,0

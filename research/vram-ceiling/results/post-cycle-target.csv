@@ -1,0 +1,4 @@
+run,pattern,load_bytes,unroll,block,grid,bytes,samples,iters,median_GB_s,min_GB_s,max_GB_s
+post-revert-fresh-a,global,8,16,256,832,1073741824,3,12,1406.26,1404.66,1416.82
+post-revert-fresh-b,global,8,16,256,832,1073741824,3,12,1405.67,1405.27,1410.07
+post-revert-preserved,global,8,16,256,832,1073741824,3,12,1412.82,1408.05,1420.67

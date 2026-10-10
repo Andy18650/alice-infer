@@ -69,7 +69,7 @@ struct Context {
     metadata<<"device=0 PCI="<<pci<<" name="<<p.name<<" arch="<<p.gcnArchName
             <<" CUs="<<p.multiProcessorCount<<" wave="<<p.warpSize<<" wall_clock_khz="<<rate
             <<" max_threads_per_CU="<<p.maxThreadsPerMultiProcessor
-            <<" input=uint32_t vector=uint4 generator=affine_mod2^32 scheduling_barriers="<<RESEARCH_SCHED_BARRIERS<<'\n';
+            <<" input=uint32_t vector=uint4 generator=affine_mod2^32 baseline_indexing=block scheduling_barriers="<<RESEARCH_SCHED_BARRIERS<<'\n';
     initialize<<<832,256,0,stream>>>(input,count);
     HIP(hipGetLastError()); HIP(hipStreamSynchronize(stream));
   }

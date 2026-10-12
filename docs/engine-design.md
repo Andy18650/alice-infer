@@ -202,6 +202,108 @@ post-power-cycle ceiling replay note now records the byte-identical old
 executable's ~1406–1413 GB/s versus its historical 1530 confirmation.
 The barrier-free baseline and production selection remain unchanged.
 
+The next standalone study, `research/gemv-layout/`, implements a layout-first
+SIMT GEMV: BF16 weights, genuinely FP32 x/accumulation/y, two output rows
+per thread, uint4 records across four K positions, and four/eight staged
+records. Interleaved/adjacent packing and an FP32-x column-major control
+share deterministic split-K plus combine; packing/upload are outside timing.
+Native O3, same GCD/NUMA placement, no model/context: two nine-round
+12-operation sweeps repeat complete GEMV at 1454.2/1455.9 GB/s for a large
+104-row-tile synthetic shape and 1394.5/1394.6 for the 70B TP4-shaped gup
+14336×8192 (interleaved, batch8, splits3, natural 84-job grid). Merely capping
+persistent grids can leave a slow last wave of jobs. The smaller o shape
+2048×8192 reaches 1020.9/1016.0 end-to-end; isolated one-operation sweeps
+reduce gup to 1348/1362 GPU GB/s with ~180–182 us CPU wall time. All rows
+pass FP64-reference gates, byte-exact independent packing checks and final
+bitwise determinism tests, including odd N/K, empty K, cancellation and
+FP32-x precision. ISA retains full weight batches and uses native packed
+FP32 FMA plus SMEM x loads, with no scratch/register spilling. A three-round
+full-model-shape smoke is provisional; no real model/canonical integration
+or production packing/dispatch change is made. A tile-local last-arriver
+follow-up (`last-arriver.md`) publishes each split, decrements an agent-scope
+counter and lets the old-count-one CTA reduce fixed-order FP32 partials.
+Non-last persistent CTAs continue rather than wait/return; counters self-reset
+for stream-ordered reuse. Strong and release-publication protocols pass
+bitwise reference, changed-input/repeated-call, grid=1 and oversubscribed
+2050-CTA tests. Release-only producer ordering avoids non-last acquire cache
+invalidation; 256 B counter spacing is a separate control. Two nine-round
+throughput/isolated-call repeats find no consistent net gup win; the small
+o projection is ~1-2 us slower in isolated CPU wall time. Fences/atomic/CTA
+reduction costs outweigh the saved launch here. The two-kernel path remains
+the control/default; no production synchronization change is made.
+
+**BF16 prefill granularity research (2026-10, user-directed):** standalone
+`research/gemm-granularity/` measures BF16 activations/weights with FP32
+accumulation/output, a seven-geometry CK Tile set and rocBLAS control. Native
+O3, one gfx90a GCD (HIP 0), CPU+memory NUMA node 0, no model/context: two
+nine-sample calibration runs reach ~169.1/169.2 TFLOP/s in a checked
+register-only MFMA loop versus ~118.4/118.6 in large dense GEMMs; a checked
+256 MiB reader reaches ~1412/1401 useful GB/s. The latter is read-only payload,
+not physical traffic or a mixed read/write ceiling. A 1,200-point shape grid
+separates warm/eviction-control, isolated/batched and eager/graph protocols;
+selected knees repeat in two nine-round processes. No universal minimum
+compute-saturating (M,N,K) is established: dense kernels still fall well below
+the arithmetic reference. Matched-parent two-process, five-round partition
+probes include fork/join and split-K combine. At parent 512x4096x4096, N/4 on
+four streams retains ~84 TFLOP/s group throughput; at 2048x8192x4096, M/2
+retains ~108 of ~109, while K/2 plus combine falls to ~82. These are aggregate
+rates, not chunk readiness or communication-overlap results; N output slices
+are currently strided and communication packing is not included. All-output
+small-case FP64 oracles, tails/guards, q=3, one/three streams, poisoned captured
+outputs and within-implementation repeat checks pass. ISA confirms native
+BF16 MFMA and no scratch in the closed CK set. No production integration or
+execution/packing policy change is made; the FP32 stream contract is unchanged.
+
+**Small-M CK follow-up (2026-10, user-directed):** M=1..64, representative
+N=2048/8192/14336 and K=4096/8192, no further split-M. The standalone set now
+has 12 BF16 configurations, including one/two-wave skinny tiles and wider K
+windows. A true one-launch CK split-K producer covers slices in grid.z, writes
+private FP32 partials and uses a deterministic SIMT combine; separate launches
+and split-N streams remain labeled controls. Affine weight-row padding of 128
+BF16 elements preserves the same logical weights and remains BLAS-compatible.
+Native O3, one GCD HIP 0, CPU+memory NUMA node 0, no model/context: two nine-round
+confirmations at M=1,N=14336,K=8192, tile 16x16x128, q=8 and padded weight stride
+reach 1272/1274 useful weight GB/s eager queued and 1258/1259 graph queued,
+including combine. The contemporaneous 256 MiB reader is ~1405 useful GB/s;
+these are ~90.6% / ~89.6% payload-reference rates, not physical HBM traffic.
+An eviction-control isolated run reaches ~1270 eager / ~1236 graph GB/s.
+The smaller 32 MiB parent only reaches ~842 queued / ~709 isolated graph GB/s.
+Same-kernel unpadded controls are ~739/742 GB/s, demonstrating layout/stride
+sensitivity without proving channel mapping. The network-interrupted expanded
+build was recovered without losing earlier executable snapshots; incomplete
+jobs are rerun using hash-bound completion markers. All-output small-case
+FP64 oracles, padding/tails, q=3/128, guards, captured output poisoning and
+within-implementation repeat checks pass. ISA verifies BF16 MFMA in all 24
+regular/split entries with no scratch instructions. No communication overlap,
+production changes, system configuration changes or weaker fence policy is
+introduced. Detailed protocols and limitations are in the research small-M note.
+
+**Fixed tiled weight storage (2026-10, user-directed):** the standalone
+harness now has a split-independent 32x128 BF16 storage tile, with N-major
+and K-major outer orders. A custom CK tensor descriptor exposes tiled weights
+without a timed global repack; a BF16-input SIMT GEMV consumes the same packed
+allocation. The first correct sliced descriptor scalarized weight reads;
+assembly showed ushort loads. An explicit eight-BF16 K-vector alignment
+contract, checked against supported origins/lengths, restores wide loads.
+ELF metadata reports zero private bytes for the skinny winners; the widest
+256x256 packed variant reports 76 private bytes/thread, missed by a mnemonic-
+only scratch check and now explicitly recorded by the resource-aware inspector.
+Independent CPU-forward/GPU-inverse packing tests, tails/guards and reuse of
+one immutable blob across q=1/2/3/7/9/21/63 pass. Native O3, one gfx90a GCD,
+CPU+memory NUMA node 0, no model/context: two nine-round confirmations at
+M=1,N=14336,K=8192 give ~1310 useful weight GB/s for tile-k CK 16x32x128 q=4
+versus ~1228 for matched padded-affine geometry (~1259 for the previous tuned
+affine winner), and ~1326 for SIMT versus ~1259 padded affine. These complete
+rates include FP32 combine and are ~92.5% / ~93.6% of a contemporaneous
+~1416 useful-GB/s reader reference, not physical HBM traffic. Tile-n is much
+slower despite contiguous storage tiles, showing outer-order sensitivity
+without establishing a channel map. Three-round dense CK controls show
+mixed small gains/losses versus affine CK and remain below rocBLAS; no minimum
+compute-saturating shape, actual communication overlap or real-model speedup
+is claimed. No production changes or narrowing of the earlier full-FP32-x
+GEMV study are made. Details and retained scalarized controls are in the tiled
+weight research note.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

@@ -1,0 +1,4 @@
+CompileFlags:
+  CompilationDatabase: None
+  Compiler: /usr/bin/clang++-21
+  Add: [-x, hip, --offload-arch=gfx90a, -std=c++20, -D__HIP_PLATFORM_AMD__=1, -DTILE_M=128, -DTILE_N=128, -DTILE_K=64, -DWARP_M=2, -DWARP_N=2, -DWARP_TILE=32, -DREGISTER=register_128x128, '-DKERNEL_NAME="ck_128x128x64"']

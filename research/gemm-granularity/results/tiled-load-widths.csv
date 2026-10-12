@@ -1,0 +1,13 @@
+object,ushort,dwordx2,dwordx4
+bench.1.hipv4-amdgcn-amd-amdhsa--gfx90a.disassembly.txt,0,0,16
+bench.10.hipv4-amdgcn-amd-amdhsa--gfx90a.disassembly.txt,0,4,0
+bench.11.hipv4-amdgcn-amd-amdhsa--gfx90a.disassembly.txt,0,0,12
+bench.12.hipv4-amdgcn-amd-amdhsa--gfx90a.disassembly.txt,0,0,8
+bench.2.hipv4-amdgcn-amd-amdhsa--gfx90a.disassembly.txt,0,0,24
+bench.3.hipv4-amdgcn-amd-amdhsa--gfx90a.disassembly.txt,0,0,24
+bench.4.hipv4-amdgcn-amd-amdhsa--gfx90a.disassembly.txt,0,0,8
+bench.5.hipv4-amdgcn-amd-amdhsa--gfx90a.disassembly.txt,0,0,18
+bench.6.hipv4-amdgcn-amd-amdhsa--gfx90a.disassembly.txt,0,0,24
+bench.7.hipv4-amdgcn-amd-amdhsa--gfx90a.disassembly.txt,0,0,6
+bench.8.hipv4-amdgcn-amd-amdhsa--gfx90a.disassembly.txt,0,2,4
+bench.9.hipv4-amdgcn-amd-amdhsa--gfx90a.disassembly.txt,0,0,32

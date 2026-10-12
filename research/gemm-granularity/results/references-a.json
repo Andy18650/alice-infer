@@ -1,0 +1,6 @@
+{
+  "mfma_register_tflops": 169.127,
+  "read_useful_GBps": 1411.56,
+  "dense_observed_tflops": 118.374844,
+  "warning": "Measured reference envelopes, not proven absolute hardware limits; read bytes are useful, not counters."
+}

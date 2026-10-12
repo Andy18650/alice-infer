@@ -1,0 +1,4 @@
+# Standalone HIP files must not inherit the engine/gtest compilation database.
+CompileFlags:
+  CompilationDatabase: None
+  Add: [-x, hip, --offload-arch=gfx90a, --rocm-path=/usr, --hip-path=/usr, -nogpulib, -std=c++20, -D__HIP_PLATFORM_AMD__=1, -Wno-pragma-once-outside-header]

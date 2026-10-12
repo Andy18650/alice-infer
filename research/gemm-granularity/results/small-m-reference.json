@@ -1,0 +1,4 @@
+{
+  "read_useful_GBps": 1405.42,
+  "warning": "Weight numerator excludes activations, partials, output and padding; time includes full group and combine. Not measured physical HBM bandwidth."
+}

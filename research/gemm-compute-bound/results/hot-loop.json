@@ -1,0 +1,51 @@
+{
+  "object": "/home/andyhu/projects/inference/alice-infer/temp/gemm-compute-bound/audit/working.o.0.hipv4-amdgcn-amd-amdhsa--gfx90a",
+  "sha256": "d1503695af0d68e7047aeb1ff6fa287dfb418cfc631a4c5c242c04490f729d72",
+  "hot_loop_start": "0x94d8",
+  "hot_loop_end": "0x9d50",
+  "static_instructions": 320,
+  "instruction_counts": {
+    "v_readfirstlane_b32": 7,
+    "s_andn2_b32": 1,
+    "v_add_u32_e32": 11,
+    "v_lshl_or_b32": 1,
+    "s_waitcnt": 18,
+    "s_barrier": 2,
+    "ds_write_b128": 16,
+    "v_lshlrev_b32_e32": 9,
+    "s_lshl_b32": 2,
+    "v_mfma_f32_32x32x8bf16_1k": 128,
+    "buffer_load_dwordx4": 16,
+    "v_ashrrev_i32_e32": 1,
+    "v_or_b32_e32": 7,
+    "v_lshrrev_b32_e32": 3,
+    "v_and_b32_e32": 7,
+    "v_sub_u32_e32": 16,
+    "v_xor_b32_e32": 7,
+    "v_add_lshl_u32": 14,
+    "v_add3_u32": 13,
+    "v_mov_b32_e32": 4,
+    "v_mad_u64_u32": 2,
+    "ds_read_b128": 32,
+    "s_add_i32": 1,
+    "s_cmp_lg_u32": 1,
+    "s_cbranch_scc1": 1
+  },
+  "wait_thresholds": {
+    "lgkmcnt(0)": 2,
+    "vmcnt(15)": 16
+  },
+  "metadata": {
+    "agpr_count": 256,
+    "group_segment_fixed_size": 65536,
+    "private_segment_fixed_size": 0,
+    "sgpr_count": 25,
+    "vgpr_count": 508,
+    "wavefront_size": 64
+  },
+  "flops_per_cta_k_step": 8388608,
+  "global_requested_bytes_per_cta_k_step": 65536,
+  "lds_read_bytes_per_cta_k_step": 131072,
+  "lds_write_bytes_per_cta_k_step": 65536,
+  "warning": "Requested bytes/static issue order are not physical traffic or stall-cycle counters."
+}

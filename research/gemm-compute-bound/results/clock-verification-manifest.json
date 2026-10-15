@@ -1,0 +1,34 @@
+[
+  {
+    "test": "operand_clock",
+    "source_unchanged": true,
+    "source_sha256": "001899c4312d4d8419684710fed0fccf6c7a7d4d01d460d19a39455e745d22b6",
+    "original_binary_sha256": "c360543306da869947eeb2760c706b2940aafa0802f149e0295687c606894088",
+    "fresh_binary_sha256": "343a924111a53568458228ac07199962176d2a012be032ca64276a415657811f",
+    "fresh_run_passed": true
+  },
+  {
+    "test": "int8_clock",
+    "source_unchanged": true,
+    "source_sha256": "4c672a9245cf04860dfed69f6e50bfe731ce3299dd44447ffab4335c5c8cfe4b",
+    "original_binary_sha256": "83512766e43c106f8c7f362c6b89ad3b74a62a567fdd2fc85d72424229c17d56",
+    "fresh_binary_sha256": "fc07b43a37f5d4ba9b66a881098638ef58febb842beb9460614246268891f5c5",
+    "fresh_run_passed": true
+  },
+  {
+    "test": "mixed_clock",
+    "source_unchanged": true,
+    "source_sha256": "679bc69812d4e24b3028834d0e2f40fe1b4a89a3c0f27112a53e2c34341a4ba4",
+    "original_binary_sha256": "120d25f1a683bfa0dbd54fef9830a2bf80f71d05a4d693645baf5e2bbd77b9ee",
+    "fresh_binary_sha256": "4c26ad59eeb905dc4a52f91821a45bfb9318fe921918ebaabdac47ab7b2a15ab",
+    "fresh_run_passed": true
+  },
+  {
+    "test": "gemv_clock",
+    "source_unchanged": true,
+    "source_sha256": "268064edf1cc6ea46946064d5ccbb64b45adcc50087fb56b4715a81a8479f011",
+    "original_binary_sha256": "6ee55b69dd0089c2a3542ea2931c62f652263e7b8e4ff25a15553886f74bfea5",
+    "fresh_binary_sha256": "f93cb82f6bc824263e54cc7da18c7a8bfb6f3b839d8f29d164622f7f7ea57432",
+    "fresh_run_passed": true
+  }
+]

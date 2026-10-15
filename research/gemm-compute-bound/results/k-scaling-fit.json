@@ -1,0 +1,6 @@
+{
+  "slope_gpu_us_per_k": 0.3745718037863027,
+  "intercept_gpu_us": 106.2204787173905,
+  "apparent_asymptotic_tflops": 145.5687573085657,
+  "warning": "Empirical fit across auto-clock runs; intercept is not independently measured prologue/epilogue time."
+}

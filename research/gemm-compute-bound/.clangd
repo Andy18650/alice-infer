@@ -1,0 +1,10 @@
+CompileFlags:
+  CompilationDatabase: None
+  Compiler: /usr/bin/clang++-21
+  Add: [-x, hip, --offload-arch=gfx90a, -std=c++20, -D__HIP_PLATFORM_AMD__=1, -DPIPE=3, -DTM=128, -DTN=128, -DTK=64, -DWM=2, -DWN=2, -DWT=32, -DWK=16, -DXDL=32, -DREGISTER=add_v3_128, '-DKERNEL_NAME="v3_128x128x64"']
+---
+If:
+  PathMatch: clock_audit\.hip
+CompileFlags:
+  Remove: [-DREGISTER=*, -DTM=*, -DTN=*]
+  Add: [-DREGISTER=add_profile, -DTM=256, -DTN=256]

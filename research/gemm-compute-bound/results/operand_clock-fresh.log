@@ -1,0 +1,40 @@
+device=0 arch=gfx90a:sramecc+:xnack- CUs=104 steady_clock_khz=25000
+protocol: automatic clocks, no locking, 104 CTAs x 256 threads, 4 chains x 4096 loops, 9 rounds x 16 launches
+
+pass     phase                         TFLOP/s      eff_MHz  core_cycles     flop/cycle
+PHASE_BEGIN pass=0 name=bf16-constant-tiny unix_s=1791948736.302
+PHASE_END pass=0 name=bf16-constant-tiny unix_s=1791948738.444
+0        bf16-constant-tiny            166.623      1571.92      1051420         255.31
+PHASE_BEGIN pass=0 name=bf16-constant-quarter unix_s=1791948738.445
+PHASE_END pass=0 name=bf16-constant-quarter unix_s=1791948740.543
+0        bf16-constant-quarter         166.795      1573.44      1051404         255.31
+PHASE_BEGIN pass=0 name=bf16-random unix_s=1791948740.543
+PHASE_END pass=0 name=bf16-random unix_s=1791948742.651
+0        bf16-random                   151.195      1426.13      1051340         255.33
+PHASE_BEGIN pass=0 name=fp16-constant-tiny unix_s=1791948742.652
+PHASE_END pass=0 name=fp16-constant-tiny unix_s=1791948744.754
+0        fp16-constant-tiny            166.638      1572.07      1051408         255.31
+PHASE_BEGIN pass=0 name=fp16-constant-quarter unix_s=1791948744.755
+PHASE_END pass=0 name=fp16-constant-quarter unix_s=1791948746.853
+0        fp16-constant-quarter         166.763      1573.12      1051408         255.31
+PHASE_BEGIN pass=0 name=fp16-random unix_s=1791948746.854
+PHASE_END pass=0 name=fp16-random unix_s=1791948748.963
+0        fp16-random                   152.368      1437.35      1051424         255.31
+PHASE_BEGIN pass=1 name=fp16-random unix_s=1791948748.963
+PHASE_END pass=1 name=fp16-random unix_s=1791948751.072
+1        fp16-random                   152.414      1437.82      1051428         255.31
+PHASE_BEGIN pass=1 name=fp16-constant-quarter unix_s=1791948751.072
+PHASE_END pass=1 name=fp16-constant-quarter unix_s=1791948753.173
+1        fp16-constant-quarter         166.713      1572.83      1051416         255.31
+PHASE_BEGIN pass=1 name=fp16-constant-tiny unix_s=1791948753.173
+PHASE_END pass=1 name=fp16-constant-tiny unix_s=1791948755.274
+1        fp16-constant-tiny            166.608      1571.63      1051408         255.31
+PHASE_BEGIN pass=1 name=bf16-random unix_s=1791948755.274
+PHASE_END pass=1 name=bf16-random unix_s=1791948757.387
+1        bf16-random                   151.260      1426.95      1051352         255.32
+PHASE_BEGIN pass=1 name=bf16-constant-quarter unix_s=1791948757.387
+PHASE_END pass=1 name=bf16-constant-quarter unix_s=1791948759.488
+1        bf16-constant-quarter         166.680      1572.54      1051420         255.31
+PHASE_BEGIN pass=1 name=bf16-constant-tiny unix_s=1791948759.488
+PHASE_END pass=1 name=bf16-constant-tiny unix_s=1791948761.589
+1        bf16-constant-tiny            166.596      1571.68      1051440         255.30

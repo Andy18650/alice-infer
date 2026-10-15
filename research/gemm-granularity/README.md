@@ -5,6 +5,16 @@ accumulation/output**. No production kernel, packing, dispatch, CMake, model,
 or canonical-fixture changes. The installed CK/CK Tile and rocBLAS are used
 through the normal native HIP/C++20 toolchain.
 
+## Repeated prefill GEMM follow-up
+
+See [prefill.md](prefill.md): 42 GEMM shapes, fixed-geometry and per-layout
+selection comparisons, two fresh nine-round confirmations plus isolated
+and eviction controls. For M>=128, tile-k versus the best confirmed affine CK
+choice is mostly neutral (warm graph-batch range -4.9%..+3.6%, median +1.0%).
+The shared format remains viable, but specific regressions and the wider
+CK-versus-rocBLAS gap require tuning; this is not model-level speedup or
+production adoption.
+
 ## Fixed tiled storage follow-up
 
 See [tiled-weights.md](tiled-weights.md). The current prototype stores weights

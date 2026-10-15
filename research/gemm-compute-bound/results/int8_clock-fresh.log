@@ -1,0 +1,41 @@
+device=0 arch=gfx90a:sramecc+:xnack- CUs=104 steady_clock_khz=25000
+protocol: automatic clocks, no locking, 104 CTAs x 256 threads, 4 chains x 4096 loops, 9 rounds x 16 launches
+kernel VGPRs: 32x32x8i8=132, 16x16x16i8=36
+
+pass     phase                              TOPS      eff_MHz  core_cycles       op/cycle
+PHASE_BEGIN pass=0 name=i8-32x32x8-constant-one unix_s=1791948766.621
+PHASE_END pass=0 name=i8-32x32x8-constant-one unix_s=1791948768.761
+0        i8-32x32x8-constant-one         167.485      1579.69      1051296         255.34
+PHASE_BEGIN pass=0 name=i8-32x32x8-constant-mid unix_s=1791948768.761
+PHASE_END pass=0 name=i8-32x32x8-constant-mid unix_s=1791948770.863
+0        i8-32x32x8-constant-mid         166.524      1571.02      1051272         255.34
+PHASE_BEGIN pass=0 name=i8-32x32x8-random unix_s=1791948770.864
+PHASE_END pass=0 name=i8-32x32x8-random unix_s=1791948772.976
+0        i8-32x32x8-random               152.130      1435.23      1051392         255.31
+PHASE_BEGIN pass=0 name=i8-16x16x16-constant-one unix_s=1791948772.977
+PHASE_END pass=0 name=i8-16x16x16-constant-one unix_s=1791948775.027
+0        i8-16x16x16-constant-one        169.298      1603.00       526548         254.90
+PHASE_BEGIN pass=0 name=i8-16x16x16-constant-mid unix_s=1791948775.027
+PHASE_END pass=0 name=i8-16x16x16-constant-mid unix_s=1791948777.078
+0        i8-16x16x16-constant-mid        168.415      1594.65       526560         254.90
+PHASE_BEGIN pass=0 name=i8-16x16x16-random unix_s=1791948777.078
+PHASE_END pass=0 name=i8-16x16x16-random unix_s=1791948779.133
+0        i8-16x16x16-random              155.702      1474.55       526500         254.92
+PHASE_BEGIN pass=1 name=i8-16x16x16-random unix_s=1791948779.133
+PHASE_END pass=1 name=i8-16x16x16-random unix_s=1791948781.188
+1        i8-16x16x16-random              155.706      1474.46       526484         254.93
+PHASE_BEGIN pass=1 name=i8-16x16x16-constant-mid unix_s=1791948781.188
+PHASE_END pass=1 name=i8-16x16x16-constant-mid unix_s=1791948783.238
+1        i8-16x16x16-constant-mid        168.476      1595.02       526548         254.90
+PHASE_BEGIN pass=1 name=i8-16x16x16-constant-one unix_s=1791948783.238
+PHASE_END pass=1 name=i8-16x16x16-constant-one unix_s=1791948785.288
+1        i8-16x16x16-constant-one        169.293      1602.70       526540         254.91
+PHASE_BEGIN pass=1 name=i8-32x32x8-random unix_s=1791948785.288
+PHASE_END pass=1 name=i8-32x32x8-random unix_s=1791948787.395
+1        i8-32x32x8-random               152.076      1434.68      1051388         255.32
+PHASE_BEGIN pass=1 name=i8-32x32x8-constant-mid unix_s=1791948787.396
+PHASE_END pass=1 name=i8-32x32x8-constant-mid unix_s=1791948789.494
+1        i8-32x32x8-constant-mid         166.494      1570.42      1051284         255.34
+PHASE_BEGIN pass=1 name=i8-32x32x8-constant-one unix_s=1791948789.494
+PHASE_END pass=1 name=i8-32x32x8-constant-one unix_s=1791948791.592
+1        i8-32x32x8-constant-one         167.307      1578.37      1051272         255.34

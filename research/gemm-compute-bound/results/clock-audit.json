@@ -1,0 +1,45 @@
+{
+  "reference": {
+    "wave_samples": 3744,
+    "median_effective_MHz": 1570.82,
+    "median_core_cycles": 1051460.0,
+    "median_tflops": 166.501538,
+    "smi_busy_samples": 21,
+    "smi_average_gfx_MHz": 1570.0,
+    "smi_current_gfx_MHz": 1700.0
+  },
+  "random-reference": {
+    "wave_samples": 3744,
+    "median_effective_MHz": 1425.56,
+    "median_core_cycles": 1051936.0,
+    "median_tflops": 151.051399,
+    "smi_busy_samples": 1,
+    "smi_average_gfx_MHz": 1425.0,
+    "smi_current_gfx_MHz": 1700.0
+  },
+  "gemm": {
+    "wave_samples": 14976,
+    "median_effective_MHz": 1385.22,
+    "median_core_cycles": 4289236.0,
+    "median_tflops": 144.134369,
+    "smi_busy_samples": 18,
+    "smi_average_gfx_MHz": 1384.0,
+    "smi_current_gfx_MHz": 1700.0
+  },
+  "hot-reference": {
+    "wave_samples": 3744,
+    "median_effective_MHz": 1571.01,
+    "median_core_cycles": 133956.0,
+    "median_tflops": 150.416421,
+    "smi_busy_samples": 2,
+    "smi_average_gfx_MHz": 1399.0,
+    "smi_current_gfx_MHz": 1700.0
+  },
+  "comparison": {
+    "clock_adjusted_reference_tflops": 146.82857390939765,
+    "clock_adjusted_fraction": 0.9816506771286893,
+    "unadjusted_fraction": 0.8656638895431704,
+    "reference_flops_per_core_cycle_per_wave": 255.29782968443877,
+    "gemm_flops_per_core_cycle_per_wave": 250.33405109907685
+  }
+}

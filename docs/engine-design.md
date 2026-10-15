@@ -304,6 +304,48 @@ is claimed. No production changes or narrowing of the earlier full-FP32-x
 GEMV study are made. Details and retained scalarized controls are in the tiled
 weight research note.
 
+**Repeated prefill GEMM storage test (2026-10, user-directed):** 42 standalone
+BF16-input/FP32-output shapes span M=64..4096 and representative projection /
+8B and TP4-sized 70B FFN N/K dimensions. Five dense CK geometries and affine
+rocBLAS controls are screened, then the plain CK winner is held fixed across
+layouts while per-layout winners are confirmed separately. Two fresh nine-round
+processes plus an isolated eviction-control process, native O3 on one gfx90a
+GCD, CPU+memory NUMA node 0, no model/context: tile-k versus the best confirmed
+affine CK choice at M>=128 has warm graph-batch changes -4.9%..+3.6%, median
++1.0% across 36 distinct shapes (not a weighted model speedup). Examples:
+512x14336x8192 ~77.8 -> 80.4 TFLOP/s; 4096x8192x8192 ~94.1 -> 96.5;
+512x2048x8192 ~66.6 -> 63.4. Fixed-geometry comparisons and plain-versus-padded
+controls remain distinct so tuning/padding does not masquerade as a format
+benefit. N-major tiled storage consistently loses in this set. K-major storage
+is therefore a viable shared GEMV/GEMM candidate, not universally superior;
+affine and tiled CK still trail rocBLAS on many shapes. No production adoption,
+model-level speedup, overlap or new hardware-saturation threshold is claimed.
+The benchmark/GPU sources and measured executable are unchanged from the tiled
+checkpoint; only drivers, analysis and findings are added. Full protocols and curated data are in the prefill research note.
+
+**Compute-bound GEMM and effective-clock audit (2026-10, standalone):**
+`research/gemm-compute-bound/` establishes an actual BF16-input/FP32-output
+CK V3 256x256x64 GEMM at ~144.1 TFLOP/s (4096x6656x32768, no split-K),
+native O3, one gfx90a GCD, CPU+memory NUMA node 0, no model/context. Its
+~1385 MHz per-wave core/steady-counter rate differs from the constant-register
+MFMA reference's ~1571 MHz /166.5 TFLOP/s. Normal signed reference operands
+alone reduce that rate to ~1426 MHz /151.1 TFLOP/s. Clock-adjusted reference
+~146.8 puts GEMM at ~98.2%; per-wave work is ~250 versus ~255 FLOPs/core-cycle.
+Firmware average GFX corroborates this; current GFX remains 1700. No fixed
+clock guarantee, specific power-policy cause or physical traffic is claimed.
+Repeated affine/B-panel/AB-panel controls rank AB-panel > affine > B-panel
+when each uses its better measured CTA order at all nine confirmed problems,
+but B-panel has 16 private bytes/thread and a hot-loop spill reload versus
+zero for the others. A longest-K fixed-order exception is retained. This is
+compiled-implementation evidence, not a universal tiling rule or promotion
+of the compute-sized panels over the earlier shared 32x128 weight format.
+New BF16/FP16, INT8, mixed-load and SIMT GEMV clock probes reproduce the rate
+effects with instruction/count checks. Mixed loads also reduce per-cycle
+MFMA throughput; the GEMV probe excludes combine and has only structured-input
+y[0] validation. Original/fresh logs, layout controls, code-object audit and
+scope limitations are retained in the research notes. No production, format,
+dispatch, precision-contract or clock/power configuration changes are made.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

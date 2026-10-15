@@ -1,0 +1,52 @@
+device=0 arch=gfx90a:sramecc+:xnack- CUs=104 steady_clock_khz=25000
+protocol: automatic clocks, no locking, 9 rounds x 16 launches, ~2 s warm-up per phase
+
+pass     phase                  GB/s    TFLOP/s      eff_MHz   core_cyc     gpu_us
+PHASE_BEGIN pass=0 name=gup-cw256 unix_s=1791948828.076
+PHASE_END pass=0 name=gup-cw256 unix_s=1791948830.122
+0        gup-cw256            1268.6       1.27      1554.49     111892    185.150
+PHASE_BEGIN pass=0 name=gup-cw512 unix_s=1791948830.263
+PHASE_END pass=0 name=gup-cw512 unix_s=1791948832.292
+0        gup-cw512            1242.6       1.24      1556.11     180964    189.030
+PHASE_BEGIN pass=0 name=down-cw512 unix_s=1791948832.365
+PHASE_END pass=0 name=down-cw512 unix_s=1791948834.379
+0        down-cw512           1307.7       1.31      1550.05     120164     89.810
+PHASE_BEGIN pass=0 name=down-cw256 unix_s=1791948834.448
+PHASE_END pass=0 name=down-cw256 unix_s=1791948836.463
+0        down-cw256           1188.1       1.19      1557.63      92984     98.850
+PHASE_BEGIN pass=0 name=qkv-cw256 unix_s=1791948836.493
+PHASE_END pass=0 name=qkv-cw256 unix_s=1791948838.500
+0        qkv-cw256            1098.6       1.10      1571.34      50272     38.180
+PHASE_BEGIN pass=0 name=o-cw256 unix_s=1791948838.521
+PHASE_END pass=0 name=o-cw256 unix_s=1791948840.526
+0        o-cw256              1010.4       1.01      1578.92      42604     33.210
+PHASE_BEGIN pass=0 name=o-cw1024 unix_s=1791948840.547
+PHASE_END pass=0 name=o-cw1024 unix_s=1791948842.558
+0        o-cw1024              492.1       0.49      1630.91     102872     68.190
+PHASE_BEGIN pass=0 name=gup-cw256-zero unix_s=1791948842.677
+PHASE_END pass=0 name=gup-cw256-zero unix_s=1791948844.707
+0        gup-cw256-zero       1269.0       1.27      1564.10     112884    185.090
+PHASE_BEGIN pass=1 name=gup-cw256-zero unix_s=1791948844.836
+PHASE_END pass=1 name=gup-cw256-zero unix_s=1791948846.865
+1        gup-cw256-zero       1267.7       1.27      1564.57     112488    185.280
+PHASE_BEGIN pass=1 name=o-cw1024 unix_s=1791948846.895
+PHASE_END pass=1 name=o-cw1024 unix_s=1791948848.906
+1        o-cw1024              491.9       0.49      1631.39     103036     68.220
+PHASE_BEGIN pass=1 name=o-cw256 unix_s=1791948848.926
+PHASE_END pass=1 name=o-cw256 unix_s=1791948850.931
+1        o-cw256              1009.8       1.01      1577.03      43044     33.230
+PHASE_BEGIN pass=1 name=qkv-cw256 unix_s=1791948850.959
+PHASE_END pass=1 name=qkv-cw256 unix_s=1791948852.966
+1        qkv-cw256            1100.3       1.10      1568.21      50176     38.120
+PHASE_BEGIN pass=1 name=down-cw256 unix_s=1791948853.035
+PHASE_END pass=1 name=down-cw256 unix_s=1791948855.050
+1        down-cw256           1189.4       1.19      1556.24      92768     98.740
+PHASE_BEGIN pass=1 name=down-cw512 unix_s=1791948855.121
+PHASE_END pass=1 name=down-cw512 unix_s=1791948857.136
+1        down-cw512           1305.0       1.31      1551.98     121208     89.990
+PHASE_BEGIN pass=1 name=gup-cw512 unix_s=1791948857.272
+PHASE_END pass=1 name=gup-cw512 unix_s=1791948859.300
+1        gup-cw512            1234.3       1.23      1556.53     181744    190.290
+PHASE_BEGIN pass=1 name=gup-cw256 unix_s=1791948859.438
+PHASE_END pass=1 name=gup-cw256 unix_s=1791948861.468
+1        gup-cw256            1265.9       1.27      1556.33     112476    185.540

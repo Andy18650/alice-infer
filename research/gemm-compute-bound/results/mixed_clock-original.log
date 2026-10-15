@@ -1,0 +1,40 @@
+device=0 arch=gfx90a:sramecc+:xnack- CUs=104 steady_clock_khz=25000
+protocol: automatic clocks, no locking, 104 CTAs x 256 threads, 4 chains x 4096 loops, load pipeline depth 8, buffer 512 MiB
+
+pass     phase                        TOPS    eff_MHz  core_cycles   flop/cyc  read_GBps     gpu_us
+PHASE_BEGIN pass=0 name=bf16-load0B unix_s=1791904834.934
+PHASE_END pass=0 name=bf16-load0B unix_s=1791904837.086
+0        bf16-load0B               166.633    1572.39      1051304     255.34        0.0    670.149
+PHASE_BEGIN pass=0 name=bf16-load4B unix_s=1791904837.086
+PHASE_END pass=0 name=bf16-load4B unix_s=1791904839.194
+0        bf16-load4B               155.533    1540.95      1102872     243.40      608.7    717.979
+PHASE_BEGIN pass=0 name=bf16-load8B unix_s=1791904839.194
+PHASE_END pass=0 name=bf16-load8B unix_s=1791904841.304
+0        bf16-load8B               152.829    1509.84      1098592     244.34     1196.3    730.679
+PHASE_BEGIN pass=0 name=bf16-load16B unix_s=1791904841.305
+PHASE_END pass=0 name=bf16-load16B unix_s=1791904843.517
+0        bf16-load16B               77.301    1565.45      2215488     121.16     1210.2   1444.598
+PHASE_BEGIN pass=0 name=bf16-random-load8B unix_s=1791904843.517
+PHASE_END pass=0 name=bf16-random-load8B unix_s=1791904845.640
+0        bf16-random-load8B        140.558    1388.16      1099552     244.13     1100.3    794.469
+PHASE_BEGIN pass=0 name=loadonly-16B unix_s=1791904845.640
+PHASE_END pass=0 name=loadonly-16B unix_s=1791904847.851
+0        loadonly-16B                0.000    1614.00      2116688       0.00     1227.0   1424.858
+PHASE_BEGIN pass=1 name=loadonly-16B unix_s=1791904847.851
+PHASE_END pass=1 name=loadonly-16B unix_s=1791904850.068
+1        loadonly-16B                0.000    1616.02      2252228       0.00     1231.1   1420.009
+PHASE_BEGIN pass=1 name=bf16-random-load8B unix_s=1791904850.068
+PHASE_END pass=1 name=bf16-random-load8B unix_s=1791904852.188
+1        bf16-random-load8B        140.726    1389.86      1099612     244.12     1101.6    793.519
+PHASE_BEGIN pass=1 name=bf16-load16B unix_s=1791904852.189
+PHASE_END pass=1 name=bf16-load16B unix_s=1791904854.400
+1        bf16-load16B               77.358    1569.18      2285004     117.48     1211.1   1443.539
+PHASE_BEGIN pass=1 name=bf16-load8B unix_s=1791904854.400
+PHASE_END pass=1 name=bf16-load8B unix_s=1791904856.512
+1        bf16-load8B               153.173    1513.17      1099160     244.22     1199.0    729.039
+PHASE_BEGIN pass=1 name=bf16-load4B unix_s=1791904856.512
+PHASE_END pass=1 name=bf16-load4B unix_s=1791904858.619
+1        bf16-load4B               155.565    1541.09      1102860     243.40      608.9    717.830
+PHASE_BEGIN pass=1 name=bf16-load0B unix_s=1791904858.620
+PHASE_END pass=1 name=bf16-load0B unix_s=1791904860.722
+1        bf16-load0B               166.688    1572.45      1051316     255.33        0.0    669.930

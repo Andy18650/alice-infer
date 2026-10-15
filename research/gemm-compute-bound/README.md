@@ -172,6 +172,22 @@ reference and retained original/fresh evidence are in
 [clock-verification.md](clock-verification.md). These observations do not
 identify a particular clock/power policy or measure physical HBM traffic.
 
+## Actual GEMM counter profiling
+
+The existing profiler now collects hardware counters successfully with its
+installed Python/SDK/AQL components explicitly configured. Two 12-pass actual
+GEMM captures plus three same-pass core confirmations per shape/layout show
+long-K AB-panel at **97.70% counter-derived MFMA utilization** (the AMD formula
+uses an emulated busy-cycle counter), consistent with the earlier clock audit.
+LDS bank-conflict counts are zero; fixed n-fast L2-to-HBM read payload rates are
+only ~147-163 GB/s, not near the streaming ceiling. B-panel executes ~6.24%
+more VMEM instructions at long K and has more dependency-wait wave cycles.
+A same-pass m-fast control restores spill-free affine from 86.88% to 96.57%
+utilization: zero spills alone is not sufficient. See
+[profiling.md](profiling.md) for exact protocols, raw-counter checks, modelled
+reuse, profiler limitations and reproduction commands. Profiled timings remain
+separate from the earlier unprofiled performance confirmations.
+
 ## Reproduce and retained data
 
 ```sh

@@ -343,8 +343,17 @@ New BF16/FP16, INT8, mixed-load and SIMT GEMV clock probes reproduce the rate
 effects with instruction/count checks. Mixed loads also reduce per-cycle
 MFMA throughput; the GEMV probe excludes combine and has only structured-input
 y[0] validation. Original/fresh logs, layout controls, code-object audit and
-scope limitations are retained in the research notes. No production, format,
-dispatch, precision-contract or clock/power configuration changes are made.
+scope limitations are retained in the research notes. Follow-up hardware-counter
+profiling is now usable with the existing local Compute/SDK/AQL installation.
+Two 12-pass actual-GEMM captures and three same-pass core repeats per case
+confirm long-K AB-panel at ~97.70% counter-derived MFMA utilization (emulated
+busy-cycle formula), zero reported LDS bank conflicts and only ~147-163 GB/s
+L2-to-HBM read payload for fixed n-fast. B-panel issues ~6.24% more VMEM
+instructions; changing spill-free affine to m-fast restores utilization from
+~86.88% to ~96.57%. Mixed-version profiler metadata/blank-field limitations,
+raw count checks and profiling-versus-unprofiled timing distinctions are
+recorded in the profiling note. No production, format, dispatch, precision-
+contract or clock/power configuration changes are made.
 
 ## 1. Purpose & target
 

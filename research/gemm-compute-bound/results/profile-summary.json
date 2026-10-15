@@ -1,0 +1,401 @@
+{
+  "binary_sha256": "d6c6998353ed3686efbbe7a21e68506599bbe7c271fb951471d9463d8c378080",
+  "results": [
+    {
+      "k": 8192,
+      "storage": "affine",
+      "m": 4096,
+      "n": 6656,
+      "ctas": 416,
+      "order": "n-fast",
+      "core_samples": 3,
+      "counter_derived_mfma_util_pct": {
+        "median": 92.66479008660238,
+        "min": 92.64690062915365,
+        "max": 92.7962045253566
+      },
+      "dependency_wait_pct": {
+        "median": 3.5930348396809655,
+        "min": 3.566657767302144,
+        "max": 3.6095346297161655
+      },
+      "issue_wait_pct": {
+        "median": 79.13316769049808,
+        "min": 79.11799319788737,
+        "max": 79.17838481434597
+      },
+      "grbm_over_elapsed_MHz": {
+        "median": 1400.5684811210724,
+        "min": 1400.4023939438566,
+        "max": 1401.1583281647124
+      },
+      "profiled_us": {
+        "median": 3231.036,
+        "min": 3227.196,
+        "max": 3232.156
+      },
+      "vmem_instructions": {
+        "median": 3540992.0,
+        "min": 3540992.0,
+        "max": 3540992.0
+      },
+      "scratch_bytes": 0,
+      "lds_bank_conflicts": 0.0,
+      "l2_hit_pct": 83.55412844713562,
+      "l2_to_hbm_read_payload_bytes": 507248128.0,
+      "approximate_l2_to_hbm_read_payload_GBps": 157.1909355726013,
+      "resident_batch_read_model_bytes": 503316480,
+      "full_profile_passes": 12
+    },
+    {
+      "k": 8192,
+      "storage": "b-panel",
+      "m": 4096,
+      "n": 6656,
+      "ctas": 416,
+      "order": "n-fast",
+      "core_samples": 3,
+      "counter_derived_mfma_util_pct": {
+        "median": 87.69420066382668,
+        "min": 87.62447299078421,
+        "max": 87.69986655699054
+      },
+      "dependency_wait_pct": {
+        "median": 5.3312735216599,
+        "min": 5.32036734490172,
+        "max": 5.338222040678582
+      },
+      "issue_wait_pct": {
+        "median": 78.34647220989574,
+        "min": 78.3392719608202,
+        "max": 78.36229448432681
+      },
+      "grbm_over_elapsed_MHz": {
+        "median": 1412.554832657758,
+        "min": 1412.2456680749137,
+        "max": 1412.8350763002447
+      },
+      "profiled_us": {
+        "median": 3386.716,
+        "min": 3385.756,
+        "max": 3387.997
+      },
+      "vmem_instructions": {
+        "median": 3760640.0,
+        "min": 3760640.0,
+        "max": 3760640.0
+      },
+      "scratch_bytes": 16,
+      "lds_bank_conflicts": 0.0,
+      "l2_hit_pct": 83.83960197948785,
+      "l2_to_hbm_read_payload_bytes": 505300736.0,
+      "approximate_l2_to_hbm_read_payload_GBps": 149.22963185394516,
+      "resident_batch_read_model_bytes": 503316480,
+      "full_profile_passes": 12
+    },
+    {
+      "k": 8192,
+      "storage": "ab-panel",
+      "m": 4096,
+      "n": 6656,
+      "ctas": 416,
+      "order": "n-fast",
+      "core_samples": 3,
+      "counter_derived_mfma_util_pct": {
+        "median": 94.92195305981166,
+        "min": 94.88808813229255,
+        "max": 94.94184950249685
+      },
+      "dependency_wait_pct": {
+        "median": 3.0505300130193485,
+        "min": 3.0493310892306136,
+        "max": 3.0617952052661077
+      },
+      "issue_wait_pct": {
+        "median": 79.44580684848192,
+        "min": 79.43825874717623,
+        "max": 79.45945088589555
+      },
+      "grbm_over_elapsed_MHz": {
+        "median": 1396.118340861551,
+        "min": 1395.4985547034332,
+        "max": 1396.1996286648493
+      },
+      "profiled_us": {
+        "median": 3164.796,
+        "min": 3164.317,
+        "max": 3167.516
+      },
+      "vmem_instructions": {
+        "median": 3540992.0,
+        "min": 3540992.0,
+        "max": 3540992.0
+      },
+      "scratch_bytes": 0,
+      "lds_bank_conflicts": 0.0,
+      "l2_hit_pct": 83.48649734822872,
+      "l2_to_hbm_read_payload_bytes": 503316608.0,
+      "approximate_l2_to_hbm_read_payload_GBps": 159.03204028088942,
+      "resident_batch_read_model_bytes": 503316480,
+      "full_profile_passes": 12
+    },
+    {
+      "k": 32768,
+      "storage": "affine",
+      "m": 4096,
+      "n": 6656,
+      "ctas": 416,
+      "order": "n-fast",
+      "core_samples": 3,
+      "counter_derived_mfma_util_pct": {
+        "median": 86.87602192804026,
+        "min": 86.63181472545293,
+        "max": 87.25720087579576
+      },
+      "dependency_wait_pct": {
+        "median": 3.2551123280972787,
+        "min": 3.2281540475458605,
+        "max": 3.282325746669066
+      },
+      "issue_wait_pct": {
+        "median": 80.95672145063935,
+        "min": 80.83302868092474,
+        "max": 80.97417925515713
+      },
+      "grbm_over_elapsed_MHz": {
+        "median": 1411.8392804061182,
+        "min": 1411.4829571373389,
+        "max": 1412.3823766114472
+      },
+      "profiled_us": {
+        "median": 13678.382,
+        "min": 13622.066,
+        "max": 13711.665
+      },
+      "vmem_instructions": {
+        "median": 13764608.0,
+        "min": 13764608.0,
+        "max": 13764608.0
+      },
+      "scratch_bytes": 0,
+      "lds_bank_conflicts": 0.0,
+      "l2_hit_pct": 85.70794827777166,
+      "l2_to_hbm_read_payload_bytes": 2017197568.0,
+      "approximate_l2_to_hbm_read_payload_GBps": 147.46753467825124,
+      "resident_batch_read_model_bytes": 2013265920,
+      "full_profile_passes": 12
+    },
+    {
+      "k": 32768,
+      "storage": "b-panel",
+      "m": 4096,
+      "n": 6656,
+      "ctas": 416,
+      "order": "n-fast",
+      "core_samples": 3,
+      "counter_derived_mfma_util_pct": {
+        "median": 90.01027081384933,
+        "min": 89.98303822527006,
+        "max": 90.09751532865138
+      },
+      "dependency_wait_pct": {
+        "median": 4.929456461071821,
+        "min": 4.844715791114804,
+        "max": 4.951499438284711
+      },
+      "issue_wait_pct": {
+        "median": 78.71621709021596,
+        "min": 78.70288521693094,
+        "max": 78.78685165286802
+      },
+      "grbm_over_elapsed_MHz": {
+        "median": 1406.4383755141562,
+        "min": 1405.789615493995,
+        "max": 1406.4733697859874
+      },
+      "profiled_us": {
+        "median": 13252.784,
+        "min": 13246.061,
+        "max": 13256.465
+      },
+      "vmem_instructions": {
+        "median": 14623232.0,
+        "min": 14623232.0,
+        "max": 14623232.0
+      },
+      "scratch_bytes": 16,
+      "lds_bank_conflicts": 0.0,
+      "l2_hit_pct": 85.36438706180746,
+      "l2_to_hbm_read_payload_bytes": 2015211264.0,
+      "approximate_l2_to_hbm_read_payload_GBps": 152.08338155720074,
+      "resident_batch_read_model_bytes": 2013265920,
+      "full_profile_passes": 12
+    },
+    {
+      "k": 32768,
+      "storage": "ab-panel",
+      "m": 4096,
+      "n": 6656,
+      "ctas": 416,
+      "order": "n-fast",
+      "core_samples": 3,
+      "counter_derived_mfma_util_pct": {
+        "median": 97.70377252138469,
+        "min": 97.69266145808889,
+        "max": 97.70380097077089
+      },
+      "dependency_wait_pct": {
+        "median": 2.508392073044207,
+        "min": 2.508023728107657,
+        "max": 2.5112968725585234
+      },
+      "issue_wait_pct": {
+        "median": 79.89364308073169,
+        "min": 79.88932666303464,
+        "max": 79.89383001334221
+      },
+      "grbm_over_elapsed_MHz": {
+        "median": 1388.5957281928952,
+        "min": 1388.3842660521123,
+        "max": 1388.9404269682498
+      },
+      "profiled_us": {
+        "median": 12367.506,
+        "min": 12363.027,
+        "max": 12367.983
+      },
+      "vmem_instructions": {
+        "median": 13764608.0,
+        "min": 13764608.0,
+        "max": 13764608.0
+      },
+      "scratch_bytes": 0,
+      "lds_bank_conflicts": 0.0,
+      "l2_hit_pct": 85.0306897957789,
+      "l2_to_hbm_read_payload_bytes": 2013266432.0,
+      "approximate_l2_to_hbm_read_payload_GBps": 162.8075569353208,
+      "resident_batch_read_model_bytes": 2013265920,
+      "full_profile_passes": 12
+    },
+    {
+      "k": 32768,
+      "storage": "affine",
+      "m": 4096,
+      "n": 6656,
+      "ctas": 416,
+      "order": "m-fast",
+      "core_samples": 3,
+      "counter_derived_mfma_util_pct": {
+        "median": 96.57389563556887,
+        "min": 96.571911099957,
+        "max": 96.61281345709273
+      },
+      "dependency_wait_pct": {
+        "median": 2.602549842678617,
+        "min": 2.5964914354822737,
+        "max": 2.608659750809661
+      },
+      "issue_wait_pct": {
+        "median": 79.80438810857248,
+        "min": 79.79659265687071,
+        "max": 79.80608740809875
+      },
+      "grbm_over_elapsed_MHz": {
+        "median": 1390.0613774483027,
+        "min": 1389.8040203072205,
+        "max": 1390.072257829532
+      },
+      "profiled_us": {
+        "median": 12497.587,
+        "min": 12494.866,
+        "max": 12497.746
+      },
+      "vmem_instructions": {
+        "median": 13764608.0,
+        "min": 13764608.0,
+        "max": 13764608.0
+      },
+      "scratch_bytes": 0
+    },
+    {
+      "k": 32768,
+      "storage": "b-panel",
+      "m": 4096,
+      "n": 6656,
+      "ctas": 416,
+      "order": "m-fast",
+      "core_samples": 3,
+      "counter_derived_mfma_util_pct": {
+        "median": 88.3919386241087,
+        "min": 88.38574060338705,
+        "max": 88.40970861743003
+      },
+      "dependency_wait_pct": {
+        "median": 5.50148435812003,
+        "min": 5.413753190246994,
+        "max": 5.537930488641804
+      },
+      "issue_wait_pct": {
+        "median": 78.39116818302536,
+        "min": 78.3522165528627,
+        "max": 78.46866755461464
+      },
+      "grbm_over_elapsed_MHz": {
+        "median": 1409.303872056872,
+        "min": 1408.8502675483635,
+        "max": 1409.4726064559686
+      },
+      "profiled_us": {
+        "median": 13467.984,
+        "min": 13463.665,
+        "max": 13473.265
+      },
+      "vmem_instructions": {
+        "median": 14623232.0,
+        "min": 14623232.0,
+        "max": 14623232.0
+      },
+      "scratch_bytes": 16
+    },
+    {
+      "k": 32768,
+      "storage": "ab-panel",
+      "m": 4096,
+      "n": 6656,
+      "ctas": 416,
+      "order": "m-fast",
+      "core_samples": 3,
+      "counter_derived_mfma_util_pct": {
+        "median": 97.60816246694779,
+        "min": 97.60314271441219,
+        "max": 97.61936223729968
+      },
+      "dependency_wait_pct": {
+        "median": 2.5316913937938974,
+        "min": 2.528819874235981,
+        "max": 2.5318423484140715
+      },
+      "issue_wait_pct": {
+        "median": 79.88673625816641,
+        "min": 79.88595736412093,
+        "max": 79.89098591506348
+      },
+      "grbm_over_elapsed_MHz": {
+        "median": 1387.0184386613141,
+        "min": 1386.9627862532284,
+        "max": 1387.24904296439
+      },
+      "profiled_us": {
+        "median": 12390.867,
+        "min": 12390.866,
+        "max": 12392.786
+      },
+      "vmem_instructions": {
+        "median": 13764608.0,
+        "min": 13764608.0,
+        "max": 13764608.0
+      },
+      "scratch_bytes": 0
+    }
+  ]
+}

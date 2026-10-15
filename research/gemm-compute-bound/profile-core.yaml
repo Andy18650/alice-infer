@@ -1,0 +1,10 @@
+jobs:
+  - pmc:
+      - SQ_WAVES
+      - SQ_WAVE_CYCLES
+      - SQ_WAIT_ANY
+      - SQ_WAIT_INST_ANY
+      - SQ_VALU_MFMA_BUSY_CYCLES
+      - SQ_INSTS_VALU_MFMA_MOPS_BF16
+      - SQ_INSTS_VMEM
+      - GRBM_GUI_ACTIVE

@@ -20,9 +20,35 @@ banks do not fix the bubble, and seven vector NOPs already reproduce one
 without any MFMA-source dependency. Compiler copies/waits and numerical
 hazards in source-write variants are recorded explicitly.
 
+The register-only checkpoint is committed as **`8e1c120`**. The new
+[real-load phase-1 baseline](loads.md) deliberately drains each weight load
+immediately and leaves ordinary 8/8/backedge bubbles intact. It is a separate
+untuned baseline, not a replacement for the accepted register arithmetic.
+The user requests per-MFMA/load work before revisiting the backedge.
+The next [load-to-convert ring experiment](pipeline.md) tests depths 1/2/4/8
+with A treated as freely available: FP8 depth 8 reaches ~86.3/~85.8 TFLOP/s,
+about 4.56x/4.55x its co-run depth-1 baseline. No A loading, weight-reuse,
+grid or backedge tuning is included.
+
 ## Reproduce
 
-Latest preheader/split experiment (details and full protocol in
+Latest queue-depth experiment (full protocol in [pipeline.md](pipeline.md)):
+
+```sh
+bash research/fp8-w8a16/build-pipeline-probe.sh
+python3 research/fp8-w8a16/audit_pipeline_probe.py
+numactl --cpunodebind=0 --membind=0 temp/fp8-w8a16/pipeline/pipeline-probe 4096 9 1729
+```
+
+Earlier immediate-wait baseline (full protocol in [loads.md](loads.md)):
+
+```sh
+bash research/fp8-w8a16/build-load-probe.sh
+python3 research/fp8-w8a16/audit_load_probe.py
+numactl --cpunodebind=0 --membind=0 temp/fp8-w8a16/load/load-probe 4096 9 1729
+```
+
+Register-only preheader/split experiment (details and full protocol in
 [splitting.md](splitting.md)):
 
 ```sh

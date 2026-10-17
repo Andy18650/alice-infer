@@ -421,6 +421,40 @@ the primary controls/splits. Unfavorable pad/four-bank variants remain
 recorded; neither a universal padding rule nor a unique hardware cause is
 claimed. Future-weight streaming and general GEMM integration remain open;
 original probes and production code are unchanged.
+The register-only research checkpoint is committed as `8e1c120`. The next
+user-directed phase adds real synthetic-weight global loads, initially with
+one immediate `vmcnt(0)` drain per future fragment and no latency/backedge
+tuning (`research/fp8-w8a16/loads.md`). Native O3, HIP 0, CPU+memory NUMA 0,
+no model/context, U=8 at 4096 MFMAs/wave: two nine-round processes give
+FP8 ~584.8/586.0 cycles/MFMA, 18.514/18.433 TFLOP/s and 289.274/288.017
+useful weight GB/s; matched FP16 ~612.7/612.2 cycles, 17.630/17.667 TFLOP/s
+and 550.928/552.085 useful GB/s. These are unhidden-wait baselines, not
+bandwidth ceilings or physical-HBM counts. Footprints are ~416/832 MiB;
+8192-step repeats agree. All 252 timed samples and 72 changed-input/poisoned-
+output/guard validations match FP64 exactly; actual-ISA audits verify real
+loads/full waits, no private/LDS storage or lane spills. The user requests
+reporting before tackling the per-MFMA gap, then backedge tuning; that initial
+baseline leaves both untouched. No production change is made.
+The subsequent user-directed raw-load queue sweep (`research/fp8-w8a16/pipeline.md`)
+keeps A freely register-available and tests D=1/2/4/8, with partial waits
+`vmcnt(D-1)` and no full body drains. Same native O3/HIP0/CPU+memory NUMA0,
+no model/context, U=8, 4096-step protocol: FP8 reaches 18.934/35.155/62.229/
+86.308 TFLOP/s in run 1; D8 repeats at 85.794 (4.56x/4.55x versus matched
+D1), ~1.35/~1.34 TB/s useful weight payload and ~117/~116 cycles/MFMA.
+An 8192-step control agrees. All 420 timed samples and 120 changed-input/
+poisoned-output/guard cases match FP64 exactly. Actual-ISA FIFO/register-
+lifetime auditing verifies queue credits and rejects premature pending-value
+copies; wait and first read are fused to avoid an initial opaque-asm hazard.
+All entries remain private/LDS/lane-spill-free. Common padded layout keeps
+addresses identical across depths; FP16 controls include explicitly counted
+safe copies. No activation loading, operand reuse, grid or backedge tuning,
+compute-bound claim or production change is introduced. Primary effective
+shape is M=32,N=13312,K=32768: 416 waves each own a 32x32 output tile and
+traverse full K, with the same 32x8 activation fragment repeated under the
+free-A assumption. The 8192-step control doubles K. The user recognizes the
+FP16 control's ~1.38 TB/s as the GCD's practical streaming ceiling (FP8 here
+~1.34–1.35), and requests preserving the load/convert loop as a future FP8
+W8A16 GEMV reference candidate, not a validated M=1 implementation.
 
 ## 1. Purpose & target
 

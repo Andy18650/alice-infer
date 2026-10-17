@@ -1,0 +1,60 @@
+Architecture: CDNA2
+Instruction: V_MFMA_F32_16X16X16F16
+    Encoding: VOP3P-MAI
+    VOP3P Opcode: 0x4d
+    VOP3P-MAI Opcode: 0xd
+    Matrix Dimensions:
+        M: 16
+        N: 16
+        K: 16
+        blocks: 1
+    Execution statistics:
+        FLOPs: 8192
+        Execution cycles: 32
+        FLOPs/CU/cycle: 1024
+        Can co-execute with VALU: True
+        VALU co-execution cycles possible: 28
+    Register usage:
+        GPRs required for A: 2
+        GPRs required for B: 2
+        GPRs required for C: 4
+        GPRs required for D: 4
+        GPR alignment requirement: 8 bytes
+    VOP3P-MAI register encoding:
+        A matrix source field: Src0
+        B matrix source field: Src1
+        C matrix source field: Src2
+        D matrix source field: Vdst
+    Register data types:
+        Src0: FP16 (IEEE binary16 floating point)
+        Src1: FP16 (IEEE binary16 floating point)
+        Src2: FP32 (IEEE binary32 floating point)
+        Vdst: FP32 (IEEE binary32 floating point)
+    Register capabilities:
+        A matrix can use ArchVGPRs: True
+        A matrix can use AccVGPRs: True
+        B matrix can use ArchVGPRs: True
+        B matrix can use AccVGPRs: True
+        C and D matrix can use ArchVGPRs: True
+        C and D matrix can use AccVGPRs: True
+    Register modifiers:
+        Sparse A matrix: False
+        CBSZ and ABID bits supported: False
+        BLGP bits supported: True
+    Matrix element to register mapping with no modifiers:
+        A[i][k].block GPR: (floor(k / 2) % 2).[16*(k % 2)+15 : 16*(k % 2)]
+        A[i][k].block Lane: 16 * floor(k / 4) + i
+        B[k][j].block GPR: (floor(k / 2) % 2).[16*(k % 2)+15 : 16*(k % 2)]
+        B[k][j].block Lane: 16 * floor(k / 4) + j
+        C or D[i][j].block GPR: (i % 4)
+        C or D[i][j].block Lane: 16 * floor(i / 4) + j
+    Register to matrix element mapping with no modifiers:
+        A i: (lane % 16)
+        A k: 4 * floor(lane / 16) + 2 * GPR_num + floor(GPR_bits / 16)
+        A block: 0
+        B j: (lane % 16)
+        B k: 4 * floor(lane / 16) + 2 * GPR_num + floor(GPR_bits / 16)
+        B block: 0
+        C or D i: 4 * floor(lane / 16) + (GPR_num % 4)
+        C or D j: (lane % 16)
+        C or D block: 0

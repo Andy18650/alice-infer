@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="480" viewBox="0 0 840 480">
+<rect width="100%" height="100%" fill="white"/>
+<g font-family="sans-serif" font-size="13">
+<text x="75" y="25" font-size="18">FP8 conversion + scalar NOP delay: measured overlap knee</text>
+<text x="75" y="46">HIP 0 gfx90a; CPU+memory NUMA 0; no model/context; two runs, nine rounds each</text>
+<path d="M75.0,65 V410" stroke="#ddd"/>
+<text x="75.0" y="430" text-anchor="middle">0</text>
+<path d="M162.5,65 V410" stroke="#ddd"/>
+<text x="162.5" y="430" text-anchor="middle">8</text>
+<path d="M250.0,65 V410" stroke="#ddd"/>
+<text x="250.0" y="430" text-anchor="middle">16</text>
+<path d="M337.5,65 V410" stroke="#ddd"/>
+<text x="337.5" y="430" text-anchor="middle">24</text>
+<path d="M425.0,65 V410" stroke="#ddd"/>
+<text x="425.0" y="430" text-anchor="middle">32</text>
+<path d="M512.5,65 V410" stroke="#ddd"/>
+<text x="512.5" y="430" text-anchor="middle">40</text>
+<path d="M600.0,65 V410" stroke="#ddd"/>
+<text x="600.0" y="430" text-anchor="middle">48</text>
+<path d="M687.5,65 V410" stroke="#ddd"/>
+<text x="687.5" y="430" text-anchor="middle">56</text>
+<path d="M775.0,65 V410" stroke="#ddd"/>
+<text x="775.0" y="430" text-anchor="middle">64</text>
+<path d="M75,410.0 H775" stroke="#ddd"/>
+<text x="66" y="414.0" text-anchor="end">60</text>
+<path d="M75,356.9230769230769 H775" stroke="#ddd"/>
+<text x="66" y="360.9230769230769" text-anchor="end">70</text>
+<path d="M75,303.8461538461538 H775" stroke="#ddd"/>
+<text x="66" y="307.8461538461538" text-anchor="end">80</text>
+<path d="M75,250.76923076923077 H775" stroke="#ddd"/>
+<text x="66" y="254.76923076923077" text-anchor="end">90</text>
+<path d="M75,197.69230769230768 H775" stroke="#ddd"/>
+<text x="66" y="201.69230769230768" text-anchor="end">100</text>
+<path d="M75,144.61538461538458 H775" stroke="#ddd"/>
+<text x="66" y="148.61538461538458" text-anchor="end">110</text>
+<path d="M75,91.53846153846155 H775" stroke="#ddd"/>
+<text x="66" y="95.53846153846155" text-anchor="end">120</text>
+<polyline points="75.000,356.140 118.750,345.519 162.500,334.905 206.250,324.296 250.000,313.674 293.750,303.059 337.500,292.456 381.250,281.837 425.000,260.601 468.750,239.365 512.500,218.133 556.250,196.904 600.000,175.669 687.500,133.205 731.250,111.993 775.000,90.747" fill="none" stroke="#bf3b25" stroke-width="2" opacity="1"/>
+<polyline points="75.000,356.135 118.750,345.523 162.500,334.894 206.250,324.298 250.000,313.678 293.750,303.063 337.500,292.438 381.250,281.825 425.000,260.601 468.750,239.360 512.500,218.142 556.250,196.909 600.000,175.672 687.500,133.206 731.250,111.989 775.000,90.753" fill="none" stroke="#bf3b25" stroke-width="2" opacity="0.45"/>
+<text x="610.9375" y="167.66901790592314" fill="#bf3b25">U=2</text>
+<polyline points="75.000,380.028 118.750,377.367 162.500,374.720 206.250,372.057 250.000,369.404 293.750,366.745 337.500,364.096 381.250,358.790 425.000,337.570 468.750,316.336 512.500,295.101 556.250,273.862 600.000,252.642 687.500,210.180 731.250,188.943 775.000,167.725" fill="none" stroke="#2878b5" stroke-width="2" opacity="1"/>
+<polyline points="75.000,380.020 118.750,377.371 162.500,374.721 206.250,372.061 250.000,369.402 293.750,366.757 337.500,364.099 381.250,358.803 425.000,337.564 468.750,316.334 512.500,295.094 556.250,273.869 600.000,252.645 687.500,210.177 731.250,188.950 775.000,167.723" fill="none" stroke="#2878b5" stroke-width="2" opacity="0.45"/>
+<text x="610.9375" y="244.64231845246155" fill="#2878b5">U=8</text>
+<polyline points="75.000,385.987 118.750,385.326 162.500,384.677 206.250,384.001 250.000,383.334 293.750,382.678 337.500,382.018 381.250,378.693 425.000,357.469 468.750,336.234 512.500,315.001 556.250,293.766 600.000,272.537 687.500,230.070 731.250,208.852 775.000,187.614" fill="none" stroke="#228833" stroke-width="2" opacity="1"/>
+<polyline points="75.000,385.991 118.750,385.327 162.500,384.675 206.250,384.002 250.000,383.344 293.750,382.671 337.500,382.018 381.250,378.702 425.000,357.460 468.750,336.225 512.500,314.998 556.250,293.767 600.000,272.551 687.500,230.075 731.250,208.839 775.000,187.623" fill="none" stroke="#228833" stroke-width="2" opacity="0.45"/>
+<text x="610.9375" y="264.5368197293077" fill="#228833">U=32</text>
+<path d="M381.25,65 V410" stroke="#555" stroke-dasharray="4 4"/>
+<text x="425" y="462" text-anchor="middle">Added nominal core cycles per conversion (4 × encoded NOP wait units)</text>
+<text transform="translate(20,245) rotate(-90)" text-anchor="middle">Mean per-wave core cycles / MFMA</text>
+</g></svg>

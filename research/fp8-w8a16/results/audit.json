@@ -1,0 +1,84 @@
+{
+  "object_sha256": "0f41b3889f5f6b3006154eec7345c208fdd8ef8db1296f9fea9755a31eb58852",
+  "kernels": {
+    "0": {
+      "instructions": {
+        "s_waitcnt": 1,
+        "v_mfma_f32_32x32x8f16": 8,
+        "s_add_i32": 1,
+        "s_cmp_lt_i32": 1,
+        "s_cbranch_scc1": 1
+      },
+      "resources": {
+        "agpr_count": 16,
+        "vgpr_count": 24,
+        "sgpr_count": 20,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      }
+    },
+    "1": {
+      "instructions": {
+        "s_waitcnt": 1,
+        "v_perm_b32": 16,
+        "v_pk_ashrrev_i16": 16,
+        "v_and_b32_e32": 16,
+        "v_pk_mul_f16": 16,
+        "v_mfma_f32_32x32x8f16": 8,
+        "s_add_i32": 1,
+        "s_cmp_lt_i32": 1,
+        "s_cbranch_scc1": 1
+      },
+      "resources": {
+        "agpr_count": 16,
+        "vgpr_count": 28,
+        "sgpr_count": 20,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      }
+    },
+    "2": {
+      "instructions": {
+        "global_load_dwordx2": 8,
+        "s_add_i32": 1,
+        "v_add_co_u32_e32": 1,
+        "v_addc_co_u32_e32": 1,
+        "s_cmp_lt_i32": 1,
+        "s_waitcnt": 2,
+        "v_mfma_f32_32x32x8f16": 8,
+        "s_cbranch_scc1": 1
+      },
+      "resources": {
+        "agpr_count": 16,
+        "vgpr_count": 40,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      }
+    },
+    "3": {
+      "instructions": {
+        "global_load_dword": 8,
+        "s_waitcnt": 1,
+        "v_perm_b32": 16,
+        "v_pk_ashrrev_i16": 16,
+        "v_and_b32_e32": 16,
+        "v_pk_mul_f16": 16,
+        "s_nop": 8,
+        "v_mfma_f32_32x32x8f16": 8,
+        "s_add_i32": 1,
+        "v_add_co_u32_e32": 1,
+        "s_cmp_lt_i32": 1,
+        "v_addc_co_u32_e32": 1,
+        "s_cbranch_scc1": 1
+      },
+      "resources": {
+        "agpr_count": 16,
+        "vgpr_count": 36,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      }
+    }
+  }
+}

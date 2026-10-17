@@ -1,0 +1,44 @@
+device=AMD Instinct MI250X / MI250 arch=gfx90a:sramecc+:xnack- CUs=104 steps=4096 rounds=9; no model/attention context
+PASS conversion: 1024 mixed dwords, 4064 finite elements; raw bits also checked for NaN encodings
+PASS dense 32x32x8 FP64 oracle (all 1024 outputs); all 14 signed FP8 subnormals restored, raw path flushes
+round=0 mode=register-fp16 ms=0.187340 TFLOPs=149.019 cycles_per_mfma=64.134 core_MHz=1459.9 max_abs_error=0
+round=0 mode=register-fp8-convert ms=0.202720 TFLOPs=137.714 cycles_per_mfma=68.038 core_MHz=1422.6 max_abs_error=0
+round=0 mode=stream-fp16-batch8 ms=0.784720 TFLOPs=35.576 cycles_per_mfma=299.965 core_MHz=1581.5 max_abs_error=0
+round=0 mode=stream-fp8-batch8 ms=0.605158 TFLOPs=46.132 cycles_per_mfma=208.879 core_MHz=1554.0 max_abs_error=0
+round=1 mode=register-fp8-convert ms=0.201799 TFLOPs=138.342 cycles_per_mfma=68.001 core_MHz=1424.3 max_abs_error=0
+round=1 mode=stream-fp16-batch8 ms=0.769398 TFLOPs=36.285 cycles_per_mfma=289.310 core_MHz=1578.8 max_abs_error=0
+round=1 mode=stream-fp8-batch8 ms=0.607618 TFLOPs=45.945 cycles_per_mfma=232.999 core_MHz=1565.5 max_abs_error=0
+round=1 mode=register-fp16 ms=0.187099 TFLOPs=149.211 cycles_per_mfma=64.133 core_MHz=1462.2 max_abs_error=0
+round=2 mode=stream-fp16-batch8 ms=0.787278 TFLOPs=35.461 cycles_per_mfma=294.421 core_MHz=1581.2 max_abs_error=0
+round=2 mode=stream-fp8-batch8 ms=0.608478 TFLOPs=45.881 cycles_per_mfma=214.313 core_MHz=1557.6 max_abs_error=0
+round=2 mode=register-fp16 ms=0.186720 TFLOPs=149.515 cycles_per_mfma=64.136 core_MHz=1463.5 max_abs_error=0
+round=2 mode=register-fp8-convert ms=0.201819 TFLOPs=138.328 cycles_per_mfma=68.004 core_MHz=1424.6 max_abs_error=0
+round=3 mode=stream-fp8-batch8 ms=0.611238 TFLOPs=45.673 cycles_per_mfma=206.193 core_MHz=1553.6 max_abs_error=0
+round=3 mode=register-fp16 ms=0.186960 TFLOPs=149.323 cycles_per_mfma=64.135 core_MHz=1461.1 max_abs_error=0
+round=3 mode=register-fp8-convert ms=0.201779 TFLOPs=138.355 cycles_per_mfma=68.006 core_MHz=1424.7 max_abs_error=0
+round=3 mode=stream-fp16-batch8 ms=0.769438 TFLOPs=36.283 cycles_per_mfma=284.894 core_MHz=1578.2 max_abs_error=0
+round=4 mode=register-fp16 ms=0.186779 TFLOPs=149.467 cycles_per_mfma=64.137 core_MHz=1463.1 max_abs_error=0
+round=4 mode=register-fp8-convert ms=0.201659 TFLOPs=138.438 cycles_per_mfma=67.999 core_MHz=1425.2 max_abs_error=0
+round=4 mode=stream-fp16-batch8 ms=0.778498 TFLOPs=35.860 cycles_per_mfma=293.656 core_MHz=1580.5 max_abs_error=0
+round=4 mode=stream-fp8-batch8 ms=0.614999 TFLOPs=45.394 cycles_per_mfma=226.650 core_MHz=1563.1 max_abs_error=0
+round=5 mode=register-fp8-convert ms=0.201600 TFLOPs=138.479 cycles_per_mfma=68.000 core_MHz=1424.6 max_abs_error=0
+round=5 mode=stream-fp16-batch8 ms=0.772338 TFLOPs=36.146 cycles_per_mfma=292.197 core_MHz=1580.5 max_abs_error=0
+round=5 mode=stream-fp8-batch8 ms=0.607559 TFLOPs=45.950 cycles_per_mfma=208.873 core_MHz=1555.2 max_abs_error=0
+round=5 mode=register-fp16 ms=0.186860 TFLOPs=149.402 cycles_per_mfma=64.131 core_MHz=1461.9 max_abs_error=0
+round=6 mode=stream-fp16-batch8 ms=0.773338 TFLOPs=36.100 cycles_per_mfma=279.727 core_MHz=1576.9 max_abs_error=0
+round=6 mode=stream-fp8-batch8 ms=0.605459 TFLOPs=46.109 cycles_per_mfma=203.156 core_MHz=1552.2 max_abs_error=0
+round=6 mode=register-fp16 ms=0.186680 TFLOPs=149.547 cycles_per_mfma=64.134 core_MHz=1462.4 max_abs_error=0
+round=6 mode=register-fp8-convert ms=0.201600 TFLOPs=138.479 cycles_per_mfma=68.008 core_MHz=1425.9 max_abs_error=0
+round=7 mode=stream-fp8-batch8 ms=0.602119 TFLOPs=46.365 cycles_per_mfma=227.354 core_MHz=1564.1 max_abs_error=0
+round=7 mode=register-fp16 ms=0.186780 TFLOPs=149.466 cycles_per_mfma=64.133 core_MHz=1462.9 max_abs_error=0
+round=7 mode=register-fp8-convert ms=0.201620 TFLOPs=138.465 cycles_per_mfma=68.002 core_MHz=1425.5 max_abs_error=0
+round=7 mode=stream-fp16-batch8 ms=0.776018 TFLOPs=35.975 cycles_per_mfma=287.226 core_MHz=1579.9 max_abs_error=0
+round=8 mode=register-fp16 ms=0.186680 TFLOPs=149.547 cycles_per_mfma=64.134 core_MHz=1462.9 max_abs_error=0
+round=8 mode=register-fp8-convert ms=0.201540 TFLOPs=138.520 cycles_per_mfma=68.004 core_MHz=1425.8 max_abs_error=0
+round=8 mode=stream-fp16-batch8 ms=0.785278 TFLOPs=35.551 cycles_per_mfma=304.316 core_MHz=1584.1 max_abs_error=0
+round=8 mode=stream-fp8-batch8 ms=0.611959 TFLOPs=45.620 cycles_per_mfma=223.330 core_MHz=1561.9 max_abs_error=0
+SUMMARY register-fp16 median_TFLOPs=149.466
+SUMMARY register-fp8-convert median_TFLOPs=138.438
+SUMMARY stream-fp16-batch8 median_TFLOPs=35.975
+SUMMARY stream-fp8-batch8 median_TFLOPs=45.945
+PASS all throughput outputs against independent FP64 reference

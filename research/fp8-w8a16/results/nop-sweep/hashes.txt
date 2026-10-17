@@ -1,0 +1,6 @@
+b72da4a158d6e2e4d2630bb8960e36cd09a90444ab8e3982a55fb7db3af36e02  /home/andyhu/projects/inference/alice-infer/research/fp8-w8a16/nop_sweep.hip
+ff07970b6af90ca16311eb9722e8a4ce0a38f3e8e0ee68e5e33ace625074373a  /home/andyhu/projects/inference/alice-infer/research/fp8-w8a16/nop_clock.hip
+dd4d47ccb48a724b327298c5b24dc7bbb18fcac415412dc7810002dee3cc0c11  /home/andyhu/projects/inference/alice-infer/temp/fp8-w8a16/nop-sweep/nop-sweep
+b8f6749f91af0c0e08046b6a836699feea1575cf7d8d313097f733884c234f5f  /home/andyhu/projects/inference/alice-infer/temp/fp8-w8a16/nop-sweep/nop-sweep.hsaco
+85f2079e6f653bf04b92c732ae9d9f15afe8b751df02ccdc4c902fa3cc3c0b4b  /home/andyhu/projects/inference/alice-infer/temp/fp8-w8a16/nop-sweep/nop-clock
+41265fea75daf25365d7ba43b868a9412671f1f929fcc2bcc238b5b5a24fe870  /home/andyhu/projects/inference/alice-infer/temp/fp8-w8a16/nop-sweep/nop-clock.hsaco

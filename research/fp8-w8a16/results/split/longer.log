@@ -1,0 +1,2 @@
+device=AMD Instinct MI250X / MI250 arch=gfx90a:sramecc+:xnack- CUs=104 steps=8192 rounds=3 seed=31415 cases=168; no model/context; bind CPU+memory NUMA0 externally
+COMPLETE 168 cases x 3 rounds: exact all-output FP64 checks, invalid_samples=0

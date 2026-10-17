@@ -1,0 +1,3 @@
+03044a9436317edb3cedac7c1f1ac5a2dddfd6b2d86d304f4b01466ba992f525  /home/andyhu/projects/inference/alice-infer/research/fp8-w8a16/probe.hip
+18b9d760160cfc4ab86b639f6c22c6a1c04015d20d4a30b41abd716d6f8bf942  /home/andyhu/projects/inference/alice-infer/temp/fp8-w8a16/probe
+0f41b3889f5f6b3006154eec7345c208fdd8ef8db1296f9fea9755a31eb58852  /home/andyhu/projects/inference/alice-infer/temp/fp8-w8a16/probe.hsaco

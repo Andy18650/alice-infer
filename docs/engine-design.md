@@ -355,6 +355,73 @@ raw count checks and profiling-versus-unprofiled timing distinctions are
 recorded in the profiling note. No production, format, dispatch, precision-
 contract or clock/power configuration changes are made.
 
+**FP8 W8A16 bring-up (user-directed, standalone):**
+`research/fp8-w8a16/` tests the user's local AMD matrix calculator/venv
+and implements E4M3FN-to-FP16 expansion using two permutations, two packed
+signed shifts, two masks and two packed FP16 x256 multiplies. Device checks
+cover every finite byte encoding in every packed position, a dense 32x32x8
+FP64 oracle, and all 14 signed FP8 subnormals restored before MFMA (the
+unrestored control demonstrably flushes). A repeated-consumer test catches
+an inline-asm scheduling hazard; the current register probe uses alternating
+operand banks and next-conversion/current-MFMA ordering, without hot-loop NOPs.
+Native O3, HIP 0 gfx90a, CPU+memory NUMA node 0, no model/attention context:
+two nine-round processes reach 141.885/141.799 TFLOP/s versus matched FP16
+149.467/149.402 (~95%), with ~66 versus ~64 core cycles/MFMA and lower
+effective clocks. This is not yet full-speed or a general tiled GEMM.
+Basic eight-load batch/drain controls reach ~46 FP8 versus ~36 FP16 TFLOP/s;
+streamed FP8 still retains conservative producer/consumer separation, not a
+rotating future-load pipeline. All checked throughput outputs match FP64
+exactly in the retained runs; executable-object audit verifies instruction
+counts and zero private/LDS bytes. NaNs/FNUZ, activation subnormals, scales,
+LDS sharing and real-model integration remain outside this prototype. No
+production or model-format changes. The user accepts the ~95% arithmetic
+rate; a diagnostic NOP-window sweep (`research/fp8-w8a16/nop-sweep.md`)
+confirms the predicted boundary-amortization behavior at 2/8/32 MFMAs per
+backedge. Two nine-round processes, same native O3/GCD/NUMA placement and
+no model/context, check all 135 variants per round with zero observed
+FP64-reference error. For 0..24 added nominal core cycles/conversion, the
+per-MFMA slope is 1/U; around 28 the knee appears, and by 32 the slope is
+one-for-one. Independent scalar-only calibration measures ~4 core cycles
+per encoded NOP wait-state unit. Exact-interval ISA/resource audits and an
+8192-step endpoint control pass. This is scalar issue-gap tolerance, not
+promised useful VALU/VMEM overlap; no production tuning or dispatch changes.
+A user-proposed MFMA-first/conversion-after phase rotation is tested in
+`research/fp8-w8a16/ordering.md`: two primed operands preserve separation,
+and exact-ISA audits confirm the changed order with the same target wait
+and register counts. Two nine-round 4096-step runs plus an 8192-step control,
+same O3/GCD/NUMA/no-context protocol, fit ~20 versus ~12 cycles/backedge
+(after versus before); all 243 samples match FP64 exactly. The bubble
+persists and slightly worsens, so the accepted original ordering stays the
+reference. The specific wait/branch/forwarding mechanism remains unproven.
+The subsequent four-bank/staged-VALU study (`research/fp8-w8a16/dependency.md`)
+finds no gap-depth fix: matched two/four-bank before costs ~12/~20 cycles
+per backedge, after ~8/~24. Fully primed ring prologues change the emitted
+loop wait to a compiler NOP, so those absolute after constants must not be
+silently substituted for the earlier order probe. Raw-FP16 controls already
+recover a bubble with seven vector NOPs or independent VALUs (~4 cycles per
+backedge; eight -> ~8); barriers-only/tail counter placement does not suffice.
+Source-write thresholds include explicitly audited compiler copies/NOPs.
+Two nine-round 4096-step runs plus a three-round 8192 control, same native
+O3/GCD/NUMA/no-context protocol, yield 6300 exact-valid samples; 189 unsafe
+real-sign-flip/before samples fail and are excluded from fits. Physical bank
+distances, source registers and zero private/LDS bytes are audited. No
+production change or unique hardware-mechanism attribution is made.
+The user's next preheader/split-conversion plan succeeds in the isolated
+register prototype (`research/fp8-w8a16/splitting.md`). Explicit AGPR init
+and load readiness before timing remove all loop-head waits/NOPs; primary
+two-bank 8/8 retains ~4 cycles/backedge, then hand-enumerated 10/6 (also 9/7)
+placement removes the fitted boundary term. Same native O3/GCD/NUMA/no-context
+protocol: two nine-round 4096-step processes and a three-round 8192 control,
+3528 samples, all exact against FP64. Primary two-bank 10/6 is ~64.009 core
+cycles/MFMA versus raw ~64.010; event rates ~145 versus ~150 TFLOP/s
+(96.54%/96.53%) retain a lower effective clock, so equal wall-time throughput
+is not claimed. Exact interval/lifetime audits verify no extra copy VALUs,
+no in-loop memory, zero private/LDS bytes, unchanged reported 28 VGPRs for
+the primary controls/splits. Unfavorable pad/four-bank variants remain
+recorded; neither a universal padding rule nor a unique hardware cause is
+claimed. Future-weight streaming and general GEMM integration remain open;
+original probes and production code are unchanged.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

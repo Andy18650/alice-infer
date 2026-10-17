@@ -1,0 +1,3 @@
+AMD Matrix Instruction Calculator Version 1.3.2
+upstream revision: 2ef91896bcdc4d26624f952e5c905c787cd9bc9e
+PASS gfx90a/MI250X aliases, both FP16 instructions, all 1536 A/B/D element mappings

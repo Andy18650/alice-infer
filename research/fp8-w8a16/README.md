@@ -30,9 +30,56 @@ with A treated as freely available: FP8 depth 8 reaches ~86.3/~85.8 TFLOP/s,
 about 4.56x/4.55x its co-run depth-1 baseline. No A loading, weight-reuse,
 grid or backedge tuning is included.
 
+The [paired real-A experiment](paired.md) now materializes shared packed
+A[32,32768] and uses ordered A/B pairs with `vmcnt(2D-2)`. At depth 8 it
+retains ~95% of co-run free-A event throughput, with similar ~117 core
+cycles/MFMA; all timed and independent A/B-change checks pass exactly.
+No reuse, grid or backedge tuning is added.
+
+The latest [13x8 CTA-grid round](grid.md) distributes eight A row streams
+across M, retains four waves entirely along N, and naturally shares B across
+eight M groups. At equal FLOPs it improves FP8 to ~91–92 TFLOP/s versus the
+co-run 104x1 ~82. Aggregate request bandwidth includes cache reuse, not HBM
+traffic. No 2x2 wave layout has been implemented.
+
+The subsequent [single-CTA diagnostic](latency.md) pursues only the latency-
+coverage route, not 2x2 wave tiling. Its resident anchor is ~64 cycles/MFMA;
+the FP8 body is ~100 after in-dispatch pre-read and ~117 after eviction at
+D8. D16 does not close the gap; cache-sized warm input still leaves ~96.
+No unique CU-local/cache/issue mechanism is assigned.
+
+The real-A paired/grid paths are **fixed-shape packed W8A16 GEMMs** with
+full K-varying A/B loads and checked outputs. They are not yet a general
+GEMM interface or performance-tuned kernels; the diagnostic resident and
+repeated-fragment paths are separately labeled and not counted as such.
+
 ## Reproduce
 
-Latest queue-depth experiment (full protocol in [pipeline.md](pipeline.md)):
+Latest single-CTA diagnostic (full protocol in [latency.md](latency.md)):
+
+```sh
+bash research/fp8-w8a16/build-latency-probe.sh
+python3 research/fp8-w8a16/audit_latency_probe.py
+numactl --cpunodebind=0 --membind=0 temp/fp8-w8a16/latency/latency-probe 4096 9 1729
+```
+
+Earlier CTA-grid experiment (full protocol in [grid.md](grid.md)):
+
+```sh
+bash research/fp8-w8a16/build-grid-probe.sh
+python3 research/fp8-w8a16/audit_grid_probe.py
+numactl --cpunodebind=0 --membind=0 temp/fp8-w8a16/grid/grid-probe 4096 9 1729
+```
+
+Earlier real-A paired experiment (full protocol in [paired.md](paired.md)):
+
+```sh
+bash research/fp8-w8a16/build-paired-probe.sh
+python3 research/fp8-w8a16/audit_paired_probe.py
+numactl --cpunodebind=0 --membind=0 temp/fp8-w8a16/paired/paired-probe 4096 9 1729
+```
+
+Earlier free-A queue-depth experiment (full protocol in [pipeline.md](pipeline.md)):
 
 ```sh
 bash research/fp8-w8a16/build-pipeline-probe.sh

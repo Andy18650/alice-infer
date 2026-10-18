@@ -1,0 +1,56 @@
+ONE timed CTA, four waves along N. format -1=resident MFMA, 1=FP8 B, 0=FP16 B.
+Warm = same-dispatch pre-read before clocks; evicted = completed 256 MiB reader, no pre-read.
+run | format | D | warm cycles/MFMA | evicted cycles/MFMA | warm MHz | evicted MHz
+run1 | -1 | 0 | 64.024 | 64.080 | 1683.7 | 1683.7
+run1 | 1 | 1 | 518.689 | 672.894 | 1685.2 | 1685.1
+run1 | 1 | 2 | 274.900 | 366.801 | 1684.9 | 1684.7
+run1 | 1 | 4 | 155.377 | 193.229 | 1684.3 | 1684.3
+run1 | 1 | 8 | 99.903 | 117.504 | 1682.6 | 1682.7
+run1 | 1 | 16 | 104.291 | 121.061 | 1683.0 | 1683.4
+run1 | 0 | 1 | 664.541 | 693.347 | 1685.2 | 1685.3
+run1 | 0 | 2 | 356.517 | 365.283 | 1684.9 | 1684.9
+run1 | 0 | 4 | 206.375 | 200.180 | 1684.1 | 1684.2
+run1 | 0 | 8 | 178.087 | 170.909 | 1684.5 | 1684.2
+run1 | 0 | 16 | 174.640 | 176.909 | 1684.1 | 1683.9
+run2 | -1 | 0 | 64.048 | 64.070 | 1683.4 | 1685.0
+run2 | 1 | 1 | 517.007 | 673.966 | 1685.2 | 1685.2
+run2 | 1 | 2 | 273.217 | 370.623 | 1684.7 | 1684.8
+run2 | 1 | 4 | 152.981 | 194.782 | 1684.0 | 1684.2
+run2 | 1 | 8 | 100.533 | 117.222 | 1683.5 | 1683.4
+run2 | 1 | 16 | 104.597 | 120.196 | 1683.2 | 1683.1
+run2 | 0 | 1 | 671.758 | 678.245 | 1685.4 | 1685.3
+run2 | 0 | 2 | 358.411 | 362.526 | 1684.9 | 1684.5
+run2 | 0 | 4 | 200.653 | 197.358 | 1684.4 | 1683.9
+run2 | 0 | 8 | 174.271 | 175.718 | 1684.6 | 1684.8
+run2 | 0 | 16 | 178.477 | 173.444 | 1683.7 | 1684.5
+small | -1 | 0 | 64.110 | 64.132 | 1686.3 | 1683.5
+small | 1 | 1 | 345.915 | 684.500 | 1684.6 | 1684.6
+small | 1 | 2 | 185.350 | 357.630 | 1685.0 | 1685.1
+small | 1 | 4 | 113.517 | 197.917 | 1682.4 | 1683.3
+small | 1 | 8 | 96.442 | 122.039 | 1681.9 | 1683.6
+small | 1 | 16 | 114.118 | 118.017 | 1682.8 | 1683.0
+small | 0 | 1 | 327.655 | 669.205 | 1684.6 | 1684.9
+small | 0 | 2 | 175.786 | 367.230 | 1683.6 | 1684.5
+small | 0 | 4 | 135.111 | 202.072 | 1682.4 | 1684.1
+small | 0 | 8 | 134.064 | 176.167 | 1686.0 | 1687.2
+small | 0 | 16 | 133.463 | 174.979 | 1684.2 | 1683.8
+longer | -1 | 0 | 64.010 | 64.022 | 1683.3 | 1684.6
+longer | 1 | 1 | 667.443 | 679.703 | 1685.2 | 1685.3
+longer | 1 | 2 | 361.807 | 355.579 | 1685.2 | 1684.2
+longer | 1 | 4 | 196.354 | 191.628 | 1684.0 | 1684.2
+longer | 1 | 8 | 120.833 | 117.983 | 1683.6 | 1683.3
+longer | 1 | 16 | 124.085 | 119.801 | 1683.6 | 1683.7
+longer | 0 | 1 | 678.535 | 668.019 | 1685.0 | 1685.0
+longer | 0 | 2 | 368.491 | 366.888 | 1684.8 | 1684.8
+longer | 0 | 4 | 205.406 | 197.147 | 1684.3 | 1683.8
+longer | 0 | 8 | 178.413 | 173.859 | 1683.4 | 1684.7
+longer | 0 | 16 | 179.269 | 176.618 | 1684.1 | 1683.4
+
+Small-footprint warm request-payload proxies (not physical cache bandwidth):
+format 1, D8: 31.853 logical A+B bytes per core cycle per CTA
+format 0, D8: 30.552 logical A+B bytes per core cycle per CTA
+
+PASS 528 exact-valid timed samples and 352 independent warm/cold-path changed-input/poison/guard cases.
+Event launch_ms includes the warm pre-read: do not compare it as timed-body TFLOP/s.
+D16 does not close the >64 gap; these results alone do not uniquely identify its cause.
+No 2x2 wave-layout route or production change was pursued.

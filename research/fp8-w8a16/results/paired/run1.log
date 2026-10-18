@@ -1,0 +1,3 @@
+device=AMD Instinct MI250X / MI250 arch=gfx90a:sramecc+:xnack- CUs=104 steps=4096 rounds=9 seed=1729 waves=416 A_shared_bytes=2102272 B8_bytes=437272576 B16_bytes=874545152; native O3, CPU+memory NUMA0 externally, no model/context
+PASS 128 independent A/B changed-input/poisoned-output cases and guards
+COMPLETE 32 cases x 9 rounds; exact FP64 checks, invalid_samples=0

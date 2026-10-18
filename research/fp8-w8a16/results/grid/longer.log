@@ -1,0 +1,5 @@
+device=AMD Instinct MI250X / MI250 arch=gfx90a:sramecc+:xnack- CUs=104 steps=8192 rounds=3 seed=31415 waves=416 allocated_A_bytes=33595392 allocated_B8_bytes=873480192 allocated_B16_bytes=1746960384; native O3, CPU+memory NUMA0 externally, no model/context
+grid=104x1 logical_M=32 N=13312 K=65536 active_A_bytes=4199424 active_B8_bytes=873480192 active_B16_bytes=1746960384
+grid=13x8 logical_M=256 N=1664 K=65536 active_A_bytes=33595392 active_B8_bytes=109185024 active_B16_bytes=218370048
+PASS 128 independent A/B changed-input/poisoned-output cases and guards
+COMPLETE 32 cases x 3 rounds; exact FP64 checks, invalid_samples=0

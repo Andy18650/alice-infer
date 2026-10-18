@@ -455,6 +455,51 @@ free-A assumption. The 8192-step control doubles K. The user recognizes the
 FP16 control's ~1.38 TB/s as the GCD's practical streaming ceiling (FP8 here
 ~1.34–1.35), and requests preserving the load/convert loop as a future FP8
 W8A16 GEMV reference candidate, not a validated M=1 implementation.
+The approved real-A round (`research/fp8-w8a16/paired.md`) materializes shared
+MFMA-packed FP16 A[32,32768] (2 MiB plus lookahead) and uses A-first/B-second
+load pairs with `vmcnt(2D-2)` at depths 1/2/4/8. Same native O3/HIP0/CPU+memory
+NUMA0/no-context/U=8 protocol: real-A FP8 depth 8 reaches 80.793/80.812
+TFLOP/s versus co-run free-A 84.865/85.411; core intervals remain ~117 cycles
+in both, with lower real-A effective clocks. All 672 timed samples and 384
+independent A-only/B-only/both-change/poison/guard validations are exact.
+The 4 MiB A/K=65536 control reaches 81.541 TFLOP/s. All 32 code objects
+pass paired-order/FIFO lifetime/resource audits; no private/LDS/lane spills.
+A request rates (~2.525 TB/s at D8) count repeated wave reads to shared
+addresses, not physical HBM traffic or a measured cache hit rate. No new
+M/N reuse, grid or backedge tuning, engine integration or compute-bound
+claim is made; this measurement round is concluded.
+The next requested CTA-grid test (`research/fp8-w8a16/grid.md`) uses 13 N by
+8 M blocks, eight distinct A streams, and four waves still entirely along N.
+B is naturally shared across eight M groups. Effective shape changes from
+32x13312x32768 to 256x1664x32768 at identical FLOPs/output count; active
+logical A/FP8-B changes from 2/416 MiB to 16/52 MiB. Both grids launch the
+same compiled entry per format/depth/unroll. Same native O3/HIP0/NUMA0,
+no-context, D8/U8 protocol: FP8 104x1 -> 13x8 is 81.989/81.850 ->
+91.060/92.179 TFLOP/s and ~115/~116 -> ~103/~102 cycles/MFMA; FP16
+~41.5 -> ~68.2/~68.6 TFLOP/s. New aggregate A+B shader payload is ~4.3 TB/s
+for both formats, not physical HBM bandwidth; unique-matrix equivalents
+are recorded separately. All 672 timed samples and 384 independent changed-
+input/poison/guard cases are exact; the larger-K control agrees. Actual-ISA
+paired FIFO/resource audits pass for all 16 shared entries, no private/LDS
+or lane spills. Shapes, reuse and footprints change together, so no unique
+NoC mechanism is assigned. No 2x2 wave tiling or production change is made;
+this round is concluded before the next wave-layout discussion.
+The user then selects only a single-CTA latency-coverage route
+(`research/fp8-w8a16/latency.md`), retaining four N waves and testing paired
+D1/2/4/8/16, fixed unroll32, resident MFMA anchor and cache controls. An
+in-dispatch pre-read replaces ineffective inter-dispatch warming; a completed
+256 MiB eviction reader is outside probe timers. Native O3/HIP0/NUMA0,
+no model/context: two nine-round 4096-step runs give raw ~64 cycles/MFMA,
+FP8 D8 pre-read ~100 and eviction-controlled ~117; D16 ~104/~120–121 is
+not an improvement. A three-round 1024-step cache-small control gives
+~96 warm FP8 D8, ~134 FP16, still above the resident anchor. Runtime L2
+is 8 MiB; working-set/counter fields and same-dispatch cache qualification
+are explicit. All 528 timed and 352 independent changed-input/warm-cold/
+poison/guard cases are exact; D16 paired FIFO and no-spill/LDS audits pass.
+Event launch_ms includes the pre-read; only body clocks compare protocols.
+No architectural minimum-latency or unique NoC/local-bandwidth cause is
+claimed, and no 2x2 tiling or production change is pursued. This round is
+concluded: buffering alone does not recover 64 in the tested implementation.
 
 ## 1. Purpose & target
 

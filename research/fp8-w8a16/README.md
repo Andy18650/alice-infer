@@ -53,9 +53,61 @@ full K-varying A/B loads and checked outputs. They are not yet a general
 GEMM interface or performance-tuned kernels; the diagnostic resident and
 repeated-fragment paths are separately labeled and not counted as such.
 
+The correct real-A GEMM/grid/latency state is checkpointed as **`21c735b`**.
+The next [fixed-K diagnostic](fixed.md) intentionally repeats the first
+8-column/row fragment while retaining all loads/waits/conversion. Its 1.5/2.5
+KiB FP8/FP16 input sets still give ~96/~129 cycles/MFMA at depth 8, versus
+resident ~64. This is labeled non-GEMM; no counters or corrective tuning are
+added, and the cache/result-delivery interpretation remains a hypothesis.
+
+The subsequent [wait-removal test](waits.md) intentionally reads raw registers
+without partial waits; numerical tests are OFF. Deep FP8 D8 stays ~96 cycles,
+FP16 ~129, even without the waits. The [shallow-K sweep](shallow-k.md) reruns
+these exact binaries from logical K=256 to 32768: FP8 D8 follows roughly
+`T_body=96*steps+460` cycles. Deep K does amortize entry/drain costs; it does
+not remove the 96-cycle slope. Other cases have larger residuals, with an
+explicit caveat that inherited warm-up favors FP8 D8 and the resident anchor.
+
+A limited [idle-server-off recheck](server-off.md) reruns the same binaries
+at K256/K32768 after the user stops the VRAM-resident llama.cpp server.
+Long-loop FP8 D8 remains ~96.1 cycles and FP16 ~129; all long-case medians
+change by <0.87%. No numerical tests or kernel changes are introduced.
+
+The next [resident-A/B-only ablation](b-only.md) removes A loading and its
+two copy VALUs, retaining B loads and conversion at logical K32768. No-wait
+D8 now reaches FP8 **64.391/64.391**, FP16 **64.653/64.661** cycles/MFMA,
+versus fresh A+B ~96.11/~128.95. The waited D8 control is also near 64.
+This matches the fitted payload-rate model, without identifying a physical
+port or separating A-load cost from A-copy cost. Numerical tests stay OFF.
+
+The [MFMA-to-NOP hypothesis test](b-nop.md) replaces only each streaming
+MFMA with `s_nop 0`; all other hot-loop instructions/registers are identical.
+At logical K32768, no-wait D8 FP8 is **45.394/45.394** cycles/step, FP16
+**64.601/64.592**. This is a partial match: the ~64 FP16 prediction holds,
+but the payload-only ~32 FP8 whole-loop prediction does not. B preparation
+remains, so no specific alternative bottleneck or physical rate is proved.
+No numerical tests or additional ablations are performed.
+
 ## Reproduce
 
-Latest single-CTA diagnostic (full protocol in [latency.md](latency.md)):
+Latest performance-only binaries and timing summaries:
+
+```sh
+bash research/fp8-w8a16/build-b-nop-probe.sh
+python3 research/fp8-w8a16/inspect_b_nop_probe.py
+numactl --cpunodebind=0 --membind=0 temp/fp8-w8a16/b-nop/unwaited/b-nop-probe 4096 9 1729
+python3 research/fp8-w8a16/analyze_b_nop_probe.py
+```
+
+Earlier fixed-K-address diagnostic (full protocol in [fixed.md](fixed.md)):
+
+```sh
+bash research/fp8-w8a16/build-fixed-probe.sh
+python3 research/fp8-w8a16/audit_fixed_probe.py
+numactl --cpunodebind=0 --membind=0 temp/fp8-w8a16/fixed/fixed-probe 4096 9 1729
+```
+
+Earlier single-CTA diagnostic (full protocol in [latency.md](latency.md)):
 
 ```sh
 bash research/fp8-w8a16/build-latency-probe.sh

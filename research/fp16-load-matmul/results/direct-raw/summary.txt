@@ -1,0 +1,42 @@
+Checked positive launches: 1224, invalid: 0.
+Copied-R1 negative controls with the same post-timestamp harvest guard: 3/3 fail.
+No copies/ready banks or extra arrival stage in R0. No padding between the load completion wait and MFMA.
+D | stride | R | mode | loads | cycles/step run1/run2
+1 | 1 | 0 | lds-hot | 1 | 69.555/69.542
+1 | 1 | 0 | lds-hot | 2 | 70.013/69.933
+1 | 1 | 0 | lds-hot | 4 | 82.683/82.721
+1 | 1 | 0 | lds-sweep | 1 | 82.765/82.806
+1 | 1 | 0 | lds-sweep | 2 | 83.607/83.625
+1 | 1 | 0 | lds-sweep | 4 | 96.159/95.840
+2 | 1 | 0 | lds-hot | 1 | 64.560/64.598
+2 | 1 | 0 | lds-hot | 2 | 64.982/65.084
+2 | 1 | 0 | lds-hot | 4 | 65.686/65.692
+2 | 1 | 0 | lds-sweep | 1 | 66.036/66.077
+2 | 1 | 0 | lds-sweep | 2 | 66.485/66.604
+2 | 1 | 0 | lds-sweep | 4 | 67.757/67.736
+4 | 1 | 0 | lds-hot | 1 | 64.698/64.686
+4 | 1 | 0 | lds-hot | 2 | 65.064/64.968
+4 | 1 | 0 | lds-hot | 4 | 65.881/65.847
+4 | 1 | 0 | lds-sweep | 1 | 66.105/66.178
+4 | 1 | 0 | lds-sweep | 2 | 66.695/66.524
+4 | 1 | 0 | lds-sweep | 4 | 67.738/67.901
+1 | 1 | 2 | lds-hot | 1 | 90.418/90.376
+1 | 1 | 2 | lds-hot | 2 | 90.113/90.344
+1 | 1 | 2 | lds-hot | 4 | 95.262/95.405
+1 | 1 | 2 | lds-sweep | 1 | 99.431/98.778
+1 | 1 | 2 | lds-sweep | 2 | 100.020/100.029
+1 | 1 | 2 | lds-sweep | 4 | 112.638/112.739
+2 | 1 | 2 | lds-hot | 1 | 65.124/64.933
+2 | 1 | 2 | lds-hot | 2 | 66.211/66.036
+2 | 1 | 2 | lds-hot | 4 | 66.408/66.404
+2 | 1 | 2 | lds-sweep | 1 | 66.784/66.720
+2 | 1 | 2 | lds-sweep | 2 | 68.271/67.919
+2 | 1 | 2 | lds-sweep | 4 | 69.309/69.047
+8 | 1 | 0 | hot | 1 | 64.309/64.310
+8 | 1 | 0 | hot | 2 | 128.532/128.416
+8 | 1 | 0 | hot | 4 | 85.390/85.354
+8 | 1 | 2 | hot | 1 | 65.016/65.296
+8 | 1 | 2 | hot | 2 | 129.027/129.381
+8 | 1 | 2 | hot | 4 | 98.935/98.927
+4 | 4 | 0 | lds-hot | 1 | 128.397/128.329
+4 | 4 | 0 | lds-hot | 2 | 128.656/128.569

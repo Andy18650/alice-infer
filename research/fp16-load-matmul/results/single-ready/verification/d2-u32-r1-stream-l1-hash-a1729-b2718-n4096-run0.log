@@ -1,0 +1,10 @@
+REFERENCE outputs=4096 nonzero=4094 min=-16.8164062 max=15.703125; exact dyadic oracle, verifier negative controls checked
+ready_banks=1; raw queue depth=2; copies retained; R1 immediately feeds the next MFMA
+counter=vmcnt requested_wait=1 effective_wait=1 lds_stride=1; LDS queue priming is INSIDE core timing to avoid timer LGKM drains
+verification=1 pattern=hash seed_a=1729 seed_b=2718; no-wait remains UNSAFE regardless of any observed matches
+FP16 PROBE device=AMD Instinct MI250X / MI250 HIP=0 PCI=0000:31:00.0 arch=gfx90a:sramecc+:xnack- grid=1 block=256 waves=4 mode=stream loads=1 wait=1 depth=2 unroll=32 phases=1 steps=4096 logical_K=32768 records_per_wave=4100 active_bytes=16793600 evict_mib=256 warmup_ms=0; native O3, NUMA placement external, no model/context; result verification outside timing when enabled
+MISMATCH wave=0 lane=0 acc=0 expected=-8.109375 actual=-6.08984375 bits=c0c2e000
+MISMATCH wave=0 lane=0 acc=1 expected=-0.83203125 actual=-2.3125 bits=c0140000
+MISMATCH wave=0 lane=0 acc=2 expected=-5.91796875 actual=-5.56640625 bits=c0b22000
+MISMATCH wave=0 lane=0 acc=3 expected=9.05859375 actual=4.1875 bits=40860000
+COMPLETE verified=1 rounds=1 invalid_samples=1 wait=1 pattern=hash

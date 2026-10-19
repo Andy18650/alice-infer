@@ -1,0 +1,38 @@
+Performance only: no numerical checks or output readback.
+4096 MFMA steps, logical K32768, four N waves. Pre-read preparation.
+mode | format | D | A+B run1/run2 | B-only run1/run2
+unwaited | 1 | 1 | 99.378/99.476 | 67.492/67.467
+unwaited | 1 | 2 | 99.680/99.696 | 67.125/67.163
+unwaited | 1 | 4 | 99.417/99.087 | 67.272/67.162
+unwaited | 1 | 8 | 96.114/96.109 | 64.391/64.391
+unwaited | 1 | 16 | 99.329/99.374 | 67.410/67.343
+unwaited | 0 | 1 | 129.066/129.102 | 64.813/64.827
+unwaited | 0 | 2 | 129.193/129.173 | 64.829/64.814
+unwaited | 0 | 4 | 128.796/128.805 | 64.646/64.645
+unwaited | 0 | 8 | 128.965/128.939 | 64.653/64.661
+unwaited | 0 | 16 | 129.113/129.078 | 64.839/64.825
+waited | 1 | 1 | 188.398/188.553 | 164.765/163.582
+waited | 1 | 2 | 103.967/104.090 | 82.283/82.315
+waited | 1 | 4 | 99.548/99.526 | 67.179/66.988
+waited | 1 | 8 | 96.106/96.108 | 64.395/64.395
+waited | 1 | 16 | 99.579/99.620 | 67.324/67.320
+waited | 0 | 1 | 173.889/174.096 | 149.388/149.372
+waited | 0 | 2 | 129.221/129.396 | 75.848/75.830
+waited | 0 | 4 | 128.997/128.987 | 64.883/64.876
+waited | 0 | 8 | 129.003/129.221 | 64.864/64.881
+waited | 0 | 16 | 129.286/129.262 | 64.996/65.016
+
+D8 no-wait pooled medians for both preparations:
+format=1 cache=0: A+B 96.109, B-only 64.391
+format=1 cache=1: A+B 96.099, B-only 64.391
+format=0 cache=0: A+B 128.949, B-only 64.653
+format=0 cache=1: A+B 128.892, B-only 64.660
+
+Working logical-payload model at R_effective ~= 32 B/core-cycle:
+A+B FP8: 3072 B -> max(64,96) = 96 cycles.
+A+B FP16: 4096 B -> max(64,128) = 128 cycles.
+B-only FP8: 1024 B -> max(64,32) = 64 cycles.
+B-only FP16: 2048 B -> max(64,64) = 64 cycles.
+A loads AND two A-copy VALUs disappear; this does not isolate their individual costs.
+Register allocation/code layout also change. No physical port/bandwidth-counter claim.
+Inherited warm-up favors FP8 D8 and the resident anchor; other-depth finite costs remain.

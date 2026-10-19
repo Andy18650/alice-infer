@@ -1,0 +1,6 @@
+REFERENCE outputs=4096 nonzero=3361 min=-384 max=512; exact dyadic oracle, verifier negative controls checked
+ORIGINAL CODE OBJECT /home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d4-u32-lds4/probe.hsaco symbol=_Z12matmul_probeILi3ELi4ELb1EEvPKjPfPmii (original five-argument ABI)
+counter=lgkmcnt requested_wait=12 effective_wait=12 lds_stride=4; LDS queue priming is INSIDE core timing to avoid timer LGKM drains
+verification=1 pattern=legacy seed_a=1729 seed_b=2718; no-wait remains UNSAFE regardless of any observed matches
+FP16 PROBE device=AMD Instinct MI250X / MI250 HIP=0 PCI=0000:31:00.0 arch=gfx90a:sramecc+:xnack- grid=1 block=256 waves=4 mode=lds-hot loads=4 wait=1 depth=4 unroll=32 phases=1 steps=4096 logical_K=32768 records_per_wave=1 active_bytes=16384 evict_mib=0 warmup_ms=200; native O3, NUMA placement external, no model/context; result verification outside timing when enabled
+COMPLETE verified=1 rounds=9 invalid_samples=0 wait=1 pattern=legacy

@@ -1,0 +1,4 @@
+device=AMD Instinct MI250X / MI250 arch=gfx90a:sramecc+:xnack- CUs=104 timed_grid=1x1 block=256 waves=4 steps=1024 rounds=3 seed=31415 unroll=32 reported_L2_bytes=8388608 A_bytes=533504 B8_bytes=1067008 B16_bytes=2134016 eviction_bytes=268435456 eviction_grid=832x256; native O3, CPU+memory NUMA0 externally, no model/context
+PASS eviction reader checksum controls (all four words consumed)
+PASS 168 independent A/B changed-input/poisoned-output cases and guards
+COMPLETE 21 kernels x 2 cache protocols x 3 rounds, one timed CTA/pass; exact FP64 checks, invalid_samples=0

@@ -1,0 +1,302 @@
+[
+  {
+    "mode": "waited",
+    "format": 0,
+    "depth": 1,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dwordx2": 32,
+      "s_waitcnt": 32,
+      "v_mov_b32_e32": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "waited",
+    "format": 0,
+    "depth": 2,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dwordx2": 32,
+      "s_waitcnt": 32,
+      "v_mov_b32_e32": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "waited",
+    "format": 0,
+    "depth": 4,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dwordx2": 32,
+      "s_waitcnt": 32,
+      "v_mov_b32_e32": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "waited",
+    "format": 0,
+    "depth": 8,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dwordx2": 32,
+      "s_waitcnt": 32,
+      "v_mov_b32_e32": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "waited",
+    "format": 0,
+    "depth": 16,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dwordx2": 32,
+      "s_waitcnt": 32,
+      "v_mov_b32_e32": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "waited",
+    "format": 1,
+    "depth": 1,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dword": 32,
+      "s_waitcnt": 32,
+      "v_perm_b32": 64,
+      "v_pk_ashrrev_i16": 64,
+      "v_and_b32_e32": 64,
+      "v_pk_mul_f16": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "waited",
+    "format": 1,
+    "depth": 2,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dword": 32,
+      "s_waitcnt": 32,
+      "v_perm_b32": 64,
+      "v_pk_ashrrev_i16": 64,
+      "v_and_b32_e32": 64,
+      "v_pk_mul_f16": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "waited",
+    "format": 1,
+    "depth": 4,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dword": 32,
+      "s_waitcnt": 32,
+      "v_perm_b32": 64,
+      "v_pk_ashrrev_i16": 64,
+      "v_and_b32_e32": 64,
+      "v_pk_mul_f16": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "waited",
+    "format": 1,
+    "depth": 8,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dword": 32,
+      "s_waitcnt": 32,
+      "v_perm_b32": 64,
+      "v_pk_ashrrev_i16": 64,
+      "v_and_b32_e32": 64,
+      "v_pk_mul_f16": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "waited",
+    "format": 1,
+    "depth": 16,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dword": 32,
+      "s_waitcnt": 32,
+      "v_perm_b32": 64,
+      "v_pk_ashrrev_i16": 64,
+      "v_and_b32_e32": 64,
+      "v_pk_mul_f16": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "unwaited",
+    "format": 0,
+    "depth": 1,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dwordx2": 32,
+      "v_mov_b32_e32": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "unwaited",
+    "format": 0,
+    "depth": 2,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dwordx2": 32,
+      "v_mov_b32_e32": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "unwaited",
+    "format": 0,
+    "depth": 4,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dwordx2": 32,
+      "v_mov_b32_e32": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "unwaited",
+    "format": 0,
+    "depth": 8,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dwordx2": 32,
+      "v_mov_b32_e32": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "unwaited",
+    "format": 0,
+    "depth": 16,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dwordx2": 32,
+      "v_mov_b32_e32": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "unwaited",
+    "format": 1,
+    "depth": 1,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dword": 32,
+      "v_perm_b32": 64,
+      "v_pk_ashrrev_i16": 64,
+      "v_and_b32_e32": 64,
+      "v_pk_mul_f16": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "unwaited",
+    "format": 1,
+    "depth": 2,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dword": 32,
+      "v_perm_b32": 64,
+      "v_pk_ashrrev_i16": 64,
+      "v_and_b32_e32": 64,
+      "v_pk_mul_f16": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "unwaited",
+    "format": 1,
+    "depth": 4,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dword": 32,
+      "v_perm_b32": 64,
+      "v_pk_ashrrev_i16": 64,
+      "v_and_b32_e32": 64,
+      "v_pk_mul_f16": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "unwaited",
+    "format": 1,
+    "depth": 8,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dword": 32,
+      "v_perm_b32": 64,
+      "v_pk_ashrrev_i16": 64,
+      "v_and_b32_e32": 64,
+      "v_pk_mul_f16": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  {
+    "mode": "unwaited",
+    "format": 1,
+    "depth": 16,
+    "counts": {
+      "v_mfma_f32_32x32x8f16": 32,
+      "global_load_dword": 32,
+      "v_perm_b32": 64,
+      "v_pk_ashrrev_i16": 64,
+      "v_and_b32_e32": 64,
+      "v_pk_mul_f16": 64,
+      "s_add_i32": 1,
+      "s_cmp_lt_i32": 1,
+      "s_cbranch_scc1": 1
+    }
+  }
+]

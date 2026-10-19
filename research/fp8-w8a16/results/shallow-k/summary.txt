@@ -1,0 +1,28 @@
+Performance-only, same previously measured executables. No numerical checks.
+D8, in-dispatch pre-read; median over two nine-round processes.
+steps | logical K | FP8 waited | FP8 no-wait | FP16 no-wait | FP8 no-wait residual cycles above 96*steps
+32 | 256 | 109.641 | 110.594 | 248.312 | 467.0
+64 | 512 | 102.859 | 103.047 | 188.000 | 451.0
+128 | 1024 | 99.391 | 99.590 | 156.074 | 459.5
+256 | 2048 | 97.752 | 97.809 | 142.822 | 463.0
+512 | 4096 | 96.799 | 96.871 | 132.980 | 446.0
+1024 | 8192 | 96.424 | 96.452 | 132.306 | 463.0
+4096 | 32768 | 96.106 | 96.113 | 128.563 | 464.5
+
+All depths, warm, unwaited. FP8 residual cycles above 96*steps:
+steps | D1 | D2 | D4 | D8 | D16
+32 | 14017.0 | 14377.5 | 14805.0 | 467.0 | 14521.0
+64 | 14432.0 | 13191.0 | 14600.0 | 451.0 | 14455.5
+128 | 14294.0 | 14279.0 | 14068.5 | 459.5 | 13708.0
+256 | 15198.0 | 13737.0 | 13830.5 | 463.0 | 13687.5
+512 | 13103.0 | 13842.0 | 14228.0 | 446.0 | 13807.5
+1024 | 14993.0 | 14149.0 | 13704.5 | 463.0 | 14462.5
+4096 | 12830.5 | 14158.0 | 14364.0 | 464.5 | 14817.5
+
+The long-loop throughput model needs a finite-length term.
+FP8 D8: T_body approximately 96*steps + 440..470 cycles for the pre-read path.
+Other variants have larger and less constant residuals; do not assign them all to one hardware latency.
+The original warm-up favors FP8 D8 and the resident anchor. Other cases are not individually prewarmed.
+Storage pitch and allocation sizes also vary with steps; addresses remain fixed within each timed loop.
+Timers exclude seed/queue-issue setup but include remaining in-flight work and the final drain.
+No claim that launch, cache/code-entry, fill and drain costs have been individually isolated.

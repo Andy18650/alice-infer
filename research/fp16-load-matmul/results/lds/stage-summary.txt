@@ -1,0 +1,38 @@
+LDS, U32, K32768, one CTA/four waves. CTA makespan cycles/step.
+Waited (lgkmcnt), packed stride1; pooled medians over 18 samples/case.
+
+lds-hot
+D | 1*b128 | 2*b64 | 4*b32
+1 | 89.269 | 88.896 | 98.893
+2 | 64.035 | 64.033 | 64.285
+3 | 64.042 | 64.040 | 64.337
+4 | 64.042 | 64.039 | 64.297
+8 | 64.060 | 64.071 | 64.332
+
+lds-sweep
+D | 1*b128 | 2*b64 | 4*b32
+1 | 97.022 | 97.024 | 109.023
+2 | 64.656 | 64.904 | 69.030
+3 | 64.667 | 64.792 | 69.046
+4 | 64.669 | 64.795 | 65.928
+8 | 64.698 | 64.827 | 69.467
+
+Run spread to retain (scalar4):
+D1 hot: 96.893 / 100.892; D4 sweep: 69.424 / 65.928 cycles/step.
+Do not interpret pooled medians as a precise monotonic latency curve.
+
+Deliberate stride4 bank concentration, hot waited:
+1 | 128.661 | 128.296 | 128.292
+4 | 128.125 | 128.126 | 128.125
+
+Bank model (all four waves, one pair):
+stride1: 1024 distinct dwords, 32 active banks, 32 dwords/bank.
+stride4: same 1024 distinct dwords, 8 active banks, 128 dwords/bank.
+This models aggregate bank pressure, not a direct conflict counter or proof of wide-read phase mapping.
+Depth = raw A+B fragment slots, PLUS two ready operand banks.
+D2 reaches the hot ~64-cycle rate for all shapes; sweep wide reads also near ~65.
+Sweep scalar4 retains a non-monotonic ~66..69-cycle waited floor; no-wait is ~65.
+LDS queue priming is inside timing; timer lgkmcnt(0) waits cannot drain it before the loop.
+LGKM immediate 15 is the all-ones/no-wait setting. Stronger wait cap14 is reported for deep rings.
+D8/scalar4 requested28 is capped14; D1..4 stage decisions are uncapped.
+No VRAM-to-LDS transfer in the timed path; LDS is filled directly before timing. No numerical tests.

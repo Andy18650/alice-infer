@@ -1,0 +1,70 @@
+{
+  "depth": 1,
+  "unroll": 32,
+  "ready_banks": 2,
+  "cases": [
+    {
+      "mode": 1,
+      "loads": 1,
+      "steps": 4096,
+      "records": 256,
+      "mfmas": 4096
+    },
+    {
+      "mode": 1,
+      "loads": 2,
+      "steps": 4096,
+      "records": 256,
+      "mfmas": 4096
+    },
+    {
+      "mode": 1,
+      "loads": 4,
+      "steps": 4096,
+      "records": 256,
+      "mfmas": 4096
+    },
+    {
+      "mode": 2,
+      "loads": 1,
+      "steps": 4096,
+      "records": 4099,
+      "mfmas": 4096
+    },
+    {
+      "mode": 2,
+      "loads": 2,
+      "steps": 4096,
+      "records": 4099,
+      "mfmas": 4096
+    },
+    {
+      "mode": 2,
+      "loads": 4,
+      "steps": 4096,
+      "records": 4099,
+      "mfmas": 4096
+    },
+    {
+      "mode": 4,
+      "loads": 1,
+      "steps": 4096,
+      "records": 16,
+      "mfmas": 4096
+    },
+    {
+      "mode": 4,
+      "loads": 2,
+      "steps": 4096,
+      "records": 16,
+      "mfmas": 4096
+    },
+    {
+      "mode": 4,
+      "loads": 4,
+      "steps": 4096,
+      "records": 16,
+      "mfmas": 4096
+    }
+  ]
+}

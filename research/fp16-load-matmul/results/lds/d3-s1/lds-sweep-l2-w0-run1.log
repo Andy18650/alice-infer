@@ -1,0 +1,2 @@
+counter=lgkmcnt requested_wait=4 effective_wait=-1 lds_stride=1; LDS queue priming is INSIDE core timing to avoid timer LGKM drains
+PERFORMANCE ONLY device=AMD Instinct MI250X / MI250 HIP=0 PCI=0000:31:00.0 arch=gfx90a:sramecc+:xnack- grid=1 block=256 waves=4 mode=lds-sweep loads=2 wait=0 depth=3 unroll=32 phases=3 steps=4096 logical_K=32768 records_per_wave=16 active_bytes=65536 evict_mib=0 warmup_ms=200; native O3, NUMA placement external, no model/context; no numerical tests/output readback

@@ -500,6 +500,143 @@ Event launch_ms includes the pre-read; only body clocks compare protocols.
 No architectural minimum-latency or unique NoC/local-bandwidth cause is
 claimed, and no 2x2 tiling or production change is pursued. This round is
 concluded: buffering alone does not recover 64 in the tested implementation.
+The correct fixed-shape real-A W8A16 GEMM/grid/diagnostic progress is committed
+as `21c735b` before the user's intentionally non-GEMM fixed-K test
+(`research/fp8-w8a16/fixed.md`). All A/B priming, queue-fill and refill
+addresses freeze at the first K=8 fragment, but native loads/waits/conversion
+remain. One CTA/four N waves, same O3/HIP0/NUMA0/no-context, unroll32:
+fixed D8 FP8 reaches ~96–97 cycles/MFMA, FP16 ~129, versus resident ~64;
+8192 repetitions give ~96/~128–129, including D16. Warm/eviction-prepared
+results converge for the 1.5/2.5 KiB active input sets. Logical payload is
+3072/4096 B per four-wave step, both near 32 B/core-cycle at saturation;
+this suggests a local load/result-delivery constraint, not proof of a
+specific cache/port or an observed hardware bandwidth counter. Address
+arithmetic also folds away. All 1008 timed and 672 independent changed-input/
+warm-path/poison/guard cases are exact; actual-ISA audits prove invariant
+pointer operands, retained loads/conversion and FIFO safety with no spills/
+LDS. No performance counters, 2x2 layout, corrective tuning or production
+changes are introduced; this fixed-fragment round is concluded.
+User then requests intentionally unsafe register reads and stops numerical
+correctness testing: `research/fp8-w8a16/waits.md` removes all steady partial
+waits, retaining identical instructions/registers otherwise and initial/final
+completion. Deep FP8 D8 stays ~96 cycles/MFMA, FP16 ~129; D1 improves sharply.
+No output readbacks or numerical tests run. A subsequent same-binary shallow-K
+sweep (`shallow-k.md`, same native O3/HIP0/NUMA0/one CTA/no context) covers
+32..4096 MFMA repetitions, logical K=256..32768. FP8 D8 no-wait follows
+`T_body approximately 96*steps+460` core cycles: 110.594 cycles/MFMA at K256,
+96.113 at K32768. FP16 falls ~248 to ~129. Deep K does amortize finite-length
+costs, but not the steady 96-cycle slope. Other unwaited FP8 depths exhibit
+~13–15k residual cycles above `96*steps`; inherited warm-up favors FP8 D8 and
+the resident anchor, so these intercepts cannot be assigned to queue depth or
+a particular hardware latency. Packed pitch/allocation also vary with length.
+No extra warm-up policy, kernel/layout change or numerical tests accompany
+this timing-only rerun.
+After the user stops an idle but VRAM-resident llama.cpp server, an exact-binary
+K256/K32768 timing-only recheck (`research/fp8-w8a16/server-off.md`) finds the
+long-loop floor unchanged: FP8 D8 no-wait 96.113 -> 96.109 cycles/MFMA, FP16
+128.563 -> 128.875 (same HIP0/native O3/NUMA0/one CTA/no probe model/context).
+All long-loop case medians move by <0.87%; short-loop variation persists.
+Before/after AMD-SMI snapshots show no processes and ~10 MiB/GCD; HIP0 is
+AMD-SMI GPU2/BDF31:00.0. This does not exonerate every historical measurement,
+but server residency does not explain the current ~96/~129 floor. Numerical
+tests remain off and no kernel changes are made.
+The next user-directed ablation (`research/fp8-w8a16/b-only.md`) keeps A in
+one register pair and removes all timed/queued A loads and the two A-copy
+VALUs, retaining fixed-address B loads/conversion at logical K32768. Same
+native O3/HIP0/NUMA0/one CTA/four N waves/no probe context: no-wait D8 FP8
+reaches 64.391/64.391 cycles/MFMA, FP16 64.653/64.661, versus fresh matched
+A+B 96.114/96.109 and 128.965/128.939. Restored B waits at vmcnt(D-1) also
+reach ~64.4/~64.9 at D8. Executable ISA confirms one B load/MFMA, invariant
+unwritten A, eight retained FP8 conversion VALUs and zero A copies; no math
+tests or output readbacks run. Four-wave logical payload falls from
+3072/4096 B to 1024/2048 B, agreeing with the fitted 32 B/core-cycle plus
+64-cycle MFMA-floor model. This does not separate A-load from A-copy costs,
+identify a physical port, or claim the same rate for streaming B from HBM.
+No production integration or other layout/clock/warm-up changes are made.
+The user-directed MFMA-to-NOP hypothesis test (`research/fp8-w8a16/b-nop.md`)
+then replaces each streaming MFMA with `s_nop 0`, preserving compiler operand
+lifetimes. Actual-code-object inspection finds all remaining instructions
+and registers identical to MFMA controls, except branch displacements.
+Same native O3/HIP0/NUMA0/one CTA/four N waves/logical K32768/no probe context:
+no-wait D8 FP8 is 45.394/45.394 cycles/step (not the payload-only prediction
+32), FP16 64.601/64.592 (close to prediction 64). Restored waits give ~48.9/
+~64.7. This is a partial match, not validation of the complete payload-only
+model or a physical memory limit. FP8 conversion/NOP/issue/dependency work
+remains and its contribution is not isolated. No further ablation, numerical
+test or output readback is performed; no production changes.
+
+The next user-directed framework (`research/fp16-load-matmul/`) is FP16-only
+operand math with FP32 accumulation, one CTA/256 threads/four waves and one
+AGPR accumulator bank/wave. It exposes hot, cyclic L2-sized and no-wrap
+streaming modes; any depth 1..16 and unroll 1..64; coalesced 1xdwordx4,
+2xdwordx2 or 4xdword A+B loading; and optional steady vmcnt waits. An opaque
+asm generator protects pending registers; phase-specialized U-step bodies
+support U<D and non-dividing D/U without pending copies, reporting code-size
+expansion. It saves absolute wave clocks and uses CTA max(end)-min(begin),
+not wave-median timing. Native O3/HIP0/NUMA0, no probe model/context, D8/U32,
+logical K32768: two runs hot/no-wait give 64.133/64.133 cycles/step for 1x4,
+128.234/128.234 for 2x2, 96.458/96.458 for 4x1, at identical 4096 B logical
+payload/step. A 1 MiB primed cyclic window and ~16 MiB streaming window are
+also measured; these labels are not counter-proven cache residency. D16/U1
+and D3/U8 example timings and all 54 corresponding code entries are inspected
+with no scratch/LDS/lane spills. No numerical/output tests or production
+changes are introduced. Documentation includes the actual static phase count,
+per-configuration warm-up, layouts, raw timings and reproducible commands.
+The requested LDS extension (`research/fp16-load-matmul/LDS.md`) adds local
+hot and 64 KiB sweeping modes, directly initializing LDS before timing (no
+VRAM-to-LDS operand transfer). 32 banks x512 dwords, bank-balanced stride1
+and deliberately concentrated stride4 controls; ds_read_b128/2xb64/4xb32 use
+lgkmcnt, not vmcnt. Timer reads also use LGKM, so raw LDS priming is inside
+timing after start-counter completion, not accidentally drained before the
+loop. On the same native O3/HIP0/NUMA0/one CTA/K32768/U32/no probe context,
+waited hot D1 is ~89/~89/~99 cycles/step; D2 reaches ~64.04/~64.03/~64.29.
+Wide 64 KiB sweeps reach ~65 at D2; scalar sweeps retain non-monotonic
+~66–69 overhead. D means raw slots PLUS two ready banks, not total buffers.
+Stride4 uses eight banks rather than 32 and stays ~128 cycles even at D4.
+LGKM thresholds are explicitly capped at 14 rather than the all-ones 15; clean
+D1..4 minimum-depth findings are uncapped. Seven builds/210 entries are
+inspected and 1512 timing samples saved, with no numerical/output tests.
+Old v1 binaries and pre-extension source are preserved; no production change.
+
+User then re-enables full-output checks (`research/fp16-load-matmul/VERIFICATION.md`).
+The independent integer/dyadic host matmul reconstructs all 4096 MFMA outputs,
+with poisoned buffers/32 guard words, legacy and hash inputs, independent A/B
+seed changes and partial-phase exits. All 531 waited cases pass exactly,
+including 96 direct original-code-object launches via HIP modules. A further 324
+checked timing passes also pass; fresh cycles are slightly higher, e.g. LDS
+D2 ~65–67 and global hot ~65/~129/~99 rather than a bit-identical timing claim.
+8/12 deliberately unsafe no-wait cases fail, and observed matches are not
+certified. Default verification is ON, checks outside timing; prior binaries
+remain intact. No production change.
+
+Next, the one-ready-bank first step (`SINGLE_READY.md`) deliberately RETAINS
+all four raw->ready copies to isolate immediate copy->next-MFMA consumption.
+Raw D and wait thresholds are unchanged; R1 seeds operand0 and prepares n+1,
+R2 seeds0/1 and prepares n+2. v4..v7 remain reserved to control register layout.
+All 150 R1 verification cases: hot 60 pass, varying 90 fail; all 135 R2 controls
+pass. Warmed timings add 198 launches/variant: R1 sweep 72 fail, R2 all pass.
+Hot timings remain near controls (~65 LDS D2, ~65/~129/~99 global D8), but
+hot's repeated operand values mask the R1 correctness failure. Generated-asm
+symbolic execution supplies the intended record/word sequence under ideal
+completion; precise hardware hazard/required spacing is not isolated. No NOP
+repair, copy-free path or throughput claim for invalid results is introduced.
+Default R remains 2. Both variants and complete failing artifacts are retained.
+
+User next requests removing ready storage and feeding MFMA from the counter-
+completed raw entry (`DIRECT_RAW.md`). R0 primes raw0..D-2, issues n+D-1,
+waits, and consumes raw[n%D] directly: zero ready banks/copy VALUs, no added
+arrival stage or load->MFMA delay. 1224 positive checked launches pass exactly
+(495 direct verification cases, 45 R2 controls, 684 checked timing passes).
+Copied-R1 controls still fail3/3 with a common post-timestamp accumulator-
+harvest guard, which never pads the measured loop. Same native O3/HIP0/
+NUMA0/one CTA/K32768/U32/no probe context: R0 hot LDS b128 D1 ~69.55 cycles,
+D2 ~64.58; sweep D1 ~82.8, D2 ~66.1. D2 now means two TOTAL operand slots,
+not raw2+ready2. Fresh R2 hot D1 is ~90.4 and D2 ~65.0. Direct global hot D8
+one/two/four loads are ~64.31/~128.5/~85.37, all verified; bank-stride4 still
+~128.4. The current completion wait suffices in tested paths, without the
+proposed extra arrival stage; exact internal decrement timing is not proved.
+Twelve builds/360 entries inspected; earlier binaries remain untouched.
+Default R2 stays compatible; R0 is explicitly selected. No production change.
 
 ## 1. Purpose & target
 

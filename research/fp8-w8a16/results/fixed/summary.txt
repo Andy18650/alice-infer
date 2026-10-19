@@ -1,0 +1,55 @@
+One CTA; all A/B loads retained, fixed K means first eight-column/row fragment.
+run | format | D | fixed warm cycles | fixed evict cycles | variable warm cycles | variable evict cycles
+run1 | 1 | 1 | 187.572 | 188.630 | 522.450 | 680.229
+run1 | 1 | 2 | 103.789 | 103.495 | 275.687 | 365.052
+run1 | 1 | 4 | 98.867 | 99.597 | 156.778 | 194.406
+run1 | 1 | 8 | 97.224 | 96.356 | 101.780 | 119.238
+run1 | 1 | 16 | 99.132 | 99.165 | 105.291 | 118.912
+run1 | 0 | 1 | 173.463 | 173.760 | 673.677 | 702.364
+run1 | 0 | 2 | 129.089 | 129.275 | 365.257 | 369.897
+run1 | 0 | 4 | 129.311 | 129.086 | 196.859 | 201.500
+run1 | 0 | 8 | 129.305 | 129.231 | 173.565 | 170.855
+run1 | 0 | 16 | 129.084 | 129.058 | 172.574 | 173.262
+run2 | 1 | 1 | 188.538 | 188.486 | 521.991 | 676.806
+run2 | 1 | 2 | 103.424 | 103.349 | 275.603 | 364.585
+run2 | 1 | 4 | 99.859 | 99.425 | 154.598 | 196.851
+run2 | 1 | 8 | 96.111 | 96.075 | 100.619 | 116.812
+run2 | 1 | 16 | 99.106 | 98.884 | 104.225 | 119.508
+run2 | 0 | 1 | 173.977 | 173.988 | 674.935 | 700.315
+run2 | 0 | 2 | 129.278 | 129.224 | 365.603 | 368.403
+run2 | 0 | 4 | 129.232 | 129.185 | 196.816 | 200.981
+run2 | 0 | 8 | 129.296 | 129.287 | 169.918 | 172.667
+run2 | 0 | 16 | 129.297 | 129.276 | 172.137 | 171.984
+small | 1 | 1 | 197.989 | 198.036 | 360.825 | 670.535
+small | 1 | 2 | 114.788 | 113.069 | 190.869 | 359.354
+small | 1 | 4 | 111.565 | 110.587 | 112.999 | 191.675
+small | 1 | 8 | 97.594 | 96.281 | 96.438 | 119.350
+small | 1 | 16 | 110.340 | 109.215 | 113.794 | 129.308
+small | 0 | 1 | 178.128 | 177.605 | 324.058 | 683.976
+small | 0 | 2 | 133.008 | 132.945 | 176.398 | 369.690
+small | 0 | 4 | 133.400 | 133.272 | 133.573 | 202.176
+small | 0 | 8 | 133.124 | 133.290 | 134.549 | 176.358
+small | 0 | 16 | 132.932 | 133.111 | 135.241 | 176.032
+longer | 1 | 1 | 185.256 | 186.923 | 679.231 | 675.421
+longer | 1 | 2 | 101.392 | 99.896 | 358.487 | 356.248
+longer | 1 | 4 | 97.851 | 97.804 | 195.026 | 189.917
+longer | 1 | 8 | 96.053 | 96.053 | 123.744 | 118.396
+longer | 1 | 16 | 96.103 | 96.104 | 126.525 | 121.119
+longer | 0 | 1 | 173.397 | 173.392 | 680.793 | 684.926
+longer | 0 | 2 | 128.635 | 128.604 | 376.756 | 371.743
+longer | 0 | 4 | 128.545 | 128.453 | 214.056 | 209.915
+longer | 0 | 8 | 128.816 | 128.594 | 189.372 | 186.939
+longer | 0 | 16 | 128.548 | 128.660 | 185.980 | 183.179
+
+Fixed D8 logical A+B request payload per mean CTA core cycle (not physical cache bandwidth):
+run1, format 1: 31.597 B/core-cycle, resident anchor 63.995 cycles/MFMA
+run1, format 0: 31.677 B/core-cycle, resident anchor 63.995 cycles/MFMA
+run2, format 1: 31.963 B/core-cycle, resident anchor 63.995 cycles/MFMA
+run2, format 0: 31.679 B/core-cycle, resident anchor 63.995 cycles/MFMA
+longer, format 1: 31.982 B/core-cycle, resident anchor 63.998 cycles/MFMA
+longer, format 0: 31.797 B/core-cycle, resident anchor 63.998 cycles/MFMA
+
+PASS 1008 exact-valid timed samples and 672 independent A/B-change/warm-path/poison/guard cases.
+Fixed data alone cannot reveal stale same-value reads; retain FIFO safety audits and varying-K controls.
+K-dependent address arithmetic also folds away: this is not an isolated cache-latency subtraction.
+No counters, 2x2 tiling, load elimination or production changes.

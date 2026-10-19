@@ -1,0 +1,36 @@
+Performance only, no numerical tests. MFMA -> s_nop 0; B preparation retained.
+4096 steps, logical K32768, four N waves. Pre-read preparation.
+mode | format | D | MFMA run1/run2 | NOP run1/run2
+unwaited | 1 | 1 | 67.330/67.252 | 48.217/48.304
+unwaited | 1 | 2 | 67.045/67.293 | 48.223/48.419
+unwaited | 1 | 4 | 67.307/67.151 | 48.387/48.382
+unwaited | 1 | 8 | 64.391/64.391 | 45.394/45.394
+unwaited | 1 | 16 | 67.360/67.466 | 47.642/47.675
+unwaited | 0 | 1 | 64.703/64.867 | 64.618/64.575
+unwaited | 0 | 2 | 64.807/64.759 | 64.515/64.508
+unwaited | 0 | 4 | 64.648/64.851 | 64.638/64.642
+unwaited | 0 | 8 | 64.660/64.771 | 64.601/64.592
+unwaited | 0 | 16 | 64.639/64.707 | 64.463/64.471
+waited | 1 | 1 | 167.455/163.493 | 159.309/159.464
+waited | 1 | 2 | 82.476/82.350 | 79.633/79.600
+waited | 1 | 4 | 67.319/67.002 | 51.856/51.801
+waited | 1 | 8 | 64.395/64.395 | 48.900/48.901
+waited | 1 | 16 | 67.383/67.303 | 51.994/52.043
+waited | 0 | 1 | 149.354/149.399 | 145.260/145.286
+waited | 0 | 2 | 75.807/75.647 | 73.683/73.588
+waited | 0 | 4 | 64.869/65.038 | 64.603/64.748
+waited | 0 | 8 | 64.865/65.015 | 64.647/64.794
+waited | 0 | 16 | 64.976/64.887 | 64.750/64.656
+
+D8 NOP no-wait, both preparations:
+format=1 cache=0: 45.394 cycles/step
+format=1 cache=1: 45.395 cycles/step
+format=0 cache=0: 64.597 cycles/step
+format=0 cache=1: 64.497 cycles/step
+
+Hypothesis verdict: partial match, NOT a validation of the complete payload-only model.
+FP16 ~64.6 is consistent with 2048 logical bytes / 32 B/core-cycle.
+FP8 ~45.39 does not reach the payload-only 1024/32 = 32 cycle prediction.
+The eight retained FP8 VALUs, NOP, issue/dependency/other effects are not isolated here.
+Do not infer a physical memory limit, or attribute the entire FP8 excess solely to conversion.
+No extra ablation is performed. Other-depth warm-up caveats remain.

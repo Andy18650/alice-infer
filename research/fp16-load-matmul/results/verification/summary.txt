@@ -1,0 +1,4 @@
+Waited full-output cases: 531, failed: 0.
+Original code-object cases: 96.
+Unsafe characterization: 12, observed mismatches: 8; no safety claim for matches.
+All cases check 4096 outputs and 32 guard words. Mathematical equality is exact for these dyadic inputs.

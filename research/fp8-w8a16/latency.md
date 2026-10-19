@@ -192,6 +192,11 @@ Only the selected single-CTA route was pursued. **No 2x2 wave layout** or
 further corrective optimization is added. Previous research kernels and
 production code remain unchanged. This diagnostic round is concluded.
 
+This real-K state is checkpointed at `21c735b`. The subsequent user-requested
+[fixed-K-address diagnostic](fixed.md) deliberately repeats fragment zero
+with all load/conversion instructions retained. Both formats then fit in a
+few KiB; this preserved real-K source/data are not overwritten.
+
 ## Reproduce
 
 ```sh

@@ -1,0 +1,1 @@
+hipcc -O3 -std=c++20 --offload-arch=gfx90a -fdenormal-fp-math=ieee -Wall -Wextra -I/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d2-u32-lds1

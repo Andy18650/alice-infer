@@ -1,0 +1,14 @@
+Exact output/guard checks: 681 checked launches; invalid 162.
+Copies retained: this tests immediate v_mov -> next MFMA, not copy removal.
+D | mode | loads | R1 run1/run2 | R2 run1/run2
+1 | lds-hot | 1 | 90.041/90.120 | 90.258/90.288
+1 | lds-hot | 2 | 90.700/90.691 | 90.661/90.492
+1 | lds-sweep | 1 | INVALID 99.592/99.717 | 99.273/99.155
+1 | lds-sweep | 2 | INVALID 99.882/99.850 | 99.674/100.191
+2 | lds-hot | 1 | 65.420/65.318 | 65.273/65.229
+2 | lds-hot | 2 | 65.700/65.769 | 66.211/66.066
+2 | lds-sweep | 1 | INVALID 67.490/67.728 | 67.179/67.137
+2 | lds-sweep | 2 | INVALID 67.736/67.901 | 68.101/67.921
+8 | hot | 1 | 65.018/65.023 | 65.013/65.018
+8 | hot | 2 | 129.442/129.368 | 129.264/129.330
+8 | hot | 4 | 98.596/98.556 | 98.549/98.530

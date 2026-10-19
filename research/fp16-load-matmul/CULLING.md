@@ -1,4 +1,9 @@
-# First culling step: remove wait-free execution
+# Research culling log
+
+Sections are chronological; current commands and the remaining matrix are in
+[README.md](README.md) and [MATRIX.md](MATRIX.md).
+
+## First cull: remove wait-free execution
 
 Progress before cleanup is committed at **3986b13**. The checkpoint includes
 the FP8 diagnostics, configurable FP16 framework, raw results, exact
@@ -57,3 +62,33 @@ commands, rejection messages and instruction comparisons are under
 prior binaries. Historical FP8 diagnostic sources and existing raw datasets
 are deliberately not deleted in this first active-FP16 cleanup; the checkpoint
 is the recovery point for removed FP16 wait-free generation.
+
+## Second cull: remove ready-buffer branches
+
+The pre-change ready-buffer code is preserved in `e260a39`. Current generation
+has only the direct raw-ring schedule; `--ready-banks`, the build script's
+fifth argument, seed-ready code, copy code and alternate consumption schedules
+are removed. R is no longer a build axis. Raw registers start at v0 and every
+MFMA reads the counter-completed ring head. Per-build kernel count remains 15:
+removing a build-time method axis does not change the five mode/three shape
+combinations in an individual object.
+
+Original-module/symbol dispatch is removed from the executable too: it was a
+checkpoint verification mechanism that could reintroduce copied-ready kernels.
+Five obsolete replay/comparison drivers are removed: `single_ready.py`,
+`verify_cases.py`, `verified_timing.py`, `direct_raw.py`, `check_waited.py`.
+Their raw results and documentation remain historical evidence, and their
+source is recoverable from the checkpoint. Current runners are `run_matrix.py`
+and the direct-only `check_active.py`; no negative copied-buffer execution
+is part of the active matrix. The constant-zero ready-bank CSV column and
+historical analysis support remain as schema compatibility, not branches.
+
+Regression results: seven representative builds, **222 exact cases + 6 runner
+cases**, all correct, **15 removed-option rejection checks**, and **105/105**
+timed instruction/register lists identical to the previous direct variant
+(after branch/address normalization). Generator/build ready selection, old
+module options and wait-free CLI selection are rejected. No performance
+retuning or production changes. Current outputs use `dD-uU-ldsS-direct`.
+
+The remaining axes and fixed properties are listed in [MATRIX.md](MATRIX.md).
+Raw regression evidence is under `results/ready-cull/`.

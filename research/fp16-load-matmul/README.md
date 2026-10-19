@@ -1,138 +1,111 @@
-# One-CTA FP16 operand pipeline: global and LDS
+# One-CTA FP16 operand pipeline — direct raw ring only
 
-**Wait-free execution has been removed.** See [CULLING.md](CULLING.md).
-Checkpoint `3986b13` preserves the full pre-cull research and results.
-Current builds generate only mandatory-wait kernels; historical tables below
-remain historical evidence, not claims that unsafe variants are still offered.
+**Active implementation:** one CTA, 256 threads/four waves, native gfx90a
+FP16 x FP16 -> FP32 MFMA, one AGPR accumulator bank per wave. No ready
+buffers, operand copies, wait-free specialization or original-module replay.
+Exact output verification is enabled by default.
 
-Gfx90a research probe: **one CTA / 256 threads / four waves**, native
-`v_mfma_f32_32x32x8f16`, FP16 inputs, FP32 accumulation, one AGPR bank/wave.
-Four dummy 32x32 output tiles, not a generalized GEMM API.
+See **[MATRIX.md](MATRIX.md)** for the complete remaining configuration matrix.
+For fixed depth/unroll/LDS-stride, a build contains **15 kernels: nine global
+and six LDS**. The only operand-consumption schedule is:
 
-**Exact result verification is now enabled by default.** The default **two
-ready banks** pass the [verification suite](VERIFICATION.md). The optional
-[single-ready diagnostic](SINGLE_READY.md) passes hot inputs but **fails
-record-varying inputs even with waits enabled**; it is deliberately preserved
-as a failing diagnostic. The new [direct-raw path](DIRECT_RAW.md), selected with R=0, eliminates both
-ready banks and copies and passes the completed verification study.
+```text
+prime raw slots 0..D-2
+issue operand n+D-1
+wait for completion of raw[n%D]
+MFMA directly consumes raw[n%D]
+```
+
+D is now the **total operand-slot count**, not raw slots plus ready banks.
 
 ## Build and run
 
 ```sh
-# Build args: depth, unroll, optional output, LDS stride (default1), ready banks (default2).
-# R=0: direct raw ring, no ready storage/copies.
-bash research/fp16-load-matmul/build.sh 2 32 \
-  temp/fp16-load-matmul/d2-u32-lds1-verified-r0-waited 1 0
-python3 research/fp16-load-matmul/inspect_loops.py temp/fp16-load-matmul/d2-u32-lds1-verified-r0-waited
-
-numactl --cpunodebind=0 --membind=0 \
-  temp/fp16-load-matmul/d2-u32-lds1-verified-r0-waited/probe \
+# depth, unroll, optional output directory, optional LDS bank stride
+bash research/fp16-load-matmul/build.sh 2 32
+python3 research/fp16-load-matmul/inspect_loops.py temp/fp16-load-matmul/d2-u32-lds1-direct
+numactl --cpunodebind=0 --membind=0 temp/fp16-load-matmul/d2-u32-lds1-direct/probe \
   --mode lds-sweep --loads 1 --pattern hash --steps 4096 --rounds 9
 
-# Single-ready diagnostic. Copying is retained, next MFMA immediately consumes it.
-bash research/fp16-load-matmul/build.sh 2 32 \
-  temp/fp16-load-matmul/d2-u32-lds1-verified-r1-waited 1 1
+# Deliberately concentrated bank layout
+bash research/fp16-load-matmul/build.sh 4 32 temp/fp16-load-matmul/d4-u32-lds4-direct 4
 ```
 
-Depth: 1..16. Unroll: 1..64, independently selectable. Steps must be divisible
-by unroll; default4096 means K32768. Exact verification currently supports
-steps<=8192. `--verify 0` explicitly opts out for performance-only runs.
-Build names include `-verified-rR-waited` to preserve all older measured binaries.
+Build-time controls: depth 1..16, unroll 1..64 independently, LDS stride
+1/2/4/8. There is no fifth ready-bank argument and no generator ready selector.
+D/U rotation uses P=D/gcd(D,U) phase bodies: U MFMAs between taken conditional
+branches, P*U static slots, no pending-register copies.
 
-Flags include `--mode`, `--loads 1|2|4`, `--records`, `--steps`,
-`--rounds`, `--warmup-ms 200`, `--device 0`, `--evict-mib`, `--pattern
-legacy|hash`, `--seed-a`, `--seed-b`, `--verify`, `--help`. The legacy pattern
-preserves historical +/-0.125 inputs; hash varies record/lane/half, magnitude
-and sign, with independent A/B seeds. Every selected configuration is warmed
-individually, not a favored subset. `--wait 1` is a compatibility alias only;
-`--wait 0` is rejected before explicit GPU initialization.
+Runtime controls:
 
-## Modes and load shapes
+- `--mode hot|l2|stream|lds-hot|lds-sweep`.
+- `--loads 1|2|4`: one 128-bit, two 64-bit, or four 32-bit reads per A+B pair.
+- `--steps`, `--records`, `--rounds`, `--warmup-ms`, `--device`, `--evict-mib`.
+- `--pattern legacy|hash`, `--seed-a`, `--seed-b`, `--verify 0|1`.
 
-| Mode | Source / progression |
+Steps must be divisible by unroll; default 4096 means K32768. Verification
+supports steps<=8192. `--verify 0` explicitly skips host checks, not GPU waits.
+The legacy `--wait 1` spelling is accepted only for safe old command manifests;
+other values are rejected. `--module` and `--symbol` are removed.
+
+## Sources / layouts
+
+| Mode | Address progression |
 |---|---|
-| hot | Global, one invariant fragment/wave, 4 KiB total |
-| l2 | Global cyclic window, default256 records/wave =1 MiB, pre-read before timing |
-| stream | Global no-wrap; default `steps+depth+ready_banks` records/wave, completed256 MiB eviction before each launch |
-| lds-hot | One local fragment/wave, initialized directly before timing |
-| lds-sweep | Cyclic local window, default full64 KiB LDS, initialized directly before timing |
+| hot | Global, one fixed fragment/wave, 4 KiB total |
+| l2 | Global cyclic window; default 1 MiB total, pre-read before timing |
+| stream | Global no-wrap; default steps+D records/wave, completed eviction before launch |
+| lds-hot | Fixed local fragment/wave, directly initialized before timing |
+| lds-sweep | Cyclic local window, default full 64 KiB LDS |
 
-The global cache labels are working-set descriptions, not hit-rate proofs.
-`active_bytes` reports the allocated/configured window including any padding,
-not actual unique traffic. LDS modes do not fill from VRAM; direct initialization
-and the CTA barrier precede timing. Each wave has a private A+B stream.
+| Loads | Global | LDS |
+|---:|---|---|
+| 1 | global_load_dwordx4, A+B together | ds_read_b128 |
+| 2 | two global_load_dwordx2, A/B planes | two ds_read_b64 |
+| 4 | four global_load_dword, word planes | four ds_read_b32 |
 
-| Loads/pair | Global | LDS | Byte layout within wave record |
-|---:|---|---|---|
-| 1 | dwordx4 | b128 | lane*16*S, adjacent A0,A1,B0,B1 dwords |
-| 2 | two dwordx2 | two b64 | lane*8*S; A at0, B at512*S |
-| 4 | four dword | four b32 | lane*4*S; planes0/256*S/512*S/768*S |
+All shapes request 4096 logical payload bytes per four-wave step. LDS has
+32 banks * 512 dwords; stride1 is aggregate bank-balanced, larger strides
+are bank-concentration controls. No VRAM->LDS fill is measured: the CTA
+initializes local memory directly. Cache names are working-set descriptions,
+not counter-proven residency. Allocated bytes are not physical traffic.
 
-S=1 globally, build-time LDS stride locally. Fragment span1024*S bytes/wave;
-all forms request4096 payload bytes/four-wave step. R1/R2 retain four copy
-VALUs; R0 has zero copies.
-Stride1 distributes aggregate pressure over32 banks, stride4 over8; capacity
-32*512 dwords. This is not a proof of every wide-read service phase. See
-[LDS.md](LDS.md) for the bank model, conflict control and stage findings.
+## Correctness / timing
 
-## Schedule, safety and timing
+The independent exact integer/dyadic reference reconstructs all 4096 MFMA
+outputs; outputs are poisoned with leading/trailing guards. Hash data vary
+records/lanes/halves with independent A/B seeds. Failures exit nonzero.
 
-D means complete raw A+B slots; R is the ready-bank count.
-- R1/R2 seed 0..R-1 and prime raw R..R+D-2. Step n consumes ready[n%R],
-  issues n+D+R-1, waits, and copies raw n+R into ready[n%R]. R2 inserts one
-  intervening MFMA before consumption. R1's varying-data failure is preserved.
-- R0 primes raw 0..D-2. Each step issues n+D-1, waits for raw[n%D], and
-  consumes that slot directly with MFMA. There is no separate ready storage,
-  no copy, no operand-delay NOP and no extra arrival-lag stage.
+Completion waits are mandatory: vmcnt for globals, lgkmcnt for LDS, with
+reported conservative LGKM cap14. LDS raw priming follows start-clock
+completion waits so timers cannot drain it. Final drain is inside timing;
+accumulator-harvest guard, output stores and verification are outside it.
+The primary timing is **max(wave_end)-min(wave_begin)**; raw clocks are saved.
 
-Global partial waits: vmcnt(loads*(D-1)). LDS: lgkmcnt(min(loads*(D-1),14));
-requested/effective values are printed, avoiding all-ones15. Partial and final
-completion waits are mandatory; there is no wait-free specialization.
-Mathematical/guard failure exits2; argument/execution error exits1.
+```sh
+python3 research/fp16-load-matmul/run_matrix.py --lds \
+  --binary temp/fp16-load-matmul/d2-u32-lds1-direct/probe \
+  --output temp/fp16-load-matmul/my-lds-sweep
+python3 research/fp16-load-matmul/check_active.py
+```
 
-LDS raw priming is inside timing **after** both start-clock completion waits,
-so timer LGKM activity cannot drain it. Global raw priming retains its prior
-before-timer placement. Core CTA span is max(end)-min(begin), not wave median;
-all absolute core/steady wave clocks are saved. Final drain is timed, output
-stores and verification are not. The current build adds a common conservative
-accumulator-harvest guard after both ending clocks, not between load completion
-and MFMA. Event timing includes initialization and that tail.
+The matrix runner selects nine global cases by default or six LDS cases with
+`--lds`, independently warming every selected case. Current regression tools
+inspect actual ISA/register lifetimes and reconstruct source operand sequences;
+they are not hardware timing simulators. `check_active.py` checks full outputs,
+removed-option rejection and surviving-loop equivalence.
 
-The opaque asm reserves raw/ready/address VGPRs explicitly. Even R1 keeps
-v4..v7 reserved to isolate the diagnostic. R0 starts raw storage at v0 and
-releases the eight reserved ready registers. With L=lcm(D,max(R,1)), P=L/gcd(L,U)
-phase bodies give U MFMAs between taken conditional branches; static code has
-P*U slots, reported explicitly. No compiler pending-register rotation.
+Current build names use `dD-uU-ldsS-direct`. A compile database is generated
+there for clangd. No engine/CMake/production files or global editor settings
+are changed.
 
-`inspect_loops.py` inspects all 15 mandatory-wait entries for counts, register mapping, counter
-choice and waited FIFO lifetimes; it is not a hardware hazard simulator.
-`inspect_operand_sequence.py` checks source-level operand progression under
-ideal load completion; it does not establish hardware readiness.
+## Historical evidence, not active branches
 
-## Results / verification
-
-- [Historical global baseline](global-baseline.md): hot one/two/four loads
-  ~64/128/96 cycles. Original sources and binaries remain preserved.
-- [LDS study](LDS.md): raw D2 +two ready banks reach ~64 hot; wide sweeping
-  reads ~65. Intentional stride4 stays ~128 despite deeper queues.
-- [Verification](VERIFICATION.md): 531 waited cases exact, including96 original
-  code-object launches; 324 further checked timings exact. Fresh timings shift
-  slightly upward; no bit-identical timing claim. 8/12 unsafe cases fail.
-- [Single ready](SINGLE_READY.md): every tested varying-data case fails R1;
-  R2 controls all pass. Hot data hide the issue. Copies remain in both.
-- [Direct raw](DIRECT_RAW.md): 1224 checked positive launches pass; R1 negative
-  controls still fail with the common harvest guard. D1 direct hot LDS is
-  ~70 cycles, D2 ~65 with only two total operand slots. No fallback arrival
-  stage was needed. Global hot one/two/four loads measure ~64/128/85 cycles.
-
-The runners save raw CSV/logs, command manifests, hashes and inventories in
-`results/`; generated headers, code objects/ISA and metadata live in each
-`temp/fp16-load-matmul/dD-uU-ldsS-verified-rR-waited/`. `single_ready.py` intentionally
-exits nonzero for the failing diagnostic. Historical verification runners
-still target their preserved `...-verified/` paths; explicit build output
-arguments can reproduce those names with R2. Those are historical replay
-runners; `check_waited.py` validates current builds without unsafe cases.
-
-A generated compile database supports clangd; use its directory explicitly
-if workspace arguments override the scoped default. No global editor settings,
-engine, CMake, model fixtures or production blocks are changed.
+[Global baseline](global-baseline.md), [LDS staging](LDS.md),
+[verification](VERIFICATION.md), [copied single-ready failures](SINGLE_READY.md),
+and [direct-raw validation](DIRECT_RAW.md) retain their original results.
+Their checkpoint-specific replay drivers were removed; recover them from
+`e260a39` or the earlier `3986b13` checkpoint in a separate worktree.
+Raw data and older binaries are preserved. Analysis tools retain historical
+CSV support; current `ready_banks`/`wait` fields are fixed at 0/1 for schema
+compatibility, not selectable axes. [CULLING.md](CULLING.md) records pruning.

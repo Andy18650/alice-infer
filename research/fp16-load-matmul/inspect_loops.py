@@ -9,7 +9,6 @@ p=argparse.ArgumentParser();p.add_argument('folder',type=Path);a=p.parse_args();
 header=(folder/'pipeline.hpp').read_text()
 d,u,ph=map(int,re.search(r'kDepth=(\d+), kUnroll=(\d+), kPhases=(\d+)',header).groups())
 stride=int(re.search(r'kLdsStride=(\d+)',header)[1])
-ready=int(re.search(r'kReadyBanks=(\d+)',header)[1]) if 'kReadyBanks=' in header else 2
 isa=(folder/'probe.isa').read_text();metadata=(folder/'metadata.txt').read_text(); report=[]
 def op(line): return re.sub(r'_e(?:32|64)$','',line.strip().split()[0])
 def regs(text):
@@ -41,29 +40,21 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',isa,flags=re.M):
     assert sum(v for k,v in counts.items() if k.startswith(('global_load_','ds_read_')))==loads*n
     if lds: assert not any(op(l).startswith('global_load_') for l in ins)
     assert counts[loader]==loads*n
-    assert counts['v_mov_b32']==(4*n if ready else 0)
-    if ready==0:
-        for i,line in enumerate(body):
-            if op(line)=='v_mfma_f32_32x32x8f16':
-                assert i>0 and op(body[i-1])=='s_waitcnt',('not direct wait->MFMA',mode,loads,line)
+    assert counts['v_mov_b32']==0
+    for i,line in enumerate(body):
+        if op(line)=='v_mfma_f32_32x32x8f16':
+            assert i>0 and op(body[i-1])=='s_waitcnt',('not direct wait->MFMA',mode,loads,line)
     mfmas=[l for l in body if op(l)=='v_mfma_f32_32x32x8f16']
     for step,line in enumerate(mfmas):
         args=line.split('//')[0].split(',')
-        bank=4*(step%(ready if ready else d))
+        bank=4*(step%d)
         assert regs(args[1])==set(range(bank,bank+2))
         assert regs(args[2])==set(range(bank+2,bank+4))
-    copies=[l for l in body if op(l)=='v_mov_b32']
-    for i,line in enumerate(copies):
-        args=line.split('//')[0].split(None,1)[1].split(',')
-        step,word=divmod(i,4)
-        assert regs(args[0])=={4*(step%ready)+word}
-        assert regs(args[1])=={8+4*(step%d)+word}
     assert not counts['s_nop']
     # Harvest guard is after both ending counters, never in the measured loop.
-    if ready==0:
-        after=ins[clocks[1]:]
-        wall_end=next(i for i,l in enumerate(after) if op(l)=='s_memrealtime')
-        assert sum(op(l)=='s_nop' for l in after[wall_end+1:])==4
+    after=ins[clocks[1]:]
+    wall_end=next(i for i,l in enumerate(after) if op(l)=='s_memrealtime')
+    assert sum(op(l)=='s_nop' for l in after[wall_end+1:])==4
     assert counts['s_sub_u32']==ph and counts['s_cmp_eq_u32']==ph
     assert counts['s_cbranch_scc0']==ph
     assert counts['s_branch']==(ph if ph>1 else 0)
@@ -96,10 +87,10 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',isa,flags=re.M):
         for line in body[:-1]:process(line) # final instruction is the exit drain.
         assert len(queue)==threshold
     (folder/f'loop-m{mode}-l{loads}-w1.txt').write_text('\n'.join(body)+'\n')
-    report.append(dict(mode=mode,loads=loads,wait=True,depth=d,unroll=u,phases=ph,lds_stride=stride,ready_banks=ready,
+    report.append(dict(mode=mode,loads=loads,wait=True,depth=d,unroll=u,phases=ph,lds_stride=stride,operand_storage='raw_ring',
                        counter=counter,effective_wait=threshold,priming_inside_timing=lds,
                        static_mfmas=n,counts=dict(counts),resources=resources))
 assert len(report)==15
 assert {(r['mode'],r['loads']) for r in report}=={(m,l) for m in range(5) for l in (1,2,4)}
 (folder/'inventory.json').write_text(json.dumps(report,indent=2)+'\n')
-print(f'Inspected 15 mandatory-wait global/LDS entries: D={d}, U={u}, phases={ph}, ready banks={ready}, {ph*u} static MFMAs/entry, expected load/copy/wait/address counts, no scratch/static-LDS/lane spills. Dynamic LDS initialized outside timing, priming after timer waits. Waited FIFO lifetimes checked; no numerical tests.')
+print(f'Inspected 15 mandatory-wait global/LDS entries: D={d}, U={u}, phases={ph}, direct raw ring, {ph*u} static MFMAs/entry, expected load/copy/wait/address counts, no scratch/static-LDS/lane spills. Dynamic LDS initialized outside timing, priming after timer waits. Waited FIFO lifetimes checked; no numerical tests.')

@@ -1,0 +1,4 @@
+222 exact full-output cases plus 6 matrix-runner cases passed.
+15 removed-option rejection checks passed.
+105/105 surviving instruction/register lists identical after address/branch normalization.
+Active kernel matrix: 5 address modes * 3 instruction shapes, direct raw consumption only; waits mandatory.

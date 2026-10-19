@@ -2,11 +2,12 @@
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
-depth=${1:-8}; unroll=${2:-32}; lds_stride=${4:-1}; ready_banks=${5:-2}
-out=${3:-"$root/temp/fp16-load-matmul/d$depth-u$unroll-lds$lds_stride-verified-r$ready_banks-waited"}
+if (( $# > 4 )); then echo 'Ready-bank selection was removed; build args: depth unroll [output] [lds-stride]' >&2; exit 2; fi
+depth=${1:-8}; unroll=${2:-32}; lds_stride=${4:-1}
+out=${3:-"$root/temp/fp16-load-matmul/d$depth-u$unroll-lds$lds_stride-direct"}
 mkdir -p "$out/tmp"; out=$(cd "$out" && pwd)
 export TMPDIR="$out/tmp"
-python3 "$here/generate.py" --depth "$depth" --unroll "$unroll" --lds-stride "$lds_stride" --ready-banks "$ready_banks" --output "$out/pipeline.hpp"
+python3 "$here/generate.py" --depth "$depth" --unroll "$unroll" --lds-stride "$lds_stride" --output "$out/pipeline.hpp"
 flags=(-O3 -std=c++20 --offload-arch=gfx90a -fdenormal-fp-math=ieee -Wall -Wextra -I"$out")
 { printf '%q' hipcc; printf ' %q' "${flags[@]}"; printf '\n'; } > "$out/compiler-flags.txt"
 python3 - "$out" "$here" "$(hipconfig -l)/clang++" "${flags[@]}" <<'PY'

@@ -78,24 +78,20 @@ Launch select(int m,int l) {
 #undef PICK
   throw std::runtime_error("unsupported mode/load selection");
 }
-struct SavedModule {
-  hipModule_t handle=nullptr;
-  ~SavedModule() { if(handle) (void)hipModuleUnload(handle); }
-};
 struct Events {
   hipEvent_t begin{},end{};
   Events() { HIP(hipEventCreate(&begin)); HIP(hipEventCreate(&end)); }
   ~Events() { (void)hipEventDestroy(begin); (void)hipEventDestroy(end); }
 };
 int main(int argc,char** argv) try {
-  std::string mode="hot",pattern_name="legacy",module_path,symbol;
+  std::string mode="hot",pattern_name="legacy";
   constexpr int wait=1; // CSV/backward-compatible reporting; not an execution option.
   int loads=2,steps=4096,records=0,rounds=9,device=0,warmup_ms=200,evict_mib=-1,verify=1;
   uint32_t seed_a=1729,seed_b=2718;
   for(int i=1;i<argc;++i) {
     std::string key=argv[i];
     if(key=="--help") {
-      std::printf("--mode hot|l2|stream|lds-hot|lds-sweep --loads 1|2|4 --wait 1 (compatibility only; waits mandatory) --steps N --records N --rounds N --device N --warmup-ms N --evict-mib N --verify 0|1 --pattern legacy|hash --seed-a N --seed-b N --module OLD.hsaco --symbol OLD_KERNEL\nCompiled depth=%d unroll=%d phases=%d LDS stride=%d ready banks=%d; steps divisible by unroll. Verification enabled by default, exact at steps<=8192.\n",kDepth,kUnroll,kPhases,kLdsStride,kReadyBanks);
+      std::printf("--mode hot|l2|stream|lds-hot|lds-sweep --loads 1|2|4 --wait 1 (compatibility only; waits mandatory) --steps N --records N --rounds N --device N --warmup-ms N --evict-mib N --verify 0|1 --pattern legacy|hash --seed-a N --seed-b N\nCompiled depth=%d unroll=%d phases=%d LDS stride=%d; direct raw ring only; steps divisible by unroll. Verification enabled by default, exact at steps<=8192.\n",kDepth,kUnroll,kPhases,kLdsStride);
       return 0;
     }
     if(i+1==argc) throw std::runtime_error("missing value for "+key);
@@ -114,17 +110,10 @@ int main(int argc,char** argv) try {
     else if(key=="--pattern") pattern_name=val;
     else if(key=="--seed-a") seed_a=uint32_t(std::stoul(val));
     else if(key=="--seed-b") seed_b=uint32_t(std::stoul(val));
-    else if(key=="--module") module_path=val;
-    else if(key=="--symbol") symbol=val;
     else throw std::runtime_error("unknown option "+key);
   }
   const int m=mode=="hot"?0:mode=="l2"?1:mode=="stream"?2:mode=="lds-hot"?3:mode=="lds-sweep"?4:-1;
   const int pattern=pattern_name=="legacy"?0:pattern_name=="hash"?1:-1;
-  if(!module_path.empty() && kReadyBanks!=2) throw std::runtime_error("original module verification requires a two-ready-bank host build");
-  if(module_path.empty()!=symbol.empty()) throw std::runtime_error("--module and --symbol must be supplied together");
-  if(!module_path.empty() && !symbol.starts_with("_Z12matmul_probeILi"+std::to_string(m)+"ELi"+std::to_string(loads)+"ELb1EE"))
-    throw std::runtime_error("original module must select the matching waited kernel; wait-free symbols are disabled");
-  if(!module_path.empty() && m>=3 && pattern) throw std::runtime_error("original LDS code objects initialize legacy data only; hash LDS tests use the rebuilt kernel");
   if(pattern<0 || (verify!=0 && verify!=1) || (verify && steps>8192))
     throw std::runtime_error("pattern legacy|hash; verify 0|1; exact verification supports steps<=8192");
   if(m<0 || (loads!=1 && loads!=2 && loads!=4) ||
@@ -132,8 +121,8 @@ int main(int argc,char** argv) try {
     throw std::runtime_error("invalid selection; steps positive, divisible by compiled unroll, <=1048544; records <=1048576");
   if(m==0) { if(records>1) throw std::runtime_error("hot mode requires records=1"); records=1; }
   if(m==1 && !records) records=256; // 1 MiB total, deliberately larger than L1.
-  if(m==2 && !records) records=steps+kDepth+kReadyBanks;
-  if(m==2 && records<steps+kDepth+kReadyBanks-1) throw std::runtime_error("stream needs at least steps+depth+ready_banks-1 records (no wrap)");
+  if(m==2 && !records) records=steps+kDepth;
+  if(m==2 && records<steps+kDepth-1) throw std::runtime_error("stream needs at least steps+depth-1 records (no wrap)");
   if(m==3) { if(records>1) throw std::runtime_error("lds-hot requires records=1"); records=1; }
   if(m==4 && !records) records=16/kLdsStride;
   if(m>=3 && records>16/kLdsStride) throw std::runtime_error("LDS window exceeds 32 banks * 512 dwords (64 KiB)");
@@ -177,25 +166,11 @@ int main(int argc,char** argv) try {
     std::fprintf(stderr,"REFERENCE outputs=4096 nonzero=%d min=%.9g max=%.9g; exact dyadic oracle, verifier negative controls checked\n",nonzero,*range.first,*range.second);
   }
   const auto fn=select(m,loads);
-  SavedModule saved; hipFunction_t saved_function=nullptr;
-  if(!module_path.empty()) {
-    HIP(hipModuleLoad(&saved.handle,module_path.c_str()));
-    HIP(hipModuleGetFunction(&saved_function,saved.handle,symbol.c_str()));
-    std::fprintf(stderr,"ORIGINAL CODE OBJECT %s symbol=%s (original five-argument ABI)\n",module_path.c_str(),symbol.c_str());
-  }
-  auto run=[&]() {
-    if(saved_function) {
-      float* out=output.p+16;
-      void* args[]={&data.p,&out,&stamps.p,&steps,&records};
-      const unsigned shared=m>=3?unsigned(records*4096*kLdsStride):0;
-      HIP(hipModuleLaunchKernel(saved_function,1,1,1,256,1,1,shared,nullptr,args,nullptr));
-    } else fn(data.p,output.p+16,stamps.p,steps,records,pattern,seed_a,seed_b);
-  };
+  auto run=[&]() { fn(data.p,output.p+16,stamps.p,steps,records,pattern,seed_a,seed_b); };
   auto evict=[&]() {
     if(evict_mib) { evict_reader<<<eviction_blocks,256>>>(trash.p,trash_count,sink.p); HIP(hipGetLastError()); HIP(hipDeviceSynchronize()); }
   };
-  std::fprintf(stderr,"ready_banks=%d; raw queue depth=%d; %s\n",kReadyBanks,kDepth,
-    kReadyBanks==0?"direct raw-entry consumption; NO copies or extra arrival stage":"copies retained; R1 immediately feeds the next MFMA");
+  std::fprintf(stderr,"direct raw ring depth=%d; NO ready buffers/copies or extra arrival stage\n",kDepth);
   const int requested_wait=loads*(kDepth-1);
   const int effective_wait=m>=3?std::min(requested_wait,14):requested_wait;
   std::fprintf(stderr,"counter=%s requested_wait=%d effective_wait=%d lds_stride=%d; LDS queue priming is INSIDE core timing to avoid timer LGKM drains\n",m>=3?"lgkmcnt":"vmcnt",requested_wait,effective_wait,kLdsStride);
@@ -237,7 +212,7 @@ int main(int argc,char** argv) try {
       if(checked.mismatches || checked.guard_errors) ++invalid;
     }
     std::printf(",%d,%d,%d,%.9g,%d,%d\n",verify,checked.mismatches,checked.guard_errors,checked.max_error,
-                verify?int(!checked.mismatches && !checked.guard_errors):-1,kReadyBanks);
+                verify?int(!checked.mismatches && !checked.guard_errors):-1,0); // Legacy CSV column: always zero ready banks.
     std::fflush(stdout);
   }
   std::fprintf(stderr,"COMPLETE verified=%d rounds=%d invalid_samples=%d wait=%d pattern=%s\n",verify,rounds,invalid,wait,pattern_name.c_str());

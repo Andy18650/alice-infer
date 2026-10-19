@@ -651,6 +651,21 @@ build paths append `-waited`. Historical raw data and FP8 diagnostics remain
 preserved; copied-R1 negative paths are not part of this first cull. No engine,
 CMake, model-fixture or production changes.
 
+The next cull removes ready-bank generation/selection, copied-R1/R2 branches,
+seed-ready/copy code and original-module replay from the active FP16 probe.
+Five checkpoint-specific replay drivers are deleted; historical data/docs are
+retained and code is recoverable from `e260a39`. Only direct raw consumption
+with mandatory waits remains. Current matrix (`MATRIX.md`) is five address
+modes x three load shapes = 15 kernels/build, independent D1..16/U1..64 and
+LDS bank stride1/2/4/8; runtime windows/K/data/measurement knobs remain.
+D is total operand slots, not raw plus ready. Build signature is four
+arguments (D,U,optional output,stride), with `-direct` output names; old ready
+selectors/module options are rejected. Seven representative builds retain
+105/105 identical direct timed instruction/register lists; 222 exact cases
+plus 6 matrix-runner cases and 15 removed-option rejection checks pass. The
+constant-zero ready CSV column is compatibility metadata, not an axis. No
+production changes or new performance campaign.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

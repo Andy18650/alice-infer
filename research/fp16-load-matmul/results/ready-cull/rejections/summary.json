@@ -1,0 +1,77 @@
+[
+  {
+    "command": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d1-u32-lds1-direct/probe --wait 0 --verify 0",
+    "exit": 1,
+    "error": "ERROR: wait-free execution was removed; --wait only accepts 1\n"
+  },
+  {
+    "command": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d2-u32-lds1-direct/probe --wait 0 --verify 0",
+    "exit": 1,
+    "error": "ERROR: wait-free execution was removed; --wait only accepts 1\n"
+  },
+  {
+    "command": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d4-u32-lds1-direct/probe --wait 0 --verify 0",
+    "exit": 1,
+    "error": "ERROR: wait-free execution was removed; --wait only accepts 1\n"
+  },
+  {
+    "command": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d8-u32-lds1-direct/probe --wait 0 --verify 0",
+    "exit": 1,
+    "error": "ERROR: wait-free execution was removed; --wait only accepts 1\n"
+  },
+  {
+    "command": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d3-u8-lds1-direct/probe --wait 0 --verify 0",
+    "exit": 1,
+    "error": "ERROR: wait-free execution was removed; --wait only accepts 1\n"
+  },
+  {
+    "command": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d16-u1-lds1-direct/probe --wait 0 --verify 0",
+    "exit": 1,
+    "error": "ERROR: wait-free execution was removed; --wait only accepts 1\n"
+  },
+  {
+    "command": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d4-u32-lds4-direct/probe --wait 0 --verify 0",
+    "exit": 1,
+    "error": "ERROR: wait-free execution was removed; --wait only accepts 1\n"
+  },
+  {
+    "command": "python3 /home/andyhu/projects/inference/alice-infer/research/fp16-load-matmul/generate.py --ready-banks 0 --output /home/andyhu/projects/inference/alice-infer/research/fp16-load-matmul/results/ready-cull/rejected-0.hpp",
+    "exit": 2,
+    "error": "usage: generate.py [-h] [--depth DEPTH] [--unroll UNROLL]\n                   [--lds-stride {1,2,4,8}] --output OUTPUT\ngenerate.py: error: unrecognized arguments: --ready-banks 0\n"
+  },
+  {
+    "command": "bash /home/andyhu/projects/inference/alice-infer/research/fp16-load-matmul/build.sh 2 32 /home/andyhu/projects/inference/alice-infer/research/fp16-load-matmul/results/ready-cull/rejected-build 1 0",
+    "exit": 2,
+    "error": "Ready-bank selection was removed; build args: depth unroll [output] [lds-stride]\n"
+  },
+  {
+    "command": "python3 /home/andyhu/projects/inference/alice-infer/research/fp16-load-matmul/generate.py --ready-banks 1 --output /home/andyhu/projects/inference/alice-infer/research/fp16-load-matmul/results/ready-cull/rejected-1.hpp",
+    "exit": 2,
+    "error": "usage: generate.py [-h] [--depth DEPTH] [--unroll UNROLL]\n                   [--lds-stride {1,2,4,8}] --output OUTPUT\ngenerate.py: error: unrecognized arguments: --ready-banks 1\n"
+  },
+  {
+    "command": "bash /home/andyhu/projects/inference/alice-infer/research/fp16-load-matmul/build.sh 2 32 /home/andyhu/projects/inference/alice-infer/research/fp16-load-matmul/results/ready-cull/rejected-build 1 1",
+    "exit": 2,
+    "error": "Ready-bank selection was removed; build args: depth unroll [output] [lds-stride]\n"
+  },
+  {
+    "command": "python3 /home/andyhu/projects/inference/alice-infer/research/fp16-load-matmul/generate.py --ready-banks 2 --output /home/andyhu/projects/inference/alice-infer/research/fp16-load-matmul/results/ready-cull/rejected-2.hpp",
+    "exit": 2,
+    "error": "usage: generate.py [-h] [--depth DEPTH] [--unroll UNROLL]\n                   [--lds-stride {1,2,4,8}] --output OUTPUT\ngenerate.py: error: unrecognized arguments: --ready-banks 2\n"
+  },
+  {
+    "command": "bash /home/andyhu/projects/inference/alice-infer/research/fp16-load-matmul/build.sh 2 32 /home/andyhu/projects/inference/alice-infer/research/fp16-load-matmul/results/ready-cull/rejected-build 1 2",
+    "exit": 2,
+    "error": "Ready-bank selection was removed; build args: depth unroll [output] [lds-stride]\n"
+  },
+  {
+    "command": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d2-u32-lds1-direct/probe --module legacy-replay",
+    "exit": 1,
+    "error": "ERROR: unknown option --module\n"
+  },
+  {
+    "command": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d2-u32-lds1-direct/probe --symbol legacy-replay",
+    "exit": 1,
+    "error": "ERROR: unknown option --symbol\n"
+  }
+]

@@ -9,7 +9,7 @@ from pathlib import Path
 p=argparse.ArgumentParser();p.add_argument('folder',type=Path);a=p.parse_args()
 s=(a.folder/'pipeline.hpp').read_text()
 d,u=map(int,re.search(r'kDepth=(\d+), kUnroll=(\d+)',s).groups())
-stride=int(re.search(r'kLdsStride=(\d+)',s)[1]);ready=int(re.search(r'kReadyBanks=(\d+)',s)[1])
+stride=int(re.search(r'kLdsStride=(\d+)',s)[1])
 results=[]
 for mode in (1,2,4):
     for loads in (1,2,4):
@@ -68,5 +68,5 @@ for mode in (1,2,4):
             raise RuntimeError('unhandled instruction '+line)
         assert n==steps
         results.append(dict(mode=mode,loads=loads,steps=steps,records=records,mfmas=n))
-(a.folder/'operand-sequence.json').write_text(json.dumps(dict(depth=d,unroll=u,ready_banks=ready,cases=results),indent=2)+'\n')
-print(f'D{d}/U{u}/R{ready}: 9 generated instruction streams supply exactly records 0..steps-1, words A0,A1,B0,B1 under ideal completion. No indexing error detected; no hardware hazard conclusion.')
+(a.folder/'operand-sequence.json').write_text(json.dumps(dict(depth=d,unroll=u,operand_storage='raw_ring',cases=results),indent=2)+'\n')
+print(f'D{d}/U{u}/direct raw: 9 generated instruction streams supply exactly records 0..steps-1, words A0,A1,B0,B1 under ideal completion. No indexing error detected; no hardware hazard conclusion.')

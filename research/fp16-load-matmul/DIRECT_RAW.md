@@ -2,7 +2,9 @@
 
 Historical experiment checkpoint: `3986b13`. Current builds have mandatory
 waits and append `-waited` to their output names; use [README.md](README.md)
-for current commands. Raw measurements and old binaries remain preserved.
+for current commands. The old replay/comparison runner is now removed;
+current validation is `check_active.py`. Raw measurements and old binaries
+remain preserved.
 
 User asks to eliminate ready storage/copies and feed MFMA directly from the
 raw entry whose completion is guaranteed by the current wait. A previous-

@@ -1,0 +1,4 @@
+223 exact verified cases plus 6 matrix-runner cases passed.
+8 CLI/module wait-free rejection checks passed.
+105/105 surviving timed instruction/register lists identical after branch/address normalization.
+15 mandatory-wait entries per build; no generated wait-free variants. Historical raw samples preserved.

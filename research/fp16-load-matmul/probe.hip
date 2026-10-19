@@ -14,7 +14,7 @@ using U4=uint32_t __attribute__((ext_vector_type(4)));
 #include "pipeline.hpp"
 #include "verification.hpp"
 
-template<int Mode,int Loads,bool Wait>
+template<int Mode,int Loads>
 __global__ __launch_bounds__(256) void matmul_probe(const uint32_t* data,float* output,uint64_t* stamps,int steps,int records,int pattern,uint32_t seed_a,uint32_t seed_b) {
   const int lane=threadIdx.x%64,wave=threadIdx.x/64;
   constexpr int lane_bytes=Loads==1?16:(Loads==2?8:4);
@@ -34,7 +34,7 @@ __global__ __launch_bounds__(256) void matmul_probe(const uint32_t* data,float* 
   }
   uint64_t begin,end,wall_begin,wall_end;
   F16 c={};
-  pipeline<Mode,Loads,Wait>(uint32_t(ptr),uint32_t(ptr>>32),uint32_t(prefetch),uint32_t(prefetch>>32),
+  pipeline<Mode,Loads>(uint32_t(ptr),uint32_t(ptr>>32),uint32_t(prefetch),uint32_t(prefetch>>32),
                            steps,records,c,begin,end,wall_begin,wall_end);
   if(lane==0) {
     stamps[4*wave]=begin; stamps[4*wave+1]=end;
@@ -64,12 +64,12 @@ template<class T> struct Device {
   Device(const Device&)=delete;
 };
 using Launch=void(*)(const uint32_t*,float*,uint64_t*,int,int,int,uint32_t,uint32_t);
-template<int M,int L,bool W> void launch(const uint32_t* d,float* o,uint64_t* s,int steps,int records,int pattern,uint32_t seed_a,uint32_t seed_b) {
+template<int M,int L> void launch(const uint32_t* d,float* o,uint64_t* s,int steps,int records,int pattern,uint32_t seed_a,uint32_t seed_b) {
   const size_t shared_bytes=M>=3?size_t(records)*4096*kLdsStride:0;
-  matmul_probe<M,L,W><<<1,256,shared_bytes>>>(d,o,s,steps,records,pattern,seed_a,seed_b); HIP(hipGetLastError());
+  matmul_probe<M,L><<<1,256,shared_bytes>>>(d,o,s,steps,records,pattern,seed_a,seed_b); HIP(hipGetLastError());
 }
-Launch select(int m,int l,int w) {
-#define PICK(M,L) if(m==M && l==L) return w?launch<M,L,true>:launch<M,L,false>
+Launch select(int m,int l) {
+#define PICK(M,L) if(m==M && l==L) return launch<M,L>
   PICK(0,1); PICK(0,2); PICK(0,4);
   PICK(1,1); PICK(1,2); PICK(1,4);
   PICK(2,1); PICK(2,2); PICK(2,4);
@@ -89,19 +89,21 @@ struct Events {
 };
 int main(int argc,char** argv) try {
   std::string mode="hot",pattern_name="legacy",module_path,symbol;
-  int loads=2,wait=1,steps=4096,records=0,rounds=9,device=0,warmup_ms=200,evict_mib=-1,verify=1;
+  constexpr int wait=1; // CSV/backward-compatible reporting; not an execution option.
+  int loads=2,steps=4096,records=0,rounds=9,device=0,warmup_ms=200,evict_mib=-1,verify=1;
   uint32_t seed_a=1729,seed_b=2718;
   for(int i=1;i<argc;++i) {
     std::string key=argv[i];
     if(key=="--help") {
-      std::printf("--mode hot|l2|stream|lds-hot|lds-sweep --loads 1|2|4 --wait 0|1 --steps N --records N --rounds N --device N --warmup-ms N --evict-mib N --verify 0|1 --pattern legacy|hash --seed-a N --seed-b N --module OLD.hsaco --symbol OLD_KERNEL\nCompiled depth=%d unroll=%d phases=%d LDS stride=%d ready banks=%d; steps divisible by unroll. Verification enabled by default, exact at steps<=8192.\n",kDepth,kUnroll,kPhases,kLdsStride,kReadyBanks);
+      std::printf("--mode hot|l2|stream|lds-hot|lds-sweep --loads 1|2|4 --wait 1 (compatibility only; waits mandatory) --steps N --records N --rounds N --device N --warmup-ms N --evict-mib N --verify 0|1 --pattern legacy|hash --seed-a N --seed-b N --module OLD.hsaco --symbol OLD_KERNEL\nCompiled depth=%d unroll=%d phases=%d LDS stride=%d ready banks=%d; steps divisible by unroll. Verification enabled by default, exact at steps<=8192.\n",kDepth,kUnroll,kPhases,kLdsStride,kReadyBanks);
       return 0;
     }
     if(i+1==argc) throw std::runtime_error("missing value for "+key);
     std::string val=argv[++i];
     if(key=="--mode") mode=val;
     else if(key=="--loads") loads=std::stoi(val);
-    else if(key=="--wait") wait=std::stoi(val);
+    else if(key=="--wait" && val!="1") throw std::runtime_error("wait-free execution was removed; --wait only accepts 1");
+    else if(key=="--wait") {} // Accept old safe command manifests.
     else if(key=="--steps") steps=std::stoi(val);
     else if(key=="--records") records=std::stoi(val);
     else if(key=="--rounds") rounds=std::stoi(val);
@@ -120,10 +122,12 @@ int main(int argc,char** argv) try {
   const int pattern=pattern_name=="legacy"?0:pattern_name=="hash"?1:-1;
   if(!module_path.empty() && kReadyBanks!=2) throw std::runtime_error("original module verification requires a two-ready-bank host build");
   if(module_path.empty()!=symbol.empty()) throw std::runtime_error("--module and --symbol must be supplied together");
+  if(!module_path.empty() && !symbol.starts_with("_Z12matmul_probeILi"+std::to_string(m)+"ELi"+std::to_string(loads)+"ELb1EE"))
+    throw std::runtime_error("original module must select the matching waited kernel; wait-free symbols are disabled");
   if(!module_path.empty() && m>=3 && pattern) throw std::runtime_error("original LDS code objects initialize legacy data only; hash LDS tests use the rebuilt kernel");
   if(pattern<0 || (verify!=0 && verify!=1) || (verify && steps>8192))
     throw std::runtime_error("pattern legacy|hash; verify 0|1; exact verification supports steps<=8192");
-  if(m<0 || (loads!=1 && loads!=2 && loads!=4) || (wait!=0 && wait!=1) ||
+  if(m<0 || (loads!=1 && loads!=2 && loads!=4) ||
      steps<=0 || steps>(1<<20)-32 || steps%kUnroll || rounds<1 || warmup_ms<0 || records<0 || records>(1<<20))
     throw std::runtime_error("invalid selection; steps positive, divisible by compiled unroll, <=1048544; records <=1048576");
   if(m==0) { if(records>1) throw std::runtime_error("hot mode requires records=1"); records=1; }
@@ -172,7 +176,7 @@ int main(int argc,char** argv) try {
     const int nonzero=int(std::count_if(expected.begin(),expected.end(),[](float x){return x!=0;}));
     std::fprintf(stderr,"REFERENCE outputs=4096 nonzero=%d min=%.9g max=%.9g; exact dyadic oracle, verifier negative controls checked\n",nonzero,*range.first,*range.second);
   }
-  const auto fn=select(m,loads,wait);
+  const auto fn=select(m,loads);
   SavedModule saved; hipFunction_t saved_function=nullptr;
   if(!module_path.empty()) {
     HIP(hipModuleLoad(&saved.handle,module_path.c_str()));
@@ -193,9 +197,9 @@ int main(int argc,char** argv) try {
   std::fprintf(stderr,"ready_banks=%d; raw queue depth=%d; %s\n",kReadyBanks,kDepth,
     kReadyBanks==0?"direct raw-entry consumption; NO copies or extra arrival stage":"copies retained; R1 immediately feeds the next MFMA");
   const int requested_wait=loads*(kDepth-1);
-  const int effective_wait=wait?(m>=3?std::min(requested_wait,14):requested_wait):-1;
+  const int effective_wait=m>=3?std::min(requested_wait,14):requested_wait;
   std::fprintf(stderr,"counter=%s requested_wait=%d effective_wait=%d lds_stride=%d; LDS queue priming is INSIDE core timing to avoid timer LGKM drains\n",m>=3?"lgkmcnt":"vmcnt",requested_wait,effective_wait,kLdsStride);
-  std::fprintf(stderr,"verification=%d pattern=%s seed_a=%u seed_b=%u; no-wait remains UNSAFE regardless of any observed matches\n",verify,pattern_name.c_str(),seed_a,seed_b);
+  std::fprintf(stderr,"verification=%d pattern=%s seed_a=%u seed_b=%u; completion waits are mandatory\n",verify,pattern_name.c_str(),seed_a,seed_b);
   std::fprintf(stderr,"FP16 PROBE device=%s HIP=%d PCI=%s arch=%s grid=1 block=256 waves=4 mode=%s loads=%d wait=%d depth=%d unroll=%d phases=%d steps=%d logical_K=%lld records_per_wave=%d active_bytes=%zu evict_mib=%d warmup_ms=%d; native O3, NUMA placement external, no model/context; result verification outside timing when enabled\n",
     prop.name,device,pci,prop.gcnArchName,mode.c_str(),loads,wait,kDepth,kUnroll,kPhases,steps,8LL*steps,records,dwords*4,evict_mib,warmup_ms);
   const auto until=std::chrono::steady_clock::now()+std::chrono::milliseconds(warmup_ms);

@@ -1,0 +1,50 @@
+[
+  {
+    "binary": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d1-u32-lds1-verified-r0-waited/probe",
+    "case": "--wait 0 --verify 0",
+    "exit": 1,
+    "error": "ERROR: wait-free execution was removed; --wait only accepts 1\n"
+  },
+  {
+    "binary": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d2-u32-lds1-verified-r0-waited/probe",
+    "case": "--wait 0 --verify 0",
+    "exit": 1,
+    "error": "ERROR: wait-free execution was removed; --wait only accepts 1\n"
+  },
+  {
+    "binary": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d8-u32-lds1-verified-r0-waited/probe",
+    "case": "--wait 0 --verify 0",
+    "exit": 1,
+    "error": "ERROR: wait-free execution was removed; --wait only accepts 1\n"
+  },
+  {
+    "binary": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d3-u8-lds1-verified-r0-waited/probe",
+    "case": "--wait 0 --verify 0",
+    "exit": 1,
+    "error": "ERROR: wait-free execution was removed; --wait only accepts 1\n"
+  },
+  {
+    "binary": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d16-u1-lds1-verified-r0-waited/probe",
+    "case": "--wait 0 --verify 0",
+    "exit": 1,
+    "error": "ERROR: wait-free execution was removed; --wait only accepts 1\n"
+  },
+  {
+    "binary": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d4-u32-lds4-verified-r0-waited/probe",
+    "case": "--wait 0 --verify 0",
+    "exit": 1,
+    "error": "ERROR: wait-free execution was removed; --wait only accepts 1\n"
+  },
+  {
+    "binary": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d2-u32-lds1-verified-r2-waited/probe",
+    "case": "--wait 0 --verify 0",
+    "exit": 1,
+    "error": "ERROR: wait-free execution was removed; --wait only accepts 1\n"
+  },
+  {
+    "binary": "/home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d2-u32-lds1-verified-r2-waited/probe",
+    "case": "old wait-free module symbol",
+    "exit": 1,
+    "error": "ERROR: original module must select the matching waited kernel; wait-free symbols are disabled\n"
+  }
+]

@@ -1,5 +1,9 @@
 # Full-output verification of the FP16 model
 
+Historical suite at checkpoint `3986b13`. The subsequent [cull](CULLING.md)
+removes unsafe execution cases while retaining their results. Use the current
+README/build paths for mandatory-wait kernels; this records the original test.
+
 User explicitly re-enables correctness testing after the timing-only global/
 LDS studies. `verification.hpp` adds an exact host reference; verification is
 now ON by default, with no change to the timed load/MFMA schedule for the

@@ -1,6 +1,7 @@
 # LDS operand staging: two raw slots hide the main latency penalty
 
-Historical timing-only study. Subsequent [full verification](VERIFICATION.md)
+Historical timing-only study, checkpointed at `3986b13`. Current builds
+remove wait-free variants and append `-waited`; see [README.md](README.md). Subsequent [full verification](VERIFICATION.md)
 checks the original code objects exactly. The [single-ready diagnostic](SINGLE_READY.md)
 is separate and fails varying inputs; the tables here use two ready banks.
 

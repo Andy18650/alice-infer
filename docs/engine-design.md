@@ -638,6 +638,19 @@ proposed extra arrival stage; exact internal decrement timing is not proved.
 Twelve builds/360 entries inspected; earlier binaries remain untouched.
 Default R2 stays compatible; R0 is explicitly selected. No production change.
 
+Before culling, FP8/FP16 progress and complete samples are checkpointed in
+`3986b13`, excluding unrelated working changes. First cleanup removes active
+FP16 wait-free generation/dispatch and unsafe runner cases: two-parameter
+kernel templates, 15 mandatory-wait entries rather than 30. `--wait 1` is a
+compatibility alias; `--wait 0` and original no-wait module symbols are rejected
+before explicit GPU initialization. Waited original-module replay is retained.
+Seven builds yield 105/105 identical surviving timed instruction/register lists
+after branch/address normalization; 223 exact cases plus 6 runner cases pass,
+and 8 rejection checks pass. Results are in `results/waited-only/`; current
+build paths append `-waited`. Historical raw data and FP8 diagnostics remain
+preserved; copied-R1 negative paths are not part of this first cull. No engine,
+CMake, model-fixture or production changes.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

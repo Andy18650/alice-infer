@@ -1,5 +1,9 @@
 # Single-ready-bank diagnostic: hot inputs mask a correctness failure
 
+Historical experiment at checkpoint `3986b13`. Current mandatory-wait build
+paths append `-waited`; this copied-R1 negative diagnostic is otherwise
+retained. See [README.md](README.md) for current commands.
+
 Follow-up: [direct raw consumption](DIRECT_RAW.md) removes these copies and
 passes verification. Adding only a post-timestamp harvest guard to copied R1
 still fails its varying-data controls; it does not repair this issue.

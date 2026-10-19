@@ -1,5 +1,9 @@
 # Copy-free raw-ring consumption: current completion wait is sufficient here
 
+Historical experiment checkpoint: `3986b13`. Current builds have mandatory
+waits and append `-waited` to their output names; use [README.md](README.md)
+for current commands. Raw measurements and old binaries remain preserved.
+
 User asks to eliminate ready storage/copies and feed MFMA directly from the
 raw entry whose completion is guaranteed by the current wait. A previous-
 iteration arrival/extra stage is a fallback only if needed.

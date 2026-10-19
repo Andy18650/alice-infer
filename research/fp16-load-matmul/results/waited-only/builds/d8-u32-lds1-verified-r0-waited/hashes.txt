@@ -1,0 +1,6 @@
+e95191356f05664516c5e9d0b5abaca36e376df7393cbdb1668fbf046072779b  /home/andyhu/projects/inference/alice-infer/research/fp16-load-matmul/probe.hip
+dca3473c637f2d6c6ebb1c665be5eacbcfb00065ee7eee0441865de4d09d2d1d  /home/andyhu/projects/inference/alice-infer/research/fp16-load-matmul/verification.hpp
+7363110028d1c7d2eed2f02dea2f1991423a243dce4c4208729195e58c5c544b  /home/andyhu/projects/inference/alice-infer/research/fp16-load-matmul/generate.py
+e56709131e961b8cffda670669653ac261f9d71fc60108db04843a78cd5a0905  /home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d8-u32-lds1-verified-r0-waited/pipeline.hpp
+67c27e272eeed64675ed8d8c69638da525f403522d4f32b4a1a27af60d2d9e36  /home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d8-u32-lds1-verified-r0-waited/probe
+2af4beaf0a8a619fb1ddb6ff00f8092ab3a0370e42a251970799a77389fd4205  /home/andyhu/projects/inference/alice-infer/temp/fp16-load-matmul/d8-u32-lds1-verified-r0-waited/probe.hsaco

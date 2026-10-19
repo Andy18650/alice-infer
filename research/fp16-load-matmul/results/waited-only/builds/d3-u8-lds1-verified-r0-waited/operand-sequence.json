@@ -1,0 +1,70 @@
+{
+  "depth": 3,
+  "unroll": 8,
+  "ready_banks": 0,
+  "cases": [
+    {
+      "mode": 1,
+      "loads": 1,
+      "steps": 40,
+      "records": 7,
+      "mfmas": 40
+    },
+    {
+      "mode": 1,
+      "loads": 2,
+      "steps": 40,
+      "records": 7,
+      "mfmas": 40
+    },
+    {
+      "mode": 1,
+      "loads": 4,
+      "steps": 40,
+      "records": 7,
+      "mfmas": 40
+    },
+    {
+      "mode": 2,
+      "loads": 1,
+      "steps": 40,
+      "records": 45,
+      "mfmas": 40
+    },
+    {
+      "mode": 2,
+      "loads": 2,
+      "steps": 40,
+      "records": 45,
+      "mfmas": 40
+    },
+    {
+      "mode": 2,
+      "loads": 4,
+      "steps": 40,
+      "records": 45,
+      "mfmas": 40
+    },
+    {
+      "mode": 4,
+      "loads": 1,
+      "steps": 40,
+      "records": 7,
+      "mfmas": 40
+    },
+    {
+      "mode": 4,
+      "loads": 2,
+      "steps": 40,
+      "records": 7,
+      "mfmas": 40
+    },
+    {
+      "mode": 4,
+      "loads": 4,
+      "steps": 40,
+      "records": 7,
+      "mfmas": 40
+    }
+  ]
+}

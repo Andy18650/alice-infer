@@ -13,7 +13,7 @@ stride=int(re.search(r'kLdsStride=(\d+)',s)[1]);ready=int(re.search(r'kReadyBank
 results=[]
 for mode in (1,2,4):
     for loads in (1,2,4):
-        key=f'if constexpr(Mode=={mode} && Loads=={loads} && Wait==true)'
+        key=f'if constexpr(Mode=={mode} && Loads=={loads})'
         block=s.split(key,1)[1].split('      : [c]',1)[0]
         code=[json.loads(l.strip()).strip() for l in block.splitlines() if l.strip().startswith('"')]
         labels={l[:-1]:i for i,l in enumerate(code) if l.endswith(':')}

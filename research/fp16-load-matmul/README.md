@@ -1,5 +1,10 @@
 # One-CTA FP16 operand pipeline: global and LDS
 
+**Wait-free execution has been removed.** See [CULLING.md](CULLING.md).
+Checkpoint `3986b13` preserves the full pre-cull research and results.
+Current builds generate only mandatory-wait kernels; historical tables below
+remain historical evidence, not claims that unsafe variants are still offered.
+
 Gfx90a research probe: **one CTA / 256 threads / four waves**, native
 `v_mfma_f32_32x32x8f16`, FP16 inputs, FP32 accumulation, one AGPR bank/wave.
 Four dummy 32x32 output tiles, not a generalized GEMM API.
@@ -17,29 +22,30 @@ ready banks and copies and passes the completed verification study.
 # Build args: depth, unroll, optional output, LDS stride (default1), ready banks (default2).
 # R=0: direct raw ring, no ready storage/copies.
 bash research/fp16-load-matmul/build.sh 2 32 \
-  temp/fp16-load-matmul/d2-u32-lds1-verified-r0 1 0
-python3 research/fp16-load-matmul/inspect_loops.py temp/fp16-load-matmul/d2-u32-lds1-verified-r0
+  temp/fp16-load-matmul/d2-u32-lds1-verified-r0-waited 1 0
+python3 research/fp16-load-matmul/inspect_loops.py temp/fp16-load-matmul/d2-u32-lds1-verified-r0-waited
 
 numactl --cpunodebind=0 --membind=0 \
-  temp/fp16-load-matmul/d2-u32-lds1-verified-r0/probe \
-  --mode lds-sweep --loads 1 --wait 1 --pattern hash --steps 4096 --rounds 9
+  temp/fp16-load-matmul/d2-u32-lds1-verified-r0-waited/probe \
+  --mode lds-sweep --loads 1 --pattern hash --steps 4096 --rounds 9
 
 # Single-ready diagnostic. Copying is retained, next MFMA immediately consumes it.
 bash research/fp16-load-matmul/build.sh 2 32 \
-  temp/fp16-load-matmul/d2-u32-lds1-verified-r1 1 1
+  temp/fp16-load-matmul/d2-u32-lds1-verified-r1-waited 1 1
 ```
 
 Depth: 1..16. Unroll: 1..64, independently selectable. Steps must be divisible
 by unroll; default4096 means K32768. Exact verification currently supports
 steps<=8192. `--verify 0` explicitly opts out for performance-only runs.
-Build names include `-verified-rR` to preserve all older measured binaries.
+Build names include `-verified-rR-waited` to preserve all older measured binaries.
 
-Flags include `--mode`, `--loads 1|2|4`, `--wait 0|1`, `--records`, `--steps`,
+Flags include `--mode`, `--loads 1|2|4`, `--records`, `--steps`,
 `--rounds`, `--warmup-ms 200`, `--device 0`, `--evict-mib`, `--pattern
 legacy|hash`, `--seed-a`, `--seed-b`, `--verify`, `--help`. The legacy pattern
 preserves historical +/-0.125 inputs; hash varies record/lane/half, magnitude
 and sign, with independent A/B seeds. Every selected configuration is warmed
-individually, not a favored subset.
+individually, not a favored subset. `--wait 1` is a compatibility alias only;
+`--wait 0` is rejected before explicit GPU initialization.
 
 ## Modes and load shapes
 
@@ -80,8 +86,8 @@ D means complete raw A+B slots; R is the ready-bank count.
   no copy, no operand-delay NOP and no extra arrival-lag stage.
 
 Global partial waits: vmcnt(loads*(D-1)). LDS: lgkmcnt(min(loads*(D-1),14));
-requested/effective values are printed, avoiding all-ones15. Initial/final
-waits remain with `--wait 0`, and unsafe matches are not safety guarantees.
+requested/effective values are printed, avoiding all-ones15. Partial and final
+completion waits are mandatory; there is no wait-free specialization.
 Mathematical/guard failure exits2; argument/execution error exits1.
 
 LDS raw priming is inside timing **after** both start-clock completion waits,
@@ -98,7 +104,7 @@ releases the eight reserved ready registers. With L=lcm(D,max(R,1)), P=L/gcd(L,U
 phase bodies give U MFMAs between taken conditional branches; static code has
 P*U slots, reported explicitly. No compiler pending-register rotation.
 
-`inspect_loops.py` inspects all30 entries for counts, register mapping, counter
+`inspect_loops.py` inspects all 15 mandatory-wait entries for counts, register mapping, counter
 choice and waited FIFO lifetimes; it is not a hardware hazard simulator.
 `inspect_operand_sequence.py` checks source-level operand progression under
 ideal load completion; it does not establish hardware readiness.
@@ -121,10 +127,11 @@ ideal load completion; it does not establish hardware readiness.
 
 The runners save raw CSV/logs, command manifests, hashes and inventories in
 `results/`; generated headers, code objects/ISA and metadata live in each
-`temp/fp16-load-matmul/dD-uU-ldsS-verified-rR/`. `single_ready.py` intentionally
+`temp/fp16-load-matmul/dD-uU-ldsS-verified-rR-waited/`. `single_ready.py` intentionally
 exits nonzero for the failing diagnostic. Historical verification runners
 still target their preserved `...-verified/` paths; explicit build output
-arguments can reproduce those names with R2.
+arguments can reproduce those names with R2. Those are historical replay
+runners; `check_waited.py` validates current builds without unsafe cases.
 
 A generated compile database supports clangd; use its directory explicitly
 if workspace arguments override the scoped default. No global editor settings,

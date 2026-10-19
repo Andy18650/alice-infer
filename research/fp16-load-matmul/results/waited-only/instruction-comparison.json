@@ -1,0 +1,632 @@
+[
+  {
+    "build": "d1-u32-lds1-verified-r0-waited",
+    "mode": 0,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d1-u32-lds1-verified-r0-waited",
+    "mode": 0,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d1-u32-lds1-verified-r0-waited",
+    "mode": 0,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d1-u32-lds1-verified-r0-waited",
+    "mode": 1,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d1-u32-lds1-verified-r0-waited",
+    "mode": 1,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d1-u32-lds1-verified-r0-waited",
+    "mode": 1,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d1-u32-lds1-verified-r0-waited",
+    "mode": 2,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d1-u32-lds1-verified-r0-waited",
+    "mode": 2,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d1-u32-lds1-verified-r0-waited",
+    "mode": 2,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d1-u32-lds1-verified-r0-waited",
+    "mode": 3,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d1-u32-lds1-verified-r0-waited",
+    "mode": 3,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d1-u32-lds1-verified-r0-waited",
+    "mode": 3,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d1-u32-lds1-verified-r0-waited",
+    "mode": 4,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d1-u32-lds1-verified-r0-waited",
+    "mode": 4,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d1-u32-lds1-verified-r0-waited",
+    "mode": 4,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r0-waited",
+    "mode": 0,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r0-waited",
+    "mode": 0,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r0-waited",
+    "mode": 0,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r0-waited",
+    "mode": 1,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r0-waited",
+    "mode": 1,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r0-waited",
+    "mode": 1,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r0-waited",
+    "mode": 2,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r0-waited",
+    "mode": 2,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r0-waited",
+    "mode": 2,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r0-waited",
+    "mode": 3,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r0-waited",
+    "mode": 3,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r0-waited",
+    "mode": 3,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r0-waited",
+    "mode": 4,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r0-waited",
+    "mode": 4,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r0-waited",
+    "mode": 4,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d8-u32-lds1-verified-r0-waited",
+    "mode": 0,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d8-u32-lds1-verified-r0-waited",
+    "mode": 0,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d8-u32-lds1-verified-r0-waited",
+    "mode": 0,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d8-u32-lds1-verified-r0-waited",
+    "mode": 1,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d8-u32-lds1-verified-r0-waited",
+    "mode": 1,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d8-u32-lds1-verified-r0-waited",
+    "mode": 1,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d8-u32-lds1-verified-r0-waited",
+    "mode": 2,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d8-u32-lds1-verified-r0-waited",
+    "mode": 2,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d8-u32-lds1-verified-r0-waited",
+    "mode": 2,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d8-u32-lds1-verified-r0-waited",
+    "mode": 3,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d8-u32-lds1-verified-r0-waited",
+    "mode": 3,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d8-u32-lds1-verified-r0-waited",
+    "mode": 3,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d8-u32-lds1-verified-r0-waited",
+    "mode": 4,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d8-u32-lds1-verified-r0-waited",
+    "mode": 4,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d8-u32-lds1-verified-r0-waited",
+    "mode": 4,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d3-u8-lds1-verified-r0-waited",
+    "mode": 0,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d3-u8-lds1-verified-r0-waited",
+    "mode": 0,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d3-u8-lds1-verified-r0-waited",
+    "mode": 0,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d3-u8-lds1-verified-r0-waited",
+    "mode": 1,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d3-u8-lds1-verified-r0-waited",
+    "mode": 1,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d3-u8-lds1-verified-r0-waited",
+    "mode": 1,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d3-u8-lds1-verified-r0-waited",
+    "mode": 2,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d3-u8-lds1-verified-r0-waited",
+    "mode": 2,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d3-u8-lds1-verified-r0-waited",
+    "mode": 2,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d3-u8-lds1-verified-r0-waited",
+    "mode": 3,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d3-u8-lds1-verified-r0-waited",
+    "mode": 3,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d3-u8-lds1-verified-r0-waited",
+    "mode": 3,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d3-u8-lds1-verified-r0-waited",
+    "mode": 4,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d3-u8-lds1-verified-r0-waited",
+    "mode": 4,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d3-u8-lds1-verified-r0-waited",
+    "mode": 4,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d16-u1-lds1-verified-r0-waited",
+    "mode": 0,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d16-u1-lds1-verified-r0-waited",
+    "mode": 0,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d16-u1-lds1-verified-r0-waited",
+    "mode": 0,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d16-u1-lds1-verified-r0-waited",
+    "mode": 1,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d16-u1-lds1-verified-r0-waited",
+    "mode": 1,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d16-u1-lds1-verified-r0-waited",
+    "mode": 1,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d16-u1-lds1-verified-r0-waited",
+    "mode": 2,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d16-u1-lds1-verified-r0-waited",
+    "mode": 2,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d16-u1-lds1-verified-r0-waited",
+    "mode": 2,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d16-u1-lds1-verified-r0-waited",
+    "mode": 3,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d16-u1-lds1-verified-r0-waited",
+    "mode": 3,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d16-u1-lds1-verified-r0-waited",
+    "mode": 3,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d16-u1-lds1-verified-r0-waited",
+    "mode": 4,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d16-u1-lds1-verified-r0-waited",
+    "mode": 4,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d16-u1-lds1-verified-r0-waited",
+    "mode": 4,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d4-u32-lds4-verified-r0-waited",
+    "mode": 0,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d4-u32-lds4-verified-r0-waited",
+    "mode": 0,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d4-u32-lds4-verified-r0-waited",
+    "mode": 0,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d4-u32-lds4-verified-r0-waited",
+    "mode": 1,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d4-u32-lds4-verified-r0-waited",
+    "mode": 1,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d4-u32-lds4-verified-r0-waited",
+    "mode": 1,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d4-u32-lds4-verified-r0-waited",
+    "mode": 2,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d4-u32-lds4-verified-r0-waited",
+    "mode": 2,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d4-u32-lds4-verified-r0-waited",
+    "mode": 2,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d4-u32-lds4-verified-r0-waited",
+    "mode": 3,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d4-u32-lds4-verified-r0-waited",
+    "mode": 3,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d4-u32-lds4-verified-r0-waited",
+    "mode": 3,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d4-u32-lds4-verified-r0-waited",
+    "mode": 4,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d4-u32-lds4-verified-r0-waited",
+    "mode": 4,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d4-u32-lds4-verified-r0-waited",
+    "mode": 4,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r2-waited",
+    "mode": 0,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r2-waited",
+    "mode": 0,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r2-waited",
+    "mode": 0,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r2-waited",
+    "mode": 1,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r2-waited",
+    "mode": 1,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r2-waited",
+    "mode": 1,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r2-waited",
+    "mode": 2,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r2-waited",
+    "mode": 2,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r2-waited",
+    "mode": 2,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r2-waited",
+    "mode": 3,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r2-waited",
+    "mode": 3,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r2-waited",
+    "mode": 3,
+    "loads": 4,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r2-waited",
+    "mode": 4,
+    "loads": 1,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r2-waited",
+    "mode": 4,
+    "loads": 2,
+    "identical": true
+  },
+  {
+    "build": "d2-u32-lds1-verified-r2-waited",
+    "mode": 4,
+    "loads": 4,
+    "identical": true
+  }
+]

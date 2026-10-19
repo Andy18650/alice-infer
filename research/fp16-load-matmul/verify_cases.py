@@ -27,9 +27,6 @@ for d,u,s in configs:
 for d,u,steps in ((16,1,17),(3,8,40)):
     for mode,loads in itertools.product(modes,(1,2,4)):
         jobs.append(('edge',d,u,1,mode,loads,1,'hash',1730,2719,steps,7 if mode in ('l2','lds-sweep') else 0))
-# Characterize unsafe reads, never include their matches in correct-kernel totals.
-for d,mode in ((1,'lds-hot'),(1,'lds-sweep'),(2,'lds-sweep'),(8,'stream')):
-    for loads in (1,2,4):jobs.append(('unsafe',d,32,1,mode,loads,0,'hash',1730,2719,4096,0))
 metadata={};copied=set();summary=[]
 with (a.output/'amd-smi-before.txt').open('w') as f:subprocess.run(['amd-smi'],stdout=f,stderr=subprocess.STDOUT,check=False)
 with (a.output/'commands.txt').open('w') as commands:
@@ -66,11 +63,10 @@ with (a.output/'commands.txt').open('w') as commands:
         if idx%25==0 or int(r['valid'])!=1:print(f'{idx+1}/{len(jobs)} {tag}: valid={r["valid"]} mismatches={r["mismatch_count"]}',flush=True)
 with (a.output/'summary.csv').open('w') as f:
     w=csv.DictWriter(f,fieldnames=list(summary[0]),lineterminator='\n');w.writeheader();w.writerows(summary)
-correct=[r for r in summary if r['wait']];unsafe=[r for r in summary if not r['wait']]
+correct=summary
 failed=[r for r in correct if not r['valid']]
 text=(f'Waited full-output cases: {len(correct)}, failed: {len(failed)}.\n'
       f'Original code-object cases: {sum(r["backend"]=="original" for r in correct)}.\n'
-      f'Unsafe characterization: {len(unsafe)}, observed mismatches: {sum(not r["valid"] for r in unsafe)}; no safety claim for matches.\n'
       f'All cases check 4096 outputs and 32 guard words. Mathematical equality is exact for these dyadic inputs.\n')
 (a.output/'summary.txt').write_text(text)
 with (a.output/'amd-smi-after.txt').open('w') as f:subprocess.run(['amd-smi'],stdout=f,stderr=subprocess.STDOUT,check=False)

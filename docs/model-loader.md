@@ -53,9 +53,7 @@ seam with borrows:
   access), performs its own H2D into private device storage, and never
   frees host memory. This is why device-block constructors take
   `TensorView<T>` rather than owning `Tensor<T>`: they only *read*
-  weights during construction. (The host-side math oracle in `src/host_math`
-  keeps owning `Tensor<T>` when it needs host data for compute — e.g. the
-  RoPE tables. Owning is correct there; borrowing is correct here.)
+  weights during construction.
 
 The uniform factory signature enables the registration pattern when the
 type zoo grows:

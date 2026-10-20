@@ -894,9 +894,8 @@ evict/compact its state at will — strictly its own business.
   up oracle. Self-contained — the D2H/H2D copies lived inside the
   reference block, so the Block interface stayed uniform and nothing
   else knew they existed. Retired 2026-09: naive reference impls for new
-  block types are now done as GPU kernels, not host blocks; the host-side
-  math helpers survive as `src/host_math`. The Block interface stays
-  uniform; nothing else knows the impl exists.
+  block types are now done as GPU kernels, not host blocks. The Block
+  interface stays uniform; nothing else knows the impl exists.
 - Self-containment, unchanged: private weight storage, private math, no
   shared kernel toolbox across impls. Constructors take already
   validated staged weights (`Tensor<T>`, moved in), copy/convert/pack
@@ -1047,9 +1046,8 @@ Narrow entry that sniffs format by content and delegates
 - **CPU reference (§3)**: retired. The `cpu_generic` host-block reference
   impls are gone (naive reference impls for new block types are now done
   as GPU kernels, not host blocks); the `ALICE_CPU_REF_BLOCKS` dev
-  fault-localization swap-in retired with them. The host-side math
-  helpers (RoPE tables, rmsnorm/add_rows/silu — the kernel-level oracle
-  for `test_gpu_kernels.cpp`) survive as `src/host_math.{hpp,cpp}`.
+  fault-localization swap-in retired with them — the kernel-level oracle
+  lives inside the test cases themselves.
   `test_gpu_blocks.cpp` keeps only structural tests (incremental==
   batched, reset freshness) that have no HF equivalent.
 - Determinism: same tokens + fresh state + temperature 0 → identical
@@ -1286,8 +1284,8 @@ under temp/hybrid-collectives/ and temp/hybrid-baseline/ (not committed).
   2026-09 after the GPU-resident path passed the full gate suite,
   including fp32-ideal long-case validation. In git history. The
   `cpu_generic` host-block reference impls are retired too — naive
-  reference impls for new block types are now done as GPU kernels; the
-  host-side math oracle survives as `src/host_math`. Note: the 70B
+  reference impls for new block types are now done as GPU kernels.
+  Note: the 70B
   (141 GB > one GCD) is intentionally dark until multi-die placement
   lands (§9).
 - **CPU-first bring-up** with hand-rolled AVX2 kernels and NUMA tuning:

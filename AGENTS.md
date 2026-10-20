@@ -25,8 +25,7 @@ factories all deleted to git history), and the cpu_generic host-block
 reference impls are retired too (naive reference impls for new block types
 are now done as GPU kernels, not host blocks). Loading is via the alice
 model format (`init_engine` / `Model::load_from_format`); the manifest +
-safetensors + loader_staging path is RETIRED. The host-side math helpers
-(RoPE tables, the kernel oracle) survive as `src/host_math.{hpp,cpp}`. The
+safetensors + loader_staging path is RETIRED. The
 70B requires multi-die (it never fit one GCD); TP=4/8 is now validated.
 
 ## How constraints work here (read first)
@@ -110,8 +109,8 @@ cmake --build build-release -j                     # Release: measure here
 
 ## State of play (2026-09, GPU-resident v1)
 
-- Tests (post-retirement: tensor/tokenizer, host_math oracle kernel
-  suite, GPU-resident kernel/block/model/canonical suites incl. long-case).
+- Tests (post-retirement: tensor/tokenizer, GPU-resident kernel/block/
+  model/canonical suites incl. long-case).
   Canonical: short fixtures 1B 0.33 / 8B 0.47 (bf16 ref, gate 0.75);
   long fixtures (WikiText ~1500 tokens, fp32-ideal reference, user-signed
   2026-09) mean 0.018 / max 0.76-1.52 (gates 0.05 / 2.0), greedy with

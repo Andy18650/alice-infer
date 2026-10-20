@@ -38,7 +38,7 @@ cmake --build build-release -j
 ## Test
 
 ```sh
-ctest --test-dir build          # 60 tests; model-backed ones skip if absent
+ctest --test-dir build          # model-backed tests skip if absent
 ```
 
 Long-sequence canonical fixtures (~1500-token WikiText prompts, fp32
@@ -92,7 +92,6 @@ H2D inside the block). Never for production.
 
 - `include/alice/` — public headers (typed tensor, engine config)
 - `src/gpu/` — GPU-resident engine (trunk/state SIMT kernels via hipcc, trunk, model)
-- `src/blocks/cpu_generic/` — naive CPU reference implementations (test oracle)
 - `src/blocks/gpu_rocm/` — ROCm block impls (rocBLAS GEMMs + private SIMT kernels) + platform plumbing (device + rocBLAS handle)
 - `src/frontend/` — REPL, tokenizer (system PCRE2)
 - `src/engine.{hpp,cpp}` — the alice model format loader (init_engine)

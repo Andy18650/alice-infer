@@ -1,0 +1,18 @@
+{
+  "argv": [
+    "research/fp16-gemm64/run_stage8.py",
+    "--stages",
+    "32",
+    "--build",
+    "temp/fp16-gemm64/ring32",
+    "--control",
+    "temp/fp16-gemm64/ring32-control",
+    "--output",
+    "research/fp16-gemm64/results/ring32"
+  ],
+  "build": "/home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ring32",
+  "control": "/home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ring32-control",
+  "stages": [
+    32
+  ]
+}

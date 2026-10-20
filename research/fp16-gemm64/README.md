@@ -7,8 +7,9 @@ producer. The losing [register baseline](REGISTER_BASELINE.md) is archived
 at checkpoint **3217640**, not an active option.
 
 **Current StageK8 path:** [persistent two-register-buffer pipeline](STAGE8.md),
-2/4/8 LDS slots and an outer loop explicitly unrolled by the slot count.
-No per-record inner compute loop. The [initial slow protocol](STAGE8_INITIAL.md)
+2/4/8/16/32 LDS slots and an outer loop explicitly unrolled by the slot count.
+The [ring-size follow-up](RING_GROWTH.md) finds16 better than8, but32 slightly
+slower than16 despite fitting exactly64 KiB. No per-record inner compute loop. The [initial slow protocol](STAGE8_INITIAL.md)
 and its measured source/results are retained separately.
 
 ## Timing units — primary metric is cycles/MFMA step
@@ -86,7 +87,7 @@ StageK is the number of K elements staged per chunk. A+B need256*StageK B:
 | 64 | 16 KiB | 32 KiB |
 | 128 | 32 KiB | 64 KiB |
 
-StageK8 additionally uses2/4/8 slots (4/8/16 KiB), raw depth2 and fixed
+StageK8 additionally uses2/4/8/16/32 slots (4/8/16/32/64 KiB), raw depth2 and fixed
 register parity/LDS offsets in its unrolled outer pipeline. The table above
 covers larger chunks' one/two-buffer implementation. These are measured
 choices, not architectural limits. StageK changes how many dword copies are batched,
@@ -171,7 +172,7 @@ variance-controlled optimum, optimal interleaving or end-to-end claim.
 
 ```sh
 # Larger chunks: D1..8, StageK32/64/128, U divides StageK/8.
-# StageK8: build.sh 2 1 8; --buffers 2|4|8; see STAGE8.md.
+# StageK8: build.sh 2 1 8; --buffers 2|4|8|16|32; see RING_GROWTH.md.
 bash research/fp16-gemm64/build.sh 2 4 128
 python3 research/fp16-gemm64/inspect_code.py temp/fp16-gemm64/d2-u4-t128-direct-only
 numactl --cpunodebind=0 --membind=0 temp/fp16-gemm64/d2-u4-t128-direct-only/probe \
@@ -186,7 +187,7 @@ python3 research/fp16-gemm64/run.py
 The runner expects D2 StageK32/64/128 plus D1/D3/D4 StageK64, all U4. Current
 outputs append `-direct-only`; old binaries/results remain intact. There are
 four benchmark kernels/build for larger chunks (two GEMM buffering choices,
-two LDS diagnostics) and one test-only copy kernel. StageK8 instead has three
+two LDS diagnostics) and one test-only copy kernel. StageK8 instead has five
 GEMM buffering/unroll choices plus those diagnostics and copy validator.
 Runners verify the current sole producer.
 Use `--resume` only on an unchanged experiment. A generated compile database

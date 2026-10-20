@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
-"""Checked StageK8 / 2,4,8-stage pipeline sweep, explicit hash-bound binaries."""
-import csv,itertools,json,random,shlex,shutil,subprocess
+"""Checked StageK8 ring sweep, explicit hash-bound binaries and fresh outputs."""
+import argparse,csv,itertools,json,random,shlex,shutil,subprocess,sys
 from pathlib import Path
 from statistics import median
 root=Path(__file__).resolve().parents[2]
 here=Path(__file__).resolve().parent
-out=here/'results/stage8-persistent'
+p=argparse.ArgumentParser()
+p.add_argument('--stages',type=int,nargs='+',default=[2,4,8])
+p.add_argument('--build',type=Path,default=root/'temp/fp16-gemm64/d2-u1-t8-direct-only')
+p.add_argument('--control',type=Path,default=root/'temp/fp16-gemm64/d2-u4-t128-direct-only')
+p.add_argument('--output',type=Path,default=here/'results/stage8-persistent')
+a=p.parse_args();out=a.output.resolve();build=a.build.resolve();control=a.control.resolve()
+if out.exists() and any(out.iterdir()):p.error('output is not empty; choose a fresh --output to preserve measurements')
 for sub in ('verification','timing','builds','source'):(out/sub).mkdir(parents=True,exist_ok=True)
-build=root/'temp/fp16-gemm64/d2-u1-t8-direct-only'
-control=root/'temp/fp16-gemm64/d2-u4-t128-direct-only'
+(out/'invocation.json').write_text(json.dumps(dict(argv=sys.argv,build=str(build),control=str(control),stages=a.stages),indent=2)+'\n')
+timing_stages=sorted(set(a.stages+[8]+([16] if max(a.stages)>=32 else [])))
 for folder in (build,control):
     subprocess.run(['sha256sum','-c',str(folder/'hashes.txt')],check=True,stdout=subprocess.DEVNULL)
     dest=out/'builds'/folder.name;dest.mkdir(exist_ok=True)
@@ -51,11 +57,12 @@ with (out/'commands.txt').open('w') as commands:
                          body_us=median(float(x['body_us']) for x in samples),
                          launch_us=median(float(x['launch_us']) for x in samples)))
     keys=(0,1,7,8,9,15,16,17,23,24,25,31,32,33,55,56,57,63,64,65,71,72,73,127,128,129,255,256,257,1024,32768,65535,65536)
-    for stages in (2,4,8):
+    keys=tuple(sorted(set(keys+(119,120,121,239,240,241,247,248,249,511,512,513,767,768,769))))
+    for stages in a.stages:
         for k,(sa,sb) in itertools.product(keys,((1729,2718),(1730,2718),(1729,2719))):run('verification',stages,k,sa,sb)
         print('Verified StageK8 stages',stages,flush=True)
     for repeat in (1,2):
-        jobs=[(2,False),(4,False),(8,False),(2,True)]
+        jobs=[(s,False) for s in timing_stages]+[(2,True)]
         random.Random(1729+repeat).shuffle(jobs)
         for stages,baseline in jobs:
             run('timing',stages,32768,repeat=repeat,baseline=baseline)
@@ -67,7 +74,7 @@ text=[f"Exact checked launches: {sum(x['samples'] for x in rows)}; verification-
       'Native O3 HIP0, CPU+memory NUMA0, one CTA/256 threads, K32768, no model/context/clock changes.',
       'StageK8 raw D2 / outer unroll=stages; StageK128 control D2/U4. Two repeats, nine samples/process, 200 ms warmup.',
       'stageK | stages | cycles/four-wave MFMA step run1/run2 | total body us run1/run2 | full event us run1/run2']
-for t,stages in ((8,2),(8,4),(8,8),(128,2)):
+for t,stages in [(8,s) for s in timing_stages]+[(128,2)]:
     r=[x for x in rows if x['kind']=='timing' and x['mode']=='gemm' and (x['stage_k'],x['buffers'])==(t,stages)]
     text.append(f'{t} | {stages} | '+' | '.join('/'.join(f'{x[f]:.3f}' for x in r) for f in ('cycles_per_mfma','body_us','launch_us')))
 for mode in ('lds-hot','lds-sweep'):

@@ -42,9 +42,15 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
         assert not any('vmcnt(0)' in l or 's_barrier' in l for l in body[lastload+1:first]),name
         last=max(i for i,l in enumerate(body) if 'v_mfma_' in l)
         assert any('vmcnt(0)' in l for l in body[last+1:]),name
-    if m:=re.search(r'<void gemm_k8<(\d)>',name):
+    if m:=re.search(r'<void gemm_k8<(\d+)>',name):
         stages=int(m[1]);waits=[int(x) for l in body for x in re.findall(r'vmcnt\((\d+)\)',l)]
-        assert 2*(stages-1) in waits and 2*(stages-2) in waits,(name,waits)
+        assert 2*(min(stages,31)-1) in waits and 2*(stages-2) in waits,(name,waits)
+        assert max(waits)<=62,(name,'VMEM counter range')
+        if stages==32:
+            firstwait=next(i for i,l in enumerate(body) if 'vmcnt(' in l)
+            firstread=next(i for i,l in enumerate(body) if l.strip().startswith('ds_read_'))
+            assert sum(l.strip().startswith('global_load_') for l in body[:firstwait])==62
+            assert sum(l.strip().startswith('global_load_') for l in body[firstwait:firstread])==2
         assert not any(l.strip().startswith('ds_write_') for l in lines)
         assert sum('v_mfma_' in l for l in body)==2*stages,(name,'unexpected inner loop')
         bulk=[]
@@ -68,7 +74,8 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
         assert offsets==[2048*((p+1)%stages) for p in range(stages) for _ in (0,1)],(name,offsets)
     (folder/('core-'+str(len(out))+'.txt')).write_text('\n'.join(body)+'\n')
     out.append(dict(name=name,direct=direct,copy_check=iscopy,core_lines=len(body),global_to_lds=sum(bool(re.search(r'global_load_.*\blds\s+//',l)) for l in body)))
-assert len(out)==(6 if stage==8 else 5),len(out)
+expected=3+len(re.findall(r'if constexpr\(Stages==\d+\)',header)) if stage==8 else 5
+assert len(out)==expected,(len(out),expected)
 resources=[]
 for block in re.split(r'(?=  - \.agpr_count:)',meta):
     if not (m:=re.search(r'\.name:\s*(\S+)',block)):continue

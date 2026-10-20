@@ -1,0 +1,90 @@
+{
+  "decision": "proceed_to_32",
+  "reason": "16 beats8 in both matched repeats, but remains slower than the StageK128/two-buffer control",
+  "matched_rows": [
+    {
+      "kind": "timing",
+      "stage_k": "128",
+      "buffers": "2",
+      "mode": "gemm",
+      "K": "32768",
+      "seed_a": "1729",
+      "seed_b": "2718",
+      "repeat": "1",
+      "samples": "9",
+      "cycles_per_mfma": "142.897949219",
+      "body_us": "346.56",
+      "launch_us": "356.160004"
+    },
+    {
+      "kind": "timing",
+      "stage_k": "8",
+      "buffers": "16",
+      "mode": "gemm",
+      "K": "32768",
+      "seed_a": "1729",
+      "seed_b": "2718",
+      "repeat": "1",
+      "samples": "9",
+      "cycles_per_mfma": "157.876220703",
+      "body_us": "384.16",
+      "launch_us": "393.919006"
+    },
+    {
+      "kind": "timing",
+      "stage_k": "8",
+      "buffers": "8",
+      "mode": "gemm",
+      "K": "32768",
+      "seed_a": "1729",
+      "seed_b": "2718",
+      "repeat": "1",
+      "samples": "9",
+      "cycles_per_mfma": "166.187988281",
+      "body_us": "404.16",
+      "launch_us": "413.759003"
+    },
+    {
+      "kind": "timing",
+      "stage_k": "128",
+      "buffers": "2",
+      "mode": "gemm",
+      "K": "32768",
+      "seed_a": "1729",
+      "seed_b": "2718",
+      "repeat": "2",
+      "samples": "9",
+      "cycles_per_mfma": "143.246582031",
+      "body_us": "347.36",
+      "launch_us": "356.640015"
+    },
+    {
+      "kind": "timing",
+      "stage_k": "8",
+      "buffers": "8",
+      "mode": "gemm",
+      "K": "32768",
+      "seed_a": "1729",
+      "seed_b": "2718",
+      "repeat": "2",
+      "samples": "9",
+      "cycles_per_mfma": "166.106933594",
+      "body_us": "404.16",
+      "launch_us": "413.759003"
+    },
+    {
+      "kind": "timing",
+      "stage_k": "8",
+      "buffers": "16",
+      "mode": "gemm",
+      "K": "32768",
+      "seed_a": "1729",
+      "seed_b": "2718",
+      "repeat": "2",
+      "samples": "9",
+      "cycles_per_mfma": "157.88671875",
+      "body_us": "384.0",
+      "launch_us": "393.598999"
+    }
+  ]
+}

@@ -1,5 +1,9 @@
 # Persistent StageK=8 pipeline: two raw buffers, unrolled outer loop
 
+The original2/4/8-slot measurements below are preserved. The later
+[16/32-slot ring-size follow-up](RING_GROWTH.md) adds those choices and
+counter-safe32-stage startup;16 is best observed,32 slightly regresses.
+
 This replaces the [initial per-chunk helper experiment](STAGE8_INITIAL.md).
 The user-directed change keeps **two raw register buffers across the entire
 GEMM**, removes the inner compute loop from the K8 GEMM path, and fully
@@ -108,7 +112,9 @@ numactl --cpunodebind=0 --membind=0 temp/fp16-gemm64/d2-u1-t8-direct-only/probe 
   --mode gemm --buffers 8 --k 32768 --rounds 9
 bash research/fp16-gemm64/build.sh 2 4 128
 python3 research/fp16-gemm64/inspect_code.py temp/fp16-gemm64/d2-u4-t128-direct-only
-python3 research/fp16-gemm64/run_stage8.py
+# Use --output with a fresh directory; existing measurements are protected.
+python3 research/fp16-gemm64/run_stage8.py \
+  --output research/fp16-gemm64/results/stage8-replay
 ```
 
 Current records, generated/native bulk bodies, source snapshots, clocks and

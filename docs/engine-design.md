@@ -735,6 +735,25 @@ All 405 checked launches pass, plus a fresh 340-launch rebuilt larger-chunk
 regression; source/hash-bound records and retained initial experiment are
 under `research/fp16-gemm64/`. No production/CMake/model changes.
 
+The user-directed ring-size follow-up tests 16 slots before conditionally
+trying 32. Native O3 gfx90a HIP0, CPU+memory NUMA0, one CTA/256 threads,
+K32768, no model/context/clock changes: 16 slots/32 KiB improve 8's ~166 to
+157.876/157.887 cycles per four-wave MFMA step, but still trail the matched
+StageK128/two-buffer ~143 control, authorizing 32. Final matched 16/32 runs
+are 157.934/157.854 versus 158.934/158.408 cycles/step, bodies 384.320/384.160
+versus 386.720/385.600 us. 32 fits the full 64 KiB (zero static LDS), but is
+slightly slower in both runs, so the campaign stops here. No allocation
+failure occurred and no larger ring was run. 32-stage startup primes 31 slots
+(62 VMEM instructions/wave), retires the oldest at vmcnt(60), then issues
+slot 31; steady vmcnt(60) keeps the pending population <=62, never 64 or the
+disabled threshold 63. ISA checks the split prefix, full 32-step unroll and
+fixed offsets through 63488. Both trials pass 486 exact checked launches,
+including full-word/all-slot checks and short-fill/tail/ring boundaries.
+Sources/binaries/data are preserved separately in `results/ring16/` and
+`results/ring32/`; the runner accepts explicit paths/stages and refuses a
+nonempty output directory. No physical-unit attribution, significant-
+regression claim, production change or further tuning is made.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

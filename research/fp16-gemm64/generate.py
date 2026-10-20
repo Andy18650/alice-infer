@@ -71,7 +71,7 @@ if T!=8:
 if T==8:
     out+=['template<int Stages> __device__ __forceinline__ void pipeline(uint32_t lo,uint32_t hi,uint32_t dst,uint32_t alo,uint32_t blo,int tiles,F16& c) {',
           '  uint32_t remaining=tiles,saved;']
-    for N in (2,4,8):
+    for N in (2,4,8,16,32):
         lines=[]
         def emit(x):lines.append(x)
         def lab(x):return f'.Lpipe8_{N}_{x}_%='
@@ -106,11 +106,18 @@ if T==8:
         emit('s_mov_b32 %[saved], m0')
         emit('s_cmp_eq_u32 %[remaining], 0');emit('s_cbranch_scc1 '+lab('done'))
         emit('v_mov_b32 v8, %[lo]');emit('v_mov_b32 v9, %[hi]')
-        for slot in range(N):
+        # Never issue 64 outstanding VMEM instructions: prime at most31
+        # stages, retire the oldest, then issue slot31 in the N32 case.
+        primed=min(N,31)
+        for slot in range(primed):
             emit(f's_cmp_le_u32 %[remaining], {slot}')
             emit('s_cbranch_scc1 '+lab('primed'));produce(slot)
         emit(lab('primed')+':')
-        wait_tail(N-1,1,'initial0');emit('s_barrier')
+        wait_tail(primed-1,1,'initial0');emit('s_barrier')
+        if N==32:
+            emit('s_cmp_le_u32 %[remaining], 31')
+            emit('s_cbranch_scc1 '+lab('last_prime_done'));produce(31)
+            emit(lab('last_prime_done')+':')
         read(0,0);emit('s_waitcnt lgkmcnt(0)')
         wait_tail(N-2,2,'initial1');emit('s_barrier')
         emit(f's_cmp_le_u32 %[remaining], {N}')

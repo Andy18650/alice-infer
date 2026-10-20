@@ -87,7 +87,7 @@ template<int Buffers> __global__ __launch_bounds__(256) void gemm(const uint32_t
 // A single opaque asm owns both raw register buffers across all K8 records.
 // No per-record compute() call; fixed LDS offsets/parity in the unrolled body.
 template<int Stages> __global__ __launch_bounds__(256) void gemm_k8(const uint32_t* packed,float* out,uint64_t* stamps,int tiles) {
-  static_assert(Stages==2||Stages==4||Stages==8);
+  static_assert(Stages==2||Stages==4||Stages==8||Stages==16||Stages==32);
   extern __shared__ __attribute__((aligned(16))) uint32_t smem[];
   int lane=threadIdx.x%64,wave=threadIdx.x/64;
   const uint32_t base=uint32_t(reinterpret_cast<uintptr_t>(smem));
@@ -125,11 +125,11 @@ int main(int argc,char** argv)try{
   int steps=4096,records=0,rounds=9,warmup=200,verify=1,K=32768,buffers=2;
   uint32_t sa=1729,sb=2718;
   bool steps_set=false,records_set=false,buffers_set=false;
-  for(int i=1;i<argc;++i){std::string key=argv[i];if(key=="--help"){std::printf("--mode gemm|lds-hot|lds-sweep --buffers N (StageK8:2|4|8, otherwise1|2) --k N --steps N --records N --rounds N --warmup-ms N --verify 0|1 --seed-a N --seed-b N\nD=%d U=%d stageK=%d\n",kDepth,kUnroll,kStageK);return 0;}if(++i==argc)throw std::runtime_error("missing argument");std::string v=argv[i];
+  for(int i=1;i<argc;++i){std::string key=argv[i];if(key=="--help"){std::printf("--mode gemm|lds-hot|lds-sweep --buffers N (StageK8:2|4|8|16|32, otherwise1|2) --k N --steps N --records N --rounds N --warmup-ms N --verify 0|1 --seed-a N --seed-b N\nD=%d U=%d stageK=%d\n",kDepth,kUnroll,kStageK);return 0;}if(++i==argc)throw std::runtime_error("missing argument");std::string v=argv[i];
     if(key=="--mode")mode=v;else if(key=="--buffers"){buffers=std::stoi(v);buffers_set=true;}else if(key=="--k")K=std::stoi(v);else if(key=="--steps"){steps=std::stoi(v);steps_set=true;}else if(key=="--records"){records=std::stoi(v);records_set=true;}else if(key=="--rounds")rounds=std::stoi(v);else if(key=="--warmup-ms")warmup=std::stoi(v);else if(key=="--verify")verify=std::stoi(v);else if(key=="--seed-a")sa=uint32_t(std::stoul(v));else if(key=="--seed-b")sb=uint32_t(std::stoul(v));else throw std::runtime_error("unknown option "+key);
   }
   const bool real=mode=="gemm";
-  if((!real&&mode!="lds-hot"&&mode!="lds-sweep")||(kStageK==8?(buffers!=2&&buffers!=4&&buffers!=8):(buffers!=1&&buffers!=2))||rounds<1||warmup<0||verify<0||verify>1||K<0||K>(1<<20)||(verify&&K>65536))throw std::runtime_error("invalid configuration");
+  if((!real&&mode!="lds-hot"&&mode!="lds-sweep")||(kStageK==8?(buffers!=2&&buffers!=4&&buffers!=8&&buffers!=16&&buffers!=32):(buffers!=1&&buffers!=2))||rounds<1||warmup<0||verify<0||verify>1||K<0||K>(1<<20)||(verify&&K>65536))throw std::runtime_error("invalid configuration");
   if(real&&(steps_set||records_set))throw std::runtime_error("GEMM uses --k and compiled stageK, not LDS --steps/--records");
   if(!real&&buffers_set)throw std::runtime_error("--buffers applies only to GEMM");
   const int tiles=(K+kStageK-1)/kStageK;
@@ -165,7 +165,9 @@ int main(int argc,char** argv)try{
     else if constexpr(kStageK==8) {
       if(buffers==2)gemm_k8<2><<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
       else if(buffers==4)gemm_k8<4><<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
-      else gemm_k8<8><<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
+      else if(buffers==8)gemm_k8<8><<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
+      else if(buffers==16)gemm_k8<16><<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
+      else gemm_k8<32><<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
     } else {
       if(buffers==1)gemm<1><<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
       else gemm<2><<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);

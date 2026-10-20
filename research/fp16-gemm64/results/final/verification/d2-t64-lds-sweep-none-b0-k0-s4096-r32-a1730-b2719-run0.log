@@ -1,0 +1,2 @@
+grid=1 block=256 waves=2x2 mode=lds-sweep producer=none buffers=0 D=2 U=4 stageK=64 K=32768 executed_steps=4096 records=32 LDS_bytes=65536 packed_bytes=0 seeds=1730/2719 unique_input_B_per_step=2048 LDS_result_B_per_step=4096; native O3 HIP0 CPU+memory placement external no model/context; packing outside timing
+COMPLETE invalid=0 verified=1

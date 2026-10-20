@@ -1,0 +1,2 @@
+round,mode,depth,unroll,steps,records,launch_us,cta_cycles,cycles_per_mfma,body_us,core_MHz,mismatches,guards,max_abs_error,valid
+0,lds-hot,2,4,40,1,614.078003,3243,81.075000000,1.920000000,1689.062,0,0,0,1

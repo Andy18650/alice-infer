@@ -1,0 +1,118 @@
+{
+  "kernels": [
+    {
+      "name": "0000000000003100 <void copy_check<true>(unsigned int const*, unsigned int*)>:",
+      "direct": true,
+      "copy_check": true,
+      "core_lines": 334,
+      "global_to_lds": 64
+    },
+    {
+      "name": "0000000000003a00 <void copy_check<false>(unsigned int const*, unsigned int*)>:",
+      "direct": false,
+      "copy_check": true,
+      "core_lines": 269,
+      "global_to_lds": 0
+    },
+    {
+      "name": "0000000000004100 <void lds_grid<true>(float*, unsigned long*, int, int, unsigned int, unsigned int)>:",
+      "direct": false,
+      "copy_check": false,
+      "core_lines": 29,
+      "global_to_lds": 0
+    },
+    {
+      "name": "0000000000004c00 <void lds_grid<false>(float*, unsigned long*, int, int, unsigned int, unsigned int)>:",
+      "direct": false,
+      "copy_check": false,
+      "core_lines": 52,
+      "global_to_lds": 0
+    },
+    {
+      "name": "0000000000005700 <void gemm<true, 1>(unsigned int const*, float*, unsigned long*, int)>:",
+      "direct": true,
+      "copy_check": false,
+      "core_lines": 239,
+      "global_to_lds": 64
+    },
+    {
+      "name": "0000000000005f00 <void gemm<true, 2>(unsigned int const*, float*, unsigned long*, int)>:",
+      "direct": true,
+      "copy_check": false,
+      "core_lines": 254,
+      "global_to_lds": 64
+    },
+    {
+      "name": "0000000000006800 <void gemm<false, 1>(unsigned int const*, float*, unsigned long*, int)>:",
+      "direct": false,
+      "copy_check": false,
+      "core_lines": 172,
+      "global_to_lds": 0
+    },
+    {
+      "name": "0000000000006f00 <void gemm<false, 2>(unsigned int const*, float*, unsigned long*, int)>:",
+      "direct": false,
+      "copy_check": false,
+      "core_lines": 188,
+      "global_to_lds": 0
+    }
+  ],
+  "resources": [
+    {
+      "name": "_Z10copy_checkILb1EEvPKjPj",
+      "vgpr_count": 48,
+      "agpr_count": 0,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    },
+    {
+      "name": "_Z10copy_checkILb0EEvPKjPj",
+      "vgpr_count": 50,
+      "agpr_count": 0,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    },
+    {
+      "name": "_Z8lds_gridILb1EEvPfPmiijj",
+      "vgpr_count": 48,
+      "agpr_count": 16,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    },
+    {
+      "name": "_Z8lds_gridILb0EEvPfPmiijj",
+      "vgpr_count": 48,
+      "agpr_count": 16,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    },
+    {
+      "name": "_Z4gemmILb1ELi1EEvPKjPfPmi",
+      "vgpr_count": 48,
+      "agpr_count": 16,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    },
+    {
+      "name": "_Z4gemmILb1ELi2EEvPKjPfPmi",
+      "vgpr_count": 48,
+      "agpr_count": 16,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    },
+    {
+      "name": "_Z4gemmILb0ELi1EEvPKjPfPmi",
+      "vgpr_count": 60,
+      "agpr_count": 16,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    },
+    {
+      "name": "_Z4gemmILb0ELi2EEvPKjPfPmi",
+      "vgpr_count": 60,
+      "agpr_count": 16,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    }
+  ]
+}

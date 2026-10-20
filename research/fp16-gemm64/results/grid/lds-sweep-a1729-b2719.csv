@@ -1,0 +1,4 @@
+round,mode,depth,unroll,steps,records,launch_us,cta_cycles,cycles_per_mfma,body_us,core_MHz,mismatches,guards,max_abs_error,valid
+0,lds-sweep,2,4,4096,32,191.839996,286841,70.029541016,170.400000000,1683.339,0,0,0,1
+1,lds-sweep,2,4,4096,32,199.679001,288586,70.455566406,171.360000000,1684.092,0,0,0,1
+2,lds-sweep,2,4,4096,32,199.839996,288579,70.453857422,171.520000000,1682.480,0,0,0,1

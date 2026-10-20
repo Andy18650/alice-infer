@@ -666,6 +666,29 @@ plus 6 matrix-runner cases and 15 removed-option rejection checks pass. The
 constant-zero ready CSV column is compatibility metadata, not an axis. No
 production changes or new performance campaign.
 
+The next user-directed standalone study (`research/fp16-gemm64/`) validates
+four waves in a 2x2 M/N grid, then implements actual one-CTA 64x64xK FP16
+GEMM with FP32 output. Each staged A/B tile serves two waves: 2048 unique
+bytes per K8 step, while nominal LDS-to-register requests remain4096 bytes.
+Two producer waves stage A, two B; all four compute. Common MFMA-packed FP16
+input is rearranged from row-major matrices OUTSIDE timing, with zero-padded
+K tails; these are not end-to-end row-major-pointer GEMM timings. Batched
+register staging is a non-overlapping control. Native gfx90a direct staging
+uses global_load_dword ... lds, preserves m0, and overlaps future tile writes
+with current computation in two LDS buffers. Explicit vmcnt completion and
+whole-CTA barriers publish/reuse tiles; compute LDS reads use lgkmcnt.
+Initial 2x2 sharing checks pass before GEMM addition. The final suite passes
+620 exact full-C/guard launches, each GEMM case also checking both staging
+buffers word-for-word. Six builds/48 entries have no scratch/lane spills or
+inner accumulator copies; ISA confirms actual direct-to-LDS and no hidden
+VMEM drain between future issue and current MFMA. Native O3/HIP0/NUMA0, one
+CTA/256 threads, K32768, D2/U4, no model/context/clock changes: best tested
+StageK128/direct/two-buffer runs are 347.360/346.240 us, 772.787/775.287
+GFLOP/s per CTA, ~143 cycles/MFMA (not compute-bound ~64). Producer issue,
+stage reset/synchronization and non-overlapped reg-control limitations are
+explicit; no physical traffic, optimality or full-GPU claim. Round concluded
+without production integration or additional optimization.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

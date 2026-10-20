@@ -1,0 +1,122 @@
+[
+  {
+    "build": "d2-u4-t32",
+    "kernel": "ldstrue",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t32",
+    "kernel": "ldsfalse",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t32",
+    "kernel": "gemm1",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t32",
+    "kernel": "gemm2",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t64",
+    "kernel": "ldstrue",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t64",
+    "kernel": "ldsfalse",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t64",
+    "kernel": "gemm1",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t64",
+    "kernel": "gemm2",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t128",
+    "kernel": "ldstrue",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t128",
+    "kernel": "ldsfalse",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t128",
+    "kernel": "gemm1",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t128",
+    "kernel": "gemm2",
+    "identical": true
+  },
+  {
+    "build": "d1-u4-t64",
+    "kernel": "ldstrue",
+    "identical": true
+  },
+  {
+    "build": "d1-u4-t64",
+    "kernel": "ldsfalse",
+    "identical": true
+  },
+  {
+    "build": "d1-u4-t64",
+    "kernel": "gemm1",
+    "identical": true
+  },
+  {
+    "build": "d1-u4-t64",
+    "kernel": "gemm2",
+    "identical": true
+  },
+  {
+    "build": "d3-u4-t64",
+    "kernel": "ldstrue",
+    "identical": true
+  },
+  {
+    "build": "d3-u4-t64",
+    "kernel": "ldsfalse",
+    "identical": true
+  },
+  {
+    "build": "d3-u4-t64",
+    "kernel": "gemm1",
+    "identical": true
+  },
+  {
+    "build": "d3-u4-t64",
+    "kernel": "gemm2",
+    "identical": true
+  },
+  {
+    "build": "d4-u4-t64",
+    "kernel": "ldstrue",
+    "identical": true
+  },
+  {
+    "build": "d4-u4-t64",
+    "kernel": "ldsfalse",
+    "identical": true
+  },
+  {
+    "build": "d4-u4-t64",
+    "kernel": "gemm1",
+    "identical": true
+  },
+  {
+    "build": "d4-u4-t64",
+    "kernel": "gemm2",
+    "identical": true
+  }
+]

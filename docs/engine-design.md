@@ -688,6 +688,21 @@ GFLOP/s per CTA, ~143 cycles/MFMA (not compute-bound ~64). Producer issue,
 stage reset/synchronization and non-overlapped reg-control limitations are
 explicit; no physical traffic, optimality or full-GPU claim. Round concluded
 without production integration or additional optimization.
+The completed 2x2/GEMM study is checkpointed at `3217640`, then the losing
+register-staged producer is removed from active source/generation/dispatch
+and runner cases. Direct-to-LDS is the sole producer; only one/two LDS buffers
+remain selectable. Five GPU entries/build (two GEMM, two LDS diagnostics,
+one copy validator) replace eight. Six builds/30 entries, 340 exact checked
+launches and two removed-selector rejection checks pass; all 24 surviving
+benchmark core instruction/register lists match after branch/address
+normalization. Cycles per four-wave MFMA step are now the primary report:
+K32768 executes 4096 steps/wave, so metric=CTA core span/4096, including initial
+staging, compute/waits and stage synchronization, not isolated MFMA latency.
+`body_us` measures that region with the steady counter; `launch_us` is the
+full event interval including epilogue, neither includes host packing/upload
+or verification. Fresh StageK128/direct/two-buffer runs are 143.252/143.403
+cycles/step (~347 us); no new speedup or physical-unit claim. Historical reg
+results remain archived; no production/CMake/model changes.
 
 ## 1. Purpose & target
 

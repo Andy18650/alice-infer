@@ -41,38 +41,21 @@ for hot in (True,False):
           '      : [alo] "v"(alo),[blo] "v"(blo),[window] "s"(window)',
           '      : "memory","scc",'+','.join(f'"v{i}"' for i in range(vb+1))+');','  }']
 out+=['}']
-# Batched cooperative producers. Every pending VGPR in the register path
-# stays in one asm through its vmcnt wait and first DS-write consumption.
+# Direct-to-LDS only. m0 is saved/restored within one producer asm block.
 G=T//16
-for direct in (False,True):
-    lines=[]
-    if direct:
-        lines=['s_mov_b32 %[saved], m0','s_mov_b32 m0, %[dst]','s_nop 0',
-               'v_mov_b32 v0, %[lo]','v_mov_b32 v1, %[hi]']
-        for g in range(G):
-            for off in (0,256,2048,2304):
-                lines.append('global_load_dword v[0:1], off'+(f' offset:{off}' if off else '')+' lds')
-            if g+1<G:
-                lines+=['v_add_co_u32 v0, vcc, 4096, v0','v_addc_co_u32 v1, vcc, 0, v1, vcc',
-                        's_add_u32 m0, m0, 4096','s_nop 0']
-        lines+=['s_mov_b32 m0, %[saved]']
-        clobbers=['v0','v1','vcc','scc','memory']
-        sig='void copy_direct(uint32_t lo,uint32_t hi,uint32_t dst) {'
-        output='[saved] "=&s"(saved)';inputs='[lo] "v"(lo),[hi] "v"(hi),[dst] "s"(dst)'
-    else:
-        p=4*G;ld=p+2
-        lines=[f'v_mov_b32 v{p}, %[lo]',f'v_mov_b32 v{p+1}, %[hi]',f'v_mov_b32 v{ld}, %[dst]']
-        for g in range(G):
-            lines.append(f'global_load_dwordx4 v[{4*g}:{4*g+3}], v[{p}:{p+1}], off')
-            if g+1<G:lines +=[f'v_add_co_u32 v{p}, vcc, 4096, v{p}',f'v_addc_co_u32 v{p+1}, vcc, 0, v{p+1}, vcc']
-        lines+=['s_waitcnt vmcnt(0)']
-        for g in range(G):lines.append(f'ds_write_b128 v{ld}, v[{4*g}:{4*g+3}]'+(f' offset:{g*4096}' if g else ''))
-        clobbers=[*(f'v{i}' for i in range(ld+1)),'vcc','memory']
-        sig='void copy_reg(uint32_t lo,uint32_t hi,uint32_t dst) {'
-        output='';inputs='[lo] "v"(lo),[hi] "v"(hi),[dst] "v"(dst)'
-    out+=['__device__ __forceinline__ '+sig]
-    if direct:out+=['  uint32_t saved;']
-    out+=['  asm volatile(']+['    "'+line+'\\n\\t"' for line in lines]
-    out+=['    : '+output+' : '+inputs+' : '+','.join('"'+c+'"' for c in clobbers)+');','}']
+lines=['s_mov_b32 %[saved], m0','s_mov_b32 m0, %[dst]','s_nop 0',
+       'v_mov_b32 v0, %[lo]','v_mov_b32 v1, %[hi]']
+for g in range(G):
+    for off in (0,256,2048,2304):
+        lines.append('global_load_dword v[0:1], off'+(f' offset:{off}' if off else '')+' lds')
+    if g+1<G:
+        lines+=['v_add_co_u32 v0, vcc, 4096, v0','v_addc_co_u32 v1, vcc, 0, v1, vcc',
+                's_add_u32 m0, m0, 4096','s_nop 0']
+lines+=['s_mov_b32 m0, %[saved]']
+out+=['__device__ __forceinline__ void copy_direct(uint32_t lo,uint32_t hi,uint32_t dst) {',
+      '  uint32_t saved;','  asm volatile(']
+out+=['    "'+line+'\\n\\t"' for line in lines]
+out+=['    : [saved] "=&s"(saved) : [lo] "v"(lo),[hi] "v"(hi),[dst] "s"(dst)',
+      '    : "v0","v1","vcc","scc","memory");','}']
 a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text('\n'.join(out)+'\n')
 print(f'Generated two-stream LDS compute D={D} U={U} stageK={T}, phases={P}, no copies/ready banks.')

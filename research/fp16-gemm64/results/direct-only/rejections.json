@@ -1,0 +1,12 @@
+[
+  {
+    "option": "--producer reg",
+    "exit": 1,
+    "error": "ERROR unknown option --producer\n"
+  },
+  {
+    "option": "--producer direct",
+    "exit": 1,
+    "error": "ERROR unknown option --producer\n"
+  }
+]

@@ -1,0 +1,3 @@
+COPY CHECK direct-to-LDS words=4096 all exact, 8 LDS buffers and guards
+grid=1 block=256 waves=2x2 mode=gemm producer=direct buffers=8 D=1 U=1 stageK=8 K=33 executed_steps=5 records=1 LDS_bytes=16384 packed_bytes=10240 seeds=1730/2718 unique_input_B_per_step=2048 LDS_result_B_per_step=4096; native O3 HIP0 CPU+memory placement external no model/context; packing outside timing
+COMPLETE invalid=0 verified=1

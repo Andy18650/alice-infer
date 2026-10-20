@@ -1,0 +1,254 @@
+	s_memtime s[4:5]                                           // 000000004D5C: C0900100 00000000
+	s_waitcnt lgkmcnt(0)                                       // 000000004D64: BF8CC07F
+	s_memrealtime s[8:9]                                       // 000000004D68: C0940200 00000000
+	s_waitcnt lgkmcnt(0)                                       // 000000004D70: BF8CC07F
+	v_mov_b32_e32 v10, v0                                      // 000000004D74: 7E140300
+	s_waitcnt lgkmcnt(0)                                       // 000000004D78: BF8CC07F
+	s_cmp_eq_u32 s10, 0                                        // 000000004D7C: BF06800A
+	v_and_b32_e32 v13, 63, v10                                 // 000000004D80: 261A14BF
+	v_lshrrev_b32_e32 v28, 6, v10                              // 000000004D84: 20381486
+	s_cbranch_scc1 375                                         // 000000004D88: BF850177 <void gemm<2>(unsigned int const*, float*, unsigned long*, int)+0x668>
+	v_lshlrev_b32_e32 v14, 9, v28                              // 000000004D8C: 241C3889
+	v_mov_b32_e32 v0, s1                                       // 000000004D90: 7E000201
+	v_add_co_u32_e32 v1, vcc, s0, v14                          // 000000004D94: 32021C00
+	v_addc_co_u32_e32 v0, vcc, 0, v0, vcc                      // 000000004D98: 38000080
+	v_lshlrev_b32_e32 v15, 2, v13                              // 000000004D9C: 241E1A82
+	s_cmp_lg_u32 0, -1                                         // 000000004DA0: BF07C180
+	v_add_co_u32_e32 v2, vcc, v1, v15                          // 000000004DA4: 32041F01
+	v_readfirstlane_b32 s12, v14                               // 000000004DA8: 7E18050E
+	s_cselect_b32 s13, 0, 0                                    // 000000004DAC: 850D8080
+	v_addc_co_u32_e32 v3, vcc, 0, v0, vcc                      // 000000004DB0: 38060080
+	s_add_i32 s12, s12, s13                                    // 000000004DB4: 810C0D0C
+	s_mov_b32 s13, m0                                          // 000000004DB8: BE8D007C
+	s_mov_b32 m0, s12                                          // 000000004DBC: BEFC000C
+	s_nop 0                                                    // 000000004DC0: BF800000
+	v_mov_b32_e32 v0, v2                                       // 000000004DC4: 7E000302
+	v_mov_b32_e32 v1, v3                                       // 000000004DC8: 7E020303
+	global_load_dword v[0:1], off lds                          // 000000004DCC: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 000000004DD4: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 000000004DDC: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 000000004DE4: DC50A900 007F0000
+	v_add_co_u32_e32 v0, vcc, 0x1000, v0                       // 000000004DEC: 320000FF 00001000
+	v_addc_co_u32_e32 v1, vcc, 0, v1, vcc                      // 000000004DF4: 38020280
+	s_add_u32 m0, m0, 0x1000                                   // 000000004DF8: 807CFF7C 00001000
+	s_nop 0                                                    // 000000004E00: BF800000
+	global_load_dword v[0:1], off lds                          // 000000004E04: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 000000004E0C: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 000000004E14: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 000000004E1C: DC50A900 007F0000
+	v_add_co_u32_e32 v0, vcc, 0x1000, v0                       // 000000004E24: 320000FF 00001000
+	v_addc_co_u32_e32 v1, vcc, 0, v1, vcc                      // 000000004E2C: 38020280
+	s_add_u32 m0, m0, 0x1000                                   // 000000004E30: 807CFF7C 00001000
+	s_nop 0                                                    // 000000004E38: BF800000
+	global_load_dword v[0:1], off lds                          // 000000004E3C: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 000000004E44: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 000000004E4C: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 000000004E54: DC50A900 007F0000
+	v_add_co_u32_e32 v0, vcc, 0x1000, v0                       // 000000004E5C: 320000FF 00001000
+	v_addc_co_u32_e32 v1, vcc, 0, v1, vcc                      // 000000004E64: 38020280
+	s_add_u32 m0, m0, 0x1000                                   // 000000004E68: 807CFF7C 00001000
+	s_nop 0                                                    // 000000004E70: BF800000
+	global_load_dword v[0:1], off lds                          // 000000004E74: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 000000004E7C: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 000000004E84: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 000000004E8C: DC50A900 007F0000
+	v_add_co_u32_e32 v0, vcc, 0x1000, v0                       // 000000004E94: 320000FF 00001000
+	v_addc_co_u32_e32 v1, vcc, 0, v1, vcc                      // 000000004E9C: 38020280
+	s_add_u32 m0, m0, 0x1000                                   // 000000004EA0: 807CFF7C 00001000
+	s_nop 0                                                    // 000000004EA8: BF800000
+	global_load_dword v[0:1], off lds                          // 000000004EAC: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 000000004EB4: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 000000004EBC: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 000000004EC4: DC50A900 007F0000
+	v_add_co_u32_e32 v0, vcc, 0x1000, v0                       // 000000004ECC: 320000FF 00001000
+	v_addc_co_u32_e32 v1, vcc, 0, v1, vcc                      // 000000004ED4: 38020280
+	s_add_u32 m0, m0, 0x1000                                   // 000000004ED8: 807CFF7C 00001000
+	s_nop 0                                                    // 000000004EE0: BF800000
+	global_load_dword v[0:1], off lds                          // 000000004EE4: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 000000004EEC: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 000000004EF4: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 000000004EFC: DC50A900 007F0000
+	v_add_co_u32_e32 v0, vcc, 0x1000, v0                       // 000000004F04: 320000FF 00001000
+	v_addc_co_u32_e32 v1, vcc, 0, v1, vcc                      // 000000004F0C: 38020280
+	s_add_u32 m0, m0, 0x1000                                   // 000000004F10: 807CFF7C 00001000
+	s_nop 0                                                    // 000000004F18: BF800000
+	global_load_dword v[0:1], off lds                          // 000000004F1C: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 000000004F24: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 000000004F2C: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 000000004F34: DC50A900 007F0000
+	v_add_co_u32_e32 v0, vcc, 0x1000, v0                       // 000000004F3C: 320000FF 00001000
+	v_addc_co_u32_e32 v1, vcc, 0, v1, vcc                      // 000000004F44: 38020280
+	s_add_u32 m0, m0, 0x1000                                   // 000000004F48: 807CFF7C 00001000
+	s_nop 0                                                    // 000000004F50: BF800000
+	global_load_dword v[0:1], off lds                          // 000000004F54: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 000000004F5C: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 000000004F64: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 000000004F6C: DC50A900 007F0000
+	s_mov_b32 m0, s13                                          // 000000004F74: BEFC000D
+	s_waitcnt vmcnt(0)                                         // 000000004F78: BF8C0F70
+	s_mov_b32 s11, 0                                           // 000000004F7C: BE8B0080
+	s_cmp_lt_i32 s10, 1                                        // 000000004F80: BF04810A
+	s_barrier                                                  // 000000004F84: BF8A0000
+	s_cbranch_scc1 247                                         // 000000004F88: BF8500F7 <void gemm<2>(unsigned int const*, float*, unsigned long*, int)+0x668>
+	v_lshlrev_b32_e32 v0, 2, v10                               // 000000004F8C: 24001482
+	v_and_b32_e32 v0, 0x200, v0                                // 000000004F90: 260000FF 00000200
+	v_lshlrev_b32_e32 v1, 3, v10                               // 000000004F98: 24021483
+	s_movk_i32 s12, 0x1f8                                      // 000000004F9C: B00C01F8
+	v_and_or_b32 v16, v1, s12, v0                              // 000000004FA0: D2010010 04001901
+	v_and_b32_e32 v0, 0x600, v1                                // 000000004FA8: 260002FF 00000600
+	v_or_b32_e32 v17, 0x400, v1                                // 000000004FB0: 282202FF 00000400
+	v_mov_b32_e32 v1, s1                                       // 000000004FB8: 7E020201
+	v_add_co_u32_e32 v0, vcc, s0, v0                           // 000000004FBC: 32000000
+	v_addc_co_u32_e32 v1, vcc, 0, v1, vcc                      // 000000004FC0: 38020280
+	v_add_co_u32_e32 v12, vcc, 0x8000, v0                      // 000000004FC4: 321800FF 00008000
+	s_mov_b32 s12, 0x8000                                      // 000000004FCC: BE8C00FF 00008000
+	v_addc_co_u32_e32 v11, vcc, 0, v1, vcc                     // 000000004FD4: 38160280
+	s_movk_i32 s13, 0x2000                                     // 000000004FD8: B00D2000
+	s_branch 7                                                 // 000000004FDC: BF820007 <void gemm<2>(unsigned int const*, float*, unsigned long*, int)+0x2fc>
+	s_addk_i32 s13, 0x2000                                     // 000000004FE0: B70D2000
+	v_add_co_u32_e32 v12, vcc, 0x8000, v12                     // 000000004FE4: 321818FF 00008000
+	s_cmp_lg_u32 s10, s11                                      // 000000004FEC: BF070B0A
+	v_addc_co_u32_e32 v11, vcc, 0, v11, vcc                    // 000000004FF0: 38161680
+	s_barrier                                                  // 000000004FF4: BF8A0000
+	s_cbranch_scc0 219                                         // 000000004FF8: BF8400DB <void gemm<2>(unsigned int const*, float*, unsigned long*, int)+0x668>
+	s_add_i32 s11, s11, 1                                      // 000000004FFC: 810B810B
+	s_cmp_lt_i32 s11, s10                                      // 000000005000: BF040A0B
+	s_cselect_b64 s[0:1], -1, 0                                // 000000005004: 858080C1
+	s_cmp_ge_i32 s11, s10                                      // 000000005008: BF030A0B
+	s_cbranch_scc1 122                                         // 00000000500C: BF85007A <void gemm<2>(unsigned int const*, float*, unsigned long*, int)+0x4f8>
+	s_and_b32 s14, s13, 0x2000                                 // 000000005010: 860EFF0D 00002000
+	s_cmp_lg_u32 0, -1                                         // 000000005018: BF07C180
+	s_cselect_b32 s15, 0, 0                                    // 00000000501C: 850F8080
+	s_lshl_b32 s14, s14, 2                                     // 000000005020: 8E0E820E
+	s_add_i32 s15, s15, s14                                    // 000000005024: 810F0E0F
+	v_add_co_u32_e32 v2, vcc, v12, v15                         // 000000005028: 32041F0C
+	v_add_u32_e32 v0, s15, v14                                 // 00000000502C: 68001C0F
+	v_addc_co_u32_e32 v3, vcc, 0, v11, vcc                     // 000000005030: 38061680
+	v_readfirstlane_b32 s14, v0                                // 000000005034: 7E1C0500
+	s_mov_b32 s15, m0                                          // 000000005038: BE8F007C
+	s_mov_b32 m0, s14                                          // 00000000503C: BEFC000E
+	s_nop 0                                                    // 000000005040: BF800000
+	v_mov_b32_e32 v0, v2                                       // 000000005044: 7E000302
+	v_mov_b32_e32 v1, v3                                       // 000000005048: 7E020303
+	global_load_dword v[0:1], off lds                          // 00000000504C: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 000000005054: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 00000000505C: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 000000005064: DC50A900 007F0000
+	v_add_co_u32_e32 v0, vcc, 0x1000, v0                       // 00000000506C: 320000FF 00001000
+	v_addc_co_u32_e32 v1, vcc, 0, v1, vcc                      // 000000005074: 38020280
+	s_add_u32 m0, m0, 0x1000                                   // 000000005078: 807CFF7C 00001000
+	s_nop 0                                                    // 000000005080: BF800000
+	global_load_dword v[0:1], off lds                          // 000000005084: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 00000000508C: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 000000005094: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 00000000509C: DC50A900 007F0000
+	v_add_co_u32_e32 v0, vcc, 0x1000, v0                       // 0000000050A4: 320000FF 00001000
+	v_addc_co_u32_e32 v1, vcc, 0, v1, vcc                      // 0000000050AC: 38020280
+	s_add_u32 m0, m0, 0x1000                                   // 0000000050B0: 807CFF7C 00001000
+	s_nop 0                                                    // 0000000050B8: BF800000
+	global_load_dword v[0:1], off lds                          // 0000000050BC: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 0000000050C4: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 0000000050CC: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 0000000050D4: DC50A900 007F0000
+	v_add_co_u32_e32 v0, vcc, 0x1000, v0                       // 0000000050DC: 320000FF 00001000
+	v_addc_co_u32_e32 v1, vcc, 0, v1, vcc                      // 0000000050E4: 38020280
+	s_add_u32 m0, m0, 0x1000                                   // 0000000050E8: 807CFF7C 00001000
+	s_nop 0                                                    // 0000000050F0: BF800000
+	global_load_dword v[0:1], off lds                          // 0000000050F4: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 0000000050FC: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 000000005104: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 00000000510C: DC50A900 007F0000
+	v_add_co_u32_e32 v0, vcc, 0x1000, v0                       // 000000005114: 320000FF 00001000
+	v_addc_co_u32_e32 v1, vcc, 0, v1, vcc                      // 00000000511C: 38020280
+	s_add_u32 m0, m0, 0x1000                                   // 000000005120: 807CFF7C 00001000
+	s_nop 0                                                    // 000000005128: BF800000
+	global_load_dword v[0:1], off lds                          // 00000000512C: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 000000005134: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 00000000513C: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 000000005144: DC50A900 007F0000
+	v_add_co_u32_e32 v0, vcc, 0x1000, v0                       // 00000000514C: 320000FF 00001000
+	v_addc_co_u32_e32 v1, vcc, 0, v1, vcc                      // 000000005154: 38020280
+	s_add_u32 m0, m0, 0x1000                                   // 000000005158: 807CFF7C 00001000
+	s_nop 0                                                    // 000000005160: BF800000
+	global_load_dword v[0:1], off lds                          // 000000005164: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 00000000516C: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 000000005174: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 00000000517C: DC50A900 007F0000
+	v_add_co_u32_e32 v0, vcc, 0x1000, v0                       // 000000005184: 320000FF 00001000
+	v_addc_co_u32_e32 v1, vcc, 0, v1, vcc                      // 00000000518C: 38020280
+	s_add_u32 m0, m0, 0x1000                                   // 000000005190: 807CFF7C 00001000
+	s_nop 0                                                    // 000000005198: BF800000
+	global_load_dword v[0:1], off lds                          // 00000000519C: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 0000000051A4: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 0000000051AC: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 0000000051B4: DC50A900 007F0000
+	v_add_co_u32_e32 v0, vcc, 0x1000, v0                       // 0000000051BC: 320000FF 00001000
+	v_addc_co_u32_e32 v1, vcc, 0, v1, vcc                      // 0000000051C4: 38020280
+	s_add_u32 m0, m0, 0x1000                                   // 0000000051C8: 807CFF7C 00001000
+	s_nop 0                                                    // 0000000051D0: BF800000
+	global_load_dword v[0:1], off lds                          // 0000000051D4: DC50A000 007F0000
+	global_load_dword v[0:1], off offset:256 lds               // 0000000051DC: DC50A100 007F0000
+	global_load_dword v[0:1], off offset:2048 lds              // 0000000051E4: DC50A800 007F0000
+	global_load_dword v[0:1], off offset:2304 lds              // 0000000051EC: DC50A900 007F0000
+	s_mov_b32 m0, s15                                          // 0000000051F4: BEFC000F
+	s_add_i32 s14, s13, 0xffffe000                             // 0000000051F8: 810EFF0D FFFFE000
+	s_and_b32 s14, s14, 0x2000                                 // 000000005200: 860EFF0E 00002000
+	s_cmp_lg_u32 0, -1                                         // 000000005208: BF07C180
+	s_cselect_b32 s15, 0, 0                                    // 00000000520C: 850F8080
+	s_lshl_b32 s14, s14, 2                                     // 000000005210: 8E0E820E
+	s_add_i32 s15, s15, s14                                    // 000000005214: 810F0E0F
+	v_add_u32_e32 v18, s15, v16                                // 000000005218: 6824200F
+	v_add_u32_e32 v19, s15, v17                                // 00000000521C: 6826220F
+	s_mov_b32 s14, 0                                           // 000000005220: BE8E0080
+	s_mov_b32 s15, 16                                          // 000000005224: BE8F0090
+	v_add_u32_e64 v8, v18, s14                                 // 000000005228: D1340008 00001D12
+	v_add_u32_e64 v9, v19, s14                                 // 000000005230: D1340009 00001D13
+	ds_read_b64 v[0:1], v8                                     // 000000005238: D8EC0000 00000008
+	ds_read_b64 v[2:3], v9                                     // 000000005240: D8EC0000 02000009
+	s_add_u32 s14, s14, 0x800                                  // 000000005248: 800EFF0E 00000800
+	s_cmp_ge_u32 s14, s12                                      // 000000005250: BF090C0E
+	s_cselect_b32 s14, 0, s14                                  // 000000005254: 850E0E80
+	v_add_u32_e64 v8, v18, s14                                 // 000000005258: D1340008 00001D12
+	v_add_u32_e64 v9, v19, s14                                 // 000000005260: D1340009 00001D13
+	ds_read_b64 v[4:5], v8                                     // 000000005268: D8EC0000 04000008
+	ds_read_b64 v[6:7], v9                                     // 000000005270: D8EC0000 06000009
+	s_add_u32 s14, s14, 0x800                                  // 000000005278: 800EFF0E 00000800
+	s_cmp_ge_u32 s14, s12                                      // 000000005280: BF090C0E
+	s_cselect_b32 s14, 0, s14                                  // 000000005284: 850E0E80
+	s_waitcnt lgkmcnt(2)                                       // 000000005288: BF8CC27F
+	v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]     // 00000000528C: D3CC8000 04020500
+	v_add_u32_e64 v8, v18, s14                                 // 000000005294: D1340008 00001D12
+	v_add_u32_e64 v9, v19, s14                                 // 00000000529C: D1340009 00001D13
+	ds_read_b64 v[0:1], v8                                     // 0000000052A4: D8EC0000 00000008
+	ds_read_b64 v[2:3], v9                                     // 0000000052AC: D8EC0000 02000009
+	s_add_u32 s14, s14, 0x800                                  // 0000000052B4: 800EFF0E 00000800
+	s_cmp_ge_u32 s14, s12                                      // 0000000052BC: BF090C0E
+	s_cselect_b32 s14, 0, s14                                  // 0000000052C0: 850E0E80
+	s_waitcnt lgkmcnt(2)                                       // 0000000052C4: BF8CC27F
+	v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]     // 0000000052C8: D3CC8000 04020D04
+	v_add_u32_e64 v8, v18, s14                                 // 0000000052D0: D1340008 00001D12
+	v_add_u32_e64 v9, v19, s14                                 // 0000000052D8: D1340009 00001D13
+	ds_read_b64 v[4:5], v8                                     // 0000000052E0: D8EC0000 04000008
+	ds_read_b64 v[6:7], v9                                     // 0000000052E8: D8EC0000 06000009
+	s_add_u32 s14, s14, 0x800                                  // 0000000052F0: 800EFF0E 00000800
+	s_cmp_ge_u32 s14, s12                                      // 0000000052F8: BF090C0E
+	s_cselect_b32 s14, 0, s14                                  // 0000000052FC: 850E0E80
+	s_waitcnt lgkmcnt(2)                                       // 000000005300: BF8CC27F
+	v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]     // 000000005304: D3CC8000 04020500
+	v_add_u32_e64 v8, v18, s14                                 // 00000000530C: D1340008 00001D12
+	v_add_u32_e64 v9, v19, s14                                 // 000000005314: D1340009 00001D13
+	ds_read_b64 v[0:1], v8                                     // 00000000531C: D8EC0000 00000008
+	ds_read_b64 v[2:3], v9                                     // 000000005324: D8EC0000 02000009
+	s_add_u32 s14, s14, 0x800                                  // 00000000532C: 800EFF0E 00000800
+	s_cmp_ge_u32 s14, s12                                      // 000000005334: BF090C0E
+	s_cselect_b32 s14, 0, s14                                  // 000000005338: 850E0E80
+	s_waitcnt lgkmcnt(2)                                       // 00000000533C: BF8CC27F
+	v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]     // 000000005340: D3CC8000 04020D04
+	s_sub_u32 s15, s15, 4                                      // 000000005348: 808F840F
+	s_cmp_eq_u32 s15, 0                                        // 00000000534C: BF06800F
+	s_cbranch_scc0 65473                                       // 000000005350: BF84FFC1 <void gemm<2>(unsigned int const*, float*, unsigned long*, int)+0x558>
+	s_waitcnt lgkmcnt(0)                                       // 000000005354: BF8CC07F
+	s_andn2_b64 vcc, exec, s[0:1]                              // 000000005358: 89EA007E
+	s_cbranch_vccnz 65312                                      // 00000000535C: BF87FF20 <void gemm<2>(unsigned int const*, float*, unsigned long*, int)+0x2e0>
+	s_waitcnt vmcnt(0)                                         // 000000005360: BF8C0F70
+	s_branch 65310                                             // 000000005364: BF82FF1E <void gemm<2>(unsigned int const*, float*, unsigned long*, int)+0x2e0>

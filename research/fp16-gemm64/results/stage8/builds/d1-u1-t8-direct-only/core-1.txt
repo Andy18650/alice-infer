@@ -1,0 +1,15 @@
+	s_memtime s[4:5]                                           // 0000000038C8: C0900100 00000000
+	s_waitcnt lgkmcnt(0)                                       // 0000000038D0: BF8CC07F
+	s_memrealtime s[10:11]                                     // 0000000038D4: C0940280 00000000
+	s_waitcnt lgkmcnt(0)                                       // 0000000038DC: BF8CC07F
+	s_lshl_b32 s7, s9, 11                                      // 0000000038E0: 8E078B09
+	v_add_u32_e64 v4, v7, s6                                   // 0000000038E4: D1340004 00000D07
+	v_add_u32_e64 v5, v8, s6                                   // 0000000038EC: D1340005 00000D08
+	ds_read_b64 v[0:1], v4                                     // 0000000038F4: D8EC0000 00000004
+	ds_read_b64 v[2:3], v5                                     // 0000000038FC: D8EC0000 02000005
+	s_waitcnt lgkmcnt(0)                                       // 000000003904: BF8CC07F
+	v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]     // 000000003908: D3CC8000 04020500
+	s_sub_u32 s8, s8, 1                                        // 000000003910: 80888108
+	s_cmp_eq_u32 s8, 0                                         // 000000003914: BF068008
+	s_cbranch_scc0 65526                                       // 000000003918: BF84FFF6 <void lds_grid<true>(float*, unsigned long*, int, int, unsigned int, unsigned int)+0x7f4>
+	s_waitcnt lgkmcnt(0)                                       // 00000000391C: BF8CC07F

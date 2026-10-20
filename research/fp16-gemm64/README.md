@@ -6,6 +6,11 @@ no dtype conversion in loading/compute, no vendor GEMM, no register-staging
 producer. The losing [register baseline](REGISTER_BASELINE.md) is archived
 at checkpoint **3217640**, not an active option.
 
+**Current StageK8 path:** [persistent two-register-buffer pipeline](STAGE8.md),
+2/4/8 LDS slots and an outer loop explicitly unrolled by the slot count.
+No per-record inner compute loop. The [initial slow protocol](STAGE8_INITIAL.md)
+and its measured source/results are retained separately.
+
 ## Timing units — primary metric is cycles/MFMA step
 
 Two different timing intervals are recorded:
@@ -81,9 +86,10 @@ StageK is the number of K elements staged per chunk. A+B need256*StageK B:
 | 64 | 16 KiB | 32 KiB |
 | 128 | 32 KiB | 64 KiB |
 
-These StageK choices and the one/two-buffer limit are the implemented search,
-not architectural minimum/maximum claims. Smaller chunks/deeper buffering
-are not implemented yet. StageK changes how many dword copies are batched,
+StageK8 additionally uses2/4/8 slots (4/8/16 KiB), raw depth2 and fixed
+register parity/LDS offsets in its unrolled outer pipeline. The table above
+covers larger chunks' one/two-buffer implementation. These are measured
+choices, not architectural limits. StageK changes how many dword copies are batched,
 not their width. A producer wave moves StageK bytes/lane: StageK/4 dword
 instructions, with two waves staging A and two staging B.
 
@@ -92,7 +98,8 @@ instructions, with two waves staging A and two staging B.
 Actual gfx90a **`global_load_dword ... lds`** bypasses payload VGPRs. v[0:1]
 is a source address, not a dwordx2 data result. m0 supplies a uniform LDS base;
 destination adds lane*4. The immediate offsets0/256/2048/2304 affect both
-ends and cover two K8 blocks, then pointer/m0 advance4096 B. The asm saves/
+ends and cover two K8 blocks for larger chunks, then pointer/m0 advance4096 B.
+StageK8 uses just0/256 and advances2048 B in its persistent pipeline. The asm saves/
 restores reserved m0 and includes its write wait state. There is no DS write
 or global->VGPR->LDS payload path. `--producer` has been removed.
 
@@ -111,7 +118,8 @@ issue tile2 -> buf0; compute tile1; ...
 The single-buffer path waits/publishes, computes, drains/barriers, then refills
 that same buffer. Double buffering overlaps return latency; whole next-tile
 issue still precedes current compute, so it does not hide all issue work.
-Raw LDS priming/drain occur once per compute stage, with unused lookahead
+In the larger-chunk path, raw LDS priming/drain occur once per compute stage,
+with unused lookahead
 wrapping safely inside the stage. Accumulators stay in AGPRs across stages.
 Ending timestamps precede the conservative accumulator-harvest guard.
 
@@ -123,7 +131,7 @@ The local assembler accepts the dword LDS form, not wider x2/x4 forms.
 
 ## Current validation and cycles
 
-**340 launches pass exact all4096-C/32-guard checks**:196 verification cases
+**Current larger-chunk regression:340 launches pass exact all4096-C/32-guard checks**:196 verification cases
 and144 warmed timing launches. Every GEMM case also checks each dword in both
 LDS buffers. The reference uses original row-major integer units, not packed
 indices/checksums. Inputs are integers/16; supported verification bounds
@@ -137,6 +145,11 @@ Six builds/30 entries have no scratch/static-LDS/lane spills, no inner
 accumulator copies or dtype conversions. All **24 surviving benchmark core
 instruction/register lists match** checkpoint3217640 after address/branch
 normalization. Old `--producer reg|direct` values are both rejected.
+The first post-cull runner mistakenly used archived executable paths; those
+results are explicitly flagged in `results/direct-only/PROVENANCE.md`.
+Corrected current-binary runs verify source/binary hashes before launching.
+The StageK8 persistent sweep separately passes405 checked launches; see its
+linked note for lifetime, ISA/unroll checks and all-stage validation.
 
 Native HIP O3/C++20, gfx90a, HIP0 / PCI31:00.0, **CPU+memory NUMA0**, one CTA,
 K32768, D2/U4, no model/context/clock changes. Individually warmed200 ms, two
@@ -145,19 +158,20 @@ randomized process-order repeats, nine checked samples each.
 
 | StageK | One LDS buffer | Two LDS buffers |
 |---:|---:|---:|
-| 32 | 310.767 / 313.353 | 246.698 / 244.641 |
-| 64 | 214.154 / 215.233 | 146.948 / 147.078 |
-| 128 | 188.004 / 187.516 | **143.252 / 143.403** |
+| 32 | 314.887 / 311.806 | 245.812 / 245.469 |
+| 64 | 216.014 / 215.243 | 147.018 / 146.644 |
+| 128 | 193.604 / 187.580 | **143.557 / 143.020** |
 
-For the last row, body duration is347.360/347.680 us and useful throughput
-772.787/772.076 GFLOP/s for **one CTA**, not full-GPU performance. It is not
+For the last row, body duration is348.000/346.720 us and useful throughput
+771.366/774.214 GFLOP/s for **one CTA**, not full-GPU performance. It is not
 compute-bound at the ~64-cycle LDS-only floor. No physical traffic/port limit,
 variance-controlled optimum, optimal interleaving or end-to-end claim.
 
 ## Build / run
 
 ```sh
-# D1..8; StageK32/64/128; U must divide StageK/8 (D/U independent).
+# Larger chunks: D1..8, StageK32/64/128, U divides StageK/8.
+# StageK8: build.sh 2 1 8; --buffers 2|4|8; see STAGE8.md.
 bash research/fp16-gemm64/build.sh 2 4 128
 python3 research/fp16-gemm64/inspect_code.py temp/fp16-gemm64/d2-u4-t128-direct-only
 numactl --cpunodebind=0 --membind=0 temp/fp16-gemm64/d2-u4-t128-direct-only/probe \
@@ -171,13 +185,17 @@ python3 research/fp16-gemm64/run.py
 
 The runner expects D2 StageK32/64/128 plus D1/D3/D4 StageK64, all U4. Current
 outputs append `-direct-only`; old binaries/results remain intact. There are
-four benchmark kernels/build (two GEMM buffering choices, two LDS diagnostics)
-and one test-only copy kernel. Runners verify the current sole producer.
+four benchmark kernels/build for larger chunks (two GEMM buffering choices,
+two LDS diagnostics) and one test-only copy kernel. StageK8 instead has three
+GEMM buffering/unroll choices plus those diagnostics and copy validator.
+Runners verify the current sole producer.
 Use `--resume` only on an unchanged experiment. A generated compile database
 supports clangd. No production/CMake/model-fixture changes.
 
 Current CSV/logs, raw clocks, commands, snapshots, hashes, inventories,
-rejections and comparisons: `results/direct-only/`. The pre-cull results and
+rejections and comparisons: `results/direct-only-persistent-regression/` for
+the current larger-chunk rerun, `results/stage8-persistent/` for StageK8.
+The original misbound `results/direct-only/` is flagged, not deleted. Pre-cull results and
 source are preserved in `results/final/` and checkpoint3217640. Initial grid
 checks are in `results/grid/`; development producer snapshots are under
 `temp/fp16-gemm64/`. No old controls are silently rerun as active options.

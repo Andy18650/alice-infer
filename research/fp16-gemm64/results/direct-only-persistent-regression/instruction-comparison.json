@@ -1,0 +1,122 @@
+[
+  {
+    "build": "d2-u4-t32-direct-only",
+    "kernel": "lds_grid<true>",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t32-direct-only",
+    "kernel": "lds_grid<false>",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t32-direct-only",
+    "kernel": "gemm<1>",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t32-direct-only",
+    "kernel": "gemm<2>",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t64-direct-only",
+    "kernel": "lds_grid<true>",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t64-direct-only",
+    "kernel": "lds_grid<false>",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t64-direct-only",
+    "kernel": "gemm<1>",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t64-direct-only",
+    "kernel": "gemm<2>",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t128-direct-only",
+    "kernel": "lds_grid<true>",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t128-direct-only",
+    "kernel": "lds_grid<false>",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t128-direct-only",
+    "kernel": "gemm<1>",
+    "identical": true
+  },
+  {
+    "build": "d2-u4-t128-direct-only",
+    "kernel": "gemm<2>",
+    "identical": true
+  },
+  {
+    "build": "d1-u4-t64-direct-only",
+    "kernel": "lds_grid<true>",
+    "identical": true
+  },
+  {
+    "build": "d1-u4-t64-direct-only",
+    "kernel": "lds_grid<false>",
+    "identical": true
+  },
+  {
+    "build": "d1-u4-t64-direct-only",
+    "kernel": "gemm<1>",
+    "identical": true
+  },
+  {
+    "build": "d1-u4-t64-direct-only",
+    "kernel": "gemm<2>",
+    "identical": true
+  },
+  {
+    "build": "d3-u4-t64-direct-only",
+    "kernel": "lds_grid<true>",
+    "identical": true
+  },
+  {
+    "build": "d3-u4-t64-direct-only",
+    "kernel": "lds_grid<false>",
+    "identical": true
+  },
+  {
+    "build": "d3-u4-t64-direct-only",
+    "kernel": "gemm<1>",
+    "identical": true
+  },
+  {
+    "build": "d3-u4-t64-direct-only",
+    "kernel": "gemm<2>",
+    "identical": true
+  },
+  {
+    "build": "d4-u4-t64-direct-only",
+    "kernel": "lds_grid<true>",
+    "identical": true
+  },
+  {
+    "build": "d4-u4-t64-direct-only",
+    "kernel": "lds_grid<false>",
+    "identical": true
+  },
+  {
+    "build": "d4-u4-t64-direct-only",
+    "kernel": "gemm<1>",
+    "identical": true
+  },
+  {
+    "build": "d4-u4-t64-direct-only",
+    "kernel": "gemm<2>",
+    "identical": true
+  }
+]

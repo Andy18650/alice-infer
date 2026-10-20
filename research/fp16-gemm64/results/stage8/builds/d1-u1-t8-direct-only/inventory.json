@@ -1,0 +1,90 @@
+{
+  "kernels": [
+    {
+      "name": "0000000000002700 <copy_check(unsigned int const*, unsigned int*, int)>:",
+      "direct": true,
+      "copy_check": true,
+      "core_lines": 504,
+      "global_to_lds": 2
+    },
+    {
+      "name": "0000000000003100 <void lds_grid<true>(float*, unsigned long*, int, int, unsigned int, unsigned int)>:",
+      "direct": false,
+      "copy_check": false,
+      "core_lines": 15,
+      "global_to_lds": 0
+    },
+    {
+      "name": "0000000000003b00 <void lds_grid<false>(float*, unsigned long*, int, int, unsigned int, unsigned int)>:",
+      "direct": false,
+      "copy_check": false,
+      "core_lines": 18,
+      "global_to_lds": 0
+    },
+    {
+      "name": "0000000000004500 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)>:",
+      "direct": true,
+      "copy_check": false,
+      "core_lines": 117,
+      "global_to_lds": 4
+    },
+    {
+      "name": "0000000000004a00 <void gemm_k8<4>(unsigned int const*, float*, unsigned long*, int)>:",
+      "direct": true,
+      "copy_check": false,
+      "core_lines": 146,
+      "global_to_lds": 4
+    },
+    {
+      "name": "0000000000004f00 <void gemm_k8<8>(unsigned int const*, float*, unsigned long*, int)>:",
+      "direct": true,
+      "copy_check": false,
+      "core_lines": 195,
+      "global_to_lds": 4
+    }
+  ],
+  "resources": [
+    {
+      "name": "_Z10copy_checkPKjPji",
+      "vgpr_count": 50,
+      "agpr_count": 0,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    },
+    {
+      "name": "_Z8lds_gridILb1EEvPfPmiijj",
+      "vgpr_count": 48,
+      "agpr_count": 16,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    },
+    {
+      "name": "_Z8lds_gridILb0EEvPfPmiijj",
+      "vgpr_count": 48,
+      "agpr_count": 16,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    },
+    {
+      "name": "_Z7gemm_k8ILi2EEvPKjPfPmi",
+      "vgpr_count": 48,
+      "agpr_count": 16,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    },
+    {
+      "name": "_Z7gemm_k8ILi4EEvPKjPfPmi",
+      "vgpr_count": 48,
+      "agpr_count": 16,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    },
+    {
+      "name": "_Z7gemm_k8ILi8EEvPKjPfPmi",
+      "vgpr_count": 48,
+      "agpr_count": 16,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    }
+  ]
+}

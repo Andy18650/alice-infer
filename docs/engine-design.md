@@ -690,19 +690,50 @@ explicit; no physical traffic, optimality or full-GPU claim. Round concluded
 without production integration or additional optimization.
 The completed 2x2/GEMM study is checkpointed at `3217640`, then the losing
 register-staged producer is removed from active source/generation/dispatch
-and runner cases. Direct-to-LDS is the sole producer; only one/two LDS buffers
-remain selectable. Five GPU entries/build (two GEMM, two LDS diagnostics,
-one copy validator) replace eight. Six builds/30 entries, 340 exact checked
-launches and two removed-selector rejection checks pass; all 24 surviving
-benchmark core instruction/register lists match after branch/address
-normalization. Cycles per four-wave MFMA step are now the primary report:
+and runner cases. Direct-to-LDS becomes the sole producer; at that checkpoint
+only one/two LDS buffers remain selectable. Five GPU entries/build (two GEMM, two LDS diagnostics,
+one copy validator) replace eight. Six builds/30 entries inspected and two
+removed-selector rejection checks pass; all 24 surviving benchmark core
+instruction/register lists match after branch/address normalization. The
+initial 340-launch runner was later found to name archived pre-cull binaries
+(default direct path), not the pruned builds. Those raw runs are retained
+and flagged, rather than claimed as current-binary numerical validation.
+Cycles per four-wave MFMA step are now the primary report:
 K32768 executes 4096 steps/wave, so metric=CTA core span/4096, including initial
 staging, compute/waits and stage synchronization, not isolated MFMA latency.
 `body_us` measures that region with the steady counter; `launch_us` is the
 full event interval including epilogue, neither includes host packing/upload
-or verification. Fresh StageK128/direct/two-buffer runs are 143.252/143.403
-cycles/step (~347 us); no new speedup or physical-unit claim. Historical reg
-results remain archived; no production/CMake/model changes.
+or verification. Then-reported StageK128/two-buffer runs were 143.252/143.403
+cycles/step (~347 us); these reported timings also came from the archived
+binaries because of that runner path error. Explicit `-direct-only` paths
+and pre-launch source/binary SHA checks fix it; rebuilt current binaries
+subsequently pass 340 checks in `results/direct-only-corrected/`. Historical
+reg results remain archived; no production/CMake/model changes.
+
+The requested StageK8 /2,4,8-slot LDS study first reused a per-record inner
+compute helper, giving ~709-712/~435/~433 cycles/step at K32768, D1/U1,
+native O3 HIP0, CPU+memory NUMA0, one CTA/256 threads, no model/context/clock
+changes. Its 405 checked launches are valid but the protocol resets raw
+prefetch each record and synchronizes per K8; it is not a faithful continuous
+register-pipeline test. Full source/binaries/results are preserved separately.
+The user's correction makes two raw register buffers persistent across the
+entire K loop, removes the inner compute call, and explicitly unrolls the
+outer bulk by 2/4/8. Fixed DS offsets/raw parity, one source-pointer state,
+one counter update/backedge per unrolled group. Prefetch next, issue current
+MFMA, then wait for next LDS reads; retire that prefetched slot at the CTA
+barrier before refilling it, while its operands survive in registers. Same-
+class VMEM waits leave future copies in flight. Native ISA checks the bulk
+instruction counts, alternating buffers, literal offsets, wait order and
+absence of scratch/inner accumulator copies. No copied ready bank or payload
+VGPR staging is reintroduced. Two randomized nine-sample runs at the same
+placement/shape give 2/4/8 slots 642.498/642.400, 227.601/227.034, 165.684/165.899
+core cycles per four-wave MFMA step; eight-slot body 403.200/403.520 us.
+Matched StageK128/two-buffer control 143.217/142.946 (~347 us). The new raw
+D2/U1 LDS-only hot reference is 64.183/64.189 cycles/step. Eight slots now help,
+but do not beat the larger-chunk control; no unique hardware-cause claim.
+All 405 checked launches pass, plus a fresh 340-launch rebuilt larger-chunk
+regression; source/hash-bound records and retained initial experiment are
+under `research/fp16-gemm64/`. No production/CMake/model changes.
 
 ## 1. Purpose & target
 

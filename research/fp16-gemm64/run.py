@@ -4,11 +4,14 @@ import argparse,csv,itertools,random,shlex,shutil,subprocess
 from pathlib import Path
 from statistics import median
 p=argparse.ArgumentParser();p.add_argument('--resume',action='store_true');a=p.parse_args()
-root=Path(__file__).resolve().parents[2];base=root/'temp/fp16-gemm64';out=Path(__file__).resolve().parent/'results/direct-only'
+root=Path(__file__).resolve().parents[2];base=root/'temp/fp16-gemm64';out=Path(__file__).resolve().parent/'results/direct-only-persistent-regression'
 for sub in ('verification','timing','builds'):(out/sub).mkdir(parents=True,exist_ok=True)
 configs=[(2,32),(2,64),(2,128),(1,64),(3,64),(4,64)]
 for d,t in configs:
-    src=base/f'd{d}-u4-t{t}';dst=out/'builds'/src.name;dst.mkdir(exist_ok=True)
+    src=base/f'd{d}-u4-t{t}-direct-only';dst=out/'builds'/src.name;dst.mkdir(exist_ok=True)
+    subprocess.run(['sha256sum','-c',str(src/'hashes.txt')],check=True,stdout=subprocess.DEVNULL)
+    if a.resume and (dst/'hashes.txt').exists() and (dst/'hashes.txt').read_bytes()!=(src/'hashes.txt').read_bytes():
+        raise RuntimeError('resume requires the original source/binary fingerprints: '+str(src))
     for name in ('hashes.txt','compiler-flags.txt','inventory.json'):shutil.copy2(src/name,dst/name)
 rows=[]
 with (out/'amd-smi-before.txt').open('w') as f:subprocess.run(['amd-smi'],stdout=f,stderr=subprocess.STDOUT,check=False)
@@ -17,7 +20,7 @@ with (out/'commands.txt').open('w') as commands:
         producer='direct' if mode=='gemm' else 'none' # Metadata only.
         name=f'd{d}-t{t}-{mode}-{producer}-b{buffers}-k{k}-s{steps}-r{records}-a{sa}-b{sb}-run{repeat}'
         log=out/kind/(name+'.log');csvfile=out/kind/(name+'.csv')
-        cmd=['numactl','--cpunodebind=0','--membind=0',str(base/f'd{d}-u4-t{t}'/'probe'),
+        cmd=['numactl','--cpunodebind=0','--membind=0',str(base/f'd{d}-u4-t{t}-direct-only'/'probe'),
              '--mode',mode,'--seed-a',str(sa),'--seed-b',str(sb),'--rounds','9' if kind=='timing' else '1',
              '--warmup-ms','200' if kind=='timing' else '0']
         if mode=='gemm':cmd+=['--buffers',str(buffers),'--k',str(k)]

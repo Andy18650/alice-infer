@@ -1,0 +1,6 @@
+c41c26023bb186d9a914dbdfc5e7d5e3beb6d0bff73be69b12c24aa17aa42722  /home/andyhu/projects/inference/alice-infer/research/fp16-gemm64/gemm64.hip
+b696226613f999d143f6c33b4a71160ca64ad0b31d2e73e86248d919ffddbd2c  /home/andyhu/projects/inference/alice-infer/research/fp16-gemm64/data.hpp
+1fe94ee324656afda041c6bfbba64d1d1e8ffec4cb227733e4b8325fea7252ae  /home/andyhu/projects/inference/alice-infer/research/fp16-gemm64/generate.py
+0517722c74e4f6bf077195eced87ee97780851d899da7de22e467410343046a1  /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/d3-u4-t64-direct-only/compute.hpp
+bbb3a80fc0e5c9572f7e93acd8ff3a1c711310241482ea88841072a30b5672d2  /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/d3-u4-t64-direct-only/probe
+ea351e226b554ec4aee90dc34db2cb6da7ac3c797727aeae4f5273bfb95c5ad3  /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/d3-u4-t64-direct-only/probe.hsaco

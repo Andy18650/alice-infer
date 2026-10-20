@@ -1,0 +1,34 @@
+[
+  {
+    "args": [
+      "--producer",
+      "reg"
+    ],
+    "error": "ERROR unknown option --producer\n",
+    "exit": 1
+  },
+  {
+    "args": [
+      "--producer",
+      "direct"
+    ],
+    "error": "ERROR unknown option --producer\n",
+    "exit": 1
+  },
+  {
+    "args": [
+      "--buffers",
+      "1"
+    ],
+    "error": "ERROR invalid configuration\n",
+    "exit": 1
+  },
+  {
+    "args": [
+      "--buffers",
+      "3"
+    ],
+    "error": "ERROR invalid configuration\n",
+    "exit": 1
+  }
+]

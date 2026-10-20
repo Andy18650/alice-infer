@@ -1,0 +1,11 @@
+Exact checked launches: 405; verification-only cases: 297.
+Native O3 HIP0, CPU+memory NUMA0, one CTA/256 threads, K32768, no model/context/clock changes.
+StageK8 raw D2 / outer unroll=stages; StageK128 control D2/U4. Two repeats, nine samples/process, 200 ms warmup.
+stageK | stages | cycles/four-wave MFMA step run1/run2 | total body us run1/run2 | full event us run1/run2
+8 | 2 | 642.498/642.400 | 1562.880/1561.440 | 1574.077/1570.718
+8 | 4 | 227.601/227.034 | 554.080/552.640 | 565.439/563.840
+8 | 8 | 165.684/165.899 | 403.200/403.520 | 412.800/413.280
+128 | 2 | 143.217/142.946 | 347.200/346.880 | 356.639/356.320
+lds-hot D2/U1 cycles/step: 64.183/64.189
+lds-sweep D2/U1 cycles/step: 82.365/82.357
+Diagnostic label corrected from D1 to D2; raw CSV depth/build/hash and assertions were D2 throughout. Executed runner snapshot/log retain the original print typo.

@@ -1,0 +1,10 @@
+Exact checked launches: 405; verification-only cases: 297.
+Native O3 HIP0, CPU+memory NUMA0, one CTA/256 threads, K32768, no model/context/clock changes.
+StageK8 D1/U1; StageK128 control D2/U4. Two repeats, nine samples/process, 200 ms warmup.
+stageK | stages | cycles/four-wave MFMA step run1/run2 | total body us run1/run2 | full event us run1/run2
+8 | 2 | 708.943/712.322 | 1723.040/1731.840 | 1733.757/1743.358
+8 | 4 | 435.474/435.458 | 1058.080/1058.880 | 1068.318/1069.278
+8 | 8 | 433.316/433.303 | 1052.160/1052.640 | 1061.758/1061.918
+128 | 2 | 143.454/143.200 | 347.840/347.200 | 357.279/356.959
+lds-hot D1/U1 cycles/step: 108.167/108.178
+lds-sweep D1/U1 cycles/step: 116.161/116.168

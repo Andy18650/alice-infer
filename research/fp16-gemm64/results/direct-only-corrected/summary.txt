@@ -1,0 +1,10 @@
+Exact verified launches: 340, all 4096 outputs and guards valid.
+Verification-only cases: 196; every GEMM case also checks all words in both LDS staging buffers.
+Primary metric: CTA core cycles per four-wave MFMA step, includes staging/compute/synchronization.
+stageK | buffers | cycles/MFMA run1/run2 | body us run1/run2 | GFLOPs run1/run2
+32 | 1 | 313.731/312.214 | 761.920/758.080 | 352.314/354.099
+32 | 2 | 246.761/246.596 | 599.040/598.560 | 448.109/448.469
+64 | 1 | 214.214/214.904 | 520.000/521.280 | 516.222/514.954
+64 | 2 | 147.648/151.192 | 358.080/366.720 | 749.652/731.990
+128 | 1 | 187.565/186.966 | 455.200/453.600 | 589.709/591.789
+128 | 2 | 143.184/143.353 | 347.360/347.520 | 772.787/772.432

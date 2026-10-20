@@ -12,6 +12,10 @@ its double-buffer mode did not overlap return latency with computation.
 Thus the results do not establish that every hypothetical asynchronous
 register-prefetch design would lose, nor identify a physical bottleneck.
 They are sufficient to retire this implementation from the active matrix.
+The first post-cull runner's340 launches used archived default-direct
+executables by mistake; see `results/direct-only/PROVENANCE.md`. That is
+not current-binary validation. The corrected and persistent-era current
+regressions each pass340 launches with explicit paths and hash checks.
 
 Native O3 gfx90a, HIP0, CPU+memory NUMA0, one CTA/256 threads, K32768,
 D2/U4, no model/context or clock changes. Packed FP16 inputs, packing excluded.
@@ -24,6 +28,6 @@ D2/U4, no model/context or clock changes. Packed FP16 inputs, packing excluded.
 | 128 | 213.188/214.060 | 215.710/216.545 | 187.285/187.642 | 143.351/142.813 |
 
 Kernel body includes staging, computation, waits and stage barriers. It is
-not isolated MFMA execution latency. The direct-only regression rechecks
-340 launches, and all 24 surviving benchmark instruction/register lists
-match this checkpoint after addresses/branch displacements are normalized.
+not isolated MFMA execution latency. The current direct-only regression checks340 launches, and all24 surviving
+larger-chunk benchmark instruction/register lists match the pre-Stage8
+pruned builds after addresses/branch displacements are normalized.

@@ -1,0 +1,18 @@
+# verified baseline only
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ablations/baseline/probe --k 32768 --rounds 1 --warmup-ms 0
+# PERFORMANCE ONLY; NO NUMERICAL CLAIM
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ablations/vmcnt-to-nop/probe --k 32768 --verify 0 --rounds 9 --warmup-ms 200
+# PERFORMANCE ONLY; NO NUMERICAL CLAIM
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ablations/baseline/probe --k 32768 --verify 0 --rounds 9 --warmup-ms 200
+# PERFORMANCE ONLY; NO NUMERICAL CLAIM
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ablations/barrier-to-nop/probe --k 32768 --verify 0 --rounds 9 --warmup-ms 200
+# PERFORMANCE ONLY; NO NUMERICAL CLAIM
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ablations/mfma-to-pkfma/probe --k 32768 --verify 0 --rounds 9 --warmup-ms 200
+# PERFORMANCE ONLY; NO NUMERICAL CLAIM
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ablations/vmcnt-to-nop/probe --k 32768 --verify 0 --rounds 9 --warmup-ms 200
+# PERFORMANCE ONLY; NO NUMERICAL CLAIM
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ablations/mfma-to-pkfma/probe --k 32768 --verify 0 --rounds 9 --warmup-ms 200
+# PERFORMANCE ONLY; NO NUMERICAL CLAIM
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ablations/baseline/probe --k 32768 --verify 0 --rounds 9 --warmup-ms 200
+# PERFORMANCE ONLY; NO NUMERICAL CLAIM
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ablations/barrier-to-nop/probe --k 32768 --verify 0 --rounds 9 --warmup-ms 200

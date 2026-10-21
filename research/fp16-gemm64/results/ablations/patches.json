@@ -1,0 +1,465 @@
+{
+  "baseline": {
+    "program": "/home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ablations/baseline/probe",
+    "executable_sha256": "6d502d73105b399c54bc1c668e95a6765e553912281d04fc1567979c9f401895",
+    "hsaco_sha256": "a109e17c9b2b965040ad0ec1a4c965de92e4da32cd416f58544293d4ec242adc",
+    "changed_bytes": 0,
+    "patches": []
+  },
+  "mfma-to-pkfma": {
+    "program": "/home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ablations/mfma-to-pkfma/probe",
+    "executable_sha256": "65c7c60f59db6e50c68be0855cca0b2edf9eac3e72a5ac9d9e1fbf093361d46a",
+    "hsaco_sha256": "5497eaef2b885c230512c4aaf21fad37ae9108a4cb6fa6fccf574bf344dec9be",
+    "changed_bytes": 64,
+    "patches": [
+      {
+        "gpu_pc": "0x1bf4",
+        "code_object_offset": 7156,
+        "executable_offset": 52212,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[0:1], v[0:1], v[2:3], v[0:1]",
+        "old_hex": "0080ccd300050204",
+        "new_hex": "0040b0d30005021c"
+      },
+      {
+        "gpu_pc": "0x1c30",
+        "code_object_offset": 7216,
+        "executable_offset": 52272,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[4:5], v[4:5], v[6:7], v[4:5]",
+        "old_hex": "0080ccd3040d0204",
+        "new_hex": "0440b0d3040d121c"
+      },
+      {
+        "gpu_pc": "0x1c78",
+        "code_object_offset": 7288,
+        "executable_offset": 52344,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[0:1], v[0:1], v[2:3], v[0:1]",
+        "old_hex": "0080ccd300050204",
+        "new_hex": "0040b0d30005021c"
+      },
+      {
+        "gpu_pc": "0x1cb8",
+        "code_object_offset": 7352,
+        "executable_offset": 52408,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[4:5], v[4:5], v[6:7], v[4:5]",
+        "old_hex": "0080ccd3040d0204",
+        "new_hex": "0440b0d3040d121c"
+      },
+      {
+        "gpu_pc": "0x1d04",
+        "code_object_offset": 7428,
+        "executable_offset": 52484,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[0:1], v[0:1], v[2:3], v[0:1]",
+        "old_hex": "0080ccd300050204",
+        "new_hex": "0040b0d30005021c"
+      },
+      {
+        "gpu_pc": "0x1d44",
+        "code_object_offset": 7492,
+        "executable_offset": 52548,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[4:5], v[4:5], v[6:7], v[4:5]",
+        "old_hex": "0080ccd3040d0204",
+        "new_hex": "0440b0d3040d121c"
+      },
+      {
+        "gpu_pc": "0x1d90",
+        "code_object_offset": 7568,
+        "executable_offset": 52624,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[0:1], v[0:1], v[2:3], v[0:1]",
+        "old_hex": "0080ccd300050204",
+        "new_hex": "0040b0d30005021c"
+      },
+      {
+        "gpu_pc": "0x1dd0",
+        "code_object_offset": 7632,
+        "executable_offset": 52688,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[4:5], v[4:5], v[6:7], v[4:5]",
+        "old_hex": "0080ccd3040d0204",
+        "new_hex": "0440b0d3040d121c"
+      },
+      {
+        "gpu_pc": "0x1e1c",
+        "code_object_offset": 7708,
+        "executable_offset": 52764,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[0:1], v[0:1], v[2:3], v[0:1]",
+        "old_hex": "0080ccd300050204",
+        "new_hex": "0040b0d30005021c"
+      },
+      {
+        "gpu_pc": "0x1e5c",
+        "code_object_offset": 7772,
+        "executable_offset": 52828,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[4:5], v[4:5], v[6:7], v[4:5]",
+        "old_hex": "0080ccd3040d0204",
+        "new_hex": "0440b0d3040d121c"
+      },
+      {
+        "gpu_pc": "0x1ea8",
+        "code_object_offset": 7848,
+        "executable_offset": 52904,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[0:1], v[0:1], v[2:3], v[0:1]",
+        "old_hex": "0080ccd300050204",
+        "new_hex": "0040b0d30005021c"
+      },
+      {
+        "gpu_pc": "0x1ee8",
+        "code_object_offset": 7912,
+        "executable_offset": 52968,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[4:5], v[4:5], v[6:7], v[4:5]",
+        "old_hex": "0080ccd3040d0204",
+        "new_hex": "0440b0d3040d121c"
+      },
+      {
+        "gpu_pc": "0x1f34",
+        "code_object_offset": 7988,
+        "executable_offset": 53044,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[0:1], v[0:1], v[2:3], v[0:1]",
+        "old_hex": "0080ccd300050204",
+        "new_hex": "0040b0d30005021c"
+      },
+      {
+        "gpu_pc": "0x1f74",
+        "code_object_offset": 8052,
+        "executable_offset": 53108,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[4:5], v[4:5], v[6:7], v[4:5]",
+        "old_hex": "0080ccd3040d0204",
+        "new_hex": "0440b0d3040d121c"
+      },
+      {
+        "gpu_pc": "0x1fc0",
+        "code_object_offset": 8128,
+        "executable_offset": 53184,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[0:1], v[0:1], v[2:3], v[0:1]",
+        "old_hex": "0080ccd300050204",
+        "new_hex": "0040b0d30005021c"
+      },
+      {
+        "gpu_pc": "0x2000",
+        "code_object_offset": 8192,
+        "executable_offset": 53248,
+        "original": "v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]",
+        "replacement": "v_pk_fma_f32 v[4:5], v[4:5], v[6:7], v[4:5]",
+        "old_hex": "0080ccd3040d0204",
+        "new_hex": "0440b0d3040d121c"
+      }
+    ]
+  },
+  "vmcnt-to-nop": {
+    "program": "/home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ablations/vmcnt-to-nop/probe",
+    "executable_sha256": "06dfcfe19e645f816c8902561792588212ad13bc34a9eff8149c95e926c33075",
+    "hsaco_sha256": "283e58493b6e6535f367034471b4f6c9d1f4843ea2f79b2bfc2c6c70c4e1258d",
+    "changed_bytes": 48,
+    "patches": [
+      {
+        "gpu_pc": "0x1c0c",
+        "code_object_offset": 7180,
+        "executable_offset": 52236,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1c48",
+        "code_object_offset": 7240,
+        "executable_offset": 52296,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1c90",
+        "code_object_offset": 7312,
+        "executable_offset": 52368,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1cd0",
+        "code_object_offset": 7376,
+        "executable_offset": 52432,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1d1c",
+        "code_object_offset": 7452,
+        "executable_offset": 52508,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1d5c",
+        "code_object_offset": 7516,
+        "executable_offset": 52572,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1da8",
+        "code_object_offset": 7592,
+        "executable_offset": 52648,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1de8",
+        "code_object_offset": 7656,
+        "executable_offset": 52712,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1e34",
+        "code_object_offset": 7732,
+        "executable_offset": 52788,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1e74",
+        "code_object_offset": 7796,
+        "executable_offset": 52852,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1ec0",
+        "code_object_offset": 7872,
+        "executable_offset": 52928,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1f00",
+        "code_object_offset": 7936,
+        "executable_offset": 52992,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1f4c",
+        "code_object_offset": 8012,
+        "executable_offset": 53068,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1f8c",
+        "code_object_offset": 8076,
+        "executable_offset": 53132,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1fd8",
+        "code_object_offset": 8152,
+        "executable_offset": 53208,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x2018",
+        "code_object_offset": 8216,
+        "executable_offset": 53272,
+        "original": "s_waitcnt vmcnt(24)",
+        "replacement": "s_nop 0",
+        "old_hex": "784f8cbf",
+        "new_hex": "000080bf"
+      }
+    ]
+  },
+  "barrier-to-nop": {
+    "program": "/home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ablations/barrier-to-nop/probe",
+    "executable_sha256": "5b2b91025933b60010ee580993f183c03f0b9aa0aa719e23657a3980f0cab760",
+    "hsaco_sha256": "46a9681f840442d39dfda6cbd630185fd7a80bcd8fc8493a1961ee43768de186",
+    "changed_bytes": 16,
+    "patches": [
+      {
+        "gpu_pc": "0x1c14",
+        "code_object_offset": 7188,
+        "executable_offset": 52244,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1c50",
+        "code_object_offset": 7248,
+        "executable_offset": 52304,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1c9c",
+        "code_object_offset": 7324,
+        "executable_offset": 52380,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1cdc",
+        "code_object_offset": 7388,
+        "executable_offset": 52444,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1d28",
+        "code_object_offset": 7464,
+        "executable_offset": 52520,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1d68",
+        "code_object_offset": 7528,
+        "executable_offset": 52584,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1db4",
+        "code_object_offset": 7604,
+        "executable_offset": 52660,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1df4",
+        "code_object_offset": 7668,
+        "executable_offset": 52724,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1e40",
+        "code_object_offset": 7744,
+        "executable_offset": 52800,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1e80",
+        "code_object_offset": 7808,
+        "executable_offset": 52864,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1ecc",
+        "code_object_offset": 7884,
+        "executable_offset": 52940,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1f0c",
+        "code_object_offset": 7948,
+        "executable_offset": 53004,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1f58",
+        "code_object_offset": 8024,
+        "executable_offset": 53080,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1f98",
+        "code_object_offset": 8088,
+        "executable_offset": 53144,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x1fe4",
+        "code_object_offset": 8164,
+        "executable_offset": 53220,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      },
+      {
+        "gpu_pc": "0x2024",
+        "code_object_offset": 8228,
+        "executable_offset": 53284,
+        "original": "s_barrier",
+        "replacement": "s_nop 0",
+        "old_hex": "00008abf",
+        "new_hex": "000080bf"
+      }
+    ]
+  }
+}

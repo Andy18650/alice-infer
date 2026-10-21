@@ -1,0 +1,9 @@
+variant,repeat,samples,verification,cycles_per_mfma,body_us,launch_us,core_MHz
+vmcnt-to-nop,1,9,DISABLED; performance only,93.427490234,227.68,237.119995,1682.064
+baseline,1,9,DISABLED; performance only,93.324951172,227.36,236.959,1682.146
+barrier-to-nop,1,9,DISABLED; performance only,79.572753906,193.92,203.360001,1680.901
+mfma-to-pkfma,1,9,DISABLED; performance only,87.073730469,212.0,221.439011,1682.382
+vmcnt-to-nop,2,9,DISABLED; performance only,93.229003906,226.88,236.479996,1681.843
+mfma-to-pkfma,2,9,DISABLED; performance only,87.162841797,212.32,221.599991,1682.468
+baseline,2,9,DISABLED; performance only,93.042724609,226.56,236.158997,1681.98
+barrier-to-nop,2,9,DISABLED; performance only,79.0859375,192.64,202.080002,1681.727

@@ -1,0 +1,179 @@
+00001bf0: s_waitcnt lgkmcnt(2)
+00001bf4: v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]
+00001bfc: ds_read_b64 v[0:1], v14 offset:4096
+00001c04: ds_read_b64 v[2:3], v15 offset:4096
+00001c0c: s_waitcnt vmcnt(24)
+00001c10: s_add_u32 m0, s0, 0
+00001c14: s_barrier
+00001c18: global_load_dword v[8:9], off lds
+00001c20: global_load_dword v[8:9], off offset:256 lds
+00001c28: s_mov_b32 m0, s1
+00001c2c: s_waitcnt lgkmcnt(2)
+00001c30: v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]
+00001c38: ds_read_b64 v[4:5], v14 offset:6144
+00001c40: ds_read_b64 v[6:7], v15 offset:6144
+00001c48: s_waitcnt vmcnt(24)
+00001c4c: s_add_u32 m0, s0, 0
+00001c50: s_barrier
+00001c54: global_load_dword v[8:9], off offset:2048 lds
+00001c5c: global_load_dword v[8:9], off offset:2304 lds
+00001c64: s_mov_b32 m0, s1
+00001c68: v_add_co_u32_e32 v8, vcc, 0x1000, v8
+00001c70: v_addc_co_u32_e32 v9, vcc, 0, v9, vcc
+00001c74: s_waitcnt lgkmcnt(2)
+00001c78: v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]
+00001c80: ds_read_b64 v[0:1], v14 offset:8192
+00001c88: ds_read_b64 v[2:3], v15 offset:8192
+00001c90: s_waitcnt vmcnt(24)
+00001c94: s_add_u32 m0, s0, 0x1000
+00001c9c: s_barrier
+00001ca0: global_load_dword v[8:9], off lds
+00001ca8: global_load_dword v[8:9], off offset:256 lds
+00001cb0: s_mov_b32 m0, s1
+00001cb4: s_waitcnt lgkmcnt(2)
+00001cb8: v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]
+00001cc0: ds_read_b64 v[4:5], v14 offset:10240
+00001cc8: ds_read_b64 v[6:7], v15 offset:10240
+00001cd0: s_waitcnt vmcnt(24)
+00001cd4: s_add_u32 m0, s0, 0x1000
+00001cdc: s_barrier
+00001ce0: global_load_dword v[8:9], off offset:2048 lds
+00001ce8: global_load_dword v[8:9], off offset:2304 lds
+00001cf0: s_mov_b32 m0, s1
+00001cf4: v_add_co_u32_e32 v8, vcc, 0x1000, v8
+00001cfc: v_addc_co_u32_e32 v9, vcc, 0, v9, vcc
+00001d00: s_waitcnt lgkmcnt(2)
+00001d04: v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]
+00001d0c: ds_read_b64 v[0:1], v14 offset:12288
+00001d14: ds_read_b64 v[2:3], v15 offset:12288
+00001d1c: s_waitcnt vmcnt(24)
+00001d20: s_add_u32 m0, s0, 0x2000
+00001d28: s_barrier
+00001d2c: global_load_dword v[8:9], off lds
+00001d34: global_load_dword v[8:9], off offset:256 lds
+00001d3c: s_mov_b32 m0, s1
+00001d40: s_waitcnt lgkmcnt(2)
+00001d44: v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]
+00001d4c: ds_read_b64 v[4:5], v14 offset:14336
+00001d54: ds_read_b64 v[6:7], v15 offset:14336
+00001d5c: s_waitcnt vmcnt(24)
+00001d60: s_add_u32 m0, s0, 0x2000
+00001d68: s_barrier
+00001d6c: global_load_dword v[8:9], off offset:2048 lds
+00001d74: global_load_dword v[8:9], off offset:2304 lds
+00001d7c: s_mov_b32 m0, s1
+00001d80: v_add_co_u32_e32 v8, vcc, 0x1000, v8
+00001d88: v_addc_co_u32_e32 v9, vcc, 0, v9, vcc
+00001d8c: s_waitcnt lgkmcnt(2)
+00001d90: v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]
+00001d98: ds_read_b64 v[0:1], v14 offset:16384
+00001da0: ds_read_b64 v[2:3], v15 offset:16384
+00001da8: s_waitcnt vmcnt(24)
+00001dac: s_add_u32 m0, s0, 0x3000
+00001db4: s_barrier
+00001db8: global_load_dword v[8:9], off lds
+00001dc0: global_load_dword v[8:9], off offset:256 lds
+00001dc8: s_mov_b32 m0, s1
+00001dcc: s_waitcnt lgkmcnt(2)
+00001dd0: v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]
+00001dd8: ds_read_b64 v[4:5], v14 offset:18432
+00001de0: ds_read_b64 v[6:7], v15 offset:18432
+00001de8: s_waitcnt vmcnt(24)
+00001dec: s_add_u32 m0, s0, 0x3000
+00001df4: s_barrier
+00001df8: global_load_dword v[8:9], off offset:2048 lds
+00001e00: global_load_dword v[8:9], off offset:2304 lds
+00001e08: s_mov_b32 m0, s1
+00001e0c: v_add_co_u32_e32 v8, vcc, 0x1000, v8
+00001e14: v_addc_co_u32_e32 v9, vcc, 0, v9, vcc
+00001e18: s_waitcnt lgkmcnt(2)
+00001e1c: v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]
+00001e24: ds_read_b64 v[0:1], v14 offset:20480
+00001e2c: ds_read_b64 v[2:3], v15 offset:20480
+00001e34: s_waitcnt vmcnt(24)
+00001e38: s_add_u32 m0, s0, 0x4000
+00001e40: s_barrier
+00001e44: global_load_dword v[8:9], off lds
+00001e4c: global_load_dword v[8:9], off offset:256 lds
+00001e54: s_mov_b32 m0, s1
+00001e58: s_waitcnt lgkmcnt(2)
+00001e5c: v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]
+00001e64: ds_read_b64 v[4:5], v14 offset:22528
+00001e6c: ds_read_b64 v[6:7], v15 offset:22528
+00001e74: s_waitcnt vmcnt(24)
+00001e78: s_add_u32 m0, s0, 0x4000
+00001e80: s_barrier
+00001e84: global_load_dword v[8:9], off offset:2048 lds
+00001e8c: global_load_dword v[8:9], off offset:2304 lds
+00001e94: s_mov_b32 m0, s1
+00001e98: v_add_co_u32_e32 v8, vcc, 0x1000, v8
+00001ea0: v_addc_co_u32_e32 v9, vcc, 0, v9, vcc
+00001ea4: s_waitcnt lgkmcnt(2)
+00001ea8: v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]
+00001eb0: ds_read_b64 v[0:1], v14 offset:24576
+00001eb8: ds_read_b64 v[2:3], v15 offset:24576
+00001ec0: s_waitcnt vmcnt(24)
+00001ec4: s_add_u32 m0, s0, 0x5000
+00001ecc: s_barrier
+00001ed0: global_load_dword v[8:9], off lds
+00001ed8: global_load_dword v[8:9], off offset:256 lds
+00001ee0: s_mov_b32 m0, s1
+00001ee4: s_waitcnt lgkmcnt(2)
+00001ee8: v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]
+00001ef0: ds_read_b64 v[4:5], v14 offset:26624
+00001ef8: ds_read_b64 v[6:7], v15 offset:26624
+00001f00: s_waitcnt vmcnt(24)
+00001f04: s_add_u32 m0, s0, 0x5000
+00001f0c: s_barrier
+00001f10: global_load_dword v[8:9], off offset:2048 lds
+00001f18: global_load_dword v[8:9], off offset:2304 lds
+00001f20: s_mov_b32 m0, s1
+00001f24: v_add_co_u32_e32 v8, vcc, 0x1000, v8
+00001f2c: v_addc_co_u32_e32 v9, vcc, 0, v9, vcc
+00001f30: s_waitcnt lgkmcnt(2)
+00001f34: v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]
+00001f3c: ds_read_b64 v[0:1], v14 offset:28672
+00001f44: ds_read_b64 v[2:3], v15 offset:28672
+00001f4c: s_waitcnt vmcnt(24)
+00001f50: s_add_u32 m0, s0, 0x6000
+00001f58: s_barrier
+00001f5c: global_load_dword v[8:9], off lds
+00001f64: global_load_dword v[8:9], off offset:256 lds
+00001f6c: s_mov_b32 m0, s1
+00001f70: s_waitcnt lgkmcnt(2)
+00001f74: v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]
+00001f7c: ds_read_b64 v[4:5], v14 offset:30720
+00001f84: ds_read_b64 v[6:7], v15 offset:30720
+00001f8c: s_waitcnt vmcnt(24)
+00001f90: s_add_u32 m0, s0, 0x6000
+00001f98: s_barrier
+00001f9c: global_load_dword v[8:9], off offset:2048 lds
+00001fa4: global_load_dword v[8:9], off offset:2304 lds
+00001fac: s_mov_b32 m0, s1
+00001fb0: v_add_co_u32_e32 v8, vcc, 0x1000, v8
+00001fb8: v_addc_co_u32_e32 v9, vcc, 0, v9, vcc
+00001fbc: s_waitcnt lgkmcnt(2)
+00001fc0: v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]
+00001fc8: ds_read_b64 v[0:1], v14
+00001fd0: ds_read_b64 v[2:3], v15
+00001fd8: s_waitcnt vmcnt(24)
+00001fdc: s_add_u32 m0, s0, 0x7000
+00001fe4: s_barrier
+00001fe8: global_load_dword v[8:9], off lds
+00001ff0: global_load_dword v[8:9], off offset:256 lds
+00001ff8: s_mov_b32 m0, s1
+00001ffc: s_waitcnt lgkmcnt(2)
+00002000: v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]
+00002008: ds_read_b64 v[4:5], v14 offset:2048
+00002010: ds_read_b64 v[6:7], v15 offset:2048
+00002018: s_waitcnt vmcnt(24)
+0000201c: s_add_u32 m0, s0, 0x7000
+00002024: s_barrier
+00002028: global_load_dword v[8:9], off offset:2048 lds
+00002030: global_load_dword v[8:9], off offset:2304 lds
+00002038: s_mov_b32 m0, s1
+0000203c: v_add_co_u32_e32 v8, vcc, 0x1000, v8
+00002044: v_addc_co_u32_e32 v9, vcc, 0, v9, vcc
+00002048: s_sub_u32 s10, s10, 16
+0000204c: s_cmp_gt_u32 s10, 32
+00002050: s_cbranch_scc1 65255

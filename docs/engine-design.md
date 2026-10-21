@@ -855,6 +855,28 @@ K32768 cull recheck93.280/93.116 cycles/step (227.200/226.720 us). Selection
 rationale and all scanned timing rows are recorded in MATRIX.md and
 `results/active-cull/`. No production/CMake/model or unrelated changes.
 
+User-authorized performance-only ablations separately patch copies of the
+same verified native executable:16 steady MFMA sites ->one equal-width
+v_pk_fma_f32 each (same distinct A/B VGPR reads, not AGPR-C/dependency
+simulation), or16 VM24 waits ->s_nop0, or16 barriers ->s_nop0. One class
+changed per variant, all other code-object/host bytes and metadata/resources
+identical, same instruction widths/PCs; startup and32-record tail unchanged.
+Native disassembly/re-extraction checks the actual embedded patched objects.
+Original active binary remains unchanged. Native O3 gfx90a HIP0, CPU+memory
+NUMA0, one CTA/256 threads, K32768, no model/context/clock overrides, two
+nine-sample warmed process repeats: baseline93.325/93.043, MFMA-proxy87.074/
+87.163, VM-wait-NOP93.427/93.229, barrier-NOP79.573/79.086 core cycles per
+logical four-wave K8 step. Core/steady ratios remain ~1682 MHz. The largest
+signal is the barrier/rendezvous and wave-interleaving constraints; VM-wait
+removal has no net gain and MFMA proxy saves ~6 cycles, not intrinsic MFMA
+latency. Effects are nonadditive; NOP cost and remaining gates can mask a
+removed wait. No unique memory/issue/barrier hardware attribution. All72
+TIMING samples are numerically UNVERIFIED (`--verify0`, valid=-1); only one
+separate unmodified-baseline check is verified. These unsafe variants are
+not valid algorithms or active search combinations. Manifest/ISA/raw clocks
+and sources are in `results/ablations/`, analysis in ABLATIONS.md. No combined
+ablation, further tuning or production/system change.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

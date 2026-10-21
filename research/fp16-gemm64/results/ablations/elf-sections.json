@@ -1,0 +1,461 @@
+[
+  {
+    "Section": {
+      "Index": 0,
+      "Name": {
+        "Name": "",
+        "Value": 0
+      },
+      "Type": {
+        "Name": "SHT_NULL",
+        "Value": 0
+      },
+      "Flags": {
+        "Value": 0,
+        "Flags": []
+      },
+      "Address": 0,
+      "Offset": 0,
+      "Size": 0,
+      "Link": 0,
+      "Info": 0,
+      "AddressAlignment": 0,
+      "EntrySize": 0
+    }
+  },
+  {
+    "Section": {
+      "Index": 1,
+      "Name": {
+        "Name": ".note",
+        "Value": 1
+      },
+      "Type": {
+        "Name": "SHT_NOTE",
+        "Value": 7
+      },
+      "Flags": {
+        "Value": 2,
+        "Flags": [
+          {
+            "Name": "SHF_ALLOC",
+            "Value": 2
+          }
+        ]
+      },
+      "Address": 568,
+      "Offset": 568,
+      "Size": 2604,
+      "Link": 0,
+      "Info": 0,
+      "AddressAlignment": 4,
+      "EntrySize": 0
+    }
+  },
+  {
+    "Section": {
+      "Index": 2,
+      "Name": {
+        "Name": ".dynsym",
+        "Value": 7
+      },
+      "Type": {
+        "Name": "SHT_DYNSYM",
+        "Value": 11
+      },
+      "Flags": {
+        "Value": 2,
+        "Flags": [
+          {
+            "Name": "SHF_ALLOC",
+            "Value": 2
+          }
+        ]
+      },
+      "Address": 3176,
+      "Offset": 3176,
+      "Size": 240,
+      "Link": 5,
+      "Info": 1,
+      "AddressAlignment": 8,
+      "EntrySize": 24
+    }
+  },
+  {
+    "Section": {
+      "Index": 3,
+      "Name": {
+        "Name": ".gnu.hash",
+        "Value": 15
+      },
+      "Type": {
+        "Name": "SHT_GNU_HASH",
+        "Value": 1879048182
+      },
+      "Flags": {
+        "Value": 2,
+        "Flags": [
+          {
+            "Name": "SHF_ALLOC",
+            "Value": 2
+          }
+        ]
+      },
+      "Address": 3416,
+      "Offset": 3416,
+      "Size": 76,
+      "Link": 2,
+      "Info": 0,
+      "AddressAlignment": 8,
+      "EntrySize": 0
+    }
+  },
+  {
+    "Section": {
+      "Index": 4,
+      "Name": {
+        "Name": ".hash",
+        "Value": 25
+      },
+      "Type": {
+        "Name": "SHT_HASH",
+        "Value": 5
+      },
+      "Flags": {
+        "Value": 2,
+        "Flags": [
+          {
+            "Name": "SHF_ALLOC",
+            "Value": 2
+          }
+        ]
+      },
+      "Address": 3492,
+      "Offset": 3492,
+      "Size": 88,
+      "Link": 2,
+      "Info": 0,
+      "AddressAlignment": 4,
+      "EntrySize": 4
+    }
+  },
+  {
+    "Section": {
+      "Index": 5,
+      "Name": {
+        "Name": ".dynstr",
+        "Value": 31
+      },
+      "Type": {
+        "Name": "SHT_STRTAB",
+        "Value": 3
+      },
+      "Flags": {
+        "Value": 2,
+        "Flags": [
+          {
+            "Name": "SHF_ALLOC",
+            "Value": 2
+          }
+        ]
+      },
+      "Address": 3580,
+      "Offset": 3580,
+      "Size": 229,
+      "Link": 0,
+      "Info": 0,
+      "AddressAlignment": 1,
+      "EntrySize": 0
+    }
+  },
+  {
+    "Section": {
+      "Index": 6,
+      "Name": {
+        "Name": ".rodata",
+        "Value": 39
+      },
+      "Type": {
+        "Name": "SHT_PROGBITS",
+        "Value": 1
+      },
+      "Flags": {
+        "Value": 2,
+        "Flags": [
+          {
+            "Name": "SHF_ALLOC",
+            "Value": 2
+          }
+        ]
+      },
+      "Address": 3840,
+      "Offset": 3840,
+      "Size": 256,
+      "Link": 0,
+      "Info": 0,
+      "AddressAlignment": 64,
+      "EntrySize": 0
+    }
+  },
+  {
+    "Section": {
+      "Index": 7,
+      "Name": {
+        "Name": ".text",
+        "Value": 47
+      },
+      "Type": {
+        "Name": "SHT_PROGBITS",
+        "Value": 1
+      },
+      "Flags": {
+        "Value": 6,
+        "Flags": [
+          {
+            "Name": "SHF_ALLOC",
+            "Value": 2
+          },
+          {
+            "Name": "SHF_EXECINSTR",
+            "Value": 4
+          }
+        ]
+      },
+      "Address": 4096,
+      "Offset": 4096,
+      "Size": 16492,
+      "Link": 0,
+      "Info": 0,
+      "AddressAlignment": 256,
+      "EntrySize": 0
+    }
+  },
+  {
+    "Section": {
+      "Index": 8,
+      "Name": {
+        "Name": ".dynamic",
+        "Value": 53
+      },
+      "Type": {
+        "Name": "SHT_DYNAMIC",
+        "Value": 6
+      },
+      "Flags": {
+        "Value": 3,
+        "Flags": [
+          {
+            "Name": "SHF_ALLOC",
+            "Value": 2
+          },
+          {
+            "Name": "SHF_WRITE",
+            "Value": 1
+          }
+        ]
+      },
+      "Address": 24688,
+      "Offset": 20592,
+      "Size": 112,
+      "Link": 5,
+      "Info": 0,
+      "AddressAlignment": 8,
+      "EntrySize": 16
+    }
+  },
+  {
+    "Section": {
+      "Index": 9,
+      "Name": {
+        "Name": ".relro_padding",
+        "Value": 62
+      },
+      "Type": {
+        "Name": "SHT_NOBITS",
+        "Value": 8
+      },
+      "Flags": {
+        "Value": 3,
+        "Flags": [
+          {
+            "Name": "SHF_ALLOC",
+            "Value": 2
+          },
+          {
+            "Name": "SHF_WRITE",
+            "Value": 1
+          }
+        ]
+      },
+      "Address": 24800,
+      "Offset": 20704,
+      "Size": 3872,
+      "Link": 0,
+      "Info": 0,
+      "AddressAlignment": 1,
+      "EntrySize": 0
+    }
+  },
+  {
+    "Section": {
+      "Index": 10,
+      "Name": {
+        "Name": ".bss",
+        "Value": 77
+      },
+      "Type": {
+        "Name": "SHT_NOBITS",
+        "Value": 8
+      },
+      "Flags": {
+        "Value": 3,
+        "Flags": [
+          {
+            "Name": "SHF_ALLOC",
+            "Value": 2
+          },
+          {
+            "Name": "SHF_WRITE",
+            "Value": 1
+          }
+        ]
+      },
+      "Address": 28896,
+      "Offset": 20704,
+      "Size": 1,
+      "Link": 0,
+      "Info": 0,
+      "AddressAlignment": 1,
+      "EntrySize": 0
+    }
+  },
+  {
+    "Section": {
+      "Index": 11,
+      "Name": {
+        "Name": ".AMDGPU.gpr_maximums",
+        "Value": 82
+      },
+      "Type": {
+        "Name": "SHT_PROGBITS",
+        "Value": 1
+      },
+      "Flags": {
+        "Value": 0,
+        "Flags": []
+      },
+      "Address": 0,
+      "Offset": 20704,
+      "Size": 0,
+      "Link": 0,
+      "Info": 0,
+      "AddressAlignment": 1,
+      "EntrySize": 0
+    }
+  },
+  {
+    "Section": {
+      "Index": 12,
+      "Name": {
+        "Name": ".comment",
+        "Value": 103
+      },
+      "Type": {
+        "Name": "SHT_PROGBITS",
+        "Value": 1
+      },
+      "Flags": {
+        "Value": 48,
+        "Flags": [
+          {
+            "Name": "SHF_MERGE",
+            "Value": 16
+          },
+          {
+            "Name": "SHF_STRINGS",
+            "Value": 32
+          }
+        ]
+      },
+      "Address": 0,
+      "Offset": 20704,
+      "Size": 66,
+      "Link": 0,
+      "Info": 0,
+      "AddressAlignment": 1,
+      "EntrySize": 1
+    }
+  },
+  {
+    "Section": {
+      "Index": 13,
+      "Name": {
+        "Name": ".symtab",
+        "Value": 112
+      },
+      "Type": {
+        "Name": "SHT_SYMTAB",
+        "Value": 2
+      },
+      "Flags": {
+        "Value": 0,
+        "Flags": []
+      },
+      "Address": 0,
+      "Offset": 20776,
+      "Size": 1032,
+      "Link": 15,
+      "Info": 34,
+      "AddressAlignment": 8,
+      "EntrySize": 24
+    }
+  },
+  {
+    "Section": {
+      "Index": 14,
+      "Name": {
+        "Name": ".shstrtab",
+        "Value": 120
+      },
+      "Type": {
+        "Name": "SHT_STRTAB",
+        "Value": 3
+      },
+      "Flags": {
+        "Value": 0,
+        "Flags": []
+      },
+      "Address": 0,
+      "Offset": 21808,
+      "Size": 138,
+      "Link": 0,
+      "Info": 0,
+      "AddressAlignment": 1,
+      "EntrySize": 0
+    }
+  },
+  {
+    "Section": {
+      "Index": 15,
+      "Name": {
+        "Name": ".strtab",
+        "Value": 130
+      },
+      "Type": {
+        "Name": "SHT_STRTAB",
+        "Value": 3
+      },
+      "Flags": {
+        "Value": 0,
+        "Flags": []
+      },
+      "Address": 0,
+      "Offset": 21946,
+      "Size": 1430,
+      "Link": 0,
+      "Info": 0,
+      "AddressAlignment": 1,
+      "EntrySize": 0
+    }
+  }
+]

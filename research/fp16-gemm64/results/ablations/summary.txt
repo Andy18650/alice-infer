@@ -1,0 +1,9 @@
+PERFORMANCE-ONLY ABLATIONS: numerical verification disabled in all timing runs.
+Native O3 gfx90a HIP0, CPU+memory NUMA0, one CTA/256 threads, K32768, no model/context/clock overrides.
+Two randomized process-order repeats, nine samples each, selected-kernel warmup200ms.
+Only16 steady-state sites patched; startup and32-record tail unchanged. No additive cost decomposition.
+variant | cycles/logical four-wave K8 step run1/run2 | whole body us run1/run2 | core MHz run1/run2
+baseline | 93.325/93.043 | 227.360/226.560 | 1682.146/1681.980
+mfma-to-pkfma | 87.074/87.163 | 212.000/212.320 | 1682.382/1682.468
+vmcnt-to-nop | 93.427/93.229 | 227.680/226.880 | 1682.064/1681.843
+barrier-to-nop | 79.573/79.086 | 193.920/192.640 | 1680.901/1681.727

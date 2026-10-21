@@ -79,7 +79,16 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
             assert bulk[i-1].strip().startswith('s_barrier'),('M0 use not directly after barrier',name)
             assert bulk[i-2].strip().startswith('s_add_u32 m0,'),('M0 setup not directly before barrier',name)
         refill_offsets=[int(x.split('//')[0].split(',')[-1].strip(),0) for x in bulk if x.strip().startswith('s_add_u32 m0,')]
-        assert refill_offsets==[2048*p for p in range(stages)],('not retiring current',name,refill_offsets)
+        assert refill_offsets==[4096*(p//2) for p in range(stages)],('incorrect pair M0 base',name,refill_offsets)
+        load_offsets=[int(re.search(r'offset:(\d+)',bulk[i])[1]) if 'offset:' in bulk[i] else 0 for i in copy_indices]
+        assert load_offsets==[2048*(p%2)+q for p in range(stages) for q in (0,256)],('incorrect pair displacement',name,load_offsets)
+        for p in range(stages):
+            assert refill_offsets[p]+load_offsets[2*p]==2048*p
+            assert refill_offsets[p]+load_offsets[2*p+1]==2048*p+256
+        adds=[x for x in bulk if x.strip().startswith('v_add_co_u32')]
+        carries=[x for x in bulk if x.strip().startswith('v_addc_co_u32')]
+        assert len(adds)==len(carries)==stages//2,('source advance not paired',name)
+        assert all('0x1000' in x or '4096' in x for x in adds)
         offsets=[int(re.search(r'offset:(\d+)',x)[1]) if 'offset:' in x else 0 for x in bulk if x.strip().startswith('ds_read_b64')]
         lookahead=1 if stages==2 else 2
         assert offsets==[2048*((p+lookahead)%stages) for p in range(stages) for _ in (0,1)],(name,offsets)

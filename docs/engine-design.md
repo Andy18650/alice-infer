@@ -817,6 +817,24 @@ all LDS words/guards. ISA/frozen source/native fingerprints are checked;
 zero scratch/lane/accumulator spills. Data/assembly: `results/m0-pre-barrier/`,
 baseline61904f8 preserved. No further controls, production or system changes.
 
+The user's next paired-copy optimization uses global displacements0/256
+then2048/2304, advancing source4096 only after odd records. Since immediate
+shifts both global and LDS addresses, M0 selects the EVEN slot's base for
+both copies; effective destinations still match each current slot. Applied
+to startup, split31/32 priming, bulk and odd tails; pre-barrier M0 setup and
+all waits/data ops remain. Native checks half as many add/carry pairs,
+paired immediates, compensated/effective M0 offsets and zero bulk NOPs.
+Native O3 gfx90a HIP0, CPU+memory NUMA0, one CTA/256 threads, K32768,
+no model/context/clock changes:16 slots96.800/96.611 ->93.510/92.646 cycles
+per four-wave MFMA step (bodies227.680/225.760 us);32 slots97.273/97.943 ->
+97.312/95.125 (one flat, one better);8 slots145.805/153.218 ->153.557/
+154.193 (slower both, notable baseline variation). Results are mixed, not a
+universal speedup. All882 checked launches plus20 targeted odd-fill/tail
+smokes pass; all C/guards and separate all-slot words/guards exact. No spills
+or dtype conversions; N>=4 bulk average12->11 instructions per wave/step. Source,
+assembly and data `results/paired-global/`, deb88e1 baseline preserved.
+No further tuning, physical-unit attribution or production/system changes.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

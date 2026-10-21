@@ -1,5 +1,9 @@
 # Move M0 setup before the barrier; remove the bulk NOP
 
+The later [paired global-addressing candidate](PAIRED_GLOBAL.md) retains
+this ordering and uses immediate displacements to halve pointer advances.
+The measurements below remain the preserved baseline.
+
 User-requested narrow scheduling probe. In each unrolled bulk unit, move
 `s_add_u32 m0` immediately before the existing `s_barrier`, and remove the
 explicit `s_nop 0` that previously separated M0 setup from its first use.

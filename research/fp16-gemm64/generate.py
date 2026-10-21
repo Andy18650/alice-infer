@@ -77,14 +77,18 @@ if T==8:
         def lab(x):return f'.Lpipe8_{N}_{x}_%='
         def branch(x):emit('s_branch '+lab(x))
         def produce(slot,prepared=False):
+            # The immediate shifts both source AND LDS destination. Keep M0
+            # at the even slot's base while the odd copy uses +2048/+2304.
+            displacement=(slot%2)*2048
             if not prepared:
-                emit(f's_add_u32 m0, %[dst], {slot*2048}')
+                emit(f's_add_u32 m0, %[dst], {(slot//2)*4096}')
                 emit('s_nop 0')
-            emit('global_load_dword v[8:9], off lds')
-            emit('global_load_dword v[8:9], off offset:256 lds')
+            for off in (displacement,displacement+256):
+                emit('global_load_dword v[8:9], off'+(f' offset:{off}' if off else '')+' lds')
             emit('s_mov_b32 m0, %[saved]')
-            emit('v_add_co_u32 v8, vcc, 2048, v8')
-            emit('v_addc_co_u32 v9, vcc, 0, v9, vcc')
+            if slot%2:
+                emit('v_add_co_u32 v8, vcc, 4096, v8')
+                emit('v_addc_co_u32 v9, vcc, 0, v9, vcc')
         def read(slot,raw):
             v=4*raw;off=f' offset:{slot*2048}' if slot else ''
             emit(f'ds_read_b64 v[{v}:{v+1}], %[alo]'+off)
@@ -146,7 +150,7 @@ if T==8:
                 mfma(raw);read((phase+2)%N,raw)
                 emit(f's_waitcnt vmcnt({2*(N-4)})')
             # The existing barrier supplies the M0 write/use instruction gap.
-            emit(f's_add_u32 m0, %[dst], {phase*2048}')
+            emit(f's_add_u32 m0, %[dst], {(phase//2)*4096}')
             emit('s_barrier');produce(phase,prepared=True) # Retire/refill current.
             if N==2:
                 # Current's slot must be retired before tile n+2 can be copied.

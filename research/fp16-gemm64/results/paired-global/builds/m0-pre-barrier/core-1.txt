@@ -1,0 +1,26 @@
+	s_memtime s[4:5]                                           // 000000003EC8: C0900100 00000000
+	s_waitcnt lgkmcnt(0)                                       // 000000003ED0: BF8CC07F
+	s_memrealtime s[10:11]                                     // 000000003ED4: C0940280 00000000
+	s_waitcnt lgkmcnt(0)                                       // 000000003EDC: BF8CC07F
+	s_lshl_b32 s7, s9, 11                                      // 000000003EE0: 8E078B09
+	v_add_u32_e64 v8, v11, s6                                  // 000000003EE4: D1340008 00000D0B
+	v_add_u32_e64 v9, v12, s6                                  // 000000003EEC: D1340009 00000D0C
+	ds_read_b64 v[0:1], v8                                     // 000000003EF4: D8EC0000 00000008
+	ds_read_b64 v[2:3], v9                                     // 000000003EFC: D8EC0000 02000009
+	ds_read_b64 v[4:5], v8                                     // 000000003F04: D8EC0000 04000008
+	ds_read_b64 v[6:7], v9                                     // 000000003F0C: D8EC0000 06000009
+	s_waitcnt lgkmcnt(2)                                       // 000000003F14: BF8CC27F
+	v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]     // 000000003F18: D3CC8000 04020500
+	s_sub_u32 s8, s8, 1                                        // 000000003F20: 80888108
+	s_cmp_eq_u32 s8, 0                                         // 000000003F24: BF068008
+	s_cbranch_scc0 1                                           // 000000003F28: BF840001 <void lds_grid<true>(float*, unsigned long*, int, int, unsigned int, unsigned int)+0x830>
+	s_branch 11                                                // 000000003F2C: BF82000B <void lds_grid<true>(float*, unsigned long*, int, int, unsigned int, unsigned int)+0x85c>
+	ds_read_b64 v[0:1], v8                                     // 000000003F30: D8EC0000 00000008
+	ds_read_b64 v[2:3], v9                                     // 000000003F38: D8EC0000 02000009
+	s_waitcnt lgkmcnt(2)                                       // 000000003F40: BF8CC27F
+	v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]     // 000000003F44: D3CC8000 04020D04
+	s_sub_u32 s8, s8, 1                                        // 000000003F4C: 80888108
+	s_cmp_eq_u32 s8, 0                                         // 000000003F50: BF068008
+	s_cbranch_scc0 65515                                       // 000000003F54: BF84FFEB <void lds_grid<true>(float*, unsigned long*, int, int, unsigned int, unsigned int)+0x804>
+	s_branch 0                                                 // 000000003F58: BF820000 <void lds_grid<true>(float*, unsigned long*, int, int, unsigned int, unsigned int)+0x85c>
+	s_waitcnt lgkmcnt(0)                                       // 000000003F5C: BF8CC07F

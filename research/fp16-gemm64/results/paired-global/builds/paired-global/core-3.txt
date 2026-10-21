@@ -1,0 +1,123 @@
+	s_memtime s[4:5]                                           // 000000004DC0: C0900100 00000000
+	s_waitcnt lgkmcnt(0)                                       // 000000004DC8: BF8CC07F
+	s_memrealtime s[8:9]                                       // 000000004DCC: C0940200 00000000
+	s_waitcnt lgkmcnt(0)                                       // 000000004DD4: BF8CC07F
+	v_add3_u32 v15, v2, s1, v0                                 // 000000004DD8: D1FF000F 04000302
+	s_mov_b32 s1, m0                                           // 000000004DE0: BE81007C
+	s_cmp_eq_u32 s10, 0                                        // 000000004DE4: BF06800A
+	s_cbranch_scc1 143                                         // 000000004DE8: BF85008F <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x328>
+	v_mov_b32_e32 v8, v12                                      // 000000004DEC: 7E10030C
+	v_mov_b32_e32 v9, v13                                      // 000000004DF0: 7E12030D
+	s_cmp_le_u32 s10, 0                                        // 000000004DF4: BF0B800A
+	s_cbranch_scc1 19                                          // 000000004DF8: BF850013 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x148>
+	s_add_u32 m0, s0, 0                                        // 000000004DFC: 807C8000
+	s_nop 0                                                    // 000000004E00: BF800000
+	global_load_dword v[8:9], off lds                          // 000000004E04: DC50A000 007F0008
+	global_load_dword v[8:9], off offset:256 lds               // 000000004E0C: DC50A100 007F0008
+	s_mov_b32 m0, s1                                           // 000000004E14: BEFC0001
+	s_cmp_le_u32 s10, 1                                        // 000000004E18: BF0B810A
+	s_cbranch_scc1 10                                          // 000000004E1C: BF85000A <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x148>
+	s_add_u32 m0, s0, 0                                        // 000000004E20: 807C8000
+	s_nop 0                                                    // 000000004E24: BF800000
+	global_load_dword v[8:9], off offset:2048 lds              // 000000004E28: DC50A800 007F0008
+	global_load_dword v[8:9], off offset:2304 lds              // 000000004E30: DC50A900 007F0008
+	s_mov_b32 m0, s1                                           // 000000004E38: BEFC0001
+	v_add_co_u32_e32 v8, vcc, 0x1000, v8                       // 000000004E3C: 321010FF 00001000
+	v_addc_co_u32_e32 v9, vcc, 0, v9, vcc                      // 000000004E44: 38121280
+	s_cmp_ge_u32 s10, 2                                        // 000000004E48: BF09820A
+	s_cbranch_scc1 3                                           // 000000004E4C: BF850003 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x15c>
+	s_cmp_ge_u32 s10, 1                                        // 000000004E50: BF09810A
+	s_cbranch_scc1 3                                           // 000000004E54: BF850003 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x164>
+	s_branch 4                                                 // 000000004E58: BF820004 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x16c>
+	s_waitcnt vmcnt(2)                                         // 000000004E5C: BF8C0F72
+	s_branch 2                                                 // 000000004E60: BF820002 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x16c>
+	s_waitcnt vmcnt(0)                                         // 000000004E64: BF8C0F70
+	s_branch 0                                                 // 000000004E68: BF820000 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x16c>
+	s_barrier                                                  // 000000004E6C: BF8A0000
+	ds_read_b64 v[0:1], v14                                    // 000000004E70: D8EC0000 0000000E
+	ds_read_b64 v[2:3], v15                                    // 000000004E78: D8EC0000 0200000F
+	s_cmp_ge_u32 s10, 2                                        // 000000004E80: BF09820A
+	s_cbranch_scc1 1                                           // 000000004E84: BF850001 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x18c>
+	s_branch 2                                                 // 000000004E88: BF820002 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x194>
+	s_waitcnt vmcnt(0)                                         // 000000004E8C: BF8C0F70
+	s_branch 0                                                 // 000000004E90: BF820000 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x194>
+	s_barrier                                                  // 000000004E94: BF8A0000
+	s_cmp_le_u32 s10, 4                                        // 000000004E98: BF0B840A
+	s_cbranch_scc1 38                                          // 000000004E9C: BF850026 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x238>
+	ds_read_b64 v[4:5], v14 offset:2048                        // 000000004EA0: D8EC0800 0400000E
+	ds_read_b64 v[6:7], v15 offset:2048                        // 000000004EA8: D8EC0800 0600000F
+	s_waitcnt lgkmcnt(2)                                       // 000000004EB0: BF8CC27F
+	v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]     // 000000004EB4: D3CC8000 04020500
+	s_add_u32 m0, s0, 0                                        // 000000004EBC: 807C8000
+	s_barrier                                                  // 000000004EC0: BF8A0000
+	global_load_dword v[8:9], off lds                          // 000000004EC4: DC50A000 007F0008
+	global_load_dword v[8:9], off offset:256 lds               // 000000004ECC: DC50A100 007F0008
+	s_mov_b32 m0, s1                                           // 000000004ED4: BEFC0001
+	s_waitcnt vmcnt(0)                                         // 000000004ED8: BF8C0F70
+	s_barrier                                                  // 000000004EDC: BF8A0000
+	ds_read_b64 v[0:1], v14                                    // 000000004EE0: D8EC0000 0000000E
+	ds_read_b64 v[2:3], v15                                    // 000000004EE8: D8EC0000 0200000F
+	s_waitcnt lgkmcnt(2)                                       // 000000004EF0: BF8CC27F
+	v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]     // 000000004EF4: D3CC8000 04020D04
+	s_add_u32 m0, s0, 0                                        // 000000004EFC: 807C8000
+	s_barrier                                                  // 000000004F00: BF8A0000
+	global_load_dword v[8:9], off offset:2048 lds              // 000000004F04: DC50A800 007F0008
+	global_load_dword v[8:9], off offset:2304 lds              // 000000004F0C: DC50A900 007F0008
+	s_mov_b32 m0, s1                                           // 000000004F14: BEFC0001
+	v_add_co_u32_e32 v8, vcc, 0x1000, v8                       // 000000004F18: 321010FF 00001000
+	v_addc_co_u32_e32 v9, vcc, 0, v9, vcc                      // 000000004F20: 38121280
+	s_waitcnt vmcnt(0)                                         // 000000004F24: BF8C0F70
+	s_barrier                                                  // 000000004F28: BF8A0000
+	s_sub_u32 s10, s10, 2                                      // 000000004F2C: 808A820A
+	s_cmp_gt_u32 s10, 4                                        // 000000004F30: BF08840A
+	s_cbranch_scc1 65498                                       // 000000004F34: BF85FFDA <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x1a0>
+	s_cmp_le_u32 s10, 1                                        // 000000004F38: BF0B810A
+	s_cbranch_scc1 4                                           // 000000004F3C: BF850004 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x250>
+	ds_read_b64 v[4:5], v14 offset:2048                        // 000000004F40: D8EC0800 0400000E
+	ds_read_b64 v[6:7], v15 offset:2048                        // 000000004F48: D8EC0800 0600000F
+	s_cmp_eq_u32 s10, 1                                        // 000000004F50: BF06810A
+	s_cbranch_scc0 2                                           // 000000004F54: BF840002 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x260>
+	s_waitcnt lgkmcnt(0)                                       // 000000004F58: BF8CC07F
+	s_branch 1                                                 // 000000004F5C: BF820001 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x264>
+	s_waitcnt lgkmcnt(2)                                       // 000000004F60: BF8CC27F
+	v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]     // 000000004F64: D3CC8000 04020500
+	s_barrier                                                  // 000000004F6C: BF8A0000
+	s_cmp_le_u32 s10, 2                                        // 000000004F70: BF0B820A
+	s_cbranch_scc1 9                                           // 000000004F74: BF850009 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x29c>
+	s_add_u32 m0, s0, 0                                        // 000000004F78: 807C8000
+	s_nop 0                                                    // 000000004F7C: BF800000
+	global_load_dword v[8:9], off lds                          // 000000004F80: DC50A000 007F0008
+	global_load_dword v[8:9], off offset:256 lds               // 000000004F88: DC50A100 007F0008
+	s_mov_b32 m0, s1                                           // 000000004F90: BEFC0001
+	s_waitcnt vmcnt(0)                                         // 000000004F94: BF8C0F70
+	s_barrier                                                  // 000000004F98: BF8A0000
+	s_sub_u32 s10, s10, 1                                      // 000000004F9C: 808A810A
+	s_cmp_eq_u32 s10, 0                                        // 000000004FA0: BF06800A
+	s_cbranch_scc1 32                                          // 000000004FA4: BF850020 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x328>
+	s_cmp_le_u32 s10, 1                                        // 000000004FA8: BF0B810A
+	s_cbranch_scc1 4                                           // 000000004FAC: BF850004 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x2c0>
+	ds_read_b64 v[0:1], v14                                    // 000000004FB0: D8EC0000 0000000E
+	ds_read_b64 v[2:3], v15                                    // 000000004FB8: D8EC0000 0200000F
+	s_cmp_eq_u32 s10, 1                                        // 000000004FC0: BF06810A
+	s_cbranch_scc0 2                                           // 000000004FC4: BF840002 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x2d0>
+	s_waitcnt lgkmcnt(0)                                       // 000000004FC8: BF8CC07F
+	s_branch 1                                                 // 000000004FCC: BF820001 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x2d4>
+	s_waitcnt lgkmcnt(2)                                       // 000000004FD0: BF8CC27F
+	v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]     // 000000004FD4: D3CC8000 04020D04
+	s_barrier                                                  // 000000004FDC: BF8A0000
+	s_cmp_le_u32 s10, 2                                        // 000000004FE0: BF0B820A
+	s_cbranch_scc1 12                                          // 000000004FE4: BF85000C <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x318>
+	s_add_u32 m0, s0, 0                                        // 000000004FE8: 807C8000
+	s_nop 0                                                    // 000000004FEC: BF800000
+	global_load_dword v[8:9], off offset:2048 lds              // 000000004FF0: DC50A800 007F0008
+	global_load_dword v[8:9], off offset:2304 lds              // 000000004FF8: DC50A900 007F0008
+	s_mov_b32 m0, s1                                           // 000000005000: BEFC0001
+	v_add_co_u32_e32 v8, vcc, 0x1000, v8                       // 000000005004: 321010FF 00001000
+	v_addc_co_u32_e32 v9, vcc, 0, v9, vcc                      // 00000000500C: 38121280
+	s_waitcnt vmcnt(0)                                         // 000000005010: BF8C0F70
+	s_barrier                                                  // 000000005014: BF8A0000
+	s_sub_u32 s10, s10, 1                                      // 000000005018: 808A810A
+	s_cmp_eq_u32 s10, 0                                        // 00000000501C: BF06800A
+	s_cbranch_scc1 1                                           // 000000005020: BF850001 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x328>
+	s_branch 65476                                             // 000000005024: BF82FFC4 <void gemm_k8<2>(unsigned int const*, float*, unsigned long*, int)+0x238>
+	s_mov_b32 m0, s1                                           // 000000005028: BEFC0001

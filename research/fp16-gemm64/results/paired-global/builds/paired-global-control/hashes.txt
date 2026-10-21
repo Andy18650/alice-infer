@@ -1,0 +1,6 @@
+f7ea6091bc564f2f846b8b4dcc0015087b0eba69cf323c87d74bacbae2e74884  /home/andyhu/projects/inference/alice-infer/research/fp16-gemm64/gemm64.hip
+b696226613f999d143f6c33b4a71160ca64ad0b31d2e73e86248d919ffddbd2c  /home/andyhu/projects/inference/alice-infer/research/fp16-gemm64/data.hpp
+af657ae5d1381a248275341321dd56bcd49beb39e6f46c8cae8c29dd4225854b  /home/andyhu/projects/inference/alice-infer/research/fp16-gemm64/generate.py
+07d33133736bd64029d8b514134319b83ef8f7b38482e42e61a00f89c2731fe3  /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/paired-global-control/compute.hpp
+6142b03f217a0bfe224059f6e89062b8665b134be13592c6b6bee000c38998ff  /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/paired-global-control/probe
+5672843ed9073efd620d44b3ed25cdb04f50b78d641161c0e6ff2affedfa740a  /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/paired-global-control/probe.hsaco

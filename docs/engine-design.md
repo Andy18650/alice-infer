@@ -800,6 +800,23 @@ StageK128/two-buffer control143.302/143.235. Candidate assembly/data/source:
 actual asynchronous MFMA->DS->writeback sequence, not arbitrary immediate
 VALU overwrites or a universal source-register lifetime. No production change.
 
+The next user-directed narrow probe moves bulk `s_add_u32 m0` immediately
+before the existing barrier and removes its explicit `s_nop 0`; startup and
+bounded tails stay unchanged. Native bulk now has add/barrier/global-load
+adjacency and no NOP,12 rather than13 instructions per wave/step; data ops,
+waits, unroll, M0 restoration and the post-MFMA read algorithm are unchanged.
+Native O3 gfx90a HIP0, CPU+memory NUMA0, one CTA/256 threads, K32768, no
+model/context/clock changes: matched16 slots99.338/99.248 ->96.311/96.273
+cycles per four-wave MFMA step, bodies234.400/234.240 us;32 slots100.706/
+100.577 ->97.574/97.834.8 slots change direction between repeats, with no
+reliable gain claimed. The ~3-cycle gain at16/32 indicates a visible gap/
+setup scheduling cost but does not uniquely identify scalar issue, M0 or
+barrier latency/a sole bottleneck. All882 checked launches pass (720
+verification cases plus162 timing/control samples), with exact C/guards and
+all LDS words/guards. ISA/frozen source/native fingerprints are checked;
+zero scratch/lane/accumulator spills. Data/assembly: `results/m0-pre-barrier/`,
+baseline61904f8 preserved. No further controls, production or system changes.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

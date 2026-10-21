@@ -1,5 +1,8 @@
 # Candidate: issue the recycled-buffer LDS read after MFMA
 
+The later [M0/barrier scheduling probe](M0_BARRIER.md) moves setup across
+the barrier/removes the bulk NOP, retaining this algorithm and measured data.
+
 User-directed test of the original earlier-publication idea only. No extra
 just-in-time publication barrier/alternative route was implemented or tried.
 The mixed result includes a clear8-slot regression; performance work stops

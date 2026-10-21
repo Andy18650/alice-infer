@@ -76,9 +76,10 @@ if T==8:
         def emit(x):lines.append(x)
         def lab(x):return f'.Lpipe8_{N}_{x}_%='
         def branch(x):emit('s_branch '+lab(x))
-        def produce(slot):
-            emit(f's_add_u32 m0, %[dst], {slot*2048}')
-            emit('s_nop 0')
+        def produce(slot,prepared=False):
+            if not prepared:
+                emit(f's_add_u32 m0, %[dst], {slot*2048}')
+                emit('s_nop 0')
             emit('global_load_dword v[8:9], off lds')
             emit('global_load_dword v[8:9], off offset:256 lds')
             emit('s_mov_b32 m0, %[saved]')
@@ -144,7 +145,9 @@ if T==8:
             else:
                 mfma(raw);read((phase+2)%N,raw)
                 emit(f's_waitcnt vmcnt({2*(N-4)})')
-            emit('s_barrier');produce(phase) # Retire/refill CURRENT, not next.
+            # The existing barrier supplies the M0 write/use instruction gap.
+            emit(f's_add_u32 m0, %[dst], {phase*2048}')
+            emit('s_barrier');produce(phase,prepared=True) # Retire/refill current.
             if N==2:
                 # Current's slot must be retired before tile n+2 can be copied.
                 emit('s_waitcnt vmcnt(0)');emit('s_barrier')

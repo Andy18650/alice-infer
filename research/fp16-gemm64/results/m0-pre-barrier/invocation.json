@@ -1,0 +1,34 @@
+{
+  "argv": [
+    "research/fp16-gemm64/run_stage8.py",
+    "--stages",
+    "16",
+    "32",
+    "--verify-stages",
+    "2",
+    "4",
+    "8",
+    "16",
+    "32",
+    "--build",
+    "temp/fp16-gemm64/m0-pre-barrier",
+    "--control",
+    "temp/fp16-gemm64/m0-barrier-control",
+    "--baseline-build",
+    "temp/fp16-gemm64/post-mfma-read",
+    "--baseline-source",
+    "research/fp16-gemm64/results/post-mfma-read/source",
+    "--baseline-protocol",
+    "m0-post-barrier-nop",
+    "--protocol",
+    "m0-pre-barrier",
+    "--output",
+    "research/fp16-gemm64/results/m0-pre-barrier"
+  ],
+  "build": "/home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/m0-pre-barrier",
+  "control": "/home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/m0-barrier-control",
+  "stages": [
+    16,
+    32
+  ]
+}

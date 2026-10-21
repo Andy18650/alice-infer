@@ -1,0 +1,29 @@
+	s_memtime s[4:5]                                           // 0000000036C8: C0900100 00000000
+	s_waitcnt lgkmcnt(0)                                       // 0000000036D0: BF8CC07F
+	s_memrealtime s[10:11]                                     // 0000000036D4: C0940280 00000000
+	s_waitcnt lgkmcnt(0)                                       // 0000000036DC: BF8CC07F
+	s_lshl_b32 s7, s9, 11                                      // 0000000036E0: 8E078B09
+	v_add_u32_e64 v8, v11, s6                                  // 0000000036E4: D1340008 00000D0B
+	v_add_u32_e64 v9, v12, s6                                  // 0000000036EC: D1340009 00000D0C
+	ds_read_b64 v[0:1], v8                                     // 0000000036F4: D8EC0000 00000008
+	ds_read_b64 v[2:3], v9                                     // 0000000036FC: D8EC0000 02000009
+	ds_read_b64 v[4:5], v8                                     // 000000003704: D8EC0000 04000008
+	ds_read_b64 v[6:7], v9                                     // 00000000370C: D8EC0000 06000009
+	s_waitcnt lgkmcnt(2)                                       // 000000003714: BF8CC27F
+	v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]     // 000000003718: D3CC8000 04020500
+	ds_read_b64 v[0:1], v8                                     // 000000003720: D8EC0000 00000008
+	ds_read_b64 v[2:3], v9                                     // 000000003728: D8EC0000 02000009
+	s_waitcnt lgkmcnt(2)                                       // 000000003730: BF8CC27F
+	v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]     // 000000003734: D3CC8000 04020D04
+	ds_read_b64 v[4:5], v8                                     // 00000000373C: D8EC0000 04000008
+	ds_read_b64 v[6:7], v9                                     // 000000003744: D8EC0000 06000009
+	s_waitcnt lgkmcnt(2)                                       // 00000000374C: BF8CC27F
+	v_mfma_f32_32x32x8f16 a[0:15], v[0:1], v[2:3], a[0:15]     // 000000003750: D3CC8000 04020500
+	ds_read_b64 v[0:1], v8                                     // 000000003758: D8EC0000 00000008
+	ds_read_b64 v[2:3], v9                                     // 000000003760: D8EC0000 02000009
+	s_waitcnt lgkmcnt(2)                                       // 000000003768: BF8CC27F
+	v_mfma_f32_32x32x8f16 a[0:15], v[4:5], v[6:7], a[0:15]     // 00000000376C: D3CC8000 04020D04
+	s_sub_u32 s8, s8, 4                                        // 000000003774: 80888408
+	s_cmp_eq_u32 s8, 0                                         // 000000003778: BF068008
+	s_cbranch_scc0 65505                                       // 00000000377C: BF84FFE1 <void lds_grid<true>(float*, unsigned long*, int, int, unsigned int, unsigned int)+0x804>
+	s_waitcnt lgkmcnt(0)                                       // 000000003780: BF8CC07F

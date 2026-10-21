@@ -6,7 +6,10 @@ no dtype conversion in loading/compute, no vendor GEMM, no register-staging
 producer. The losing [register baseline](REGISTER_BASELINE.md) is archived
 at checkpoint **3217640**, not an active option.
 
-**Latest StageK8 candidate:** [post-MFMA same-buffer refill](POST_MFMA_READ.md),
+**Latest StageK8 change:** [M0 setup before the barrier, no bulk NOP](M0_BARRIER.md),
+~96.3 cycles/step at16 slots, versus the matched ~99.3 baseline.8 slots show
+mixed timing; no universal bottleneck claim. Underlying algorithm:
+[post-MFMA same-buffer refill](POST_MFMA_READ.md),
 2/4/8/16/32 LDS slots and an outer loop explicitly unrolled by the slot count.
 N>=4 keeps lgkmcnt(2) immediately before MFMA, then reads n+2 into its just-
 consumed buffer.16/32 improve to ~99/~100.5 cycles, but8 regresses to ~153
@@ -201,8 +204,8 @@ supports clangd. No production/CMake/model-fixture changes.
 
 Current CSV/logs, raw clocks, commands, snapshots, hashes, inventories,
 rejections and comparisons: `results/direct-only-persistent-regression/` for
-the larger-chunk rerun, `results/post-mfma-read/` for the latest StageK8
-candidate and matched `results/retire-current/` baseline.
+the larger-chunk rerun, `results/m0-pre-barrier/` for the latest scheduling
+probe, `results/post-mfma-read/` and `results/retire-current/` for its baselines.
 Earlier StageK8 studies remain at `results/stage8-persistent/` and ring16/ring32.
 The original misbound `results/direct-only/` is flagged, not deleted. Pre-cull results and
 source are preserved in `results/final/` and checkpoint3217640. Initial grid

@@ -72,6 +72,12 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
                 assert bulk[i+1].strip().startswith(f'ds_read_b64 v[{v}:{v+1}]'),('not immediate same-buffer refill',name)
                 assert bulk[i+2].strip().startswith(f'ds_read_b64 v[{v+2}:{v+3}]'),('not immediate same-buffer refill',name)
         assert all(f'vmcnt({steady_vm})' in x for x in bulk if 'vmcnt(' in x)
+        assert not any(x.strip().startswith('s_nop') for x in bulk),('bulk explicit M0 gap retained',name)
+        copy_indices=[i for i,x in enumerate(bulk) if x.strip().startswith('global_load_')]
+        assert len(copy_indices)==2*stages
+        for i in copy_indices[::2]:
+            assert bulk[i-1].strip().startswith('s_barrier'),('M0 use not directly after barrier',name)
+            assert bulk[i-2].strip().startswith('s_add_u32 m0,'),('M0 setup not directly before barrier',name)
         refill_offsets=[int(x.split('//')[0].split(',')[-1].strip(),0) for x in bulk if x.strip().startswith('s_add_u32 m0,')]
         assert refill_offsets==[2048*p for p in range(stages)],('not retiring current',name,refill_offsets)
         offsets=[int(re.search(r'offset:(\d+)',x)[1]) if 'offset:' in x else 0 for x in bulk if x.strip().startswith('ds_read_b64')]

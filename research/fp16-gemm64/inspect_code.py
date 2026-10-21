@@ -21,10 +21,7 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
         assert sum('v_mfma_f32_32x32x8f16' in l for l in body)>0
         for i,line in enumerate(body):
             if 'v_mfma_f32_32x32x8f16' in line:
-                if '<void gemm_k8<' in name:
-                    assert 's_waitcnt lgkmcnt(0)' in body[i+1],('next prefetch not retired after MFMA',name,line)
-                else:
-                    assert i>0 and f's_waitcnt lgkmcnt({2*(depth-1)})' in body[i-1],('not direct LDS->MFMA',name,line)
+                assert i>0 and f's_waitcnt lgkmcnt({2*(depth-1)})' in body[i-1],('not direct LDS->MFMA',name,line)
     else:body=lines
     assert not any(l.strip().startswith('v_cvt') for l in lines),('unexpected dtype conversion',name)
     if '<void lds_grid<' in name:assert not any(l.strip().startswith('global_load_') for l in lines)
@@ -44,7 +41,8 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
         assert any('vmcnt(0)' in l for l in body[last+1:]),name
     if m:=re.search(r'<void gemm_k8<(\d+)>',name):
         stages=int(m[1]);waits=[int(x) for l in body for x in re.findall(r'vmcnt\((\d+)\)',l)]
-        assert 2*(min(stages,31)-1) in waits and 2*(stages-2) in waits,(name,waits)
+        steady_vm=2*max(0,stages-3)
+        assert 2*(min(stages,31)-1) in waits and steady_vm in waits,(name,waits)
         assert max(waits)<=62,(name,'VMEM counter range')
         if stages==32:
             firstwait=next(i for i,l in enumerate(body) if 'vmcnt(' in l)
@@ -62,14 +60,17 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
             seq=[x for x in body[:i+1] if int(re.search(r'// ([0-9a-fA-F]+):',x)[1],16)>=target]
             if sum('v_mfma_' in x for x in seq)==stages:bulk=seq
         assert bulk,(name,'missing unrolled bulk backedge')
-        assert sum('s_barrier' in x for x in bulk)==stages
+        assert sum('s_barrier' in x for x in bulk)==stages*(2 if stages==2 else 1)
+        assert all('lgkmcnt(2)' in x for x in bulk if 'lgkmcnt(' in x),('bulk DS drain',name)
         assert sum(x.strip().startswith('ds_read_b64') for x in bulk)==2*stages
         assert sum('s_sub_u32' in x for x in bulk)==1
         assert sum(x.strip().startswith('s_cbranch') for x in bulk)==1
         for phase,line in enumerate(x for x in bulk if 'v_mfma_' in x):
             v=4*(phase%2)
             assert f'v[{v}:{v+1}], v[{v+2}:{v+3}]' in line,(name,line)
-        assert all(f'vmcnt({2*(stages-2)})' in x for x in bulk if 'vmcnt(' in x)
+        assert all(f'vmcnt({steady_vm})' in x for x in bulk if 'vmcnt(' in x)
+        refill_offsets=[int(x.split('//')[0].split(',')[-1].strip(),0) for x in bulk if x.strip().startswith('s_add_u32 m0,')]
+        assert refill_offsets==[2048*p for p in range(stages)],('not retiring current',name,refill_offsets)
         offsets=[int(re.search(r'offset:(\d+)',x)[1]) if 'offset:' in x else 0 for x in bulk if x.strip().startswith('ds_read_b64')]
         assert offsets==[2048*((p+1)%stages) for p in range(stages) for _ in (0,1)],(name,offsets)
     (folder/('core-'+str(len(out))+'.txt')).write_text('\n'.join(body)+'\n')

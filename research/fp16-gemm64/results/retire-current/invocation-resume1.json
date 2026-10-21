@@ -1,0 +1,31 @@
+{
+  "argv": [
+    "research/fp16-gemm64/run_stage8.py",
+    "--stages",
+    "16",
+    "32",
+    "--verify-stages",
+    "2",
+    "4",
+    "8",
+    "16",
+    "32",
+    "--build",
+    "temp/fp16-gemm64/retire-current",
+    "--control",
+    "temp/fp16-gemm64/retire-current-control",
+    "--baseline-build",
+    "temp/fp16-gemm64/ring32",
+    "--baseline-source",
+    "research/fp16-gemm64/results/ring32/source",
+    "--output",
+    "research/fp16-gemm64/results/retire-current",
+    "--resume"
+  ],
+  "build": "/home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current",
+  "control": "/home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current-control",
+  "stages": [
+    16,
+    32
+  ]
+}

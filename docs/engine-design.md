@@ -754,6 +754,29 @@ Sources/binaries/data are preserved separately in `results/ring16/` and
 nonempty output directory. No physical-unit attribution, significant-
 regression claim, production change or further tuning is made.
 
+The next user-directed change retires CURRENT LDS tile n, not prefetched
+n+1: issue next's two DS reads, lgkmcnt(2), MFMA current, publish n+2 with
+vmcnt(2*(N-3)), CTA barrier, then refill current's slot with n+N. One fewer
+global-copy stage leads the consumer; physical LDS/raw-buffer counts stay
+unchanged. The next read pair may remain pending through the boundary.
+No initial early refill/drain remains, and only the last tail record needs
+lgkmcnt(0). N2 needs a separate post-refill publication barrier; N>=4 retain
+one barrier/step. ISA checks partial-wait-before-MFMA, no bulk DS drain,
+current-slot offsets, 26/58 VM watermarks, unroll/parity and zero spills.
+Matched native O3 gfx90a HIP0, CPU+memory NUMA0, one CTA/256 threads,
+K32768, no model/context/clock changes: 16/32-slot new runs 109.474/109.449
+and 110.734/110.989 cycles per four-wave MFMA step, versus frozen old
+157.906/157.862 and 158.195/158.298. New bodies 266.560/266.400 and 269.600/
+270.080 us beat StageK128/two-buffer 143.130/143.483 cycles (~347-348 us).
+All 882 checked launches pass: 720 new verification cases across 2/4/8/16/32,
+plus 162 timed samples including matched controls. The harness timed out
+late after all verification; hash/argument-bound recovery reuses 732 complete
+processes and executes six remaining, preserving the interrupted pair and
+original/recovery scripts, invocations and logs. Records/source snapshots:
+`results/retire-current/`; current schedule described in CURRENT_RETIREMENT.md.
+No old-retirement branch in the active binary, production changes, extra
+optimization or unique hardware-bottleneck claim.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

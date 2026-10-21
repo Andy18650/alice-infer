@@ -1,5 +1,10 @@
 # StageK8 ring growth:16 stages, then32
 
+**Historical retire-next protocol.** The subsequent user-directed
+[current-slot retirement](CURRENT_RETIREMENT.md) removes the forced bulk
+LGKM drain and improves16 slots from ~158 to ~109 cycles/step. The plateau
+reported below belongs to this earlier schedule; its data remain unchanged.
+
 User-requested sequential test: try16 first; proceed to32 only if16 still
 trails the best StageK128 control without a regression. Stop on capacity
 failure/regression. Persistent two-raw-buffer algorithm and unrolling from

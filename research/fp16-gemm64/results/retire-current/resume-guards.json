@@ -1,0 +1,12 @@
+[
+  {
+    "case": "changed arguments rejected",
+    "exit": 2,
+    "error": "usage: run_stage8.py [-h] [--stages STAGES [STAGES ...]]\n                     [--verify-stages VERIFY_STAGES [VERIFY_STAGES ...]]\n                     [--resume] [--baseline-build BASELINE_BUILD]\n                     [--baseline-source BASELINE_SOURCE] [--build BUILD]\n                     [--control CONTROL] [--output OUTPUT]\nrun_stage8.py: error: resume arguments must exactly match the original invocation\n"
+  },
+  {
+    "case": "changed saved fingerprint rejected before probes",
+    "exit": 1,
+    "error": "Traceback (most recent call last):\n  File \"/home/andyhu/projects/inference/alice-infer/research/fp16-gemm64/run_stage8.py\", line 43, in <module>\n    assert (dest/'hashes.txt').read_bytes()==(folder/'hashes.txt').read_bytes(),('changed resume fingerprint',folder)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ('changed resume fingerprint', PosixPath('/home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current'))\n"
+  }
+]

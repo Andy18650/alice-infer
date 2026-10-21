@@ -1,0 +1,1476 @@
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 0
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 0
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 0
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 7
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 7
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 7
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 8
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 8
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 8
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 9
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 9
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 9
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 15
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 15
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 15
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 16
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 16
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 16
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 17
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 17
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 17
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 23
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 23
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 23
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 24
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 24
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 24
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 25
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 25
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 25
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 31
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 31
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 31
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 33
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 33
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 33
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 55
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 55
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 55
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 56
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 56
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 56
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 57
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 57
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 57
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 63
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 63
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 63
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 64
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 64
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 64
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 65
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 65
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 65
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 71
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 71
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 71
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 72
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 72
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 72
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 73
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 73
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 73
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 119
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 119
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 119
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 120
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 120
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 120
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 121
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 121
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 121
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 127
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 127
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 127
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 128
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 128
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 128
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 129
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 129
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 129
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 239
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 239
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 239
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 240
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 240
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 240
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 241
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 241
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 241
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 247
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 247
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 247
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 248
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 248
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 248
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 249
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 249
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 249
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 255
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 255
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 255
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 256
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 256
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 256
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 257
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 257
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 257
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 511
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 511
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 511
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 512
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 512
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 512
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 513
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 513
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 513
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 767
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 767
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 767
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 769
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 769
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 769
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 1024
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 1024
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 1024
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 65535
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 65535
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 65535
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 2 --k 65536
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 2 --k 65536
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 2 --k 65536
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 0
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 0
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 0
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 7
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 7
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 7
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 8
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 8
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 8
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 9
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 9
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 9
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 15
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 15
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 15
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 16
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 16
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 16
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 17
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 17
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 17
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 23
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 23
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 23
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 24
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 24
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 24
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 25
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 25
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 25
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 31
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 31
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 31
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 33
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 33
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 33
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 55
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 55
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 55
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 56
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 56
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 56
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 57
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 57
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 57
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 63
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 63
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 63
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 64
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 64
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 64
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 65
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 65
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 65
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 71
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 71
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 71
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 72
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 72
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 72
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 73
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 73
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 73
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 119
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 119
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 119
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 120
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 120
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 120
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 121
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 121
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 121
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 127
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 127
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 127
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 128
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 128
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 128
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 129
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 129
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 129
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 239
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 239
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 239
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 240
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 240
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 240
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 241
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 241
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 241
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 247
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 247
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 247
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 248
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 248
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 248
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 249
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 249
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 249
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 255
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 255
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 255
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 256
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 256
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 256
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 257
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 257
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 257
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 511
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 511
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 511
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 512
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 512
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 512
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 513
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 513
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 513
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 767
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 767
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 767
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 769
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 769
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 769
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 1024
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 1024
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 1024
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 65535
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 65535
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 65535
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 4 --k 65536
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 4 --k 65536
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 4 --k 65536
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 0
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 0
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 0
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 7
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 7
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 7
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 8
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 8
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 8
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 9
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 9
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 9
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 15
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 15
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 15
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 16
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 16
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 16
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 17
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 17
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 17
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 23
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 23
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 23
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 24
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 24
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 24
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 25
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 25
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 25
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 31
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 31
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 31
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 33
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 33
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 33
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 55
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 55
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 55
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 56
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 56
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 56
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 57
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 57
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 57
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 63
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 63
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 63
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 64
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 64
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 64
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 65
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 65
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 65
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 71
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 71
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 71
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 72
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 72
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 72
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 73
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 73
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 73
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 119
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 119
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 119
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 120
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 120
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 120
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 121
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 121
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 121
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 127
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 127
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 127
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 128
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 128
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 128
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 129
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 129
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 129
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 239
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 239
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 239
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 240
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 240
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 240
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 241
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 241
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 241
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 247
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 247
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 247
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 248
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 248
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 248
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 249
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 249
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 249
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 255
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 255
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 255
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 256
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 256
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 256
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 257
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 257
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 257
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 511
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 511
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 511
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 512
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 512
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 512
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 513
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 513
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 513
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 767
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 767
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 767
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 769
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 769
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 769
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 1024
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 1024
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 1024
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 65535
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 65535
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 65535
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 8 --k 65536
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 8 --k 65536
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 8 --k 65536
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 0
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 0
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 0
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 7
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 7
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 7
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 8
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 8
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 8
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 9
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 9
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 9
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 15
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 15
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 15
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 16
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 16
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 16
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 17
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 17
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 17
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 23
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 23
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 23
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 24
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 24
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 24
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 25
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 25
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 25
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 31
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 31
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 31
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 33
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 33
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 33
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 55
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 55
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 55
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 56
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 56
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 56
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 57
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 57
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 57
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 63
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 63
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 63
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 64
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 64
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 64
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 65
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 65
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 65
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 71
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 71
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 71
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 72
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 72
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 72
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 73
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 73
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 73
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 119
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 119
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 119
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 120
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 120
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 120
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 121
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 121
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 121
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 127
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 127
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 127
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 128
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 128
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 128
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 129
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 129
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 129
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 239
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 239
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 239
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 240
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 240
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 240
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 241
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 241
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 241
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 247
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 247
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 247
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 248
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 248
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 248
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 249
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 249
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 249
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 255
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 255
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 255
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 256
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 256
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 256
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 257
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 257
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 257
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 511
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 511
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 511
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 512
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 512
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 512
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 513
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 513
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 513
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 767
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 767
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 767
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 769
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 769
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 769
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 1024
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 1024
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 1024
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 65535
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 65535
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 65535
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 16 --k 65536
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 16 --k 65536
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 16 --k 65536
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 0
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 0
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 0
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 7
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 7
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 7
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 8
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 8
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 8
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 9
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 9
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 9
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 15
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 15
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 15
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 16
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 16
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 16
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 17
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 17
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 17
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 23
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 23
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 23
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 24
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 24
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 24
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 25
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 25
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 25
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 31
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 31
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 31
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 33
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 33
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 33
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 55
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 55
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 55
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 56
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 56
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 56
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 57
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 57
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 57
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 63
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 63
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 63
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 64
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 64
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 64
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 65
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 65
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 65
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 71
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 71
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 71
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 72
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 72
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 72
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 73
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 73
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 73
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 119
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 119
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 119
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 120
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 120
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 120
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 121
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 121
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 121
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 127
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 127
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 127
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 128
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 128
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 128
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 129
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 129
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 129
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 239
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 239
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 239
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 240
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 240
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 240
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 241
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 241
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 241
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 247
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 247
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 247
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 248
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 248
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 248
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 249
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 249
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 249
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 255
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 255
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 255
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 256
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 256
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 256
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 257
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 257
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 257
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 511
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 511
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 511
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 512
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 512
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 512
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 513
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 513
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 513
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 767
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 767
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 767
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 769
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 769
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 769
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 1024
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 1024
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 1024
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 65535
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 65535
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 65535
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2718 --buffers 32 --k 65536
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1730 --seed-b 2718 --buffers 32 --k 65536
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 1 --warmup-ms 0 --seed-a 1729 --seed-b 2719 --buffers 32 --k 65536
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ring32/probe --mode gemm --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --buffers 8 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --buffers 8 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ring32/probe --mode gemm --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --buffers 16 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current-control/probe --mode gemm --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --buffers 2 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ring32/probe --mode gemm --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --buffers 32 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --buffers 32 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --buffers 16 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode lds-hot --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --steps 4096 --records 1
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode lds-sweep --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --steps 4096 --records 32
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --buffers 16 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ring32/probe --mode gemm --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --buffers 8 --k 32768
+# reused complete
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --buffers 32 --k 32768
+# executed
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ring32/probe --mode gemm --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --buffers 16 --k 32768
+# executed
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/ring32/probe --mode gemm --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --buffers 32 --k 32768
+# executed
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode gemm --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --buffers 8 --k 32768
+# executed
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current-control/probe --mode gemm --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --buffers 2 --k 32768
+# executed
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode lds-hot --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --steps 4096 --records 1
+# executed
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/retire-current/probe --mode lds-sweep --rounds 9 --warmup-ms 200 --seed-a 1729 --seed-b 2718 --steps 4096 --records 32

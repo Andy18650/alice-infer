@@ -1,5 +1,7 @@
 # Persistent StageK=8 pipeline: two raw buffers, unrolled outer loop
 
+**Historical retire-next schedule.** Current code instead uses
+[partial LGKM waits and current-slot retirement](CURRENT_RETIREMENT.md).
 The original2/4/8-slot measurements below are preserved. The later
 [16/32-slot ring-size follow-up](RING_GROWTH.md) adds those choices and
 counter-safe32-stage startup;16 is best observed,32 slightly regresses.

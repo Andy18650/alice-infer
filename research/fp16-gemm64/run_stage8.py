@@ -11,6 +11,8 @@ p.add_argument('--verify-stages',type=int,nargs='+')
 p.add_argument('--resume',action='store_true')
 p.add_argument('--baseline-build',type=Path)
 p.add_argument('--baseline-source',type=Path)
+p.add_argument('--protocol',default='post-mfma-read')
+p.add_argument('--baseline-protocol',default='retire-next')
 p.add_argument('--build',type=Path,default=root/'temp/fp16-gemm64/d2-u1-t8-direct-only')
 p.add_argument('--control',type=Path,default=root/'temp/fp16-gemm64/d2-u4-t128-direct-only')
 p.add_argument('--output',type=Path,default=here/'results/stage8-persistent')
@@ -55,7 +57,7 @@ with (out/f'amd-smi{resume_tag}-before.txt').open('w') as f:subprocess.run(['amd
 with (out/f'commands{resume_tag}.txt').open('w') as commands:
     def run(kind,buffers,k,sa=1729,sb=2718,repeat=0,mode='gemm',baseline=False,old=False):
         folder=oldbuild if old else control if baseline else build
-        protocol='large-control' if baseline else 'retire-next' if old else 'retire-current'
+        protocol='large-control' if baseline else a.baseline_protocol if old else a.protocol
         if mode!='gemm':protocol='lds-reference'
         t=128 if baseline else 8
         name=f'{protocol}-t{t}-b{buffers}-k{k}-a{sa}-b{sb}-run{repeat}-{mode}'
@@ -109,8 +111,8 @@ text=[f"Exact checked launches: {sum(x['samples'] for x in rows)}; verification-
       'Native O3 HIP0, CPU+memory NUMA0, one CTA/256 threads, K32768, no model/context/clock changes.',
       'StageK8 raw D2 / outer unroll=stages; StageK128 control D2/U4. Two repeats, nine samples/process, 200 ms warmup.',
       'protocol | stageK | stages | cycles/four-wave MFMA step run1/run2 | total body us run1/run2 | full event us run1/run2']
-cases=[('retire-current',8,s) for s in timing_stages]
-if oldbuild:cases +=[('retire-next',8,s) for s in timing_stages]
+cases=[(a.protocol,8,s) for s in timing_stages]
+if oldbuild:cases +=[(a.baseline_protocol,8,s) for s in timing_stages]
 cases +=[('large-control',128,2)]
 for protocol,t,stages in cases:
     r=[x for x in rows if x['kind']=='timing' and x['mode']=='gemm' and (x['protocol'],x['stage_k'],x['buffers'])==(protocol,t,stages)]

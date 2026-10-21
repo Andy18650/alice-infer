@@ -6,10 +6,12 @@ no dtype conversion in loading/compute, no vendor GEMM, no register-staging
 producer. The losing [register baseline](REGISTER_BASELINE.md) is archived
 at checkpoint **3217640**, not an active option.
 
-**Current StageK8 path:** [rolling buffers/current-slot retirement](CURRENT_RETIREMENT.md),
+**Latest StageK8 candidate:** [post-MFMA same-buffer refill](POST_MFMA_READ.md),
 2/4/8/16/32 LDS slots and an outer loop explicitly unrolled by the slot count.
-Bulk uses lgkmcnt(2) before MFMA and leaves the next pair pending;16 slots
-measure ~109 cycles/step. The [older persistent schedule](STAGE8.md) and
+N>=4 keeps lgkmcnt(2) immediately before MFMA, then reads n+2 into its just-
+consumed buffer.16/32 improve to ~99/~100.5 cycles, but8 regresses to ~153
+versus ~138: reported for the user's decision, with no alternative route.
+The [pre-MFMA-read/current-retirement baseline](CURRENT_RETIREMENT.md) is preserved. The [older persistent schedule](STAGE8.md) and
 [ring-size follow-up](RING_GROWTH.md) are retained history, not the current
 retirement protocol. No per-record inner compute loop. The [initial slow protocol](STAGE8_INITIAL.md)
 and its measured source/results are retained separately.
@@ -199,7 +201,8 @@ supports clangd. No production/CMake/model-fixture changes.
 
 Current CSV/logs, raw clocks, commands, snapshots, hashes, inventories,
 rejections and comparisons: `results/direct-only-persistent-regression/` for
-the larger-chunk rerun, `results/retire-current/` for current StageK8.
+the larger-chunk rerun, `results/post-mfma-read/` for the latest StageK8
+candidate and matched `results/retire-current/` baseline.
 Earlier StageK8 studies remain at `results/stage8-persistent/` and ring16/ring32.
 The original misbound `results/direct-only/` is flagged, not deleted. Pre-cull results and
 source are preserved in `results/final/` and checkpoint3217640. Initial grid

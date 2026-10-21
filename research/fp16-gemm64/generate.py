@@ -100,10 +100,11 @@ if T==8:
             if tag:emit(lab(tag+'_ready')+':')
             v=4*raw
             emit(f'v_mfma_f32_32x32x8f16 %[c], v[{v}:{v+1}], v[{v+2}:{v+3}], %[c]')
-        def wait_tail(maxlater,shift,tag):
+        def wait_tail(maxlater,shift,tag,drain_short=False):
             for later in range(maxlater,-1,-1):
                 emit(f's_cmp_ge_u32 %[remaining], {later+shift}')
                 emit('s_cbranch_scc1 '+lab(f'{tag}_{later}'))
+            if drain_short:emit('s_waitcnt vmcnt(0)')
             branch(tag+'_done')
             for later in range(maxlater,-1,-1):
                 emit(lab(f'{tag}_{later}')+':')
@@ -125,14 +126,24 @@ if T==8:
             emit('s_cbranch_scc1 '+lab('last_prime_done'));produce(31)
             emit(lab('last_prime_done')+':')
         read(0,0) # Keep the prime pending; slot0 is NOT retired here.
-        wait_tail(N-2,2,'initial1');emit('s_barrier')
+        if N==2:
+            wait_tail(N-2,2,'initial1');emit('s_barrier')
+        else:
+            # Publish tile2 as well (or the last real tile in a short fill).
+            wait_tail(N-3,3,'initial2',drain_short=True);emit('s_barrier')
+            emit('s_cmp_le_u32 %[remaining], 1')
+            emit('s_cbranch_scc1 '+lab('second_prime_done'));read(1,1)
+            emit(lab('second_prime_done')+':')
         emit(f's_cmp_le_u32 %[remaining], {2*N}')
         emit('s_cbranch_scc1 '+lab('tail0'))
         emit(lab('bulk')+':')
         for phase in range(N):
-            slot=(phase+1)%N;raw=phase%2
-            read(slot,1-raw);mfma(raw)
-            if N>2:emit(f's_waitcnt vmcnt({2*(N-3)})')
+            raw=phase%2
+            if N==2:
+                read((phase+1)%N,1-raw);mfma(raw)
+            else:
+                mfma(raw);read((phase+2)%N,raw)
+                emit(f's_waitcnt vmcnt({2*(N-4)})')
             emit('s_barrier');produce(phase) # Retire/refill CURRENT, not next.
             if N==2:
                 # Current's slot must be retired before tile n+2 can be copied.
@@ -141,12 +152,18 @@ if T==8:
         emit(f's_cmp_gt_u32 %[remaining], {2*N}')
         emit('s_cbranch_scc1 '+lab('bulk'))
         for phase in range(N):
-            slot=(phase+1)%N;raw=phase%2;tag=f'tail{phase}'
+            raw=phase%2;tag=f'tail{phase}'
             emit(lab(tag)+':')
-            emit('s_cmp_le_u32 %[remaining], 1')
-            emit('s_cbranch_scc1 '+lab(tag+'_read_done'))
-            read(slot,1-raw);emit(lab(tag+'_read_done')+':');mfma(raw,tag)
-            if N>2:wait_tail(N-3,3,tag+'_publish')
+            if N==2:
+                emit('s_cmp_le_u32 %[remaining], 1')
+                emit('s_cbranch_scc1 '+lab(tag+'_read_done'))
+                read((phase+1)%N,1-raw);emit(lab(tag+'_read_done')+':');mfma(raw,tag)
+            else:
+                mfma(raw,tag)
+                emit('s_cmp_le_u32 %[remaining], 2')
+                emit('s_cbranch_scc1 '+lab(tag+'_read_done'))
+                read((phase+2)%N,raw);emit(lab(tag+'_read_done')+':')
+                wait_tail(N-4,4,tag+'_publish')
             emit('s_barrier')
             emit(f's_cmp_le_u32 %[remaining], {N}')
             emit('s_cbranch_scc1 '+lab(tag+'_refill_done'));produce(phase)

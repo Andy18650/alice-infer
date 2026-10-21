@@ -777,6 +777,29 @@ original/recovery scripts, invocations and logs. Records/source snapshots:
 No old-retirement branch in the active binary, production changes, extra
 optimization or unique hardware-bottleneck claim.
 
+The user next requests ONLY the original post-MFMA read idea: for N>=4,
+prime raw0/raw1 and publish tile2 at startup; then lgkmcnt(2), MFMA n,
+immediately DS-read n+2 into that just-consumed buffer, publish n+3 at the
+existing boundary with vmcnt(2*(N-4)), retire current and refill n+N. Thus
+16/32 use VM24/56, with another global lookahead stage sacrificed but no
+extra barrier, M0 optimization or operand padding. N2 remains its existing
+special case. Fixed offsets/parity/unroll and conservative bulk bounds stay
+unchanged. Native ISA verifies immediate same-buffer DS instructions after
+MFMA, LGKM2 before it, VM24/56, no spills/inner loop/conversions. All882
+checked launches pass (720 verification cases across all rings plus162 timed
+samples including preserved baseline/controls), with no timeout this run.
+Matched native O3 gfx90a HIP0, CPU+memory NUMA0, one CTA/256 threads,
+K32768, no model/context/clock changes:16/32 candidate99.271/99.221 and
+100.663/100.463 cycles/step improve pre-read109.625/109.694 and110.772/
+110.878; candidate bodies241.600/241.440 and244.960/244.640 us. BUT8 slots
+regress to153.702/152.277 versus137.669/137.879 in both repeats. This mixed
+result is reported and performance work stops for the user's decision; no
+alternate publication route, fallback or per-size selection is tried.
+StageK128/two-buffer control143.302/143.235. Candidate assembly/data/source:
+`results/post-mfma-read/`, baseline preserved at63d14a0. This tests the
+actual asynchronous MFMA->DS->writeback sequence, not arbitrary immediate
+VALU overwrites or a universal source-register lifetime. No production change.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

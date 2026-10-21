@@ -1,0 +1,34 @@
+{
+  "argv": [
+    "research/fp16-gemm64/run_stage8.py",
+    "--stages",
+    "16",
+    "32",
+    "--verify-stages",
+    "2",
+    "4",
+    "8",
+    "16",
+    "32",
+    "--build",
+    "temp/fp16-gemm64/post-mfma-read",
+    "--control",
+    "temp/fp16-gemm64/post-mfma-control",
+    "--baseline-build",
+    "temp/fp16-gemm64/retire-current",
+    "--baseline-source",
+    "research/fp16-gemm64/results/retire-current/source",
+    "--baseline-protocol",
+    "pre-mfma-read",
+    "--protocol",
+    "post-mfma-read",
+    "--output",
+    "research/fp16-gemm64/results/post-mfma-read"
+  ],
+  "build": "/home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/post-mfma-read",
+  "control": "/home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/post-mfma-control",
+  "stages": [
+    16,
+    32
+  ]
+}

@@ -3,7 +3,9 @@
 User-directed replacement of the early next-tile retirement schedule. Two
 raw buffers and the same physical LDS ring remain. The next A/B read pair
 may stay pending across the boundary; no bulk LGKM drain is required.
-This is the current StageK8 implementation. The previous algorithm/binary
+This is the preserved pre-MFMA-read baseline. The later
+[post-MFMA-read candidate](POST_MFMA_READ.md) improves16/32 but regresses8;
+that mixed result is reported for the user's decision. The previous algorithm/binary
 is preserved at checkpoint706b28e and `temp/fp16-gemm64/ring32/`.
 
 ## Schedule, N>=4

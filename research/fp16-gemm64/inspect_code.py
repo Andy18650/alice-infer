@@ -41,7 +41,7 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
         assert any('vmcnt(0)' in l for l in body[last+1:]),name
     if m:=re.search(r'<void gemm_k8<(\d+)>',name):
         stages=int(m[1]);waits=[int(x) for l in body for x in re.findall(r'vmcnt\((\d+)\)',l)]
-        steady_vm=2*max(0,stages-3)
+        steady_vm=2*max(0,stages-4)
         assert 2*(min(stages,31)-1) in waits and steady_vm in waits,(name,waits)
         assert max(waits)<=62,(name,'VMEM counter range')
         if stages==32:
@@ -65,14 +65,18 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
         assert sum(x.strip().startswith('ds_read_b64') for x in bulk)==2*stages
         assert sum('s_sub_u32' in x for x in bulk)==1
         assert sum(x.strip().startswith('s_cbranch') for x in bulk)==1
-        for phase,line in enumerate(x for x in bulk if 'v_mfma_' in x):
-            v=4*(phase%2)
+        for phase,i in enumerate(i for i,x in enumerate(bulk) if 'v_mfma_' in x):
+            v=4*(phase%2);line=bulk[i]
             assert f'v[{v}:{v+1}], v[{v+2}:{v+3}]' in line,(name,line)
+            if stages>2:
+                assert bulk[i+1].strip().startswith(f'ds_read_b64 v[{v}:{v+1}]'),('not immediate same-buffer refill',name)
+                assert bulk[i+2].strip().startswith(f'ds_read_b64 v[{v+2}:{v+3}]'),('not immediate same-buffer refill',name)
         assert all(f'vmcnt({steady_vm})' in x for x in bulk if 'vmcnt(' in x)
         refill_offsets=[int(x.split('//')[0].split(',')[-1].strip(),0) for x in bulk if x.strip().startswith('s_add_u32 m0,')]
         assert refill_offsets==[2048*p for p in range(stages)],('not retiring current',name,refill_offsets)
         offsets=[int(re.search(r'offset:(\d+)',x)[1]) if 'offset:' in x else 0 for x in bulk if x.strip().startswith('ds_read_b64')]
-        assert offsets==[2048*((p+1)%stages) for p in range(stages) for _ in (0,1)],(name,offsets)
+        lookahead=1 if stages==2 else 2
+        assert offsets==[2048*((p+lookahead)%stages) for p in range(stages) for _ in (0,1)],(name,offsets)
     (folder/('core-'+str(len(out))+'.txt')).write_text('\n'.join(body)+'\n')
     out.append(dict(name=name,direct=direct,copy_check=iscopy,core_lines=len(body),global_to_lds=sum(bool(re.search(r'global_load_.*\blds\s+//',l)) for l in body)))
 expected=3+len(re.findall(r'if constexpr\(Stages==\d+\)',header)) if stage==8 else 5

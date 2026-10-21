@@ -57,37 +57,9 @@ __global__ __launch_bounds__(256) void copy_check(const uint32_t* src,uint32_t* 
   }
   for(int i=threadIdx.x;i<buffers*words;i+=256) output[i]=smem[i];
 }
-template<int Buffers> __global__ __launch_bounds__(256) void gemm(const uint32_t* packed,float* out,uint64_t* stamps,int tiles) {
-  extern __shared__ __attribute__((aligned(16))) uint32_t smem[];
-  constexpr int words=kStageK/8*512;
-  int lane=threadIdx.x%64,wave=threadIdx.x/64;
-  F16 c={};uint64_t b,e,wb,we;
-  begin_clock(c,b,wb);
-  if(tiles) {
-    produce(packed,smem);finish_produce();__syncthreads();
-#pragma clang loop unroll(disable)
-    for(int tile=0;tile<tiles;++tile) {
-      if constexpr(Buffers==2) {
-        if(tile+1<tiles) produce(packed+size_t(tile+1)*words,smem+((tile+1)%2)*words);
-        // Future direct writes are VMEM; current LDS reads use LGKM.
-      }
-      const uint32_t base=uint32_t(reinterpret_cast<uintptr_t>(smem+(tile%Buffers)*words));
-      compute<false>(base+(wave/2)*512+lane*8,base+1024+(wave%2)*512+lane*8,kStageK/8,kStageK/8,c);
-      if constexpr(Buffers==2) { if(tile+1<tiles) finish_produce(); }
-      // compute drained each wave's LDS reads; producer completion plus this
-      // CTA barrier publishes next tile AND prevents overwriting current tile.
-      __syncthreads();
-      if constexpr(Buffers==1) {
-        if(tile+1<tiles) {produce(packed+size_t(tile+1)*words,smem);finish_produce();__syncthreads();}
-      }
-    }
-  }
-  end_clock(c,e,we);save(c,out,stamps,b,e,wb,we);
-}
 // A single opaque asm owns both raw register buffers across all K8 records.
 // No per-record compute() call; fixed LDS offsets/parity in the unrolled body.
-template<int Stages> __global__ __launch_bounds__(256) void gemm_k8(const uint32_t* packed,float* out,uint64_t* stamps,int tiles) {
-  static_assert(Stages==2||Stages==4||Stages==8||Stages==16||Stages==32);
+__global__ __launch_bounds__(256) void gemm_k8(const uint32_t* packed,float* out,uint64_t* stamps,int tiles) {
   extern __shared__ __attribute__((aligned(16))) uint32_t smem[];
   int lane=threadIdx.x%64,wave=threadIdx.x/64;
   const uint32_t base=uint32_t(reinterpret_cast<uintptr_t>(smem));
@@ -96,7 +68,7 @@ template<int Stages> __global__ __launch_bounds__(256) void gemm_k8(const uint32
   const uint32_t alo=base+(wave/2)*512+lane*8,blo=base+1024+(wave%2)*512+lane*8;
   F16 c={};uint64_t b,e,wb,we;
   begin_clock(c,b,wb);
-  pipeline<Stages>(uint32_t(p),uint32_t(p>>32),dst,alo,blo,tiles,c);
+  pipeline(uint32_t(p),uint32_t(p>>32),dst,alo,blo,tiles,c);
   end_clock(c,e,we);save(c,out,stamps,b,e,wb,we);
 }
 template<class T>struct Device {
@@ -122,16 +94,16 @@ void verify_copy(uint32_t sa,uint32_t sb,int buffers) {
 int main(int argc,char** argv)try{
   std::string mode="gemm";
   const std::string producer="direct"; // Constant CSV provenance, not a selectable path.
-  int steps=4096,records=0,rounds=9,warmup=200,verify=1,K=32768,buffers=2;
+  int steps=4096,records=0,rounds=9,warmup=200,verify=1,K=32768;
+  const int buffers=kStages;
   uint32_t sa=1729,sb=2718;
-  bool steps_set=false,records_set=false,buffers_set=false;
-  for(int i=1;i<argc;++i){std::string key=argv[i];if(key=="--help"){std::printf("--mode gemm|lds-hot|lds-sweep --buffers N (StageK8:2|4|8|16|32, otherwise1|2) --k N --steps N --records N --rounds N --warmup-ms N --verify 0|1 --seed-a N --seed-b N\nD=%d U=%d stageK=%d\n",kDepth,kUnroll,kStageK);return 0;}if(++i==argc)throw std::runtime_error("missing argument");std::string v=argv[i];
-    if(key=="--mode")mode=v;else if(key=="--buffers"){buffers=std::stoi(v);buffers_set=true;}else if(key=="--k")K=std::stoi(v);else if(key=="--steps"){steps=std::stoi(v);steps_set=true;}else if(key=="--records"){records=std::stoi(v);records_set=true;}else if(key=="--rounds")rounds=std::stoi(v);else if(key=="--warmup-ms")warmup=std::stoi(v);else if(key=="--verify")verify=std::stoi(v);else if(key=="--seed-a")sa=uint32_t(std::stoul(v));else if(key=="--seed-b")sb=uint32_t(std::stoul(v));else throw std::runtime_error("unknown option "+key);
+  bool steps_set=false,records_set=false;
+  for(int i=1;i<argc;++i){std::string key=argv[i];if(key=="--help"){std::printf("--mode gemm|lds-hot|lds-sweep --k N --steps N --records N --rounds N --warmup-ms N --verify 0|1 --seed-a N --seed-b N\nD=%d U=%d stageK=%d\n",kDepth,kUnroll,kStageK);return 0;}if(++i==argc)throw std::runtime_error("missing argument");std::string v=argv[i];
+    if(key=="--mode")mode=v;else if(key=="--k")K=std::stoi(v);else if(key=="--steps"){steps=std::stoi(v);steps_set=true;}else if(key=="--records"){records=std::stoi(v);records_set=true;}else if(key=="--rounds")rounds=std::stoi(v);else if(key=="--warmup-ms")warmup=std::stoi(v);else if(key=="--verify")verify=std::stoi(v);else if(key=="--seed-a")sa=uint32_t(std::stoul(v));else if(key=="--seed-b")sb=uint32_t(std::stoul(v));else throw std::runtime_error("unknown option "+key);
   }
   const bool real=mode=="gemm";
-  if((!real&&mode!="lds-hot"&&mode!="lds-sweep")||(kStageK==8?(buffers!=2&&buffers!=4&&buffers!=8&&buffers!=16&&buffers!=32):(buffers!=1&&buffers!=2))||rounds<1||warmup<0||verify<0||verify>1||K<0||K>(1<<20)||(verify&&K>65536))throw std::runtime_error("invalid configuration");
+  if((!real&&mode!="lds-hot"&&mode!="lds-sweep")||rounds<1||warmup<0||verify<0||verify>1||K<0||K>(1<<20)||(verify&&K>65536))throw std::runtime_error("invalid configuration");
   if(real&&(steps_set||records_set))throw std::runtime_error("GEMM uses --k and compiled stageK, not LDS --steps/--records");
-  if(!real&&buffers_set)throw std::runtime_error("--buffers applies only to GEMM");
   const int tiles=(K+kStageK-1)/kStageK;
   if(real) { steps=tiles*(kStageK/8);records=kStageK/8; }
   else {
@@ -157,21 +129,12 @@ int main(int argc,char** argv)try{
   }
   auto packed=real?data.pack(tiles*kStageK):std::vector<uint32_t>{};
   Device<uint32_t> input(packed.size());if(!packed.empty())HIP(hipMemcpy(input.p,packed.data(),packed.size()*4,hipMemcpyHostToDevice));
-  if(real&&verify)verify_copy(sa,sb,kStageK==8?buffers:2);
+  if(real&&verify)verify_copy(sa,sb,buffers);
   Device<float> output(4128);Device<uint64_t> stamps(16);
   auto run=[&](){
     if(mode=="lds-hot")lds_grid<true><<<1,256,shared_bytes>>>(output.p+16,stamps.p,steps,records,sa,sb);
     else if(mode=="lds-sweep")lds_grid<false><<<1,256,shared_bytes>>>(output.p+16,stamps.p,steps,records,sa,sb);
-    else if constexpr(kStageK==8) {
-      if(buffers==2)gemm_k8<2><<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
-      else if(buffers==4)gemm_k8<4><<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
-      else if(buffers==8)gemm_k8<8><<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
-      else if(buffers==16)gemm_k8<16><<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
-      else gemm_k8<32><<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
-    } else {
-      if(buffers==1)gemm<1><<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
-      else gemm<2><<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
-    }
+    else gemm_k8<<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
     HIP(hipGetLastError());
   };
   std::fprintf(stderr,"grid=1 block=256 waves=2x2 mode=%s producer=%s buffers=%d D=%d U=%d stageK=%d K=%d executed_steps=%d records=%d LDS_bytes=%d packed_bytes=%zu seeds=%u/%u unique_input_B_per_step=2048 LDS_result_B_per_step=4096; native O3 HIP0 CPU+memory placement external no model/context; packing outside timing\n",mode.c_str(),real?producer.c_str():"none",real?buffers:0,kDepth,kUnroll,kStageK,logical_k,steps,records,shared_bytes,packed.size()*4,sa,sb);

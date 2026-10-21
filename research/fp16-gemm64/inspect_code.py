@@ -8,7 +8,7 @@ header=(folder/'compute.hpp').read_text()
 depth=int(re.search(r'kDepth=(\d+)',header)[1]);stage=int(re.search(r'kStageK=(\d+)',header)[1])
 for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
     name=section.splitlines()[0] if section else ''
-    if not any(f'<{x}' in name for x in ('void gemm<','void gemm_k8<','void lds_grid<','copy_check(')):continue
+    if not any(f'<{x}' in name for x in ('gemm_k8(','void lds_grid<','copy_check(')):continue
     lines=[l for l in section.splitlines() if re.search(r'// [0-9A-Fa-f]+:',l)]
     ops=[l.strip().split()[0] for l in lines]
     assert not any(x in ('v_readlane_b32','v_writelane_b32') for x in ops)
@@ -31,24 +31,11 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
         assert loads and all(re.search(r'\blds\s+//',body[i]) for i in loads),name
         assert not any(l.strip().startswith('ds_write_') for l in body),name
         assert any('s_waitcnt vmcnt(0)' in l for l in body)
-    if '<void gemm<2>' in name:
-        # Future direct copies precede this compute block without a hidden
-        # VMEM drain, followed by an explicit VMEM completion wait afterwards.
-        first=next(i for i,l in enumerate(body) if 'v_mfma_' in l)
-        lastload=max(i for i in loads if i<first)
-        assert not any('vmcnt(0)' in l or 's_barrier' in l for l in body[lastload+1:first]),name
-        last=max(i for i,l in enumerate(body) if 'v_mfma_' in l)
-        assert any('vmcnt(0)' in l for l in body[last+1:]),name
-    if m:=re.search(r'<void gemm_k8<(\d+)>',name):
-        stages=int(m[1]);waits=[int(x) for l in body for x in re.findall(r'vmcnt\((\d+)\)',l)]
-        steady_vm=2*max(0,stages-4)
+    if '<gemm_k8(' in name:
+        stages=16;waits=[int(x) for l in body for x in re.findall(r'vmcnt\((\d+)\)',l)]
+        steady_vm=24
         assert 2*(min(stages,31)-1) in waits and steady_vm in waits,(name,waits)
         assert max(waits)<=62,(name,'VMEM counter range')
-        if stages==32:
-            firstwait=next(i for i,l in enumerate(body) if 'vmcnt(' in l)
-            firstread=next(i for i,l in enumerate(body) if l.strip().startswith('ds_read_'))
-            assert sum(l.strip().startswith('global_load_') for l in body[:firstwait])==62
-            assert sum(l.strip().startswith('global_load_') for l in body[firstwait:firstread])==2
         assert not any(l.strip().startswith('ds_write_') for l in lines)
         assert sum('v_mfma_' in l for l in body)==2*stages,(name,'unexpected inner loop')
         bulk=[]
@@ -60,7 +47,7 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
             seq=[x for x in body[:i+1] if int(re.search(r'// ([0-9a-fA-F]+):',x)[1],16)>=target]
             if sum('v_mfma_' in x for x in seq)==stages:bulk=seq
         assert bulk,(name,'missing unrolled bulk backedge')
-        assert sum('s_barrier' in x for x in bulk)==stages*(2 if stages==2 else 1)
+        assert sum('s_barrier' in x for x in bulk)==stages
         assert all('lgkmcnt(2)' in x for x in bulk if 'lgkmcnt(' in x),('bulk DS drain',name)
         assert sum(x.strip().startswith('ds_read_b64') for x in bulk)==2*stages
         assert sum('s_sub_u32' in x for x in bulk)==1
@@ -68,9 +55,8 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
         for phase,i in enumerate(i for i,x in enumerate(bulk) if 'v_mfma_' in x):
             v=4*(phase%2);line=bulk[i]
             assert f'v[{v}:{v+1}], v[{v+2}:{v+3}]' in line,(name,line)
-            if stages>2:
-                assert bulk[i+1].strip().startswith(f'ds_read_b64 v[{v}:{v+1}]'),('not immediate same-buffer refill',name)
-                assert bulk[i+2].strip().startswith(f'ds_read_b64 v[{v+2}:{v+3}]'),('not immediate same-buffer refill',name)
+            assert bulk[i+1].strip().startswith(f'ds_read_b64 v[{v}:{v+1}]'),('not immediate same-buffer refill',name)
+            assert bulk[i+2].strip().startswith(f'ds_read_b64 v[{v+2}:{v+3}]'),('not immediate same-buffer refill',name)
         assert all(f'vmcnt({steady_vm})' in x for x in bulk if 'vmcnt(' in x)
         assert not any(x.strip().startswith('s_nop') for x in bulk),('bulk explicit M0 gap retained',name)
         copy_indices=[i for i,x in enumerate(bulk) if x.strip().startswith('global_load_')]
@@ -90,12 +76,11 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
         assert len(adds)==len(carries)==stages//2,('source advance not paired',name)
         assert all('0x1000' in x or '4096' in x for x in adds)
         offsets=[int(re.search(r'offset:(\d+)',x)[1]) if 'offset:' in x else 0 for x in bulk if x.strip().startswith('ds_read_b64')]
-        lookahead=1 if stages==2 else 2
-        assert offsets==[2048*((p+lookahead)%stages) for p in range(stages) for _ in (0,1)],(name,offsets)
+        assert offsets==[2048*((p+2)%stages) for p in range(stages) for _ in (0,1)],(name,offsets)
     (folder/('core-'+str(len(out))+'.txt')).write_text('\n'.join(body)+'\n')
     out.append(dict(name=name,direct=direct,copy_check=iscopy,core_lines=len(body),global_to_lds=sum(bool(re.search(r'global_load_.*\blds\s+//',l)) for l in body)))
-expected=3+len(re.findall(r'if constexpr\(Stages==\d+\)',header)) if stage==8 else 5
-assert len(out)==expected,(len(out),expected)
+assert depth==2 and stage==8
+assert len(out)==4,len(out)
 resources=[]
 for block in re.split(r'(?=  - \.agpr_count:)',meta):
     if not (m:=re.search(r'\.name:\s*(\S+)',block)):continue
@@ -103,4 +88,4 @@ for block in re.split(r'(?=  - \.agpr_count:)',meta):
     assert fields['private_segment_fixed_size']==fields['group_segment_fixed_size']==0,(m[1],fields)
     resources.append(dict(name=m[1],**fields))
 (folder/'inventory.json').write_text(json.dumps(dict(kernels=out,resources=resources),indent=2)+'\n')
-print(f'Inspected {len(out)} direct-only kernels: no scratch/static LDS/lane spills, accumulators stay in AGPRs inside timing; direct kernels have true LDS-target VMEM, and double-buffer future issue has no pre-compute VMEM drain.')
+print(f'Inspected {len(out)} direct-only kernels: no scratch/static LDS/lane spills, accumulators stay in AGPRs inside timing; direct kernels have true LDS-target VMEM, fixed K8/16-slot paired-address bulk checks pass.')

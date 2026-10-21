@@ -1,4 +1,4 @@
 CompileFlags:
-  CompilationDatabase: ../../temp/fp16-gemm64/paired-global
+  CompilationDatabase: ../../temp/fp16-gemm64/active
   Compiler: /usr/lib/llvm-21/bin/clang++
   Add: [-std=c++20, -x, hip, --offload-arch=gfx90a, -D__HIP_PLATFORM_AMD__=1]

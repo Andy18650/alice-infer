@@ -1,0 +1,8 @@
+{
+  "argv": [
+    "research/fp16-gemm64/run.py"
+  ],
+  "build": "/home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/active",
+  "full": false,
+  "diagnostics": false
+}

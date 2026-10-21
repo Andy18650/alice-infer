@@ -835,6 +835,26 @@ or dtype conversions; N>=4 bulk average12->11 instructions per wave/step. Source
 assembly and data `results/paired-global/`, deb88e1 baseline preserved.
 No further tuning, physical-unit attribution or production/system changes.
 
+The user-directed result scan/cull retains only the measured K8/raw2/16-slot
+paired-global winner.8 is clearly slower;32 loses both latest repeats with
+2x LDS;2/4-slot experiments are stale (not claimed as fresh paired timings),
+and larger-chunk GEMMs/old raw-depth builds are superseded. Remove these from
+source generation, dispatch, dimension/build flags and default runners; retain
+all historical records, binaries and b081cef/source snapshots. Active code
+has one GEMM, two opt-in LDS diagnostics and one copy validator: four entries
+rather than eight, no legacy GEMM or two-slot/32-slot special paths. Fixed
+constants are measured choices, not hardware constraints. The surviving
+1652 timed instruction/register lines are identical after address/branch
+normalization, so no algorithmic/pruning speedup claim. Default runner now
+uses24 focused correctness cases +18 timing samples =42 checked samples,
+not720+162; no archived baseline, larger-chunk control or LDS timing replay
+by default. Full144 winner-only verification and four diagnostic checks are
+opt-in. The42 default samples, four diagnostic smokes and nine removed-
+selector rejection controls pass. Native O3 HIP0 CPU+memory NUMA0, one CTA,
+K32768 cull recheck93.280/93.116 cycles/step (227.200/226.720 us). Selection
+rationale and all scanned timing rows are recorded in MATRIX.md and
+`results/active-cull/`. No production/CMake/model or unrelated changes.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

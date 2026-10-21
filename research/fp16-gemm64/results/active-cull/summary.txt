@@ -1,0 +1,5 @@
+Verification cases: 24; timing samples: 18; total checked samples: 42.
+Native O3 HIP0, CPU+memory NUMA0, one CTA/256 threads, K32768 timing, no model/context/clock changes.
+Sole active GEMM: K8, raw2, 16 LDS slots/outer-unroll16, paired global offsets, pre-barrier M0.
+variant | cycles/four-wave MFMA step run1/run2 | entire body us run1/run2
+active | 93.280/93.116 | 227.200/226.720

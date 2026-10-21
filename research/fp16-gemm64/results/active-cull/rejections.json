@@ -1,0 +1,76 @@
+[
+  {
+    "args": [
+      "--buffers",
+      "2"
+    ],
+    "error": "ERROR unknown option --buffers\n",
+    "exit": 1
+  },
+  {
+    "args": [
+      "--buffers",
+      "4"
+    ],
+    "error": "ERROR unknown option --buffers\n",
+    "exit": 1
+  },
+  {
+    "args": [
+      "--buffers",
+      "8"
+    ],
+    "error": "ERROR unknown option --buffers\n",
+    "exit": 1
+  },
+  {
+    "args": [
+      "--buffers",
+      "16"
+    ],
+    "error": "ERROR unknown option --buffers\n",
+    "exit": 1
+  },
+  {
+    "args": [
+      "--buffers",
+      "32"
+    ],
+    "error": "ERROR unknown option --buffers\n",
+    "exit": 1
+  },
+  {
+    "args": [
+      "--depth",
+      "1"
+    ],
+    "error": "usage: generate.py [-h] --output OUTPUT\ngenerate.py: error: unrecognized arguments: --depth 1\n",
+    "exit": 2
+  },
+  {
+    "args": [
+      "--unroll",
+      "4"
+    ],
+    "error": "usage: generate.py [-h] --output OUTPUT\ngenerate.py: error: unrecognized arguments: --unroll 4\n",
+    "exit": 2
+  },
+  {
+    "args": [
+      "--stage-k",
+      "128"
+    ],
+    "error": "usage: generate.py [-h] --output OUTPUT\ngenerate.py: error: unrecognized arguments: --stage-k 128\n",
+    "exit": 2
+  },
+  {
+    "args": [
+      "build.sh",
+      "2",
+      "1",
+      "8"
+    ],
+    "error": "usage: build.sh [output-directory]; fixed K8/raw2/16 LDS slots\n",
+    "exit": 2
+  }
+]

@@ -1,0 +1,5 @@
+05426480e828a22dd644c3adb28971301c2191faf095b1ab3c34ca60796468ad  /home/andyhu/projects/inference/alice-infer/research/lds-staging/broadcast-shapes.hip
+ee653573573543314e236f26103388b0b45b73b8b69af466be617239573ad89d  /home/andyhu/projects/inference/alice-infer/research/lds-staging/generate-vgpr.py
+297427df579364149e8b07cb28be872fd024b29e25ada18270415039bc2e9a01  /home/andyhu/projects/inference/alice-infer/temp/lds-staging/broadcast-shapes/vgpr-loads.hpp
+b17acd0e3acf90c919e098262e594edd80d8ff1259725f8ab8b487e053f7a1b5  /home/andyhu/projects/inference/alice-infer/temp/lds-staging/broadcast-shapes/probe
+09b3f08e8d1826cb064d44aed59cdcf92eff68dec62784ae4d8af84058461a29  /home/andyhu/projects/inference/alice-infer/temp/lds-staging/broadcast-shapes/probe.hsaco

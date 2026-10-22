@@ -1,0 +1,26 @@
+{
+  "build": "/home/andyhu/projects/inference/alice-infer/temp/lds-staging/broadcast-shapes",
+  "shapes": [
+    [
+      4,
+      4
+    ],
+    [
+      4,
+      8
+    ],
+    [
+      8,
+      8
+    ],
+    [
+      13,
+      8
+    ]
+  ],
+  "waves": 4,
+  "ring_slots": 32,
+  "panel_bytes": 524288,
+  "requested_bytes_per_cta": 268435456,
+  "placement": "numactl CPU+memory node0"
+}

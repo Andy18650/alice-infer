@@ -1,0 +1,3 @@
+HIP0 BDF=0000:31:00.0 O3 gfx90a, CTAs=16 block256 waves4, CUs=104 L2=8388608,source1MiB/CTA,total_source=16777216,ring32 x4VGPR/lane,no LDS,resident_CTA_limit_per_CU=3; no model/context/clock override, external NUMA placement
+layout=disjoint shape=4x4; allocated_source_bytes=16777216 in both cases; reachable outer A[4] x512KiB then B[4] x512KiB, waves0/1 A-row,waves2/3 B-col; source bases recorded outside timing
+COMPLETE every final ring DWORD/lane/slot and output guard exact; GPU source-base map exact; no periodic waits or consumers

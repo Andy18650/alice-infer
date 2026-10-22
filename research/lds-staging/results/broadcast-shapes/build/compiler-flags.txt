@@ -1,0 +1,1 @@
+hipcc -O3 -std=c++20 --offload-arch=gfx90a -Wall -Wextra -I/home/andyhu/projects/inference/alice-infer/temp/lds-staging/broadcast-shapes

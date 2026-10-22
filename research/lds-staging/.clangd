@@ -32,3 +32,8 @@ If:
   PathMatch: broadcast-vgpr\.hip
 CompileFlags:
   CompilationDatabase: ../../temp/lds-staging/broadcast-vgpr
+---
+If:
+  PathMatch: broadcast-shapes\.hip
+CompileFlags:
+  CompilationDatabase: ../../temp/lds-staging/broadcast-shapes

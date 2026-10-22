@@ -37,6 +37,11 @@ source footprint/concurrency remain coupled.
 8MiB distinct active source versus64MiB, GPU source bases verified. Requested
 bandwidth improves~2.2x; not a physical HBM rate or measured GEMM speedup.
 
+[Rectangular shared-panel grids](BROADCAST_SHAPES.md) compare4x4/4x8/8x8/13x8
+(including a fresh8x8 control), keeping512KiB panels/four waves. Shared periods~66–69/
+105/137/152–153 cycles respectively;13x8 improves requested throughput
+~5.7–5.9x over its disjoint104-CTA control despite10.5MiB active source.
+
 ## Fixed experiment
 
 One CTA/256 threads/four waves, HIP0/BDF31:00.0, native HIP O3/C++20,

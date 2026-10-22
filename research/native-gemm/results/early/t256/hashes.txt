@@ -1,0 +1,6 @@
+700bf72577624ffb21b510440b4ce8d6cd994692f4fe81b1a322c7df9b9dcb2c  /home/andyhu/projects/inference/alice-infer/research/native-gemm/probe.hip
+838495b680c1c16378cd045b5dac2de3e6a9115dc41be2c29b0f30d1ebe79568  /home/andyhu/projects/inference/alice-infer/research/native-gemm/data.hpp
+43905ca8c9ce7fb6cf0eb38728c839a3027648f6a3465d0d807556f6825d41d8  /home/andyhu/projects/inference/alice-infer/research/native-gemm/generate.py
+1fd3912edb99dfdeb208e14ad2ac81272e00b774cb3635475e63d568010026ef  /home/andyhu/projects/inference/alice-infer/temp/native-gemm/final-t256/compute.hpp
+280e4bfc067f99012569d76c05244ea7882631d1f8d30613b52cff9d0536096b  /home/andyhu/projects/inference/alice-infer/temp/native-gemm/final-t256/probe
+93d8991842a4f3793c8283506b10701bc6bd7787b29ac1439b11d005296bfd81  /home/andyhu/projects/inference/alice-infer/temp/native-gemm/final-t256/probe.hsaco

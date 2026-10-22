@@ -1,0 +1,33 @@
+{
+  "builds": {
+    "128": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/s32-t128",
+    "256": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/s32-t256"
+  },
+  "problems": [
+    [
+      1664,
+      1024,
+      8192
+    ],
+    [
+      3328,
+      2048,
+      8192
+    ],
+    [
+      4096,
+      6656,
+      8192
+    ],
+    [
+      4096,
+      6656,
+      32768
+    ]
+  ],
+  "stage_k": 32,
+  "swizzle": 0,
+  "placement": "numactl CPU+memory node0",
+  "libraries": "none",
+  "packing": "CPU outside GEMM timing"
+}

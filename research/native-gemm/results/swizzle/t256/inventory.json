@@ -1,0 +1,12 @@
+{
+  "vgpr_count": 384,
+  "sgpr_count": 52,
+  "private_segment_fixed_size": 0,
+  "tile": 256,
+  "lds_bytes": 32768,
+  "MFMA_per_wave_per_two_K32_steps": 128,
+  "barriers_per_two_steps": 4,
+  "global_x4_per_two_steps": 16,
+  "ds_write128_per_two_steps": 16,
+  "ds_read128_per_two_steps": 32
+}

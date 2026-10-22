@@ -1,0 +1,4 @@
+kind,round,tile,swizzle,m,n,k,mp,np,kp,ctas,resident_ctas_per_cu,lds_bytes,event_us,grid_body_us,useful_TFLOPs,executed_TFLOPs,median_core_MHz,median_compute_util,reference_outputs,full_reference,mismatches,nonfinite,guards,valid,pack_ms
+resident-control,0,256,0,3328,2048,8192,3328,2048,8192,104,1,32768,762.559021,711.680000,146.440013,146.440013,1483.590,0.993175668,2384,0,0,0,0,1,160.479
+resident-control,1,256,0,3328,2048,8192,3328,2048,8192,104,1,32768,810.078979,710.880000,137.849707,137.849707,1484.431,0.994071554,2384,0,0,0,0,1,160.479
+resident-control,2,256,0,3328,2048,8192,3328,2048,8192,104,1,32768,759.359009,710.880000,147.057122,147.057122,1485.552,0.993284802,2384,0,0,0,0,1,160.479

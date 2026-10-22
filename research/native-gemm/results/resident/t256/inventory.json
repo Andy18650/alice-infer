@@ -1,0 +1,13 @@
+{
+  "vgpr_count": 384,
+  "sgpr_count": 52,
+  "private_segment_fixed_size": 0,
+  "tile": 256,
+  "kind": "resident-control",
+  "lds_bytes": 32768,
+  "MFMA_per_loop": 64,
+  "barriers_per_loop": 0,
+  "global_x4_per_loop": 0,
+  "ds_write128_per_loop": 0,
+  "ds_read128_per_loop": 0
+}

@@ -1,0 +1,13 @@
+{
+  "vgpr_count": 136,
+  "sgpr_count": 46,
+  "private_segment_fixed_size": 0,
+  "tile": 128,
+  "kind": "gemm",
+  "lds_bytes": 16384,
+  "MFMA_per_loop": 32,
+  "barriers_per_loop": 4,
+  "global_x4_per_loop": 8,
+  "ds_write128_per_loop": 8,
+  "ds_read128_per_loop": 16
+}

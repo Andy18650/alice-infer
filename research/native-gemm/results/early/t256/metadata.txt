@@ -1,0 +1,82 @@
+
+File: /home/andyhu/projects/inference/alice-infer/temp/native-gemm/final-t256/probe.hsaco
+Format: elf64-amdgpu
+Arch: amdgcn
+AddressSize: 64bit
+LoadName: <Not found>
+NoteSections [
+  NoteSection {
+    Name: .note
+    Offset: 0x238
+    Size: 0x3E0
+    Notes [
+      {
+        Owner: AMDGPU
+        Data size: 0x3CB
+        Type: NT_AMDGPU_METADATA (AMDGPU Metadata)
+        AMDGPU Metadata: ---
+amdhsa.kernels:
+  - .agpr_count:     256
+    .args:
+      - .address_space:  global
+        .offset:         0
+        .size:           8
+        .value_kind:     global_buffer
+      - .address_space:  global
+        .offset:         8
+        .size:           8
+        .value_kind:     global_buffer
+      - .address_space:  global
+        .offset:         16
+        .size:           8
+        .value_kind:     global_buffer
+      - .address_space:  global
+        .offset:         24
+        .size:           8
+        .value_kind:     global_buffer
+      - .offset:         32
+        .size:           4
+        .value_kind:     by_value
+      - .offset:         36
+        .size:           4
+        .value_kind:     by_value
+      - .offset:         40
+        .size:           4
+        .value_kind:     by_value
+      - .offset:         44
+        .size:           4
+        .value_kind:     by_value
+      - .offset:         48
+        .size:           4
+        .value_kind:     by_value
+      - .offset:         52
+        .size:           4
+        .value_kind:     by_value
+    .group_segment_fixed_size: 0
+    .kernarg_segment_align: 8
+    .kernarg_segment_size: 56
+    .language:       OpenCL C
+    .language_version:
+      - 2
+      - 0
+    .max_flat_workgroup_size: 256
+    .name:           _Z11native_gemmPKjS0_PfPmiiiiii
+    .private_segment_fixed_size: 0
+    .sgpr_count:     52
+    .sgpr_spill_count: 0
+    .symbol:         _Z11native_gemmPKjS0_PfPmiiiiii.kd
+    .uniform_work_group_size: 1
+    .uses_dynamic_stack: false
+    .vgpr_count:     384
+    .vgpr_spill_count: 0
+    .wavefront_size: 64
+amdhsa.target:   amdgcn-amd-amdhsa--gfx90a
+amdhsa.version:
+  - 1
+  - 2
+...
+
+      }
+    ]
+  }
+]

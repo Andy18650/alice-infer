@@ -1,0 +1,16 @@
+[
+  {
+    "tile": 128,
+    "file": "/home/andyhu/projects/inference/alice-infer/research/native-gemm/results/final/clocks/t128-m4096-n6656-k32768-r1-a1729-b2718-r4.bin",
+    "sha256": "ce06ca81453e7a6304a4e046a36d3e2370ea18965fedc04c331198607b552d75",
+    "peak_overlapping_cta_bodies": 312,
+    "ctas": 1664
+  },
+  {
+    "tile": 256,
+    "file": "/home/andyhu/projects/inference/alice-infer/research/native-gemm/results/final/clocks/t256-m4096-n6656-k32768-r1-a1729-b2718-r4.bin",
+    "sha256": "0e9831fdba1329c81d4f0ddeec2d94de201bdea69cbfb9332ed62931ca411474",
+    "peak_overlapping_cta_bodies": 104,
+    "ctas": 416
+  }
+]

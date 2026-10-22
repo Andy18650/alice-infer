@@ -17,3 +17,8 @@ If:
   PathMatch: wait-bandwidth\.hip
 CompileFlags:
   CompilationDatabase: ../../temp/lds-staging/windows/template
+---
+If:
+  PathMatch: vgpr-ring\.hip
+CompileFlags:
+  CompilationDatabase: ../../temp/lds-staging/vgpr-ring

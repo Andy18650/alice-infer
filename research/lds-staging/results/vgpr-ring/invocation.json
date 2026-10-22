@@ -1,0 +1,12 @@
+{
+  "build": "/home/andyhu/projects/inference/alice-infer/temp/lds-staging/vgpr-ring",
+  "placement": "numactl CPU+memory node0",
+  "requested_bytes_per_timing": 1073741824,
+  "waves": [
+    1,
+    2,
+    4
+  ],
+  "ring_slots": 32,
+  "source_bytes": 1048576
+}

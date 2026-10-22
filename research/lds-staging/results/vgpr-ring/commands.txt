@@ -1,0 +1,12 @@
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/vgpr-ring/probe --waves 1 --rounds 1 --warmup-ms 0 --groups 1
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/vgpr-ring/probe --waves 1 --rounds 1 --warmup-ms 0 --groups 33
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/vgpr-ring/probe --waves 2 --rounds 1 --warmup-ms 0 --groups 1
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/vgpr-ring/probe --waves 2 --rounds 1 --warmup-ms 0 --groups 17
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/vgpr-ring/probe --waves 4 --rounds 1 --warmup-ms 0 --groups 1
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/vgpr-ring/probe --waves 4 --rounds 1 --warmup-ms 0 --groups 9
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/vgpr-ring/probe --waves 1 --rounds 9 --warmup-ms 200
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/vgpr-ring/probe --waves 2 --rounds 9 --warmup-ms 200
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/vgpr-ring/probe --waves 4 --rounds 9 --warmup-ms 200
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/vgpr-ring/probe --waves 4 --rounds 9 --warmup-ms 200
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/vgpr-ring/probe --waves 2 --rounds 9 --warmup-ms 200
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/vgpr-ring/probe --waves 1 --rounds 9 --warmup-ms 200

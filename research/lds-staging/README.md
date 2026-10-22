@@ -22,6 +22,11 @@ the floor at vmcnt16 (peak17 loads/wave);8 CTAs approach a noisier plateau at
 vmcnt19–20 (peak20–21). Full native-controlled curves and provenance retained;
 plateau is sufficiency evidence, not an exact physical queue-depth proof.
 
+The next [DWORDx4 ->VGPR ring study](VGPR_RING.md) uses one CTA with1/2/4
+waves,32 register slots and no periodic waits. All three sustain~63.9
+requested B/core-cycle with a fixed1 MiB source; per-step payload and period
+scale together, so more waves do not raise aggregate rate in this setup.
+
 ## Fixed experiment
 
 One CTA/256 threads/four waves, HIP0/BDF31:00.0, native HIP O3/C++20,

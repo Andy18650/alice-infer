@@ -27,3 +27,8 @@ If:
   PathMatch: grid-vgpr\.hip
 CompileFlags:
   CompilationDatabase: ../../temp/lds-staging/grid-vgpr
+---
+If:
+  PathMatch: broadcast-vgpr\.hip
+CompileFlags:
+  CompilationDatabase: ../../temp/lds-staging/broadcast-vgpr

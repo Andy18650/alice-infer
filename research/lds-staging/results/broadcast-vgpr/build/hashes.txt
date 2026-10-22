@@ -1,0 +1,5 @@
+9a86484265d48ff8a85a3e58453e4dc6784c5110acefe0e140432b44f566290f  /home/andyhu/projects/inference/alice-infer/research/lds-staging/broadcast-vgpr.hip
+ee653573573543314e236f26103388b0b45b73b8b69af466be617239573ad89d  /home/andyhu/projects/inference/alice-infer/research/lds-staging/generate-vgpr.py
+297427df579364149e8b07cb28be872fd024b29e25ada18270415039bc2e9a01  /home/andyhu/projects/inference/alice-infer/temp/lds-staging/broadcast-vgpr/vgpr-loads.hpp
+f782ac0087d97d6154d657ac2e93771837e81f5e1358abce144ffb6c220d8bb0  /home/andyhu/projects/inference/alice-infer/temp/lds-staging/broadcast-vgpr/probe
+e08be4ba64c7709bd1b090cd291b2efe875a532a9befed134c3be68c60bd1a94  /home/andyhu/projects/inference/alice-infer/temp/lds-staging/broadcast-vgpr/probe.hsaco

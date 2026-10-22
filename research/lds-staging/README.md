@@ -32,6 +32,11 @@ early bend around4–8, broad best region32–64, regressions at104–208
 (especially four-wave CTAs). No periodic waits added or follow-on tuning;
 source footprint/concurrency remain coupled.
 
+[64-CTA8x8 outer-product sharing](BROADCAST_VGPR.md) replaces disjoint
+1MiB/CTA regions with shared512KiB A-row/B-column panels. Same kernel/loop,
+8MiB distinct active source versus64MiB, GPU source bases verified. Requested
+bandwidth improves~2.2x; not a physical HBM rate or measured GEMM speedup.
+
 ## Fixed experiment
 
 One CTA/256 threads/four waves, HIP0/BDF31:00.0, native HIP O3/C++20,

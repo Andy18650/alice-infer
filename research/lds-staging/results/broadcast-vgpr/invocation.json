@@ -1,0 +1,13 @@
+{
+  "build": "/home/andyhu/projects/inference/alice-infer/temp/lds-staging/broadcast-vgpr",
+  "ctas": 64,
+  "waves": 4,
+  "ring_slots": 32,
+  "requested_bytes_per_cta": 268435456,
+  "allocated_source_bytes": 67108864,
+  "reachable_source_bytes": {
+    "disjoint": 67108864,
+    "outer": 8388608
+  },
+  "placement": "numactl CPU+memory node0"
+}

@@ -1,0 +1,6 @@
+Verification cases: 24; timing samples: 36; total checked samples: 60.
+Native O3 HIP0, CPU+memory NUMA0, one CTA/256 threads, K32768 timing, no model/context/clock changes.
+Candidate: K16, raw2, 16 LDS slots, 65536 LDS bytes; b64 reads unchanged.
+variant | cycles/four-wave MFMA step run1/run2 | entire body us run1/run2
+active | 92.241/91.959 | 224.640/223.840
+archived-winner | 93.271/93.276 | 227.200/227.200

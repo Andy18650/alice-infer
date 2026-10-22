@@ -1,0 +1,62 @@
+{
+  "kernels": [
+    {
+      "name": "0000000000001000 <copy_check(unsigned int const*, unsigned int*, int)>:",
+      "direct": true,
+      "copy_check": true,
+      "core_lines": 278,
+      "global_to_lds": 4
+    },
+    {
+      "name": "0000000000001600 <gemm64(unsigned int const*, float*, unsigned long*, int)>:",
+      "direct": true,
+      "copy_check": false,
+      "core_lines": 2018,
+      "global_to_lds": 192
+    },
+    {
+      "name": "0000000000004400 <void lds_grid<true>(float*, unsigned long*, int, int, unsigned int, unsigned int)>:",
+      "direct": false,
+      "copy_check": false,
+      "core_lines": 26,
+      "global_to_lds": 0
+    },
+    {
+      "name": "0000000000004f00 <void lds_grid<false>(float*, unsigned long*, int, int, unsigned int, unsigned int)>:",
+      "direct": false,
+      "copy_check": false,
+      "core_lines": 39,
+      "global_to_lds": 0
+    }
+  ],
+  "resources": [
+    {
+      "name": "_Z10copy_checkPKjPji",
+      "vgpr_count": 50,
+      "agpr_count": 0,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    },
+    {
+      "name": "_Z6gemm64PKjPfPmi",
+      "vgpr_count": 48,
+      "agpr_count": 16,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    },
+    {
+      "name": "_Z8lds_gridILb1EEvPfPmiijj",
+      "vgpr_count": 48,
+      "agpr_count": 16,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    },
+    {
+      "name": "_Z8lds_gridILb0EEvPfPmiijj",
+      "vgpr_count": 48,
+      "agpr_count": 16,
+      "private_segment_fixed_size": 0,
+      "group_segment_fixed_size": 0
+    }
+  ]
+}

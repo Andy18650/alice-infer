@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""Focused checks/timing for the sole active K8/raw2/16-slot GEMM."""
-import argparse,csv,hashlib,itertools,json,shlex,shutil,subprocess,sys
+"""Focused StageK16 checks/timing, with an optional frozen StageK8 baseline."""
+import argparse,csv,hashlib,itertools,json,re,shlex,shutil,subprocess,sys
 from pathlib import Path
 from statistics import median
 root=Path(__file__).resolve().parents[2];here=Path(__file__).resolve().parent
 p=argparse.ArgumentParser()
-p.add_argument('--build',type=Path,default=root/'temp/fp16-gemm64/active')
-p.add_argument('--output',type=Path,default=here/'results/active-cull')
+p.add_argument('--build',type=Path,default=root/'temp/fp16-gemm64/stage16-s8')
+p.add_argument('--output',type=Path,default=here/'results/stage16-s8')
 p.add_argument('--full',action='store_true',help='144 winner-only verification cases instead of24 focused cases')
 p.add_argument('--diagnostics',action='store_true',help='also check the independent LDS-only reference kernels')
-p.add_argument('--baseline-build',type=Path,help='optional archived pre-cull executable, always --buffers16')
+p.add_argument('--baseline-build',type=Path,help='optional frozen StageK8 winner')
+p.add_argument('--baseline-legacy-buffers',action='store_true',help='only for pre-cull binaries requiring --buffers16')
 p.add_argument('--baseline-source',type=Path,help='frozen source directory for that archived binary')
 a=p.parse_args();out=a.output.resolve();build=a.build.resolve()
 old=a.baseline_build.resolve() if a.baseline_build else None
@@ -30,6 +31,15 @@ for folder in [build]+([old] if old else []):
     for file in folder.glob('core-*.txt'):shutil.copy2(file,dest/file.name)
 for name in ('gemm64.hip','data.hpp','generate.py','inspect_code.py','build.sh','run.py'):shutil.copy2(here/name,out/'source'/name)
 if source:shutil.copytree(source,out/'source-baseline')
+def dimensions(folder):
+    text=(folder/'compute.hpp').read_text()
+    stage=int(re.search(r'\bkStageK=(\d+)',text)[1])
+    slots=re.search(r'\bkStages=(\d+)',text)
+    if not slots:
+        assert folder==old and a.baseline_legacy_buffers,'missing compiled LDS-slot count'
+        return stage,16
+    return stage,int(slots[1])
+current_dims=dimensions(build);old_dims=dimensions(old) if old else None
 rows=[]
 with (out/'amd-smi-before.txt').open('w') as f:subprocess.run(['amd-smi'],stdout=f,stderr=subprocess.STDOUT,check=False)
 with (out/'commands.txt').open('w') as commands:
@@ -41,7 +51,7 @@ with (out/'commands.txt').open('w') as commands:
              '--warmup-ms','200' if kind=='timing' else '0','--seed-a',str(sa),'--seed-b',str(sb)]
         if mode=='gemm':
             cmd+=['--k',str(k)]
-            if baseline:cmd+=['--buffers','16']
+            if baseline and a.baseline_legacy_buffers:cmd+=['--buffers','16']
         else:cmd+=['--steps',str(steps),'--records',str(records)]
         commands.write(shlex.join(cmd)+'\n');commands.flush()
         cf=out/kind/(name+'.csv');log=out/kind/(name+'.log')
@@ -52,12 +62,13 @@ with (out/'commands.txt').open('w') as commands:
         if mode=='gemm':assert 'COPY CHECK' in log.read_text()
         for x in samples:
             assert x['valid']=='1' and x['mismatches']==x['guards']=='0'
-            assert (int(x['depth']),int(x['unroll']),int(x['stage_k']))==(2,1,8)
+            stage,slots=old_dims if baseline else current_dims
+            assert (int(x['depth']),int(x['unroll']),int(x['stage_k']))==(2,1,stage)
             span=max(int(x[f'end{w}']) for w in range(4))-min(int(x[f'begin{w}']) for w in range(4))
             assert span==int(x['cta_cycles'])
             n=int(x['steps']);assert abs(float(x['cycles_per_mfma'])-(span/n if n else 0))<1e-8
-            if mode=='gemm':assert (int(x['buffers']),int(x['outer_unroll']),int(x['shared_bytes']))==(16,16,32768)
-        rows.append(dict(kind=kind,variant=label,mode=mode,K=k,seed_a=sa,seed_b=sb,repeat=repeat,samples=len(samples),
+            if mode=='gemm':assert (int(x['buffers']),int(x['outer_unroll']),int(x['shared_bytes']))==(slots,slots*(stage//8),slots*stage*256)
+        rows.append(dict(kind=kind,variant=label,stage_k=(old_dims if baseline else current_dims)[0],lds_slots=(old_dims if baseline else current_dims)[1],mode=mode,K=k,seed_a=sa,seed_b=sb,repeat=repeat,samples=len(samples),
                          cycles_per_mfma=median(float(x['cycles_per_mfma']) for x in samples),
                          body_us=median(float(x['body_us']) for x in samples)))
     if a.full:
@@ -65,7 +76,7 @@ with (out/'commands.txt').open('w') as commands:
               127,128,129,239,240,241,247,248,249,255,256,257,511,512,513,767,768,769,1024,32768,65535,65536)
         for k,(sa,sb) in itertools.product(keys,((1729,2718),(1730,2718),(1729,2719))):run('verification',k,sa,sb)
     else:
-        keys=(0,1,7,8,9,15,16,17,119,120,121,127,128,129,255,256,257,513,32760,32768,65535,65536)
+        keys=(0,1,8,9,15,16,17,31,32,33,127,128,129,255,256,257,511,512,513,32768,65535,65536)
         for k in keys:run('verification',k)
         for sa,sb in ((1730,2718),(1729,2719)):run('verification',257,sa,sb)
     if a.diagnostics:
@@ -78,7 +89,7 @@ with (out/'summary.csv').open('w') as f:
     w=csv.DictWriter(f,fieldnames=list(rows[0]),lineterminator='\n');w.writeheader();w.writerows(rows)
 text=[f"Verification cases: {sum(x['kind']=='verification' for x in rows)}; timing samples: {sum(x['samples'] for x in rows if x['kind']=='timing')}; total checked samples: {sum(x['samples'] for x in rows)}.",
       'Native O3 HIP0, CPU+memory NUMA0, one CTA/256 threads, K32768 timing, no model/context/clock changes.',
-      'Sole active GEMM: K8, raw2, 16 LDS slots/outer-unroll16, paired global offsets, pre-barrier M0.',
+      f'Candidate: K{current_dims[0]}, raw2, {current_dims[1]} LDS slots, {current_dims[1]*current_dims[0]*256} LDS bytes; b64 reads unchanged.',
       'variant | cycles/four-wave MFMA step run1/run2 | entire body us run1/run2']
 for label in ('active','archived-winner'):
     r=[x for x in rows if x['kind']=='timing' and x['variant']==label]

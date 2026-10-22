@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "research/fp16-gemm64/run.py",
+    "--build",
+    "temp/fp16-gemm64/stage16-s8",
+    "--output",
+    "research/fp16-gemm64/results/stage16-s8",
+    "--baseline-build",
+    "temp/fp16-gemm64/active",
+    "--baseline-source",
+    "research/fp16-gemm64/results/active-cull/source"
+  ],
+  "build": "/home/andyhu/projects/inference/alice-infer/temp/fp16-gemm64/stage16-s8",
+  "full": false,
+  "diagnostics": false
+}

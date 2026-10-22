@@ -1,4 +1,9 @@
-# Active matrix after the result-led cull
+# Preserved StageK8 matrix after the result-led cull
+
+The subsequent user-directed [StageK16 experiment](STAGE16.md) explicitly
+tests8/16 slots while retaining64x64 M/N and b64 reads. The selection and
+measurements below describe the preserved K8 baseline, not a permanent
+restriction or the new candidate's CLI. Historical records stay intact.
 
 ## Keep
 

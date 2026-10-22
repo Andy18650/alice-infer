@@ -6,9 +6,10 @@ import json,re,sys
 folder=Path(sys.argv[1]);text=(folder/'probe.isa').read_text();meta=(folder/'metadata.txt').read_text();out=[]
 header=(folder/'compute.hpp').read_text()
 depth=int(re.search(r'kDepth=(\d+)',header)[1]);stage=int(re.search(r'kStageK=(\d+)',header)[1])
+stages=int(re.search(r'kStages=(\d+)',header)[1])
 for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
     name=section.splitlines()[0] if section else ''
-    if not any(f'<{x}' in name for x in ('gemm_k8(','void lds_grid<','copy_check(')):continue
+    if not any(f'<{x}' in name for x in ('gemm64(','void lds_grid<','copy_check(')):continue
     lines=[l for l in section.splitlines() if re.search(r'// [0-9A-Fa-f]+:',l)]
     ops=[l.strip().split()[0] for l in lines]
     assert not any(x in ('v_readlane_b32','v_writelane_b32') for x in ops)
@@ -31,13 +32,17 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
         assert loads and all(re.search(r'\blds\s+//',body[i]) for i in loads),name
         assert not any(l.strip().startswith('ds_write_') for l in body),name
         assert any('s_waitcnt vmcnt(0)' in l for l in body)
-    if '<gemm_k8(' in name:
-        stages=16;waits=[int(x) for l in body for x in re.findall(r'vmcnt\((\d+)\)',l)]
-        steady_vm=24
-        assert 2*(min(stages,31)-1) in waits and steady_vm in waits,(name,waits)
+    if '<gemm64(' in name:
+        waits=[int(x) for l in body for x in re.findall(r'vmcnt\((\d+)\)',l)]
+        steady_vm=4*(stages-3)
+        assert 4*(min(stages,15)-1) in waits and steady_vm in waits,(name,waits)
+        firstwait=next(i for i,l in enumerate(body) if 'vmcnt(' in l)
+        firstread=next(i for i,l in enumerate(body) if l.strip().startswith('ds_read_'))
+        assert sum(l.strip().startswith('global_load_') for l in body[:firstwait])==4*min(stages,15)
+        assert sum(l.strip().startswith('global_load_') for l in body[firstwait:firstread])==(4 if stages==16 else 0)
         assert max(waits)<=62,(name,'VMEM counter range')
         assert not any(l.strip().startswith('ds_write_') for l in lines)
-        assert sum('v_mfma_' in l for l in body)==2*stages,(name,'unexpected inner loop')
+        assert sum('v_mfma_' in l for l in body)==4*stages,(name,'unexpected inner loop')
         bulk=[]
         for i,l in enumerate(body):
             if not l.strip().startswith('s_cbranch_scc1 '):continue
@@ -45,11 +50,11 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
             if disp>=0:continue
             pc=int(re.search(r'// ([0-9a-fA-F]+):',l)[1],16);target=pc+4+4*disp
             seq=[x for x in body[:i+1] if int(re.search(r'// ([0-9a-fA-F]+):',x)[1],16)>=target]
-            if sum('v_mfma_' in x for x in seq)==stages:bulk=seq
+            if sum('v_mfma_' in x for x in seq)==2*stages:bulk=seq
         assert bulk,(name,'missing unrolled bulk backedge')
         assert sum('s_barrier' in x for x in bulk)==stages
         assert all('lgkmcnt(2)' in x for x in bulk if 'lgkmcnt(' in x),('bulk DS drain',name)
-        assert sum(x.strip().startswith('ds_read_b64') for x in bulk)==2*stages
+        assert sum(x.strip().startswith('ds_read_b64') for x in bulk)==4*stages
         assert sum('s_sub_u32' in x for x in bulk)==1
         assert sum(x.strip().startswith('s_cbranch') for x in bulk)==1
         for phase,i in enumerate(i for i,x in enumerate(bulk) if 'v_mfma_' in x):
@@ -60,26 +65,26 @@ for section in re.split(r'(?=^0[0-9a-f]+ <)',text,flags=re.M):
         assert all(f'vmcnt({steady_vm})' in x for x in bulk if 'vmcnt(' in x)
         assert not any(x.strip().startswith('s_nop') for x in bulk),('bulk explicit M0 gap retained',name)
         copy_indices=[i for i,x in enumerate(bulk) if x.strip().startswith('global_load_')]
-        assert len(copy_indices)==2*stages
-        for i in copy_indices[::2]:
+        assert len(copy_indices)==4*stages
+        for i in copy_indices[::4]:
             assert bulk[i-1].strip().startswith('s_barrier'),('M0 use not directly after barrier',name)
             assert bulk[i-2].strip().startswith('s_add_u32 m0,'),('M0 setup not directly before barrier',name)
         refill_offsets=[int(x.split('//')[0].split(',')[-1].strip(),0) for x in bulk if x.strip().startswith('s_add_u32 m0,')]
-        assert refill_offsets==[4096*(p//2) for p in range(stages)],('incorrect pair M0 base',name,refill_offsets)
+        assert refill_offsets==[4096*p for p in range(stages)],('incorrect chunk M0 base',name,refill_offsets)
         load_offsets=[int(re.search(r'offset:(\d+)',bulk[i])[1]) if 'offset:' in bulk[i] else 0 for i in copy_indices]
-        assert load_offsets==[2048*(p%2)+q for p in range(stages) for q in (0,256)],('incorrect pair displacement',name,load_offsets)
+        assert load_offsets==[q for p in range(stages) for q in (0,256,2048,2304)],('incorrect chunk displacement',name,load_offsets)
         for p in range(stages):
-            assert refill_offsets[p]+load_offsets[2*p]==2048*p
-            assert refill_offsets[p]+load_offsets[2*p+1]==2048*p+256
+            assert refill_offsets[p]+load_offsets[4*p]==4096*p
+            assert refill_offsets[p]+load_offsets[4*p+3]==4096*p+2304
         adds=[x for x in bulk if x.strip().startswith('v_add_co_u32')]
         carries=[x for x in bulk if x.strip().startswith('v_addc_co_u32')]
-        assert len(adds)==len(carries)==stages//2,('source advance not paired',name)
+        assert len(adds)==len(carries)==stages,('source advance not per K16 chunk',name)
         assert all('0x1000' in x or '4096' in x for x in adds)
         offsets=[int(re.search(r'offset:(\d+)',x)[1]) if 'offset:' in x else 0 for x in bulk if x.strip().startswith('ds_read_b64')]
-        assert offsets==[2048*((p+2)%stages) for p in range(stages) for _ in (0,1)],(name,offsets)
+        assert offsets==[4096*((p+1)%stages)+f*2048 for p in range(stages) for f in (0,1) for _ in (0,1)],(name,offsets)
     (folder/('core-'+str(len(out))+'.txt')).write_text('\n'.join(body)+'\n')
     out.append(dict(name=name,direct=direct,copy_check=iscopy,core_lines=len(body),global_to_lds=sum(bool(re.search(r'global_load_.*\blds\s+//',l)) for l in body)))
-assert depth==2 and stage==8
+assert depth==2 and stage==16 and stages in (8,16)
 assert len(out)==4,len(out)
 resources=[]
 for block in re.split(r'(?=  - \.agpr_count:)',meta):
@@ -88,4 +93,4 @@ for block in re.split(r'(?=  - \.agpr_count:)',meta):
     assert fields['private_segment_fixed_size']==fields['group_segment_fixed_size']==0,(m[1],fields)
     resources.append(dict(name=m[1],**fields))
 (folder/'inventory.json').write_text(json.dumps(dict(kernels=out,resources=resources),indent=2)+'\n')
-print(f'Inspected {len(out)} direct-only kernels: no scratch/static LDS/lane spills, accumulators stay in AGPRs inside timing; direct kernels have true LDS-target VMEM, fixed K8/16-slot paired-address bulk checks pass.')
+print(f'Inspected {len(out)} direct-only kernels: no scratch/static LDS/lane spills, accumulators stay in AGPRs inside timing; direct kernels have true LDS-target VMEM, K16 two-MFMA/one-barrier chunk checks pass.')

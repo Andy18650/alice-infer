@@ -57,9 +57,9 @@ __global__ __launch_bounds__(256) void copy_check(const uint32_t* src,uint32_t* 
   }
   for(int i=threadIdx.x;i<buffers*words;i+=256) output[i]=smem[i];
 }
-// A single opaque asm owns both raw register buffers across all K8 records.
-// No per-record compute() call; fixed LDS offsets/parity in the unrolled body.
-__global__ __launch_bounds__(256) void gemm_k8(const uint32_t* packed,float* out,uint64_t* stamps,int tiles) {
+// One opaque asm owns raw0/raw1 across K8 records, two per K16 stage.
+// Fixed b64 offsets/parity; one publication/retirement boundary per two MFMAs.
+__global__ __launch_bounds__(256) void gemm64(const uint32_t* packed,float* out,uint64_t* stamps,int tiles) {
   extern __shared__ __attribute__((aligned(16))) uint32_t smem[];
   int lane=threadIdx.x%64,wave=threadIdx.x/64;
   const uint32_t base=uint32_t(reinterpret_cast<uintptr_t>(smem));
@@ -134,7 +134,7 @@ int main(int argc,char** argv)try{
   auto run=[&](){
     if(mode=="lds-hot")lds_grid<true><<<1,256,shared_bytes>>>(output.p+16,stamps.p,steps,records,sa,sb);
     else if(mode=="lds-sweep")lds_grid<false><<<1,256,shared_bytes>>>(output.p+16,stamps.p,steps,records,sa,sb);
-    else gemm_k8<<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
+    else gemm64<<<1,256,shared_bytes>>>(input.p,output.p+16,stamps.p,tiles);
     HIP(hipGetLastError());
   };
   std::fprintf(stderr,"grid=1 block=256 waves=2x2 mode=%s producer=%s buffers=%d D=%d U=%d stageK=%d K=%d executed_steps=%d records=%d LDS_bytes=%d packed_bytes=%zu seeds=%u/%u unique_input_B_per_step=2048 LDS_result_B_per_step=4096; native O3 HIP0 CPU+memory placement external no model/context; packing outside timing\n",mode.c_str(),real?producer.c_str():"none",real?buffers:0,kDepth,kUnroll,kStageK,logical_k,steps,records,shared_bytes,packed.size()*4,sa,sb);
@@ -144,7 +144,7 @@ int main(int argc,char** argv)try{
   for(int r=0;r<rounds;++r){HIP(hipMemset(output.p,0xff,4128*sizeof(float)));HIP(hipEventRecord(ev.b));run();HIP(hipEventRecord(ev.e));HIP(hipEventSynchronize(ev.e));float ms;HIP(hipEventElapsedTime(&ms,ev.b,ev.e));uint64_t st[16];HIP(hipMemcpy(st,stamps.p,sizeof(st),hipMemcpyDeviceToHost));uint64_t first=UINT64_MAX,last=0,wfirst=UINT64_MAX,wlast=0;for(int w=0;w<4;++w){first=std::min(first,st[w*4]);last=std::max(last,st[w*4+1]);wfirst=std::min(wfirst,st[w*4+2]);wlast=std::max(wlast,st[w*4+3]);}double cycles=double(last-first),us=double(wlast-wfirst)*1000/wallrate;
     Check c;if(verify){std::vector<float> y(4128);HIP(hipMemcpy(y.data(),output.p,y.size()*4,hipMemcpyDeviceToHost));c=check_output(y,ref);}invalid+=bool(c.bad||c.guards);
     std::printf("%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%zu,%.6f,%.0f,%.9f,%.9f,%.3f,%.6f,%d,%d,%.9g,%d",r,mode.c_str(),real?producer.c_str():"none",real?buffers:0,kDepth,kUnroll,kStageK,logical_k,steps,records,shared_bytes,packed.size()*4,ms*1000,cycles,steps?cycles/steps:0,us,cycles/us,8192.0*logical_k/(us*1000),c.bad,c.guards,c.maxerr,verify?int(!c.bad&&!c.guards):-1);
-    std::printf(",%d",real&&kStageK==8?buffers:0);
+    std::printf(",%d",real?buffers*(kStageK/8):0);
     for(int w=0;w<4;++w)std::printf(",%llu,%llu,%llu,%llu",(unsigned long long)st[4*w],(unsigned long long)st[4*w+1],(unsigned long long)st[4*w+2],(unsigned long long)st[4*w+3]);std::puts("");std::fflush(stdout);
   }
   std::fprintf(stderr,"COMPLETE invalid=%d verified=%d\n",invalid,verify);return invalid?2:0;

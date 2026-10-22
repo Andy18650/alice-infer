@@ -877,6 +877,29 @@ not valid algorithms or active search combinations. Manifest/ISA/raw clocks
 and sources are in `results/ablations/`, analysis in ABLATIONS.md. No combined
 ablation, further tuning or production/system change.
 
+The user keeps64x64 M/N for CTA supply in real prefill and requests StageK16,
+primarily preserving32 KiB (8 slots), also authorizing16 slots/64 KiB. Two
+unchanged K8 records/stage, b64 reads and raw2 retained; no b128/data-layout
+change. Each stage performs two MFMAs but only one VM wait/rendezvous/M0
+setup-restore. Source still advances4096 per two fragments. Startup publishes
+current/next stages; VM20/52 and a15-stage split-prime for64 KiB account for
+four global DWORD instructions/stage without64 pending VMEM operations.
+The last stage's second MFMA waits LGKM0; tails zero-pad to16 and reference
+uses actual K. Native code checks two MFMA/four b64 reads per barrier,
+fixed offsets/parity, M0/barrier adjacency, zero spills/conversions and8/16
+slot metadata. No broad matrix or older algorithms are reintroduced.
+Native O3 gfx90a HIP0, CPU+memory NUMA0, one CTA/256 threads, K32768,
+no model/context/clock changes:32 KiB candidate92.821/94.006 cycles per
+K8-equivalent MFMA step (226.080/228.960 us) versus frozen K8 baseline
+93.452/92.976: no clear equal-budget gain.64 KiB92.241/91.959 (224.640/
+223.840 us) versus93.271/93.276 is a small gain at doubled LDS, not a real-
+prefill/CTA-residency recommendation. Both matched trials pass120 checked
+samples total plus18 short-fill/tail smokes; all C/guards and staging words
+exact. Baseline active/0528d65 source and binaries remain untouched. Data,
+native/source hashes and assembly are in `results/stage16-s8/` and
+`results/stage16-s16/`; analysis in STAGE16.md. No further tuning or production,
+CMake/model/system/clock-policy change; b128 explicitly deferred.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

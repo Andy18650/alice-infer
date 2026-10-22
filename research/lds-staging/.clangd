@@ -12,3 +12,8 @@ If:
   PathMatch: grid-latency\.hip
 CompileFlags:
   CompilationDatabase: ../../temp/lds-staging/grid-latency
+---
+If:
+  PathMatch: wait-bandwidth\.hip
+CompileFlags:
+  CompilationDatabase: ../../temp/lds-staging/windows/template

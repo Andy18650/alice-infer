@@ -16,6 +16,12 @@ It also identifies the slower first source traversal versus faster revisits
 in the earlier single-CTA aggregate; prior warmup did not guarantee uniformly
 hot measured source accesses. Both pilot and corrected64-batch data remain.
 
+[Per-load VM watermark sweep](WINDOWS.md) returns to long streaming bandwidth:
+1/8 CTAs, thresholds0..32 plus larger/disabled/no-wait controls.1 CTA reaches
+the floor at vmcnt16 (peak17 loads/wave);8 CTAs approach a noisier plateau at
+vmcnt19–20 (peak20–21). Full native-controlled curves and provenance retained;
+plateau is sufficiency evidence, not an exact physical queue-depth proof.
+
 ## Fixed experiment
 
 One CTA/256 threads/four waves, HIP0/BDF31:00.0, native HIP O3/C++20,

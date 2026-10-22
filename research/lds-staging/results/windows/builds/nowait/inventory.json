@@ -1,0 +1,7 @@
+{
+  "wait": "none",
+  "loads": 64,
+  "loop_instructions": 81,
+  "per_load_waits": 0,
+  "scratch_bytes": 0
+}

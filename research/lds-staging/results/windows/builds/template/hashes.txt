@@ -1,0 +1,5 @@
+f49521c0395626d99eed8aa4b5569c42b689a903697c862cd518336828a33d3e  /home/andyhu/projects/inference/alice-infer/research/lds-staging/wait-bandwidth.hip
+64981d3c9eafe3d1d8ff91bcafdc0cafe85b5ea7ac3e86c27ebda9246c0cd5cb  /home/andyhu/projects/inference/alice-infer/research/lds-staging/generate-window.py
+e503ff170265373185ca1a1ad94cb454078daf0a69b6c887429b482d0f0c98c1  /home/andyhu/projects/inference/alice-infer/temp/lds-staging/windows/template/loads.hpp
+a7e6b18e6e12e28550efcdb1d41e6c17dfb8eac74e558edd882571b1c9941ec7  /home/andyhu/projects/inference/alice-infer/temp/lds-staging/windows/template/probe
+8b8e7d3e131f47e9ce8bf21b443d0f6d5e042237cf5e2ea4fa7c9abe5b0c37eb  /home/andyhu/projects/inference/alice-infer/temp/lds-staging/windows/template/probe.hsaco

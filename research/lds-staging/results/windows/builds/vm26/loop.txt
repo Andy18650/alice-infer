@@ -1,0 +1,145 @@
+s_add_u32 m0, s0, 0
+v_add_co_u32_e32 v8, vcc, s1, v1
+v_addc_co_u32_e32 v9, vcc, 0, v4, vcc
+global_load_dword v[8:9], off lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:256 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:512 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:768 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1024 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1280 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1536 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1792 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2048 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2304 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2560 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2816 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3072 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3328 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3584 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3840 lds
+s_waitcnt vmcnt(26)
+s_add_u32 m0, s0, 0x1000
+v_add_co_u32_e32 v8, vcc, 0x1000, v8
+v_addc_co_u32_e32 v9, vcc, 0, v9, vcc
+global_load_dword v[8:9], off lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:256 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:512 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:768 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1024 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1280 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1536 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1792 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2048 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2304 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2560 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2816 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3072 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3328 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3584 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3840 lds
+s_waitcnt vmcnt(26)
+s_add_u32 m0, s0, 0x2000
+v_add_co_u32_e32 v8, vcc, 0x1000, v8
+v_addc_co_u32_e32 v9, vcc, 0, v9, vcc
+global_load_dword v[8:9], off lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:256 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:512 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:768 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1024 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1280 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1536 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1792 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2048 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2304 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2560 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2816 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3072 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3328 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3584 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3840 lds
+s_waitcnt vmcnt(26)
+s_add_u32 m0, s0, 0x3000
+v_add_co_u32_e32 v8, vcc, 0x1000, v8
+v_addc_co_u32_e32 v9, vcc, 0, v9, vcc
+global_load_dword v[8:9], off lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:256 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:512 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:768 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1024 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1280 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1536 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:1792 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2048 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2304 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2560 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:2816 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3072 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3328 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3584 lds
+s_waitcnt vmcnt(26)
+global_load_dword v[8:9], off offset:3840 lds
+s_waitcnt vmcnt(26)
+s_add_u32 s1, s1, 0x4000
+s_and_b32 s1, s1, 0x3ffff
+s_sub_u32 s20, s20, 1
+s_cmp_lg_u32 s20, 0
+s_cbranch_scc1 65319

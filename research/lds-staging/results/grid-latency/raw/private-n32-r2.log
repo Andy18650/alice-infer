@@ -1,0 +1,2 @@
+HIP0 BDF=0000:31:00.0 native O3 gfx90a, CTAs=32 block256, CUs=104 L2_bytes=8388608 source_bytes=33554432 touched_per_launch=2097152,64KiB LDS/CTA, mode=private, 16 batches x64 samples/wave; timing overhead included, no model/context/clock overrides
+COMPLETE 131072 raw intervals retained; final per-CTA LDS checks and all record/check guards pass; no per-sample global stores

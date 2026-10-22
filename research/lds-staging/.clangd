@@ -7,3 +7,8 @@ If:
   PathMatch: latency\.hip
 CompileFlags:
   CompilationDatabase: ../../temp/lds-staging/latency
+---
+If:
+  PathMatch: grid-latency\.hip
+CompileFlags:
+  CompilationDatabase: ../../temp/lds-staging/grid-latency

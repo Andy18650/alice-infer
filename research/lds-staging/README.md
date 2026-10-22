@@ -10,6 +10,12 @@ It has a separate binary/source and reports all individual intervals with
 min/max/median/mean/spread, timing overhead included. This no-wait baseline
 remains unchanged.
 
+The [disjoint-source CTA sweep](GRID_LATENCY.md) increases1–256 CTAs with
+1 MiB/CTA, beyond the reported8 MiB L2, preserving the per-load timing asm.
+It also identifies the slower first source traversal versus faster revisits
+in the earlier single-CTA aggregate; prior warmup did not guarantee uniformly
+hot measured source accesses. Both pilot and corrected64-batch data remain.
+
 ## Fixed experiment
 
 One CTA/256 threads/four waves, HIP0/BDF31:00.0, native HIP O3/C++20,

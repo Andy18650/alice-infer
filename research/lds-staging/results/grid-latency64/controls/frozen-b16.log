@@ -1,0 +1,2 @@
+HIP0 BDF=0000:31:00.0 native O3 gfx90a, one CTA/256 threads,1MiB source,64KiB allocated LDS, mode=private, 16 batches x64 samples/wave; timing overhead included, no model/context/clock overrides
+COMPLETE 4096 raw intervals retained; final full LDS/check guards and all sample guards pass; no per-sample global stores

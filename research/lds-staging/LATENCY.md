@@ -1,5 +1,11 @@
 # One direct-to-LDS load / VM0: individual latency intervals
 
+Follow-up [grid sweep](GRID_LATENCY.md) replays this frozen binary and shows
+that the original64-batch aggregate mixes slower first source traversal
+(batches0–15,~580–590 cycles) with faster revisits (~276–288). The prior
+pretraversal/warmup does not guarantee uniformly hot capture after record
+initialization. Original observations and raw data below remain unchanged.
+
 User-directed second test, separate source/binary from the no-periodic-wait
 throughput baseline. Preserve that baseline unchanged. Capture many individual
 core-cycle deltas in registers; do not turn this into a whole-loop average.

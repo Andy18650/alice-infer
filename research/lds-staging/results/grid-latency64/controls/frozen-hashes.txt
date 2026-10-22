@@ -1,0 +1,5 @@
+2de44ead582f2a40731e3feb985927ccd146a6fc928d63a3b687e0352cc2a693  /home/andyhu/projects/inference/alice-infer/research/lds-staging/latency.hip
+9c8577e12d105f7fc3691fcbb62d66e7216c52242f1fd3f3c29552fe290ef20f  /home/andyhu/projects/inference/alice-infer/research/lds-staging/generate-latency.py
+ee709be55d61383ca4a1009b964f3f5a8910d89c5b9bd110e84067eee4c21f57  /home/andyhu/projects/inference/alice-infer/temp/lds-staging/latency/latency-records.hpp
+86f735140c9ed78187dd1c1c2085559be3bfd80f84824df1512514f843b98bec  /home/andyhu/projects/inference/alice-infer/temp/lds-staging/latency/probe
+16e33ba71b92865481b416a4d05c10125aafebff0b64518e9a33fd4c14cffa28  /home/andyhu/projects/inference/alice-infer/temp/lds-staging/latency/probe.hsaco

@@ -5,6 +5,11 @@ measure pure loading, without MFMA, LDS operand reads, consumers, barriers
 or explicit waits in the issue loop. Let hardware issue backpressure act.
 This is not a direct measurement of maximum outstanding request count.
 
+Next user-directed test: [one load +VM0, register-retained latency samples](LATENCY.md).
+It has a separate binary/source and reports all individual intervals with
+min/max/median/mean/spread, timing overhead included. This no-wait baseline
+remains unchanged.
+
 ## Fixed experiment
 
 One CTA/256 threads/four waves, HIP0/BDF31:00.0, native HIP O3/C++20,

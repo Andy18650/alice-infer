@@ -1,0 +1,6 @@
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/latency/probe --mode shared --batches 1 --warmup-ms 0
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/latency/probe --mode private --batches 1 --warmup-ms 0
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/latency/probe --mode shared --batches 64 --warmup-ms 200
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/latency/probe --mode private --batches 64 --warmup-ms 200
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/latency/probe --mode private --batches 64 --warmup-ms 200
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/latency/probe --mode shared --batches 64 --warmup-ms 200

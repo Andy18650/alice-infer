@@ -1,0 +1,7 @@
+{
+  "build": "/home/andyhu/projects/inference/alice-infer/temp/lds-staging/latency",
+  "batches": 64,
+  "samples_per_wave_per_batch": 64,
+  "placement": "numactl CPU+memory node0",
+  "clock_overhead_subtracted": false
+}

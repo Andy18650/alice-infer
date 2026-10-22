@@ -922,6 +922,27 @@ operand-read/staging contention remains unmeasured. Source/native hashes,
 ISA/metadata, clocks and commands in `research/lds-staging/results/base/`;
 no existing research/production/CMake/model/system changes or further tuning.
 
+Next user-directed LDS test separately measures one coalesced load+VM0 with
+core-clock endpoints,64 samples/wave retained in distinct VGPRs. No record
+stores/spills/consumers/barriers among samples; post-batch join prevents any
+wave's output stores overlapping another's measurement.64 sequential kernel
+batches/process,4096 intervals/wave; four256 KiB source ranges cover1 MiB
+repeatedly after pretraversal/200 ms warmup, same shared/private destinations
+and64 KiB allocation. Core clock-read/retirement overhead INCLUDED, no
+calibration/subtraction/filtering. Native ISA checks exact sample sequences.
+Native O3 gfx90a HIP0/BDF31:00.0, CPU+memory NUMA0, one CTA/256 threads, no
+model/context/clock changes: shared runs min232/236,max1456/2192,median296/
+296,mean362.34/362.71,populationSD134.59/136.54; private min236/236,max1704/
+1800,median296/296,mean365.39/361.80,SD137.44/137.63 cycles. P95~604–612,
+IQR102–109, broad right tail; no systematic shared/private central gap.
+All maxima in first measured batch are retained, not assigned a hardware
+cause.65536 measured +512 smoke intervals, all record/check guards and
+final LDS contents pass; periodic payload not a source-iteration oracle.
+Raw/source/native records, per-wave/position stats in `lds-staging/results/
+latency/`, analysis LATENCY.md. Separate binary preserves no-wait baseline;
+throughput-period/serialized-latency ratio is not an exact queue-depth proof.
+No further experiment/production/system changes.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

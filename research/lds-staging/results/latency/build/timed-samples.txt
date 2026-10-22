@@ -1,0 +1,521 @@
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v66, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:256 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v67, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:512 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v68, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:768 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v69, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1024 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v62, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1280 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v63, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1536 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v64, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1792 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v65, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2048 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v58, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2304 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v59, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2560 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v60, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2816 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v61, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3072 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v54, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3328 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v55, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3584 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v56, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3840 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v57, s3
+s_add_u32 m0, s2, 0x1000
+v_add_co_u32_e32 v8, vcc, 0x1000, v8
+v_addc_co_u32_e32 v9, vcc, 0, v9, vcc
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v50, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:256 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v51, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:512 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v52, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:768 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v53, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1024 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v46, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1280 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v47, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1536 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v48, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1792 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v49, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2048 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v42, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2304 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v43, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2560 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v44, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2816 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v45, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3072 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v38, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3328 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v39, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3584 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v40, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3840 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v41, s3
+s_add_u32 m0, s2, 0x2000
+v_add_co_u32_e32 v8, vcc, 0x1000, v8
+v_addc_co_u32_e32 v9, vcc, 0, v9, vcc
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v34, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:256 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v35, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:512 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v36, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:768 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v37, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1024 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v30, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1280 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v31, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1536 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v32, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1792 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v33, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2048 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v26, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2304 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v27, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2560 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v28, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2816 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v29, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3072 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v22, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3328 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v23, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3584 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v24, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3840 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v25, s3
+s_add_u32 m0, s2, 0x3000
+v_add_co_u32_e32 v8, vcc, 0x1000, v8
+v_addc_co_u32_e32 v9, vcc, 0, v9, vcc
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v18, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:256 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v19, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:512 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v20, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:768 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v21, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1024 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v14, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1280 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v15, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1536 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v16, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:1792 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v17, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2048 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v10, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2304 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v11, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2560 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v12, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:2816 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v13, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3072 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v2, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3328 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v3, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3584 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v4, s3
+s_memtime s[16:17]
+s_waitcnt lgkmcnt(0)
+global_load_dword v[8:9], off offset:3840 lds
+s_waitcnt vmcnt(0)
+s_memtime s[18:19]
+s_waitcnt lgkmcnt(0)
+s_sub_u32 s3, s18, s16
+v_mov_b32_e32 v5, s3

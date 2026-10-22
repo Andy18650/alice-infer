@@ -1,0 +1,5 @@
+7f631a2b7bb144273e89c932455d7cfb28599b1bd0df0f227e4075721f7fb941  /home/andyhu/projects/inference/alice-infer/research/lds-staging/grid-vgpr.hip
+ee653573573543314e236f26103388b0b45b73b8b69af466be617239573ad89d  /home/andyhu/projects/inference/alice-infer/research/lds-staging/generate-vgpr.py
+297427df579364149e8b07cb28be872fd024b29e25ada18270415039bc2e9a01  /home/andyhu/projects/inference/alice-infer/temp/lds-staging/grid-vgpr/vgpr-loads.hpp
+2b9f2a4b2134ff99960bbb0eb3d697a6235e4ebcdf6ae6495efaa8ca02178684  /home/andyhu/projects/inference/alice-infer/temp/lds-staging/grid-vgpr/probe
+6ce6241610ca5f9ca4953232007df3d31c5f33d9cb83378cddd26cdca88bbdfb  /home/andyhu/projects/inference/alice-infer/temp/lds-staging/grid-vgpr/probe.hsaco

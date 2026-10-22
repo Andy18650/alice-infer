@@ -1,0 +1,2 @@
+HIP0 BDF=0000:31:00.0 O3 gfx90a, CTAs=208 block128 waves2, CUs=104 L2=8388608,source1MiB/CTA,total_source=218103808,ring32 x4VGPR/lane,no LDS,resident_CTA_limit_per_CU=6; no model/context/clock override, external NUMA placement
+COMPLETE every final ring DWORD/lane/slot and output guard exact; no periodic waits or consumers

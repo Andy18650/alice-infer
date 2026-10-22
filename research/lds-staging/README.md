@@ -27,6 +27,11 @@ waves,32 register slots and no periodic waits. All three sustain~63.9
 requested B/core-cycle with a fixed1 MiB source; per-step payload and period
 scale together, so more waves do not raise aggregate rate in this setup.
 
+[Coarse VGPR CTA knees](GRID_VGPR.md) then sweeps1–208 CTAs at1/2/4 waves:
+early bend around4–8, broad best region32–64, regressions at104–208
+(especially four-wave CTAs). No periodic waits added or follow-on tuning;
+source footprint/concurrency remain coupled.
+
 ## Fixed experiment
 
 One CTA/256 threads/four waves, HIP0/BDF31:00.0, native HIP O3/C++20,

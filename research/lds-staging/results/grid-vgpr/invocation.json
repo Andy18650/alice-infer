@@ -1,0 +1,24 @@
+{
+  "build": "/home/andyhu/projects/inference/alice-infer/temp/lds-staging/grid-vgpr",
+  "ctas": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    104,
+    208
+  ],
+  "waves": [
+    1,
+    2,
+    4
+  ],
+  "rounds": 3,
+  "repetitions": 2,
+  "requested_bytes_per_cta": 268435456,
+  "source_bytes_per_cta": 1048576,
+  "placement": "numactl CPU+memory node0"
+}

@@ -1,0 +1,10 @@
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/base/probe --mode shared --groups 1 --rounds 1 --warmup-ms 0
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/base/probe --mode shared --groups 16 --rounds 1 --warmup-ms 0
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/base/probe --mode shared --groups 17 --rounds 1 --warmup-ms 0
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/base/probe --mode private --groups 1 --rounds 1 --warmup-ms 0
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/base/probe --mode private --groups 16 --rounds 1 --warmup-ms 0
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/base/probe --mode private --groups 17 --rounds 1 --warmup-ms 0
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/base/probe --mode shared --groups 16384 --rounds 9 --warmup-ms 200
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/base/probe --mode private --groups 16384 --rounds 9 --warmup-ms 200
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/base/probe --mode private --groups 16384 --rounds 9 --warmup-ms 200
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/lds-staging/base/probe --mode shared --groups 16384 --rounds 9 --warmup-ms 200

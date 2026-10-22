@@ -900,6 +900,28 @@ native/source hashes and assembly are in `results/stage16-s8/` and
 `results/stage16-s16/`; analysis in STAGE16.md. No further tuning or production,
 CMake/model/system/clock-policy change; b128 explicitly deferred.
 
+New user-directed `research/lds-staging/` isolates pure global-to-LDS loading:
+fixed1 MiB warmed source, four disjoint256 KiB wave ranges, fully coalesced
+DWORD loads; destinations shared16 KiB or private16 KiB/wave. Both allocate
+64 KiB and use identical source addresses. Opaque volatile asm issues64 loads
+per81-instruction loop, zero loop waits/barriers/consumers/NOPs; terminal VM0
+outside issue interval precedes completed timestamp and all-LDS check.
+Timer LGKM waits stay outside loop. Requested payload per four-wave step
+is1024 B, denominator loads/wave; absolute CTA timestamp makespans retained,
+not per-wave duration max. Lane-periodic bits make overlapping/reordered
+writes same-valued; all active/unused LDS and32 guards checked, not a source-
+iteration oracle. Native O3 gfx90a HIP0/BDF31:00.0, CPU+memory NUMA0, one CTA/
+256 threads, no model/context/clock overrides: shared17.3966/17.3959 and
+private17.3962/17.3953 core cycles/four-wave load,58.8621/58.8643 and58.8636/
+58.8664 requested B/core-cycle (~99 GB/s); two counterbalanced warmed nine-
+sample process repeats.36 timings plus6 traversal/wrap smokes pass. Source
+fits intended L2-hot footprint but no counters certify residency. Layouts
+are indistinguishable; pure-copy service reference, not proof of a specific
+outstanding queue/count or universal physical bandwidth ceiling. Mixed LDS
+operand-read/staging contention remains unmeasured. Source/native hashes,
+ISA/metadata, clocks and commands in `research/lds-staging/results/base/`;
+no existing research/production/CMake/model/system changes or further tuning.
+
 ## 1. Purpose & target
 
 A from-scratch C++20 LLM inference engine for this machine: 4× MI250X

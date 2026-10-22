@@ -1,0 +1,10 @@
+{
+  "loads_per_wave_per_group": 64,
+  "groups_4KiB": 4,
+  "loop_instructions": 81,
+  "loop_waits": 0,
+  "loop_barriers": 0,
+  "loop_lds_consumers": 0,
+  "source_bytes": 1048576,
+  "allocated_lds_bytes": 65536
+}

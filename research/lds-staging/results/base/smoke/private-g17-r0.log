@@ -1,0 +1,2 @@
+HIP0 BDF=0000:31:00.0, native O3 gfx90a, grid1/block256, source1MiB, source256KiB/wave, allocatedLDS64KiB, destination=private, activeLDS=64KiB, no model/context/clock changes; external NUMA placement
+COMPLETE all LDS words/guards exact; no periodic waits/barriers/consumers

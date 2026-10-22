@@ -1,0 +1,6 @@
+{
+  "build": "/home/andyhu/projects/inference/alice-infer/temp/lds-staging/base",
+  "output": "/home/andyhu/projects/inference/alice-infer/research/lds-staging/results/base",
+  "groups": 16384,
+  "placement": "numactl CPU+memory node0"
+}

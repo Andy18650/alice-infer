@@ -82,10 +82,10 @@ def audit(output_directory):
     timed_body = [text for _, text in instructions[start:end + 1]]
     counts = opcode_counts(timed_body)
     expected_body_counts = {
-        MFMA: (1 if resident else 4) * fragments * micro_tiles * micro_tiles,
-        'global_load_dwordx4': (2 if resident else 4) * fragments * pairs,
-        'ds_write_b128': (1 if resident else 3) * fragments * pairs,
-        'ds_read_b128': (2 if resident else 6) * fragments * pairs,
+        MFMA: (1 if resident else 8) * fragments * micro_tiles * micro_tiles,
+        'global_load_dwordx4': (2 if resident else 5) * fragments * pairs,
+        'ds_write_b128': (1 if resident else 6) * fragments * pairs,
+        'ds_read_b128': (2 if resident else 12) * fragments * pairs,
     }
     for opcode, expected in expected_body_counts.items():
         require(counts[opcode] == expected,
@@ -118,6 +118,22 @@ def audit(output_directory):
         require(loop_counts[opcode] == expected,
                 f'Hot loop {opcode}: expected {expected}, found {loop_counts[opcode]}')
     require(not any('s_nop' in text for text in hot_loop), 'NOP in hot loop')
+    if not resident:
+        # Two stages, one bottom-controlled backedge. Boundary tests belong
+        # only to the bounded tails, not either steady phase.
+        expected_control = {
+            's_cmp_eq_u32': 0,
+            's_cmp_le_u32': 0,
+            's_sub_u32': 1,
+            's_cmp_ge_u32': 1,
+            's_cbranch_scc1': 1,
+            's_branch': 0,
+        }
+        for opcode, expected in expected_control.items():
+            require(loop_counts[opcode] == expected,
+                    f'Unexpected steady-loop control: {opcode}={loop_counts[opcode]}')
+    require(not any(text.startswith('s_branch ') and int(text.split()[1], 0) == 0
+                    for text in timed_body), 'Redundant fall-through branch in timed body')
 
     (output_directory / 'body.txt').write_text('\n'.join(timed_body) + '\n')
     (output_directory / 'loop.txt').write_text('\n'.join(hot_loop) + '\n')

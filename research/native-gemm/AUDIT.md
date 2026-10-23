@@ -3,7 +3,9 @@
 The readability cleanup changes organization, names, comments and host helper
 boundaries, **not the GPU algorithm**. Original minified source snapshots in
 `results/` remain untouched: they are the evidence for the original timings.
-Fresh builds/results use a separate `readable` namespace.
+Fresh cleanup builds/results use a separate `readable` namespace. A later
+intentional [branch-only optimization](BRANCH_CLEANUP.md) uses `branch-clean`;
+its ordering proof is separate from the historical byte-identical cleanup.
 
 ## 1. File map and suggested reading order
 
@@ -19,7 +21,9 @@ Fresh builds/results use a separate `readable` namespace.
 |`run.py`|Explicit case lists, seed changes, counterbalanced process order, per-launch validation and raw-clock checks. No tuning.|
 |`analyze.py`|Table generation and one predetermined launch's CTA-overlap proof.|
 |`verify_artifacts.py`|Rebases old manifest paths to immutable source snapshots and checks preserved native binaries.|
-|`audit_cleanup.py`|Independent cleanup equivalence tests: headers, packing, references and native machine code.|
+|`audit_cleanup.py`|Historical cleanup equivalence, pinned to original/readable snapshots.|
+|`audit_branch_flow.py`|Later branch-only change: executed non-control trace equality and unchanged resident headers.|
+|`run_branch_compare.py`|Matched before/after tests retaining104/208/312 CTAs and the large-grid check.|
 |`bank-probe.hip`|Small explicit register-pair diagnostic; not the final GEMM benchmark.|
 
 The default is **tile128,StageK32,ordinary GEMM,linear LDS mapping**. Other tile/
@@ -85,7 +89,7 @@ mechanical C++ string serialization as the design description.
 
 ## 4. Synchronization invariant to check
 
-`emit_steady_phase()` has two different barriers:
+`emit_stage()` has two different barriers:
 
 1. **Retire:** LGKM0 then barrier, before any wave overwrites the single LDS
    buffer. All current operands have already been read into registers.
@@ -102,7 +106,10 @@ which fixed slot holds q3; no payload register copy implements the swap.
 The final stage consumes its operands without reading beyond packed K.
 
 In `loop.txt`, verify two-stage counts/wave:32 MFMA,8 global x4,8 LDS writes,
-16 LDS reads,four CTA barriers. `inspect_code.py` checks these in the actual
+16 LDS reads,four CTA barriers. Branch cleanup keeps these counts but removes
+the per-stage boundary checks and fall-through phase jump; only a three-
+instruction subtract/compare/backedge remains. One-to-three final stages are
+separate; see BRANCH_CLEANUP.md before interpreting static whole-body counts. `inspect_code.py` checks these in the actual
 embedded object's backedge, and separately checks startup/tail totals,
 private memory and forbidden timed accumulator/conversion/spill operations.
 
@@ -151,23 +158,28 @@ readable code, so `verify_artifacts.py` checks source entries against their
 executables. Stage64's documented source recovery was checked against its
 recorded SHA256, not inferred from approximate source similarity.
 
-## 8. Reproduce the cleanup proof and the same test suite
+## 8. Reproduce historical cleanup proof and current tests
 
 ```sh
 bash research/native-gemm/build.sh 128
 bash research/native-gemm/build.sh 256
-# New defaults: temp/native-gemm/readable/s32-t{128,256}; old builds retained.
+# Current builds: temp/native-gemm/branch-clean/s32-t{128,256}; old builds retained.
+# Historical cleanup audit pins results/readable/source and readable binaries:
 python3 research/native-gemm/audit_cleanup.py --output <fresh-audit-directory>
+python3 research/native-gemm/audit_branch_flow.py --output <fresh-flow-audit>
+python3 research/native-gemm/run_branch_compare.py --output <fresh-A-B-directory>
+# Expanded full comparison (including208/312), not the original180 launches:
 python3 research/native-gemm/run.py --output <fresh-results-directory>
 python3 research/native-gemm/analyze.py <results-directory>
 python3 research/native-gemm/verify_artifacts.py
 ```
 
-The cleanup audit compares all8 generator outputs byte-for-byte, all144
+The historical cleanup audit compares all8 generator outputs byte-for-byte, all144
 packed operand vectors for18 logical matrix/seed cases, original/new reference
 dots, and actual GPU `.text` for both GEMM candidates and bank-control kernels.
 `results/cleanup-audit/` records that proof; `results/readable/` records the
-same180-launch suite after cleanup. ELF metadata/host executable hashes may
+original180-launch suite after cleanup. `results/branch-flow-audit/` and
+`results/branch-clean/` separately record the intentional branch change. ELF metadata/host executable hashes may
 change; the proof specifically identifies the unchanged GPU instruction bytes.
 Use fresh build paths when changing source; never overwrite measured historical
 binaries just to make a manifest pass. No new package or formatter dependency.

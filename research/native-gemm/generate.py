@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Generate the fixed-register gfx90a GEMM pipeline.
 
-This emits the same compute.hpp bytes as the original implementation. The
-structure here makes the register allocation and two synchronization purposes
-explicit; generated operand names stay short to keep native ISA easy to match.
+Register allocation and memory/math ordering are unchanged from the readable
+baseline. The ordinary GEMM loop peels its bounded final stages so its hot
+backedge needs only subtract/compare/branch; resident control is unchanged.
 
 Normal GEMM: one LDS buffer, global prefetch, rolling operand reads.
 Resident control: seed one StageK fragment and repeat it, without loop memory
@@ -188,15 +188,16 @@ class PipelineEmitter:
         for fragment in range(self.config.fragments_per_stage):
             self.read_lds_fragment(fragment, fragment)
 
-    def emit_steady_phase(self, phase):
+    def emit_stage(self, phase, fetch_future):
+        """One non-final stage, with statically known future-load validity.
+
+        This emits no loop-control instructions and does not update remaining.
+        Its memory/wait/barrier/MFMA sequence is the original stage sequence.
+        """
         config = self.config
         fragments = config.fragments_per_stage
         current_last_slot = fragments - 1 + phase
         spare_last_slot = fragments - phase
-
-        self.mark(f"phase{phase}")
-        self.emit("s_cmp_eq_u32 %[remaining], 1")
-        self.emit("s_cbranch_scc1 " + self.label(f"tail{phase}"))
 
         # RETIRE: every wave must finish reading the current LDS contents
         # before any wave overwrites the shared buffer with the next stage.
@@ -206,10 +207,9 @@ class PipelineEmitter:
         self.write_prefetched_stage_to_lds()
 
         # The register producer buffer is free after the LDS writes issue.
-        self.emit("s_cmp_le_u32 %[remaining], 2")
-        self.emit("s_cbranch_scc1 " + self.label(f"no_future{phase}"))
-        self.prefetch_global_stage()
-        self.mark(f"no_future{phase}")
+        # The caller, not a hot-path branch, establishes whether stage+2 exists.
+        if fetch_future:
+            self.prefetch_global_stage()
 
         publish_after = fragments // 4
         for fragment in range(publish_after):
@@ -229,16 +229,48 @@ class PipelineEmitter:
             self.read_lds_fragment(fragment, fragment)
         self.compute_fragment(current_last_slot)
 
-        self.emit("s_sub_u32 %[remaining], %[remaining], 1")
-        self.jump(f"phase{1 - phase}")
-
-    def emit_tail(self, phase):
-        self.mark(f"tail{phase}")
+    def emit_last_stage(self, phase):
+        """Consume the final already-prefetched operands, without any future IO."""
         self.emit("s_waitcnt lgkmcnt(0)")
         for fragment in range(self.config.fragments_per_stage - 1):
             self.compute_fragment(fragment)
         self.compute_fragment(self.config.fragments_per_stage - 1 + phase)
+
+    def emit_gemm_loop_and_tails(self):
+        # Both stages of an unrolled pair may fetch stage+2 only when at least
+        # four stages remain at pair entry. A pair restores q3's phase0 parity.
+        self.emit("s_cmp_lt_u32 %[remaining], 4")
+        self.emit("s_cbranch_scc1 " + self.label("tail_dispatch"))
+        self.mark("steady")
+        self.emit_stage(phase=0, fetch_future=True)
+        self.emit_stage(phase=1, fetch_future=True)
+        self.emit("s_sub_u32 %[remaining], %[remaining], 2")
+        self.emit("s_cmp_ge_u32 %[remaining], 4")
+        self.emit("s_cbranch_scc1 " + self.label("steady"))
+
+        # Startup handles zero stages. Here one, two or three remain, always
+        # with q3 in the phase0 slot. Tails are statically bounded and no longer
+        # need to modify the local remaining counter (unused after the asm).
+        self.mark("tail_dispatch")
+        self.emit("s_cmp_eq_u32 %[remaining], 1")
+        self.emit("s_cbranch_scc1 " + self.label("tail_one"))
+        self.emit("s_cmp_eq_u32 %[remaining], 2")
+        self.emit("s_cbranch_scc1 " + self.label("tail_two"))
+
+        self.mark("tail_three")
+        self.emit_stage(phase=0, fetch_future=True)
+        self.emit_stage(phase=1, fetch_future=False)
+        self.emit_last_stage(phase=0)
         self.jump("done")
+
+        self.mark("tail_two")
+        self.emit_stage(phase=0, fetch_future=False)
+        self.emit_last_stage(phase=1)
+        self.jump("done")
+
+        self.mark("tail_one")
+        self.emit_last_stage(phase=0)
+        # Fall through to done; do not emit an s_branch 0.
 
     def emit_resident_control(self):
         # Deliberately not normal GEMM: repeat the first seeded panel.
@@ -260,7 +292,7 @@ class PipelineEmitter:
         self.emit("s_waitcnt lgkmcnt(0)")
 
     def render(self):
-        """Keep the generated C++/asm byte-for-byte compatible with the baseline."""
+        """Render the unchanged ABI wrapper around the selected instruction flow."""
         config = self.config
         tile = config.tile
         stage = config.stage_k
@@ -271,10 +303,7 @@ class PipelineEmitter:
         if config.resident:
             self.emit_resident_control()
         else:
-            for phase in range(2):
-                self.emit_steady_phase(phase)
-            for phase in range(2):
-                self.emit_tail(phase)
+            self.emit_gemm_loop_and_tails()
         self.emit_completion()
 
         lines = [

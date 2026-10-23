@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Focused correctness suite and matched full-problem tile comparison.
 
-No tuning takes place here. The problem list, input seeds, case ordering,
-warmup and nine-sample timing protocol match the original measured suite.
+No tuning takes place here. The problem list retains the original comparisons
+and adds 208/312-CTA coverage; seeds and timing protocol remain unchanged.
 Every timed launch also returns raw per-wave clocks for independent checks.
 """
 
@@ -22,6 +22,11 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 PROBLEMS = (
     (1664, 1024, 8192),
+    (1664, 1024, 32768),
+    (3328, 1024, 8192),  # 208 CTAs with the selected tile.
+    (3328, 1024, 32768),
+    (4992, 1024, 8192),  # Keep 312 CTAs as requested.
+    (4992, 1024, 32768),
     (3328, 2048, 8192),
     (4096, 6656, 8192),
     (4096, 6656, 32768),
@@ -211,11 +216,11 @@ def case_sequence(builds):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=HERE / 'results/readable')
+    parser.add_argument('--output', type=Path, default=HERE / 'results/branch-clean-full')
     parser.add_argument('--build128', type=Path,
-                        default=ROOT / 'temp/native-gemm/readable/s32-t128')
+                        default=ROOT / 'temp/native-gemm/branch-clean/s32-t128')
     parser.add_argument('--build256', type=Path,
-                        default=ROOT / 'temp/native-gemm/readable/s32-t256')
+                        default=ROOT / 'temp/native-gemm/branch-clean/s32-t256')
     args = parser.parse_args()
     output = args.output.resolve()
     builds = {128: args.build128.resolve(), 256: args.build256.resolve()}

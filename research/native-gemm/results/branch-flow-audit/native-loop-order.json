@@ -1,0 +1,16 @@
+[
+  {
+    "tile": 128,
+    "before_loop_instructions": 90,
+    "after_loop_instructions": 81,
+    "identical_noncontrol_instructions": 78,
+    "sha256": "f0997fd8369b09d82959036769b84a14d8427698e375a2e3d7e2bd5c0de4cb26"
+  },
+  {
+    "tile": 256,
+    "before_loop_instructions": 222,
+    "after_loop_instructions": 213,
+    "identical_noncontrol_instructions": 210,
+    "sha256": "e0fadf5f19e36738acd599c09bc4740990e4e8d742fd8a409cdee47b766079c5"
+  }
+]

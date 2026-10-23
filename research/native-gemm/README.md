@@ -7,19 +7,20 @@ or atomics. Standalone research, not engine integration.
 
 **For process/code review, start with [AUDIT.md](AUDIT.md).** The active code
 has been expanded into named kernel, packing, reference, timing and validation
-steps. Original source/results remain frozen. The cleanup has byte-identical
-generated headers for all8 configurations and byte-identical selected/control
-GPU `.text`; `results/cleanup-audit/` records the equivalence proof. A fresh
-180-launch suite is in `results/readable/`, not substituted for old results.
+steps. Original source/results remain frozen. The readability-only cleanup
+had byte-identical generated headers/GPU code; that historical proof is pinned
+to `results/readable/source/`. The later intentional [branch-only change](BRANCH_CLEANUP.md)
+uses a different control-flow audit; it does not claim unchanged whole GPU code.
 
 **Selected design:**128x128 output tile, four waves/CTA, K32 pipeline,16 KiB
 single LDS buffer, wide global/register staging and b128 LDS transfers.
-Largest tested problem reaches **144.07/144.17 TFLOP/s**, about **95.4/95.5%**
-of104-CU theoretical MFMA throughput at the measured effective core clock.
+After branch-only cleanup, the largest check reaches **145.92/145.88 TFLOP/s**,
+about **96.7%** of clock-adjusted theoretical throughput;208-CTA long-K reaches
+**135.26/135.32 TFLOP/s (~88.5%)**. No prefetch/MFMA interleaving change yet.
 This is near-compute-bound in these conditions, not proof of a global optimum
 or a general GEMM/prefill performance guarantee.
 
-## Results
+## Original matched tile comparison (before branch cleanup)
 
 Native HIP O3/C++20 gfx90a, HIP0/BDF31:00.0, CPU+memory NUMA0, no model/attention
 context or clock/power overrides. Two counterbalanced process repeats, nine
@@ -105,6 +106,10 @@ operands are in registers before overwrite; all waves join before reuse.
 
 Native hot backedge (two K32 stages)/wave:32 MFMA,8 global DWORDx4,8 LDS b128
 writes,16 LDS b128 reads, four barriers, two VM0 waits, four LGKM0 waits.
+The current control flow has only subtract-by-two,compare,conditional backedge:
+81 instructions instead of90. The final1–3 stages are peeled outside it.
+[BRANCH_CLEANUP.md](BRANCH_CLEANUP.md) gives parity/bounds proof and matched
+104/208/312-CTA data; all memory/math/wait ordering per stage is unchanged.
 No datatype conversion, accumulator copies, lane moves, scratch spills or
 NOPs in that loop. VM0 operates on the prefetched panel after the preceding
 stage's matrix overlap; it is not a per-global-load serialization. A constant
@@ -136,8 +141,10 @@ not claimed ISA limits. No general alpha/beta/transposition/batched API.
 
 ## Verification and controls
 
-Final suite: **180 verified launches** =36 functional/input-seed cases plus
-144 timed launches. Small cases use full original-row-major CPU references;
+Original final/cleanup suite: **180 verified launches** =36 functional/input-
+seed cases plus144 timed launches. The later branch A/B has **312 checked
+launches** (60 bounded-tail/seed checks +252 timings), plus10 optionalStageK64
+boundary checks. These are separate datasets, not relabeled old results. Small cases use full original-row-major CPU references;
 large cases check~2–3K sampled/boundary outputs, scan **all C finite after
 NaN poisoning**, and check32 guards every launch. Do not relabel large sampled
 references as full references. Exact FP32 equality is justified for this
@@ -154,11 +161,13 @@ checks, dynamic dependency listings and overlap proof are committed under
 ## Build / replay
 
 ```sh
-bash research/native-gemm/build.sh                      #128,K32 ->temp/native-gemm/readable/s32-t128
-numactl --cpunodebind=0 --membind=0 temp/native-gemm/readable/s32-t128/probe \
+bash research/native-gemm/build.sh                      #128,K32 ->temp/native-gemm/branch-clean/s32-t128
+numactl --cpunodebind=0 --membind=0 temp/native-gemm/branch-clean/s32-t128/probe \
   --m 4096 --n 6656 --k 32768 --rounds 9 --warmup-ms 200
-# Optional losing tile control and matched full suite:
+# Branch-only A/B against preserved readable build, including312 CTAs:
 bash research/native-gemm/build.sh 256
+python3 research/native-gemm/run_branch_compare.py --output <fresh-A-B-directory>
+# Optional expanded full comparison also retains208/312 coverage:
 python3 research/native-gemm/run.py --output <fresh-results-directory>
 python3 research/native-gemm/analyze.py <results-directory>
 # To inspect old data without overwriting its derived reports:
@@ -172,9 +181,10 @@ linear LDS lane mapping; `--swizzle 1` is opt-in null control. `resident` is a
 repeated-first-fragment diagnostic, **not ordinary GEMM**; it is never used
 by the final suite. Stage64 and archived CLI/header versions belong to their
 recorded paths/snapshots. Use fresh directories to preserve measured binaries.
-Readable builds default under `temp/native-gemm/readable/`; the original
-measured `temp/native-gemm/s32-t*` executables remain untouched. CSV column
-names and timestamp binary layout are unchanged by the cleanup.
+Current builds default under `temp/native-gemm/branch-clean/`; readable and
+older measured namespaces remain untouched. CSV column names and timestamp
+binary layout are unchanged. The expanded default full runner has360 launches;
+the focused branch A/B and original180-launch suite remain distinct.
 
 No production/CMake/model-format/session API, package/system or clock-policy
 changes. Status appended to `research/research-log.md`, not engine-design.md.

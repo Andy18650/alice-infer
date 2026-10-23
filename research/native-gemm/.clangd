@@ -1,4 +1,4 @@
 CompileFlags:
-  CompilationDatabase: ../../temp/native-gemm/readable/s32-t128
+  CompilationDatabase: ../../temp/native-gemm/branch-clean/s32-t128
   Compiler: /usr/lib/llvm-21/bin/clang++
   Add: [-std=c++20, -x, hip, --offload-arch=gfx90a, -D__HIP_PLATFORM_AMD__=1]

@@ -1,0 +1,49 @@
+{
+  "builds": {
+    "before": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/readable/s32-t128",
+    "after": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/branch-clean/s32-t128",
+    "after256": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/branch-clean/s32-t256"
+  },
+  "problems": [
+    [
+      1664,
+      1024,
+      8192
+    ],
+    [
+      1664,
+      1024,
+      32768
+    ],
+    [
+      3328,
+      1024,
+      8192
+    ],
+    [
+      3328,
+      1024,
+      32768
+    ],
+    [
+      4992,
+      1024,
+      8192
+    ],
+    [
+      4992,
+      1024,
+      32768
+    ],
+    [
+      4096,
+      6656,
+      32768
+    ]
+  ],
+  "tile": 128,
+  "stage_k": 32,
+  "placement": "numactl CPU+memory node0",
+  "operation_change": "control flow only",
+  "interleave_prefetch": false
+}

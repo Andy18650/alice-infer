@@ -3,8 +3,9 @@
 
 Checks all eight generator configurations, complete CPU-packed vectors over
 boundary/seed cases, selected native .text bytes, and the bank-control .text.
-Historical results are read only. New compiler outputs go to --work and the
-machine-readable proof goes to --output.
+Historical results are read only. Default after-source/build paths pin the
+readability-cleanup snapshot, not later intentional algorithm changes. New
+compiler outputs go to --work and the machine-readable proof to --output.
 """
 
 import argparse
@@ -39,14 +40,14 @@ def gpu_text(code_object):
     return image[section['Offset']:section['Offset'] + section['Size']]
 
 
-def check_generators(baseline, work):
+def check_generators(baseline, after_source, work):
     proofs = []
     for tile, stage_k, resident in itertools.product((128, 256), (32, 64), (False, True)):
         name = f't{tile}-s{stage_k}-r{int(resident)}'
         extra = ['--resident'] if resident else []
         files = []
         for label, script in (('before', baseline / 'source/generate.py'),
-                              ('after', HERE / 'generate.py')):
+                              ('after', after_source / 'generate.py')):
             output = work / f'{name}-{label}.hpp'
             subprocess.run([
                 'python3', str(script), '--tile', str(tile), '--stage-k', str(stage_k),
@@ -117,9 +118,9 @@ int main() {
 '''.replace('OLD_HEADER', str(old_header)).replace('NEW_HEADER', str(new_header))
 
 
-def check_packing(baseline, work, output):
+def check_packing(baseline, after_source, work, output):
     source = work / 'packing-test.cpp'
-    source.write_text(packing_test_source(baseline / 'source/data.hpp', HERE / 'data.hpp'))
+    source.write_text(packing_test_source(baseline / 'source/data.hpp', after_source / 'data.hpp'))
     program = work / 'packing-test'
     command = ['c++', '-O2', '-std=c++20', str(source), '-o', str(program)]
     subprocess.run(command, check=True)
@@ -166,6 +167,8 @@ def check_bank_probe(work, output):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--baseline', type=Path, default=HERE / 'results/final')
+    parser.add_argument('--after-source', type=Path, default=HERE / 'results/readable/source')
+    parser.add_argument('--after-build-root', type=Path, default=ROOT / 'temp/native-gemm/readable')
     parser.add_argument('--work', type=Path, default=ROOT / 'temp/native-gemm/cleanup/audit')
     parser.add_argument('--output', type=Path, default=HERE / 'results/cleanup-audit')
     args = parser.parse_args()
@@ -178,14 +181,14 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
 
     proofs = dict(
-        generator=check_generators(baseline, work),
-        packing=check_packing(baseline, work, output),
+        generator=check_generators(baseline, args.after_source.resolve(), work),
+        packing=check_packing(baseline, args.after_source.resolve(), work, output),
         native=[],
     )
     for tile in (128, 256):
         proofs['native'].append(compare_code_objects(
             ROOT / f'temp/native-gemm/s32-t{tile}/probe.hsaco',
-            ROOT / f'temp/native-gemm/readable/s32-t{tile}/probe.hsaco',
+            args.after_build_root.resolve() / f's32-t{tile}/probe.hsaco',
             f'Selected/control StageK32 tile{tile}',
         ))
     proofs['bank'] = check_bank_probe(work, output)

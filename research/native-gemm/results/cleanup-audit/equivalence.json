@@ -1,0 +1,88 @@
+{
+  "generator": [
+    {
+      "configuration": "t128-s32-r0",
+      "bytes": 10120,
+      "sha256": "d540172b76a5c330f56b0c0331c29930e1245131550eca3d4d5452beb2b0ecc6"
+    },
+    {
+      "configuration": "t128-s32-r1",
+      "bytes": 4215,
+      "sha256": "d78561ddd86557c7e9ccc67e78cc086979809713f183304e6777312e257f836b"
+    },
+    {
+      "configuration": "t128-s64-r0",
+      "bytes": 17879,
+      "sha256": "0e8661ea6f63cedc6c436627c083e00554a9a24649723a7c7862aae5de23bcfa"
+    },
+    {
+      "configuration": "t128-s64-r1",
+      "bytes": 6882,
+      "sha256": "6ad502b20b93f9c48e3aefb7ecb4c4817cbb1f24ce5c6fd8cce222fb7b202fa4"
+    },
+    {
+      "configuration": "t256-s32-r0",
+      "bytes": 26674,
+      "sha256": "d8ba7c2f09c74e134b0fdc6246b9dade34d84cc0bb90524bf070bd20b6ba495e"
+    },
+    {
+      "configuration": "t256-s32-r1",
+      "bytes": 9343,
+      "sha256": "fa89542794bc14841498d6428034826bfd1a57029bd1f28b42a67c31a080ae61"
+    },
+    {
+      "configuration": "t256-s64-r0",
+      "bytes": 51598,
+      "sha256": "8fe32e8cca2a37a137be69e291e169db4f571df982283702132dba45d00369da"
+    },
+    {
+      "configuration": "t256-s64-r1",
+      "bytes": 17163,
+      "sha256": "4e7d638829486743efdd5e0965e681cb5b1f7c563e74cc85086b7516337e1c5a"
+    }
+  ],
+  "packing": {
+    "command": [
+      "c++",
+      "-O2",
+      "-std=c++20",
+      "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/cleanup/audit/packing-test.cpp",
+      "-o",
+      "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/cleanup/audit/packing-test"
+    ],
+    "source_sha256": "56f8769e5b22c389d112f9f8ca4b29282da719c4d66f2dc9a31e7f2e600e6949",
+    "result": "matrix_pairs=18 packed_vectors=144 bitwise_equal=1"
+  },
+  "native": [
+    {
+      "description": "Selected/control StageK32 tile128",
+      "before": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/s32-t128/probe.hsaco",
+      "after": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/readable/s32-t128/probe.hsaco",
+      "bytes": 7872,
+      "text_sha256": "76d0dd89f6c9af93617a8bd645216b6416742556407d7327d55b1624a48b8ab4",
+      "before_object_sha256": "ddb83f4302b8534b6cb4cc8c791834c9c11210bf65316f5678a3cba08d438ecb",
+      "after_object_sha256": "bb7927095a2c16acd85fd5781d14302d4d538e0f2bba1ccdc8c9243c7be09a8b",
+      "byte_identical": true
+    },
+    {
+      "description": "Selected/control StageK32 tile256",
+      "before": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/s32-t256/probe.hsaco",
+      "after": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/readable/s32-t256/probe.hsaco",
+      "bytes": 25664,
+      "text_sha256": "98e8d61fb1a3fd947437cff3b9c48cd50f18f63e9bd655e6d7e55a84d8109711",
+      "before_object_sha256": "50ec33eae1321289fbf2c9aacc356a3f5fcc28b4f20430ad2328a0466ec1176c",
+      "after_object_sha256": "812a7d9aa09bd3015ff2e295a8d3b8aaf7f9a28d8c89ef5c5f9a162023790607",
+      "byte_identical": true
+    }
+  ],
+  "bank": {
+    "description": "bank-control kernels",
+    "before": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/bank-probe.0.hipv4-amdgcn-amd-amdhsa--gfx90a",
+    "after": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/cleanup/audit/bank-probe.0.hipv4-amdgcn-amd-amdhsa--gfx90a",
+    "bytes": 2372,
+    "text_sha256": "6a2b8b1a0644766f01ad8ac6a791f5ba9490dc5a6cea6eec34ea6cf9dcf15d1f",
+    "before_object_sha256": "d9debf3860408b35443169602dbda730382baeaa225aff2c23563df9479e6069",
+    "after_object_sha256": "c04d527fb671094eacdfe4e33dcc03f1c223f3eae9bdadfa7569af56e4d949a1",
+    "byte_identical": true
+  }
+}

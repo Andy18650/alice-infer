@@ -1,78 +1,316 @@
 #!/usr/bin/env python3
-"""Native MFMA square CTA128/256,K32/64,single LDS,Q+1 raw slots."""
+"""Generate the fixed-register gfx90a GEMM pipeline.
+
+This emits the same compute.hpp bytes as the original implementation. The
+structure here makes the register allocation and two synchronization purposes
+explicit; generated operand names stay short to keep native ISA easy to match.
+
+Normal GEMM: one LDS buffer, global prefetch, rolling operand reads.
+Resident control: seed one StageK fragment and repeat it, without loop memory
+traffic. It is a diagnostic, not ordinary GEMM.
+"""
+
 import argparse
+from dataclasses import dataclass
 from pathlib import Path
-p=argparse.ArgumentParser();p.add_argument('--tile',type=int,choices=(128,256),default=128);p.add_argument('--output',type=Path,required=True);p.add_argument('--resident',action='store_true');p.add_argument('--stage-k',type=int,choices=(32,64),default=32);a=p.parse_args()
-T=a.tile;S=a.stage_k;R=T//64;P=R//2;Q=S//8;raw_width=4*R
-ptr=(Q+1)*raw_width;gbase=(ptr+2+3)//4*4;packets=Q*P;last=gbase+packets*4
-ops=[]
-def emit(s):ops.append(s)
-def label(s):return f'.Lnative_{T}_{S}_{s}_%='
-def branch(s):emit('s_branch '+label(s))
-def gl():
-    for i in range(packets):
-        if i and i%4==0:
-            emit(f'v_add_co_u32 v{ptr}, vcc, 4096, v{ptr}');emit(f'v_addc_co_u32 v{ptr+1}, vcc, 0, v{ptr+1}, vcc')
-        off=(i%4)*1024;v=gbase+4*i
-        emit(f'global_load_dwordx4 v[{v}:{v+3}], v[{ptr}:{ptr+1}], off'+(f' offset:{off}' if off else ''))
-    emit(f'v_add_co_u32 v{ptr}, vcc, %[step], v{ptr}');emit(f'v_addc_co_u32 v{ptr+1}, vcc, 0, v{ptr+1}, vcc')
-def write():
-    for q in range(Q):
-        for pair in range(P):
-            off=q*T*16+pair*1024;v=gbase+4*(q*P+pair)
-            emit(f'ds_write_b128 %[dst], v[{v}:{v+3}]'+(f' offset:{off}' if off else ''))
-def read(q,slot):
-    for kind,addr in ((0,'alo'),(1,'blo')):
-        for pair in range(P):
-            off=q*T*16+pair*1024;v=slot*raw_width+kind*2*R+pair*4
-            emit(f'ds_read_b128 v[{v}:{v+3}], %[{addr}]'+(f' offset:{off}' if off else ''))
-def math(slot):
-    b=slot*raw_width
-    for i in range(R):
-        for j in range(R):
-            x=b+2*i;y=b+2*R+2*j;c=i*R+j
-            emit(f'v_mfma_f32_32x32x8f16 %[c{c}], v[{x}:{x+1}], v[{y}:{y+1}], %[c{c}]')
-emit('s_memtime %[begin]');emit('s_memrealtime %[wall_begin]');emit('s_waitcnt lgkmcnt(0)')
-emit('s_cmp_eq_u32 %[remaining], 0');emit('s_cbranch_scc1 '+label('done'))
-emit(f'v_mov_b32 v{ptr}, %[lo]');emit(f'v_mov_b32 v{ptr+1}, %[hi]')
-gl();emit('s_waitcnt vmcnt(0)');write();emit('s_waitcnt lgkmcnt(0)');emit('s_barrier')
-emit('s_cmp_le_u32 %[remaining], 1');emit('s_cbranch_scc1 '+label('seed'));gl()
-emit(label('seed')+':')
-for q in range(Q):read(q,q)
-if a.resident:
-    emit('s_waitcnt lgkmcnt(0)');emit(label('resident')+':')
-    for q in range(Q):math(q)
-    emit('s_sub_u32 %[remaining], %[remaining], 1');emit('s_cmp_lg_u32 %[remaining], 0');emit('s_cbranch_scc1 '+label('resident'))
-else:
-    for phase in range(2):
-        current=Q-1+phase;spare=Q-phase
-        emit(label(f'phase{phase}')+':');emit('s_cmp_eq_u32 %[remaining], 1');emit('s_cbranch_scc1 '+label(f'tail{phase}'))
-        # Retire all current-buffer readers BEFORE overwriting; then stage next.
-        emit('s_waitcnt lgkmcnt(0)');emit('s_barrier');emit('s_waitcnt vmcnt(0)');write()
-        emit('s_cmp_le_u32 %[remaining], 2');emit('s_cbranch_scc1 '+label(f'no_future{phase}'));gl()
-        emit(label(f'no_future{phase}')+':')
-        publish=Q//4
-        for q in range(publish):math(q)
-        # Publish after first quarter; roll reads behind consumed fragments.
-        emit('s_waitcnt lgkmcnt(0)');emit('s_barrier')
-        for q in range(publish):read(q,q)
-        read(Q-1,spare)
-        for q in range(publish,Q-1):math(q);read(q,q)
-        math(current)
-        emit('s_sub_u32 %[remaining], %[remaining], 1');branch(f'phase{1-phase}')
-    for phase in range(2):
-        emit(label(f'tail{phase}')+':');emit('s_waitcnt lgkmcnt(0)')
-        for q in range(Q-1):math(q)
-        math(Q-1+phase);branch('done')
-emit(label('done')+':')
-# Constant conservative matrix-tail completion gap, negligible for long K.
-for _ in range(4):emit('s_nop 15')
-emit('s_memtime %[end]');emit('s_memrealtime %[wall_end]');emit('s_waitcnt lgkmcnt(0)')
-text=[f'constexpr int kTile={T},kR={R},kStageK={S},kQ={Q},kLdsBytes={T*S*4};',f'constexpr bool kResident={str(a.resident).lower()};',
-      '__device__ __forceinline__ void pipeline(uint32_t lo,uint32_t hi,uint32_t step,uint32_t dst,uint32_t alo,uint32_t blo,int tiles,F16 (&c)[kR*kR],uint64_t& begin,uint64_t& end,uint64_t& wall_begin,uint64_t& wall_end) {',
-      '  uint32_t remaining=tiles;', '  asm volatile(']+['    "'+s+'\\n\\t"' for s in ops]
-text+=['    : '+',\n      '.join(f'[c{i}] "+a"(c[{i}])' for i in range(R*R))+',',
-       '      [remaining] "+&s"(remaining),[begin] "=&s"(begin),[end] "=&s"(end),[wall_begin] "=&s"(wall_begin),[wall_end] "=&s"(wall_end)',
-       '    : [lo] "v"(lo),[hi] "v"(hi),[step] "s"(step),[dst] "v"(dst),[alo] "v"(alo),[blo] "v"(blo)',
-       '    : "memory","scc","vcc",'+','.join(f'"v{i}"' for i in range(last))+');','}']
-a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text('\n'.join(text)+'\n')
+
+
+@dataclass(frozen=True)
+class Configuration:
+    tile: int
+    stage_k: int
+    resident: bool = False
+
+    @property
+    def micro_tiles_per_wave_side(self):
+        # Four waves form a 2x2 grid; each microtile is 32x32.
+        return self.tile // 64
+
+    @property
+    def micro_pairs_per_operand(self):
+        # One b128 transfer holds two adjacent MFMA operand fragments.
+        return self.micro_tiles_per_wave_side // 2
+
+    @property
+    def fragments_per_stage(self):
+        return self.stage_k // 8
+
+    @property
+    def registers_per_raw_slot(self):
+        # Each microfragment uses two VGPRs, for each of A and B.
+        return 4 * self.micro_tiles_per_wave_side
+
+    @property
+    def global_pointer_register(self):
+        # Q current fragments plus one spare last-fragment slot.
+        return (self.fragments_per_stage + 1) * self.registers_per_raw_slot
+
+    @property
+    def producer_register_base(self):
+        # Leave room for the 64-bit source pointer; align vector tuples to four.
+        return (self.global_pointer_register + 2 + 3) // 4 * 4
+
+    @property
+    def global_packets_per_stage(self):
+        return self.fragments_per_stage * self.micro_pairs_per_operand
+
+    @property
+    def fixed_register_end(self):
+        return self.producer_register_base + self.global_packets_per_stage * 4
+
+
+class PipelineEmitter:
+    def __init__(self, config):
+        self.config = config
+        self.instructions = []
+
+    def emit(self, instruction):
+        self.instructions.append(instruction)
+
+    def label(self, name):
+        # %= makes inline-asm labels unique after inlining.
+        return f".Lnative_{self.config.tile}_{self.config.stage_k}_{name}_%="
+
+    def mark(self, name):
+        self.emit(self.label(name) + ":")
+
+    def jump(self, name):
+        self.emit("s_branch " + self.label(name))
+
+    def advance_source_pointer(self, increment):
+        register = self.config.global_pointer_register
+        self.emit(f"v_add_co_u32 v{register}, vcc, {increment}, v{register}")
+        self.emit(
+            f"v_addc_co_u32 v{register + 1}, vcc, 0, v{register + 1}, vcc"
+        )
+
+    def prefetch_global_stage(self):
+        """Load the next panel into producer VGPRs and advance to its successor.
+
+        A DWORDx4 instruction transfers 16 bytes/lane, or 1024 bytes/wave.
+        Immediate offsets are limited to one 4 KiB group here. Larger panels
+        advance the pointer between groups. C++ supplies %[step] with those
+        internal increments subtracted from the full K-stage source stride.
+        """
+        config = self.config
+        pointer = config.global_pointer_register
+
+        for packet in range(config.global_packets_per_stage):
+            if packet and packet % 4 == 0:
+                self.advance_source_pointer(4096)
+
+            offset = (packet % 4) * 1024
+            destination = config.producer_register_base + 4 * packet
+            displacement = f" offset:{offset}" if offset else ""
+            self.emit(
+                f"global_load_dwordx4 v[{destination}:{destination + 3}], "
+                f"v[{pointer}:{pointer + 1}], off{displacement}"
+            )
+
+        self.advance_source_pointer("%[step]")
+
+    def write_prefetched_stage_to_lds(self):
+        """Each wave writes its own A or B half-panel; no inter-wave overlap."""
+        config = self.config
+        pairs = config.micro_pairs_per_operand
+
+        for fragment in range(config.fragments_per_stage):
+            for pair in range(pairs):
+                offset = fragment * config.tile * 16 + pair * 1024
+                source = config.producer_register_base + 4 * (fragment * pairs + pair)
+                displacement = f" offset:{offset}" if offset else ""
+                self.emit(
+                    f"ds_write_b128 %[dst], v[{source}:{source + 3}]{displacement}"
+                )
+
+    def read_lds_fragment(self, fragment, raw_slot):
+        """Read both operands of a K8 slice into a fixed raw register slot."""
+        config = self.config
+        micro_tiles = config.micro_tiles_per_wave_side
+
+        for operand_index, address in ((0, "alo"), (1, "blo")):
+            for pair in range(config.micro_pairs_per_operand):
+                offset = fragment * config.tile * 16 + pair * 1024
+                destination = (
+                    raw_slot * config.registers_per_raw_slot
+                    + operand_index * 2 * micro_tiles
+                    + pair * 4
+                )
+                displacement = f" offset:{offset}" if offset else ""
+                self.emit(
+                    f"ds_read_b128 v[{destination}:{destination + 3}], "
+                    f"%[{address}]{displacement}"
+                )
+
+    def compute_fragment(self, raw_slot):
+        """Outer product of the wave's A and B microfragments.
+
+        Selected 128 tile: A0/A1 and B0/B1 update C00/C01/C10/C11.
+        Each input microfragment is used twice, without another LDS read.
+        """
+        config = self.config
+        micro_tiles = config.micro_tiles_per_wave_side
+        base = raw_slot * config.registers_per_raw_slot
+
+        for row in range(micro_tiles):
+            for column in range(micro_tiles):
+                a_register = base + 2 * row
+                b_register = base + 2 * micro_tiles + 2 * column
+                accumulator = row * micro_tiles + column
+                self.emit(
+                    f"v_mfma_f32_32x32x8f16 %[c{accumulator}], "
+                    f"v[{a_register}:{a_register + 1}], "
+                    f"v[{b_register}:{b_register + 1}], %[c{accumulator}]"
+                )
+
+    def emit_startup(self):
+        self.emit("s_memtime %[begin]")
+        self.emit("s_memrealtime %[wall_begin]")
+        self.emit("s_waitcnt lgkmcnt(0)")
+        self.emit("s_cmp_eq_u32 %[remaining], 0")
+        self.emit("s_cbranch_scc1 " + self.label("done"))
+
+        pointer = self.config.global_pointer_register
+        self.emit(f"v_mov_b32 v{pointer}, %[lo]")
+        self.emit(f"v_mov_b32 v{pointer + 1}, %[hi]")
+
+        self.prefetch_global_stage()
+        self.emit("s_waitcnt vmcnt(0)")
+        self.write_prefetched_stage_to_lds()
+        self.emit("s_waitcnt lgkmcnt(0)")
+        self.emit("s_barrier")  # Publish initial stage.
+
+        self.emit("s_cmp_le_u32 %[remaining], 1")
+        self.emit("s_cbranch_scc1 " + self.label("seed"))
+        self.prefetch_global_stage()
+
+        self.mark("seed")
+        for fragment in range(self.config.fragments_per_stage):
+            self.read_lds_fragment(fragment, fragment)
+
+    def emit_steady_phase(self, phase):
+        config = self.config
+        fragments = config.fragments_per_stage
+        current_last_slot = fragments - 1 + phase
+        spare_last_slot = fragments - phase
+
+        self.mark(f"phase{phase}")
+        self.emit("s_cmp_eq_u32 %[remaining], 1")
+        self.emit("s_cbranch_scc1 " + self.label(f"tail{phase}"))
+
+        # RETIRE: every wave must finish reading the current LDS contents
+        # before any wave overwrites the shared buffer with the next stage.
+        self.emit("s_waitcnt lgkmcnt(0)")
+        self.emit("s_barrier")
+        self.emit("s_waitcnt vmcnt(0)")
+        self.write_prefetched_stage_to_lds()
+
+        # The register producer buffer is free after the LDS writes issue.
+        self.emit("s_cmp_le_u32 %[remaining], 2")
+        self.emit("s_cbranch_scc1 " + self.label(f"no_future{phase}"))
+        self.prefetch_global_stage()
+        self.mark(f"no_future{phase}")
+
+        publish_after = fragments // 4
+        for fragment in range(publish_after):
+            self.compute_fragment(fragment)
+
+        # PUBLISH: finish all next-stage LDS writes before any next-stage read.
+        # This does not drain the future global prefetch (VMEM counter).
+        self.emit("s_waitcnt lgkmcnt(0)")
+        self.emit("s_barrier")
+        for fragment in range(publish_after):
+            self.read_lds_fragment(fragment, fragment)
+        self.read_lds_fragment(fragments - 1, spare_last_slot)
+
+        # Reuse a raw slot only after issuing all current math that consumes it.
+        for fragment in range(publish_after, fragments - 1):
+            self.compute_fragment(fragment)
+            self.read_lds_fragment(fragment, fragment)
+        self.compute_fragment(current_last_slot)
+
+        self.emit("s_sub_u32 %[remaining], %[remaining], 1")
+        self.jump(f"phase{1 - phase}")
+
+    def emit_tail(self, phase):
+        self.mark(f"tail{phase}")
+        self.emit("s_waitcnt lgkmcnt(0)")
+        for fragment in range(self.config.fragments_per_stage - 1):
+            self.compute_fragment(fragment)
+        self.compute_fragment(self.config.fragments_per_stage - 1 + phase)
+        self.jump("done")
+
+    def emit_resident_control(self):
+        # Deliberately not normal GEMM: repeat the first seeded panel.
+        self.emit("s_waitcnt lgkmcnt(0)")
+        self.mark("resident")
+        for fragment in range(self.config.fragments_per_stage):
+            self.compute_fragment(fragment)
+        self.emit("s_sub_u32 %[remaining], %[remaining], 1")
+        self.emit("s_cmp_lg_u32 %[remaining], 0")
+        self.emit("s_cbranch_scc1 " + self.label("resident"))
+
+    def emit_completion(self):
+        self.mark("done")
+        # Conservative constant matrix-tail gap, never in the hot backedge.
+        for _ in range(4):
+            self.emit("s_nop 15")
+        self.emit("s_memtime %[end]")
+        self.emit("s_memrealtime %[wall_end]")
+        self.emit("s_waitcnt lgkmcnt(0)")
+
+    def render(self):
+        """Keep the generated C++/asm byte-for-byte compatible with the baseline."""
+        config = self.config
+        tile = config.tile
+        stage = config.stage_k
+        micro_tiles = config.micro_tiles_per_wave_side
+        fragments = config.fragments_per_stage
+
+        self.emit_startup()
+        if config.resident:
+            self.emit_resident_control()
+        else:
+            for phase in range(2):
+                self.emit_steady_phase(phase)
+            for phase in range(2):
+                self.emit_tail(phase)
+        self.emit_completion()
+
+        lines = [
+            f'constexpr int kTile={tile},kR={micro_tiles},kStageK={stage},kQ={fragments},kLdsBytes={tile * stage * 4};',
+            f'constexpr bool kResident={str(config.resident).lower()};',
+            '__device__ __forceinline__ void pipeline(uint32_t lo,uint32_t hi,uint32_t step,uint32_t dst,uint32_t alo,uint32_t blo,int tiles,F16 (&c)[kR*kR],uint64_t& begin,uint64_t& end,uint64_t& wall_begin,uint64_t& wall_end) {',
+            '  uint32_t remaining=tiles;',
+            '  asm volatile(',
+        ]
+        lines.extend('    "' + op + '\\n\\t"' for op in self.instructions)
+        accumulators = ',\n      '.join(
+            f'[c{i}] "+a"(c[{i}])' for i in range(micro_tiles * micro_tiles)
+        )
+        clobbers = ','.join(f'"v{i}"' for i in range(config.fixed_register_end))
+        lines.extend([
+            '    : ' + accumulators + ',',
+            '      [remaining] "+&s"(remaining),[begin] "=&s"(begin),[end] "=&s"(end),[wall_begin] "=&s"(wall_begin),[wall_end] "=&s"(wall_end)',
+            '    : [lo] "v"(lo),[hi] "v"(hi),[step] "s"(step),[dst] "v"(dst),[alo] "v"(alo),[blo] "v"(blo)',
+            '    : "memory","scc","vcc",' + clobbers + ');',
+            '}',
+        ])
+        return '\n'.join(lines) + '\n'
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--tile', type=int, choices=(128, 256), default=128)
+    parser.add_argument('--stage-k', type=int, choices=(32, 64), default=32)
+    parser.add_argument('--resident', action='store_true')
+    parser.add_argument('--output', type=Path, required=True)
+    args = parser.parse_args()
+
+    config = Configuration(args.tile, args.stage_k, args.resident)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(PipelineEmitter(config).render())
+
+
+if __name__ == '__main__':
+    main()

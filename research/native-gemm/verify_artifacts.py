@@ -1,19 +1,77 @@
 #!/usr/bin/env python3
-"""Rebase archived source paths; verify preserved original native binaries."""
+"""Verify historical source snapshots and preserved native executables.
+
+Recorded manifests refer to the live source paths used when they were built.
+Those paths now contain newer code, so source/header entries must be checked
+against the immutable snapshot beside each result, not today's source files.
+Executable/code-object entries still refer to the original preserved binaries
+in temp/native-gemm. Missing binaries are reported, never silently rebuilt.
+"""
+
 import hashlib
 from pathlib import Path
-base=Path(__file__).resolve().parent/'results'
-for group in ('initial','swizzle','late','early','stage64','resident','final'):
- root=base/group
- files=list(root.glob('t*/hashes.txt')) if group!='final' else list((root/'builds').glob('*/hashes.txt'))
- assert files,group
- for manifest in files:
-  for line in manifest.read_text().splitlines():
-   sha,name=line.split(maxsplit=1);p=Path(name)
-   if p.name in ('probe.hip','data.hpp','generate.py'):p=root/'source'/p.name
-   elif p.name=='compute.hpp':p=manifest.parent/'compute.hpp'
-   assert hashlib.sha256(p.read_bytes()).hexdigest()==sha,(group,p)
- print(group,'source/header/original executable/code-object hashes pass')
-for file in (base/'final').glob('ldd-*.txt'):
- text=file.read_text().lower();assert not any(s in text for s in ('rocblas','hipblas','libck'))
-print('Recorded dynamic dependencies contain no vendor GEMM libraries')
+
+
+RESULTS = Path(__file__).resolve().parent / 'results'
+HISTORICAL_PHASES = ('initial', 'swizzle', 'late', 'early', 'stage64', 'resident', 'final')
+SOURCE_FILES = {'probe.hip', 'data.hpp', 'generate.py'}
+
+
+def verify_manifest(manifest, source_directory):
+    for line in manifest.read_text().splitlines():
+        expected_hash, recorded_path = line.split(maxsplit=1)
+        path = Path(recorded_path)
+        if path.name in SOURCE_FILES:
+            path = source_directory / path.name
+        elif path.name == 'compute.hpp':
+            path = manifest.parent / path.name
+        actual_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+        if actual_hash != expected_hash:
+            raise RuntimeError(f'Fingerprint mismatch: {manifest}: {path}')
+
+
+def verify_phase(phase):
+    directory = RESULTS / phase
+    if phase in ('final', 'readable'):
+        manifests = list((directory / 'builds').glob('*/hashes.txt'))
+    else:
+        manifests = list(directory.glob('t*/hashes.txt'))
+    if not manifests:
+        raise RuntimeError(f'No build manifests for phase {phase}')
+    for manifest in manifests:
+        verify_manifest(manifest, directory / 'source')
+    print(phase, 'source/header/original executable/code-object hashes pass')
+
+
+def verify_bank_control():
+    directory = RESULTS / 'bank'
+    for line in (directory / 'hashes.txt').read_text().splitlines():
+        expected_hash, recorded_path = line.split(maxsplit=1)
+        path = Path(recorded_path)
+        if path.name == 'bank-probe.hip':
+            path = directory / path.name
+        if hashlib.sha256(path.read_bytes()).hexdigest() != expected_hash:
+            raise RuntimeError(f'Bank-control fingerprint mismatch: {path}')
+    print('bank-control archived source/original native hashes pass')
+
+
+def verify_dependencies(directory):
+    for listing in directory.glob('ldd-*.txt'):
+        text = listing.read_text().lower()
+        if any(name in text for name in ('rocblas', 'hipblas', 'libck')):
+            raise RuntimeError(f'Unexpected vendor GEMM dependency: {listing}')
+
+
+def main():
+    for phase in HISTORICAL_PHASES:
+        verify_phase(phase)
+    verify_bank_control()
+    verify_dependencies(RESULTS / 'final')
+    if (RESULTS / 'readable' / 'summary.csv').exists():
+        verify_phase('readable')
+        verify_dependencies(RESULTS / 'readable')
+    print('Recorded dynamic dependencies contain no vendor GEMM libraries')
+
+
+if __name__ == '__main__':
+    main()

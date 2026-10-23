@@ -5,6 +5,13 @@ called**, including validation. HIP runtime plus native global/LDS/MFMA ISA.
 FP16 A/B operands, FP32 accumulators and row-major C, alpha1/beta0, no split-K
 or atomics. Standalone research, not engine integration.
 
+**For process/code review, start with [AUDIT.md](AUDIT.md).** The active code
+has been expanded into named kernel, packing, reference, timing and validation
+steps. Original source/results remain frozen. The cleanup has byte-identical
+generated headers for all8 configurations and byte-identical selected/control
+GPU `.text`; `results/cleanup-audit/` records the equivalence proof. A fresh
+180-launch suite is in `results/readable/`, not substituted for old results.
+
 **Selected design:**128x128 output tile, four waves/CTA, K32 pipeline,16 KiB
 single LDS buffer, wide global/register staging and b128 LDS transfers.
 Largest tested problem reaches **144.07/144.17 TFLOP/s**, about **95.4/95.5%**
@@ -143,21 +150,27 @@ checks, dynamic dependency listings and overlap proof are committed under
 ## Build / replay
 
 ```sh
-bash research/native-gemm/build.sh                      #128,K32 ->temp/native-gemm/s32-t128
-numactl --cpunodebind=0 --membind=0 temp/native-gemm/s32-t128/probe \
+bash research/native-gemm/build.sh                      #128,K32 ->temp/native-gemm/readable/s32-t128
+numactl --cpunodebind=0 --membind=0 temp/native-gemm/readable/s32-t128/probe \
   --m 4096 --n 6656 --k 32768 --rounds 9 --warmup-ms 200
 # Optional losing tile control and matched full suite:
 bash research/native-gemm/build.sh 256
 python3 research/native-gemm/run.py --output <fresh-results-directory>
 python3 research/native-gemm/analyze.py <results-directory>
+# To inspect old data without overwriting its derived reports:
+python3 research/native-gemm/analyze.py research/native-gemm/results/final \
+  --report-dir <fresh-audit-report-directory>
 ```
 
 `build.sh [128|256] [output-directory] [gemm|resident] [32|64]` supports only
 the studied candidates/explicit diagnostics. Default is selected128/K32,
-linear LDS lane mapping; `--swizzle1` is opt-in null control. `resident` is a
+linear LDS lane mapping; `--swizzle 1` is opt-in null control. `resident` is a
 repeated-first-fragment diagnostic, **not ordinary GEMM**; it is never used
 by the final suite. Stage64 and archived CLI/header versions belong to their
 recorded paths/snapshots. Use fresh directories to preserve measured binaries.
+Readable builds default under `temp/native-gemm/readable/`; the original
+measured `temp/native-gemm/s32-t*` executables remain untouched. CSV column
+names and timestamp binary layout are unchanged by the cleanup.
 
 No production/CMake/model-format/session API, package/system or clock-policy
 changes. Status appended to `research/research-log.md`, not engine-design.md.

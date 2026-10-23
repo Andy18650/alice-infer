@@ -1,0 +1,1 @@
+matrix_pairs=18 packed_vectors=144 bitwise_equal=1

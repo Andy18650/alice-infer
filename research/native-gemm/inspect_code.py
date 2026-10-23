@@ -1,38 +1,147 @@
 #!/usr/bin/env python3
-"""Audit actual native MFMA pipeline and no-spill resource contract."""
-import collections,json,re,sys
+"""Audit extracted native instructions and the no-spill resource contract.
+
+The full timed body includes startup and two alternative tails. The hot loop
+is the backward branch spanning the two last-fragment-parity phases. Counts
+are deliberately checked for both regions; source text alone is not evidence
+that the expected instructions made it into the executable.
+"""
+
+import argparse
+import collections
+import json
+import re
 from pathlib import Path
-out=Path(sys.argv[1]);header=(out/'compute.hpp').read_text()
-T=int(re.search(r'kTile=(\d+)',header)[1]);S=int(re.search(r'kStageK=(\d+)',header)[1]);R=T//64;P=R//2;Q=S//8
-resident='kResident=true' in header;isa=(out/'probe.isa').read_text();ops=[]
-for line in isa.splitlines():
-    m=re.search(r'^\s*(.*?)\s*//\s*([0-9A-Fa-f]+):',line)
-    if m:ops.append((int(m[2],16),m[1]))
-start=next(i for i,(_,s) in enumerate(ops) if s.startswith('s_memtime'))
-end=next(i for i in range(start+1,len(ops)) if ops[i][1].startswith('s_memtime'));body=[s for _,s in ops[start:end+1]]
-def counts(seq):return collections.Counter(s.split()[0] for s in seq)
-c=counts(body)
-assert c['v_mfma_f32_32x32x8f16']==(1 if resident else 4)*Q*R*R
-assert c['global_load_dwordx4']==(2 if resident else 4)*Q*P
-assert c['ds_write_b128']==(1 if resident else 3)*Q*P
-assert c['ds_read_b128']==(2 if resident else 6)*Q*P
-assert not any(re.search(r'accvgpr|scratch_|readlane|writelane|v_cvt',s) for s in body)
-notes=(out/'metadata.txt').read_text();assert re.search(r'\.private_segment_fixed_size:\s*0',notes),notes
-assert re.search(r'\.group_segment_fixed_size:\s*0',notes)
-assert not re.search(r'scratch_|(?:read|write)lane',isa)
-loops=[]
-for i,(pc,s) in enumerate(ops):
-    if not s.startswith(('s_branch ','s_cbranch_scc1 ')):continue
-    d=int(s.split()[1],0);d=d-65536 if d>=32768 else d
-    if d>=0:continue
-    seq=[s for a,s in ops[:i+1] if a>=pc+4+4*d]
-    if counts(seq)['v_mfma_f32_32x32x8f16']==(1 if resident else 2)*Q*R*R:loops.append(seq)
-assert len(loops)==1,len(loops)
-loop=loops[0];c=counts(loop)
-for op,want in (('s_barrier',4),('global_load_dwordx4',2*Q*P),('ds_read_b128',4*Q*P),('ds_write_b128',2*Q*P)):
-    assert c[op]==(0 if resident else want),(op,c[op],want)
-assert not any('s_nop' in s for s in loop)
-(out/'body.txt').write_text('\n'.join(body)+'\n');(out/'loop.txt').write_text('\n'.join(loop)+'\n')
-fields={k:int(re.search(r'\.'+k+r':\s*(\d+)',notes)[1]) for k in ('vgpr_count','sgpr_count','private_segment_fixed_size')}
-fields.update(tile=T,stage_k=S,kind='resident-control' if resident else 'gemm',lds_bytes=T*S*4,instructions_per_loop=dict(c))
-(out/'inventory.json').write_text(json.dumps(fields,indent=2)+'\n');print(fields)
+
+
+MFMA = 'v_mfma_f32_32x32x8f16'
+
+
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+
+def parse_instructions(disassembly):
+    instructions = []
+    for line in disassembly.splitlines():
+        match = re.search(r'^\s*(.*?)\s*//\s*([0-9A-Fa-f]+):', line)
+        if match:
+            instructions.append((int(match[2], 16), match[1]))
+    return instructions
+
+
+def opcode_counts(instructions):
+    return collections.Counter(instruction.split()[0] for instruction in instructions)
+
+
+def integer_field(text, pattern):
+    match = re.search(pattern, text)
+    require(match is not None, f'Missing field: {pattern}')
+    return int(match[1])
+
+
+def find_hot_loop(instructions, expected_mfma_count):
+    candidates = []
+    for index, (pc, instruction) in enumerate(instructions):
+        if not instruction.startswith(('s_branch ', 's_cbranch_scc1 ')):
+            continue
+
+        # SOPP branches use a signed 16-bit displacement in four-byte units,
+        # relative to the instruction after the branch.
+        displacement = int(instruction.split()[1], 0)
+        if displacement >= 32768:
+            displacement -= 65536
+        if displacement >= 0:
+            continue
+        target = pc + 4 + 4 * displacement
+        body = [text for address, text in instructions[:index + 1] if address >= target]
+        if opcode_counts(body)[MFMA] == expected_mfma_count:
+            candidates.append(body)
+
+    require(len(candidates) == 1, f'Expected one hot loop, found {len(candidates)}')
+    return candidates[0]
+
+
+def audit(output_directory):
+    header = (output_directory / 'compute.hpp').read_text()
+    tile = integer_field(header, r'kTile=(\d+)')
+    stage_k = integer_field(header, r'kStageK=(\d+)')
+    micro_tiles = tile // 64
+    pairs = micro_tiles // 2
+    fragments = stage_k // 8
+    resident = 'kResident=true' in header
+
+    disassembly = (output_directory / 'probe.isa').read_text()
+    instructions = parse_instructions(disassembly)
+    start = next(i for i, (_, text) in enumerate(instructions) if text.startswith('s_memtime'))
+    end = next(
+        i for i in range(start + 1, len(instructions))
+        if instructions[i][1].startswith('s_memtime')
+    )
+    timed_body = [text for _, text in instructions[start:end + 1]]
+    counts = opcode_counts(timed_body)
+    expected_body_counts = {
+        MFMA: (1 if resident else 4) * fragments * micro_tiles * micro_tiles,
+        'global_load_dwordx4': (2 if resident else 4) * fragments * pairs,
+        'ds_write_b128': (1 if resident else 3) * fragments * pairs,
+        'ds_read_b128': (2 if resident else 6) * fragments * pairs,
+    }
+    for opcode, expected in expected_body_counts.items():
+        require(counts[opcode] == expected,
+                f'Timed body {opcode}: expected {expected}, found {counts[opcode]}')
+    require(
+        not any(re.search(r'accvgpr|scratch_|readlane|writelane|v_cvt', text)
+                for text in timed_body),
+        'Unexpected accumulator transfer, conversion or spill inside timing',
+    )
+
+    notes = (output_directory / 'metadata.txt').read_text()
+    private_bytes = integer_field(notes, r'\.private_segment_fixed_size:\s*(\d+)')
+    static_lds_bytes = integer_field(notes, r'\.group_segment_fixed_size:\s*(\d+)')
+    require(private_bytes == 0, f'Kernel spills to private memory: {private_bytes} bytes')
+    require(static_lds_bytes == 0, 'Expected dynamic LDS only')
+    require(not re.search(r'scratch_|(?:read|write)lane', disassembly),
+            'Scratch or lane-spill instruction present')
+
+    expected_loop_mfmas = (1 if resident else 2) * fragments * micro_tiles * micro_tiles
+    hot_loop = find_hot_loop(instructions, expected_loop_mfmas)
+    loop_counts = opcode_counts(hot_loop)
+    expected_loop_counts = {
+        's_barrier': 4,
+        'global_load_dwordx4': 2 * fragments * pairs,
+        'ds_read_b128': 4 * fragments * pairs,
+        'ds_write_b128': 2 * fragments * pairs,
+    }
+    for opcode, normal_count in expected_loop_counts.items():
+        expected = 0 if resident else normal_count
+        require(loop_counts[opcode] == expected,
+                f'Hot loop {opcode}: expected {expected}, found {loop_counts[opcode]}')
+    require(not any('s_nop' in text for text in hot_loop), 'NOP in hot loop')
+
+    (output_directory / 'body.txt').write_text('\n'.join(timed_body) + '\n')
+    (output_directory / 'loop.txt').write_text('\n'.join(hot_loop) + '\n')
+    inventory = {
+        name: integer_field(notes, r'\.' + name + r':\s*(\d+)')
+        for name in ('vgpr_count', 'sgpr_count', 'private_segment_fixed_size', 'agpr_count')
+    }
+    inventory.update(
+        tile=tile,
+        stage_k=stage_k,
+        kind='resident-control' if resident else 'gemm',
+        lds_bytes=tile * stage_k * 4,
+        instructions_per_loop=dict(loop_counts),
+    )
+    (output_directory / 'inventory.json').write_text(json.dumps(inventory, indent=2) + '\n')
+    print(inventory)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('output_directory', type=Path)
+    args = parser.parse_args()
+    audit(args.output_directory)
+
+
+if __name__ == '__main__':
+    main()

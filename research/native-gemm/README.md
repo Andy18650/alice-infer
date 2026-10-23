@@ -77,6 +77,10 @@ the larger tile severely underfills the device.128 wins every tested full
 problem, so it is the default.256 remains an explicit research control, not
 an auto-dispatched path or a recommendation for untested shapes.
 
+A follow-up [104/208/312-CTA coverage study](GRID_COVERAGE.md) finds about
+128 TFLOP/s at208 CTAs/K8192 and133 atK32768. Grid size is not an enforced
+per-CU residency cap; that note separates observed overlap from placement.
+
 ## Pipeline / correctness of buffer reuse
 
 One opaque asm owns accumulators, operand registers and producer state over

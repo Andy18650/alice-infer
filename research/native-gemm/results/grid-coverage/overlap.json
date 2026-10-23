@@ -1,0 +1,82 @@
+[
+  {
+    "tile": 128,
+    "file": "/home/andyhu/projects/inference/alice-infer/research/native-gemm/results/grid-coverage/clocks/t128-m1664-n1024-k8192-r1-a1729-b2718-r4.bin",
+    "sha256": "49f48ed975db5811b065ed020af1b756b7ed5a035dc65a2d83de93349fe5f9ec",
+    "peak_overlapping_cta_bodies": 104,
+    "ctas": 104,
+    "m": 1664,
+    "n": 1024,
+    "k": 8192
+  },
+  {
+    "tile": 128,
+    "file": "/home/andyhu/projects/inference/alice-infer/research/native-gemm/results/grid-coverage/clocks/t128-m1664-n1024-k32768-r1-a1729-b2718-r4.bin",
+    "sha256": "a73356fa453a356c851155422c3ca0661f183b3a61faaa7e6c39945d63e1f618",
+    "peak_overlapping_cta_bodies": 104,
+    "ctas": 104,
+    "m": 1664,
+    "n": 1024,
+    "k": 32768
+  },
+  {
+    "tile": 128,
+    "file": "/home/andyhu/projects/inference/alice-infer/research/native-gemm/results/grid-coverage/clocks/t128-m3328-n1024-k8192-r1-a1729-b2718-r4.bin",
+    "sha256": "090012b3730e4fa946e8fa20acdc4c63a43c873495043670c04fa95234f45c56",
+    "peak_overlapping_cta_bodies": 208,
+    "ctas": 208,
+    "m": 3328,
+    "n": 1024,
+    "k": 8192
+  },
+  {
+    "tile": 128,
+    "file": "/home/andyhu/projects/inference/alice-infer/research/native-gemm/results/grid-coverage/clocks/t128-m3328-n1024-k32768-r1-a1729-b2718-r4.bin",
+    "sha256": "e445078629f437d259034db77dd7221746783c8be7d9a7c61d645cf01407cf3c",
+    "peak_overlapping_cta_bodies": 208,
+    "ctas": 208,
+    "m": 3328,
+    "n": 1024,
+    "k": 32768
+  },
+  {
+    "tile": 128,
+    "file": "/home/andyhu/projects/inference/alice-infer/research/native-gemm/results/grid-coverage/clocks/t128-m1664-n2048-k8192-r1-a1729-b2718-r4.bin",
+    "sha256": "5cbcdb27627bd642661976043ce6c6b66edec9ba909331fe121fffb325a91ba5",
+    "peak_overlapping_cta_bodies": 208,
+    "ctas": 208,
+    "m": 1664,
+    "n": 2048,
+    "k": 8192
+  },
+  {
+    "tile": 128,
+    "file": "/home/andyhu/projects/inference/alice-infer/research/native-gemm/results/grid-coverage/clocks/t128-m1664-n2048-k32768-r1-a1729-b2718-r4.bin",
+    "sha256": "5d91d1a482c4d1b270503d13d830355ab60ddabd68354417857703017a9ee2d2",
+    "peak_overlapping_cta_bodies": 208,
+    "ctas": 208,
+    "m": 1664,
+    "n": 2048,
+    "k": 32768
+  },
+  {
+    "tile": 128,
+    "file": "/home/andyhu/projects/inference/alice-infer/research/native-gemm/results/grid-coverage/clocks/t128-m4992-n1024-k8192-r1-a1729-b2718-r4.bin",
+    "sha256": "a4f83b8fd2a51996fdf368d9054888d0f0d71516d0ea27a206a0e58304afeb35",
+    "peak_overlapping_cta_bodies": 312,
+    "ctas": 312,
+    "m": 4992,
+    "n": 1024,
+    "k": 8192
+  },
+  {
+    "tile": 128,
+    "file": "/home/andyhu/projects/inference/alice-infer/research/native-gemm/results/grid-coverage/clocks/t128-m4992-n1024-k32768-r1-a1729-b2718-r4.bin",
+    "sha256": "08750c5de36e363ec909c5fb399d4e5837164469847f63eae0388247b847ca2f",
+    "peak_overlapping_cta_bodies": 312,
+    "ctas": 312,
+    "m": 4992,
+    "n": 1024,
+    "k": 32768
+  }
+]

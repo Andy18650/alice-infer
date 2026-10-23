@@ -10,7 +10,7 @@ if __name__ == '__main__':
         before_source=HERE / 'results/branch-clean/after/source',
         after_build=ROOT / 'temp/native-gemm/mfma-first/s32-t128',
         after256=ROOT / 'temp/native-gemm/mfma-first/s32-t256',
-        after_source=HERE,
+        after_source=HERE / 'results/mfma-first/after/source',
         output=HERE / 'results/mfma-first',
         title='One MFMA immediately after head VM0',
         description=__doc__,

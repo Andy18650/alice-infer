@@ -1,0 +1,12 @@
+[
+  {
+    "tile": 128,
+    "bytes": 8704,
+    "sha256": "e9053be64e7c50fe87e366c2c2a6ec06171fb9ed15ade389a49ef4364eb74607"
+  },
+  {
+    "tile": 256,
+    "bytes": 28416,
+    "sha256": "6c8a292650d8f2975a653c5267c57ce103e76c45fc47b81b1c1e6d3d32f84f1a"
+  }
+]

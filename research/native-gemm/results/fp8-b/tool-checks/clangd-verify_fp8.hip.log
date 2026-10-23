@@ -1,0 +1,39 @@
+I[07:51:32.768] Ubuntu clangd version 21.1.8 (6ubuntu1)
+I[07:51:32.768] Features: linux+grpc
+I[07:51:32.768] PID: 181154
+I[07:51:32.768] Working directory: /home/andyhu/projects/inference/alice-infer
+I[07:51:32.768] argv[0]: /usr/bin/clangd
+I[07:51:32.768] argv[1]: --check=research/native-gemm/verify_fp8.hip
+I[07:51:32.768] argv[2]: --compile-commands-dir=temp/native-gemm/fp8-b/s32-t128
+I[07:51:32.768] argv[3]: --log=info
+I[07:51:32.768] Entering check mode (no LSP server)
+I[07:51:32.768] Testing on source file /home/andyhu/projects/inference/alice-infer/research/native-gemm/verify_fp8.hip
+I[07:51:32.768] Loading config file at /home/andyhu/projects/inference/alice-infer/research/native-gemm/.clangd
+I[07:51:32.768] Loading config file at /home/andyhu/.config/clangd/config.yaml
+I[07:51:32.768] Loading compilation database...
+I[07:51:32.769] Loaded compilation database from /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/compile_commands.json
+I[07:51:32.769] Compile command inferred from /home/andyhu/projects/inference/alice-infer/research/native-gemm/probe.hip is: [/home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128] /usr/lib/llvm-21/bin/clang++ --driver-mode=g++ -O3 --offload-arch=gfx90a -fdenormal-fp-math=ieee -Wall -Wextra -I/home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128 -DNATIVE_FP8_B=1 -c -std=c++20 -x hip --offload-arch=gfx90a -D__HIP_PLATFORM_AMD__=1 -resource-dir=/usr/lib/llvm-21/lib/clang/21 -- /home/andyhu/projects/inference/alice-infer/research/native-gemm/verify_fp8.hip
+I[07:51:32.769] Parsing command...
+I[07:51:32.770] internal (cc1) args are: -cc1 -triple x86_64-pc-linux-gnu -aux-triple amdgcn-amd-amdhsa -O3 -fsyntax-only -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name verify_fp8.hip -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=none -fmath-errno -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128 -fcoverage-compilation-dir=/home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128 -resource-dir /usr/lib/llvm-21/lib/clang/21 -internal-isystem /usr/lib/llvm-21/lib/clang/21/include/cuda_wrappers -idirafter /usr/include -include __clang_hip_runtime_wrapper.h -I /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128 -D NATIVE_FP8_B=1 -D __HIP_PLATFORM_AMD__=1 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/x86_64-linux-gnu/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16/backward -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/x86_64-linux-gnu/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16/backward -internal-isystem /usr/lib/llvm-21/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -internal-isystem /usr/lib/llvm-21/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -Wall -Wextra -std=c++20 -fdeprecated-macro -ferror-limit 19 -fhip-new-launch-api -fgnuc-version=4.2.1 -fno-implicit-modules -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -vectorize-loops -vectorize-slp -no-round-trip-args -cuid=969de6a02cc621c6 -fcuda-allow-variadic-functions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -x hip /home/andyhu/projects/inference/alice-infer/research/native-gemm/verify_fp8.hip
+I[07:51:32.771] Building preamble...
+I[07:51:33.676] Built preamble of size 13302968 for file /home/andyhu/projects/inference/alice-infer/research/native-gemm/verify_fp8.hip version null in 0.91 seconds
+I[07:51:33.676] Indexing headers...
+I[07:51:33.854] Building AST...
+I[07:51:33.937] Indexing AST...
+I[07:51:33.937] Building inlay hints
+I[07:51:33.938] Building semantic highlighting
+I[07:51:33.938] Testing features at each token (may be slow in large files)
+I[07:51:33.946] Found definition heuristically in index for status
+I[07:51:33.947] Found definition heuristically in index for status
+I[07:51:33.947] Found definition heuristically in index for hipSuccess
+I[07:51:33.947] Found definition heuristically in index for hipSuccess
+I[07:51:33.947] Found definition heuristically in index for std
+I[07:51:33.947] Found definition heuristically in index for std
+I[07:51:33.947] Found definition heuristically using nearby identifier runtime_error
+I[07:51:33.947] Found definition heuristically using nearby identifier runtime_error
+I[07:51:33.947] Found definition heuristically in index for hipGetErrorString
+I[07:51:33.947] Found definition heuristically in index for hipGetErrorString
+I[07:51:33.948] Found definition heuristically in index for status
+I[07:51:33.948] Found definition heuristically in index for status
+E[07:51:33.969]     tweak: ExtractFunction ==> FAIL: Cannot extract break/continue without corresponding loop/switch statement.
+I[07:51:34.179] All checks completed, 1 errors

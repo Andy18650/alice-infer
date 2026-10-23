@@ -1,0 +1,153 @@
+{
+  "generated": [
+    {
+      "stages": 0,
+      "projected_instructions": 6,
+      "sha256": "3de9ff595a153b23530c44f39ca32f912850db6b1316d3d9ee39199e482e2bbc"
+    },
+    {
+      "stages": 1,
+      "projected_instructions": 34,
+      "sha256": "99b2b83388f8d8885c304646e931e2aa26ba03e6b893f7175a23ad59b8875821"
+    },
+    {
+      "stages": 2,
+      "projected_instructions": 63,
+      "sha256": "4e08ac95f7a9b1bc7ff0f0e4c6fb0336973f38e4622291dc05fab7b1fc6537b1"
+    },
+    {
+      "stages": 3,
+      "projected_instructions": 92,
+      "sha256": "37a0f99f1512905ad600a9085b8d6a094d91c63cec3ecf7f378bfbfe356dbbbe"
+    },
+    {
+      "stages": 4,
+      "projected_instructions": 121,
+      "sha256": "ea5ac877f57eab40cd78bd5603c8dbddc5b68018a8c8d348c1a7b9c0c360f162"
+    },
+    {
+      "stages": 5,
+      "projected_instructions": 150,
+      "sha256": "9286583cf79fae3c036a6f437fa63519a917816822477e4411ba5aee4adbc8a5"
+    },
+    {
+      "stages": 6,
+      "projected_instructions": 179,
+      "sha256": "f4937ca4fb6cd1f7980efbc3ad167c01cf4e388a7fd13d93e5710c52bfc521e6"
+    },
+    {
+      "stages": 7,
+      "projected_instructions": 208,
+      "sha256": "b6cfd34ecb1aae823656e65e00908cd8accf4bb10b971445125a37b9ba62961e"
+    },
+    {
+      "stages": 8,
+      "projected_instructions": 237,
+      "sha256": "63f856f8c954d3ca3cffda7175daf97c8b0e645503357005ddaa51fcc21d79ea"
+    },
+    {
+      "stages": 9,
+      "projected_instructions": 266,
+      "sha256": "dedc24a92e1e1e5fc8f74d7090d3518a1d9afa715a509544ef07f99d2917528e"
+    },
+    {
+      "stages": 10,
+      "projected_instructions": 295,
+      "sha256": "b4bb49ee9713ab4277ae9c5f688ec670e050f1ba49f48ad5acacc0f4548f62cb"
+    },
+    {
+      "stages": 11,
+      "projected_instructions": 324,
+      "sha256": "6ef73a513630ae95336767d1683b421f76426109a2e78e9b8d37422151ed880a"
+    },
+    {
+      "stages": 12,
+      "projected_instructions": 353,
+      "sha256": "66c583e8ea902442f0a4b7289ca57290879ffcdeea51b04b6584a981d8045cf4"
+    },
+    {
+      "stages": 15,
+      "projected_instructions": 440,
+      "sha256": "4e50c78a21534f98a52d8da01cf7d723c5cdc119f0a51a9bdfebfd0feba6ec36"
+    },
+    {
+      "stages": 16,
+      "projected_instructions": 469,
+      "sha256": "859c29a9973d3f4a4995f8530b405810f0f6eaacf28783b1d2d65a228c2f1e4e"
+    },
+    {
+      "stages": 17,
+      "projected_instructions": 498,
+      "sha256": "a7f2ac33c86d09085f222a2da4130b837c4a19d4907d7ec50db376231fca1ab1"
+    },
+    {
+      "stages": 31,
+      "projected_instructions": 904,
+      "sha256": "daeef0163549197d1ffd7bc710b8d6f22a9b9539408dd9d0a05ebcf6b5a17cd5"
+    },
+    {
+      "stages": 32,
+      "projected_instructions": 933,
+      "sha256": "4ab1db966f6bc6a8abdf7527b5a1a19858bdb5d78c3b97be22879f7839751b44"
+    },
+    {
+      "stages": 33,
+      "projected_instructions": 962,
+      "sha256": "4918cf473ab4e8329a8dd26b38f6c0090fd39ffec6f3a034e7f6ed47b5933a77"
+    },
+    {
+      "stages": 63,
+      "projected_instructions": 1832,
+      "sha256": "65f70fb4b32c15040ccfccee8ad123112f16c4f5f1f3bd2e61570e06beb1c6ce"
+    },
+    {
+      "stages": 64,
+      "projected_instructions": 1861,
+      "sha256": "f4ea6e3076f3a838f39caf511486198a3fa1e4e882d881d2b4f44a8b3d28f6ac"
+    },
+    {
+      "stages": 65,
+      "projected_instructions": 1890,
+      "sha256": "f45f4c434eb0df55d040e17586e7e1366ff707652b43884dc0bfa202e4622072"
+    },
+    {
+      "stages": 127,
+      "projected_instructions": 3688,
+      "sha256": "194c863d40a58e584d63c71fd431661c9a431430c72c0f35e828f954dd747d6d"
+    },
+    {
+      "stages": 128,
+      "projected_instructions": 3717,
+      "sha256": "6b9ad2e215b16534dca8be70e57f19d95958e712a54be9e4339e6cec7f50cc9c"
+    },
+    {
+      "stages": 129,
+      "projected_instructions": 3746,
+      "sha256": "b9ad685c1f63560bbf4f20437621fc533644fa8bcf0443ee743f022b5a506e3b"
+    },
+    {
+      "stages": 255,
+      "projected_instructions": 7400,
+      "sha256": "fb9d07d1229c884b3dd767deeba20cf39f007dccfc27505c3ac3d93a9f7d84ef"
+    },
+    {
+      "stages": 256,
+      "projected_instructions": 7429,
+      "sha256": "995c5626c491d5a81caaaa52d81ea64a7d304161bccd2cd7ebc909960f14a68c"
+    },
+    {
+      "stages": 257,
+      "projected_instructions": 7458,
+      "sha256": "62facc32c17e4a5fecec27d8aa59586aa062a40e2d36d77de4eb6f6fa92aeebe"
+    },
+    {
+      "stages": 2048,
+      "projected_instructions": 59397,
+      "sha256": "ecb6ab95a2d8287f805ed23dfc85c02e715125bd363f1f487fc1dbf7384ae7c0"
+    }
+  ],
+  "native_math_identical": true,
+  "native_reads_address_normalized_equal": true,
+  "before_loop_instructions": 81,
+  "after_loop_instructions": 147
+}

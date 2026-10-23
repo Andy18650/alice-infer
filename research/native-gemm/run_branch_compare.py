@@ -44,10 +44,10 @@ def executable_hash(build):
     raise RuntimeError(f'No executable fingerprint in {build}')
 
 
-def snapshot_variant(destination, build, source):
+def snapshot_variant(destination, build, source, extra_sources=()):
     for folder in ('source', 'builds', 'verification', 'timing', 'clocks'):
         (destination / folder).mkdir(parents=True, exist_ok=True)
-    for name in SOURCE_FILES:
+    for name in (*SOURCE_FILES, *extra_sources):
         shutil.copy2(source / name, destination / 'source' / name)
     build_snapshot = destination / 'builds' / build.name
     build_snapshot.mkdir()
@@ -106,8 +106,10 @@ def main(defaults=None):
     parser.add_argument('--after-source', type=Path,
                         default=HERE / 'results/branch-clean/after/source')
     parser.add_argument('--output', type=Path, default=HERE / 'results/branch-clean')
+    parser.add_argument('--allow-resource-change', action='store_true')
     parser.set_defaults(title='Branch-only A/B', operation_change='control flow only',
-                        entry_point='run_branch_compare.py')
+                        entry_point='run_branch_compare.py', extra_sources=(),
+                        functional_variants=(('after', 128), ('after256', 256)))
     if defaults:
         parser.set_defaults(**defaults)
     args = parser.parse_args()
@@ -115,10 +117,11 @@ def main(defaults=None):
     if output.exists() and any(output.iterdir()):
         parser.error('choose a fresh results directory')
 
-    builds = {'before': args.before_build.resolve(), 'after': args.after_build.resolve(),
-              'after256': args.after256.resolve()}
-    sources = {'before': args.before_source.resolve(),
-               'after': args.after_source.resolve(), 'after256': args.after_source.resolve()}
+    builds = {'before': args.before_build.resolve(), 'after': args.after_build.resolve()}
+    sources = {'before': args.before_source.resolve(), 'after': args.after_source.resolve()}
+    if args.after256 is not None:
+        builds['after256'] = args.after256.resolve()
+        sources['after256'] = args.after_source.resolve()
     expected_hashes = {}
     for variant, build in builds.items():
         verify_manifest(build / 'hashes.txt', sources[variant])
@@ -128,11 +131,12 @@ def main(defaults=None):
     after_resources = json.loads((builds['after'] / 'inventory.json').read_text())
     for field in ('vgpr_count', 'agpr_count', 'sgpr_count', 'lds_bytes',
                   'private_segment_fixed_size'):
-        require(before_resources[field] == after_resources[field],
+        require(args.allow_resource_change or before_resources[field] == after_resources[field],
                 f'Resource change would confound this test: {field}')
 
     for variant, build in builds.items():
-        snapshot_variant(output / variant, build, sources[variant])
+        extra = args.extra_sources if variant != 'before' else ()
+        snapshot_variant(output / variant, build, sources[variant], extra)
     (output / 'driver').mkdir()
     for name in dict.fromkeys(('run_branch_compare.py', 'run.py', 'verify_artifacts.py',
                                args.entry_point)):
@@ -141,7 +145,9 @@ def main(defaults=None):
         builds={name: str(path) for name, path in builds.items()}, problems=PROBLEMS,
         tile=128, stage_k=32, placement='numactl CPU+memory node0',
         operation_change=args.operation_change, interleave_prefetch=False,
-        title=args.title,
+        title=args.title, allow_resource_change=args.allow_resource_change,
+        before_resources=before_resources, after_resources=after_resources,
+        functional_variants=args.functional_variants,
     ), indent=2) + '\n')
     capture_smi(output / 'amd-smi-before.txt')
     records = []
@@ -161,7 +167,7 @@ def main(defaults=None):
             if case.timing:
                 write_comparison(output, records, args.title)
 
-        for variant, tile in (('after', 128), ('after256', 256)):
+        for variant, tile in args.functional_variants:
             for case in functional_cases(tile):
                 execute(variant, case)
         for repeat in (1, 2):

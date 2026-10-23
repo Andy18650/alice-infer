@@ -1,0 +1,7 @@
+e53459ce162b57a3fb40c6bd8f7a56998f641f68249e2186b494f0aee11e9428  /home/andyhu/projects/inference/alice-infer/research/native-gemm/verify_fp8.hip
+651be08447be9068f23ee7b43a0cb3b47884d1a3aea0b36b2747b14ad02c10dd  /home/andyhu/projects/inference/alice-infer/research/native-gemm/data_fp8.hpp
+d905012c9e7700ddad0d1c0aa5f92d99fb14efabf78ad270c63d9670df22a193  /home/andyhu/projects/inference/alice-infer/research/native-gemm/data.hpp
+5c9e596266e37dc5621a4131c3946e4bd0df3595c2a216643f0f711b876f242e  /home/andyhu/projects/inference/alice-infer/research/native-gemm/generate_fp8.py
+98f84edcc9870e74599f4dbbee7729817026678979632fa0710f8957d5895380  /home/andyhu/projects/inference/alice-infer/research/native-gemm/generate.py
+bf2df2053ee845b9ac8cb51143c1d5d6f58d9b60c6d39408214684914cfaa0e4  /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/compute.hpp
+c1368ed90d89318645d89452ec159662c929adf25a63e658585be0957bdc94cc  /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/verify-fp8

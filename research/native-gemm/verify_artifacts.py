@@ -14,7 +14,8 @@ from pathlib import Path
 
 RESULTS = Path(__file__).resolve().parent / 'results'
 HISTORICAL_PHASES = ('initial', 'swizzle', 'late', 'early', 'stage64', 'resident', 'final')
-SOURCE_FILES = {'probe.hip', 'data.hpp', 'generate.py'}
+SOURCE_FILES = {'probe.hip', 'data.hpp', 'generate.py', 'generate_fp8.py',
+                'data_fp8.hpp', 'build_fp8.sh', 'verify_fp8.hip'}
 
 
 def verify_manifest(manifest, source_directory):
@@ -66,7 +67,8 @@ def verify_pipeline_comparison(phase, audit_phase):
     directory = RESULTS / phase
     if not (directory / 'summary.csv').exists():
         return
-    for variant in ('before', 'after', 'after256'):
+    variants = ('before', 'after') if phase == 'fp8-b' else ('before', 'after', 'after256')
+    for variant in variants:
         root = directory / variant
         manifests = list((root / 'builds').glob('*/hashes.txt'))
         if not manifests:
@@ -76,7 +78,10 @@ def verify_pipeline_comparison(phase, audit_phase):
         verify_dependencies(root)
     for manifest in (RESULTS / audit_phase / 'gpu64').glob('t*/hashes.txt'):
         verify_manifest(manifest, directory / 'after' / 'source')
-    print(phase, 'before/after and optional StageK64 source/native hashes pass')
+    if phase == 'fp8-b':
+        verify_manifest(directory / 'gates/conversion-hashes.txt', directory / 'after/source')
+        verify_manifest(directory / 'fp16-bridge/hashes.txt', directory / 'after/source')
+    print(phase, 'before/after, optional auxiliary source/native hashes pass')
 
 
 def main():
@@ -89,6 +94,7 @@ def main():
         verify_dependencies(RESULTS / 'readable')
     verify_pipeline_comparison('branch-clean', 'branch-flow-audit')
     verify_pipeline_comparison('mfma-first', 'mfma-first-audit')
+    verify_pipeline_comparison('fp8-b', 'fp8-b-audit')
     print('Recorded dynamic dependencies contain no vendor GEMM libraries')
 
 

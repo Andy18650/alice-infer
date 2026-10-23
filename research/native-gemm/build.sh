@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Standalone HIP build. Fresh MFMA-first defaults preserve branch-clean and
-# older measured binaries.
+# Standalone HIP build. Fresh FP16 host-bridge defaults preserve MFMA-first
+# and older measured binaries; FP8 mode has its own namespace.
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)
@@ -31,16 +31,30 @@ case "$stage" in
     *) echo 'StageK must be32 or64' >&2; exit 2 ;;
 esac
 
-out=${2:-"$root/temp/native-gemm/mfma-first/s$stage-t$tile"}
+generator=generate.py
+namespace=fp16-bridge
+format_flags=()
+extra_sources=()
+if [[ ${NATIVE_FP8_B:-0} == 1 ]]; then
+    [[ $tile == 128 && $stage == 32 && $kind == gemm ]] || {
+        echo 'FP8 variant supports only128x128x32 ordinary GEMM' >&2; exit 2;
+    }
+    generator=generate_fp8.py
+    namespace=fp8-b
+    format_flags=(-DNATIVE_FP8_B=1)
+    extra_sources=("$here/generate_fp8.py" "$here/data_fp8.hpp" "$here/build_fp8.sh")
+fi
+out=${2:-"$root/temp/native-gemm/$namespace/s$stage-t$tile"}
 mkdir -p "$out/tmp"
 out=$(cd "$out" && pwd)
 export TMPDIR="$out/tmp"
 
-python3 "$here/generate.py" \
-    --tile "$tile" \
-    --stage-k "$stage" \
-    "${generator_options[@]}" \
-    --output "$out/compute.hpp"
+if [[ $generator == generate_fp8.py ]]; then
+    python3 "$here/$generator" --output "$out/compute.hpp"
+else
+    python3 "$here/$generator" --tile "$tile" --stage-k "$stage" \
+        "${generator_options[@]}" --output "$out/compute.hpp"
+fi
 
 flags=(
     -O3
@@ -50,6 +64,7 @@ flags=(
     -Wall
     -Wextra
     -I"$out"
+    "${format_flags[@]}"
 )
 {
     printf '%q' hipcc
@@ -88,6 +103,7 @@ sha256sum \
     "$here/probe.hip" \
     "$here/data.hpp" \
     "$here/generate.py" \
+    "${extra_sources[@]}" \
     "$out/compute.hpp" \
     "$out/probe" \
     "$out/probe.hsaco" > "$out/hashes.txt"

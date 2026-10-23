@@ -8,6 +8,9 @@ intentional [branch-only optimization](BRANCH_CLEANUP.md) uses `branch-clean`;
 its ordering proof is separate from the historical byte-identical cleanup.
 The next [single-MFMA move](MFMA_FIRST.md) has its own exact-move audit and
 fresh `mfma-first` builds, rather than relabeling the branch-only records.
+The separate [FP8 B producer](FP8_B.md) changes packing/producer work but
+preserves compute/raw-read/fence order. It regresses low grids and remains an
+experimental variant, not the default. Its FP16 host bridge is GPU-byte-identical.
 
 ## 1. File map and suggested reading order
 
@@ -28,6 +31,9 @@ fresh `mfma-first` builds, rather than relabeling the branch-only records.
 |`run_branch_compare.py`|Shared matched driver; defaults replay the historical branch experiment.|
 |`run_mfma_first.py`|Small entry point selecting the next single-MFMA A/B paths/title.|
 |`audit_mfma_first.py`|Checks exactly one move/head-VM0 and no other order changes.|
+|`generate_fp8.py`, `data_fp8.hpp`|Balanced all-wave FP8 producer, explicit repacking and finite-code oracle.|
+|`verify_fp8.hip`, `audit_fp8.py`|Independent packing/bit gates and preserved compute/fence projection.|
+|`build_fp8.sh`, `run_fp8.py`|Separate FP8 build and matched104/208/312/large-grid experiment.|
 |`bank-probe.hip`|Small explicit register-pair diagnostic; not the final GEMM benchmark.|
 
 The default is **tile128,StageK32,ordinary GEMM,linear LDS mapping**. Other tile/
@@ -169,7 +175,7 @@ recorded SHA256, not inferred from approximate source similarity.
 ```sh
 bash research/native-gemm/build.sh 128
 bash research/native-gemm/build.sh 256
-# Current builds: temp/native-gemm/mfma-first/s32-t{128,256}; old builds retained.
+# Current normal builds: temp/native-gemm/fp16-bridge/s32-t{128,256}; old builds retained.
 # Historical cleanup audit pins results/readable/source and readable binaries:
 python3 research/native-gemm/audit_cleanup.py --output <fresh-audit-directory>
 python3 research/native-gemm/audit_branch_flow.py --output <fresh-flow-audit>
@@ -188,7 +194,9 @@ dots, and actual GPU `.text` for both GEMM candidates and bank-control kernels.
 original180-launch suite after cleanup. `results/branch-flow-audit/` and
 `results/branch-clean/` separately record the intentional branch change.
 `results/mfma-first-audit/` and `results/mfma-first/` record the next exact
-one-instruction move and matched performance; none overwrite their predecessors. ELF metadata/host executable hashes may
+one-instruction move and matched performance; none overwrite their predecessors.
+`results/fp8-b/` and `results/fp8-b-audit/` separately preserve the FP8 format/
+packing experiment, exhaustive conversion gates and negative low-grid result. ELF metadata/host executable hashes may
 change; the proof specifically identifies the unchanged GPU instruction bytes.
 Use fresh build paths when changing source; never overwrite measured historical
 binaries just to make a manifest pass. No new package or formatter dependency.

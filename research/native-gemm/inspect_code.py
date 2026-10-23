@@ -71,6 +71,7 @@ def audit(output_directory):
     pairs = micro_tiles // 2
     fragments = stage_k // 8
     resident = 'kResident=true' in header
+    fp8_b = 'kFp8BStorage=true' in header
 
     disassembly = (output_directory / 'probe.isa').read_text()
     instructions = parse_instructions(disassembly)
@@ -83,7 +84,7 @@ def audit(output_directory):
     counts = opcode_counts(timed_body)
     expected_body_counts = {
         MFMA: (1 if resident else 8) * fragments * micro_tiles * micro_tiles,
-        'global_load_dwordx4': (2 if resident else 5) * fragments * pairs,
+        'global_load_dwordx4': 15 if fp8_b else (2 if resident else 5) * fragments * pairs,
         'ds_write_b128': (1 if resident else 6) * fragments * pairs,
         'ds_read_b128': (2 if resident else 12) * fragments * pairs,
     }
@@ -109,7 +110,7 @@ def audit(output_directory):
     loop_counts = opcode_counts(hot_loop)
     expected_loop_counts = {
         's_barrier': 4,
-        'global_load_dwordx4': 2 * fragments * pairs,
+        'global_load_dwordx4': 6 if fp8_b else 2 * fragments * pairs,
         'ds_read_b128': 4 * fragments * pairs,
         'ds_write_b128': 2 * fragments * pairs,
     }
@@ -118,6 +119,11 @@ def audit(output_directory):
         require(loop_counts[opcode] == expected,
                 f'Hot loop {opcode}: expected {expected}, found {loop_counts[opcode]}')
     require(not any('s_nop' in text for text in hot_loop), 'NOP in hot loop')
+    if fp8_b:
+        for opcode in ('v_perm_b32', 'v_pk_ashrrev_i16', 'v_and_b32_e32', 'v_pk_mul_f16'):
+            require(loop_counts[opcode] == 16 and counts[opcode] == 48,
+                    f'Wrong FP8 conversion count for {opcode}')
+        require(len(hot_loop) == 147, 'Unexpected balanced FP8 loop length')
     if not resident:
         # Two stages, one bottom-controlled backedge. Boundary tests belong
         # only to the bounded tails, not either steady phase.
@@ -151,6 +157,7 @@ def audit(output_directory):
         tile=tile,
         stage_k=stage_k,
         kind='resident-control' if resident else 'gemm',
+        storage='fp16-a/fp8-b' if fp8_b else 'fp16-a/fp16-b',
         lds_bytes=tile * stage_k * 4,
         instructions_per_loop=dict(loop_counts),
     )

@@ -15,6 +15,14 @@
 #include <vector>
 
 #include "data.hpp"
+#ifdef NATIVE_FP8_B
+#include "data_fp8.hpp"
+using InputMatrices = Fp8Matrices;
+constexpr bool kFp8B = true;
+#else
+using InputMatrices = TestMatrices;
+constexpr bool kFp8B = false;
+#endif
 
 #define HIP(expression)                                                        \
     do {                                                                       \
@@ -52,12 +60,12 @@ __global__ __launch_bounds__(256) void native_gemm(
     const int wave_row = wave / 2;
     const int wave_column = wave % 2;
     const int wave_tile = kTile / 2;
-    const int panel_bytes = kTile * kStageK;
     const int half_fragment_bytes = kTile * 8;
 
-    // Producer role is separate from compute role:
-    // waves 0/1 produce A's top/bottom halves, waves 2/3 produce B's halves.
-    // All four waves subsequently compute their own output rectangle.
+    // FP8 mode redistributes both producers by K8 slice; output ownership and
+    // the LDS consumer layout are deliberately identical in both modes.
+#ifndef NATIVE_FP8_B
+    const int panel_bytes = kTile * kStageK;
     const uintptr_t producer_source =
         reinterpret_cast<uintptr_t>(wave < 2 ? a : b)
         + size_t((wave < 2 ? tile_row : tile_column) * 2 + wave % 2) * panel_bytes
@@ -68,13 +76,16 @@ __global__ __launch_bounds__(256) void native_gemm(
     const uint32_t source_increment = __builtin_amdgcn_readfirstlane(
         uint32_t((wave < 2 ? mp : np) * kStageK * 2
                  - (kQ * (kTile / 128) / 4 - 1) * 4096));
+#endif
     const uint32_t lds_base = uint32_t(reinterpret_cast<uintptr_t>(smem));
     const int lds_lane = swizzle ? (lane ^ (lane >> 3)) : lane;
+#ifndef NATIVE_FP8_B
     const uint32_t producer_destination =
         lds_base
         + (wave < 2 ? wave * half_fragment_bytes
                     : kTile * kStageK * 2 + (wave - 2) * half_fragment_bytes)
         + lds_lane * 16;
+#endif
     const uint32_t operand_a_address =
         lds_base + wave_row * half_fragment_bytes + lds_lane * 16;
     const uint32_t operand_b_address =
@@ -83,10 +94,26 @@ __global__ __launch_bounds__(256) void native_gemm(
 
     F16 accumulators[kR * kR] = {};
     uint64_t core_begin, core_end, steady_begin, steady_end;
+#ifdef NATIVE_FP8_B
+    static_assert(kTile == 128 && kStageK == 32);
+    const uintptr_t a_source = reinterpret_cast<uintptr_t>(a)
+        + size_t(tile_row) * 8192 + wave * 2048 + lane * 16;
+    const uintptr_t b_source = reinterpret_cast<uintptr_t>(b)
+        + size_t(tile_column) * 4096 + wave * 1024 + lane * 16;
+    const uint32_t a_destination = lds_base + wave * 2048 + lds_lane * 16;
+    pipeline(
+        uint32_t(a_source), uint32_t(a_source >> 32),
+        __builtin_amdgcn_readfirstlane(uint32_t(mp * 64)), a_destination,
+        operand_a_address, operand_b_address,
+        uint32_t(b_source), uint32_t(b_source >> 32),
+        __builtin_amdgcn_readfirstlane(uint32_t(np * 32)), a_destination + 8192,
+        tiles, accumulators, core_begin, core_end, steady_begin, steady_end);
+#else
     pipeline(
         uint32_t(producer_source), uint32_t(producer_source >> 32),
         source_increment, producer_destination, operand_a_address, operand_b_address,
         tiles, accumulators, core_begin, core_end, steady_begin, steady_end);
+#endif
 
     if (lane == 0) {
         auto wave_stamps = stamps + (size_t(blockIdx.x) * 4 + wave) * 4;
@@ -156,6 +183,7 @@ struct Options {
     int rounds = 9;
     int warmup_ms = 200;
     int swizzle = 0;
+    int b_pattern = 0;
     uint32_t seed_a = 1729;
     uint32_t seed_b = 2718;
     std::string stamp_prefix;
@@ -189,6 +217,8 @@ Options parse_options(int argc, char** argv) {
             options.warmup_ms = std::stoi(value);
         } else if (key == "--stamps-prefix") {
             options.stamp_prefix = value;
+        } else if (key == "--b-pattern") {
+            options.b_pattern = std::stoi(value);
         } else if (key == "--swizzle") {
             options.swizzle = std::stoi(value);
         } else if (key == "--seed-a") {
@@ -203,7 +233,9 @@ Options parse_options(int argc, char** argv) {
         || options.rows > 16384 || options.columns > 16384
         || options.reduction < 0 || options.reduction > 65536
         || options.rounds < 1 || options.warmup_ms < 0
-        || (options.swizzle != 0 && options.swizzle != 1)) {
+        || (options.swizzle != 0 && options.swizzle != 1)
+        || options.b_pattern < 0 || options.b_pattern > 1
+        || (options.b_pattern && !kFp8B)) {
         throw std::runtime_error("dimensions/options out of range");
     }
     return options;
@@ -215,7 +247,7 @@ struct ReferenceOutputs {
     std::vector<float> values;
 };
 
-ReferenceOutputs make_reference(const TestMatrices& matrices, int stage_count) {
+ReferenceOutputs make_reference(const InputMatrices& matrices, int stage_count) {
     const int m = matrices.rows;
     const int n = matrices.columns;
     const int k = matrices.reduction;
@@ -400,7 +432,10 @@ int main(int argc, char** argv) try {
         stderr, "LDS lane permutation=%s (address-only, producer/consumer agree)\n",
         options.swizzle ? "lane XOR lane>>3" : "linear");
 
-    TestMatrices matrices(m, n, k, options.seed_a, options.seed_b);
+    InputMatrices matrices(m, n, k, options.seed_a, options.seed_b);
+#ifdef NATIVE_FP8_B
+    matrices.set_finite_pattern(options.b_pattern != 0);
+#endif
     const auto packing_begin = std::chrono::steady_clock::now();
     auto packed_a = matrices.pack_operand(false, kTile, kStageK);
     auto packed_b = matrices.pack_operand(true, kTile, kStageK);
@@ -423,11 +458,12 @@ int main(int argc, char** argv) try {
         stderr,
         "HIP0 BDF=%s O3 gfx90a, CUs=%d tile=%d stageK=%d singleLDS=%d "
         "residentCTA/CU=%d grid=%dx%d(%d) block256 M/N/K=%d/%d/%d "
-        "padded=%d/%d/%d; FP16 packed/FP32 C,packing %.3f ms outside timing,"
+        "padded=%d/%d/%d; %s packed/FP32 C,packing %.3f ms outside timing,"
         "no BLAS/CK,model/context=none,external NUMA,no clock override\n",
         pci_bus_id, device.multiProcessorCount, kTile, kStageK, kLdsBytes,
         resident_blocks, padded_m / kTile, padded_n / kTile, blocks,
-        m, n, k, padded_m, padded_n, stage_count * kStageK, packing_ms);
+        m, n, k, padded_m, padded_n, stage_count * kStageK,
+        kFp8B ? "FP16 A/E4M3FN B" : "FP16", packing_ms);
 
     const ReferenceOutputs reference = make_reference(matrices, stage_count);
     std::fprintf(

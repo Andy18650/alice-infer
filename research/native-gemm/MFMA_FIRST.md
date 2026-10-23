@@ -98,13 +98,12 @@ before paths are never checked against today's changed generator.
 ## Replay / records
 
 ```sh
-bash research/native-gemm/build.sh 128
-bash research/native-gemm/build.sh 256
+# Historical comparison uses preserved branch-clean/mfma-first builds.
 python3 research/native-gemm/audit_mfma_first.py --output <fresh-order-audit>
 python3 research/native-gemm/run_mfma_first.py --output <fresh-A-B-results>
 ```
 
-Current defaults build under `temp/native-gemm/mfma-first/`; old branch-clean,
+The recorded builds are under `temp/native-gemm/mfma-first/`; old branch-clean,
 readable and original measured executables remain untouched. Raw clocks,
 reference/check results,resource snapshots,source/native fingerprints and
 executed commands: `results/mfma-first/`. Order proof:
@@ -113,4 +112,6 @@ completed before/after source snapshots rather than assuming that later
 intentional MFMA scheduling changes preserve its old projection.
 
 No extra tile/ring/wait/padding/skew tuning,production/CMake/model/system/
-package/clock-policy changes. Research status appended to research-log.md.
+package/clock-policy changes. Research status appended to research-log.md. Later FP8 host scaffolding moves
+normal build defaults to `fp16-bridge` (GPU-byte-identical); the historical
+comparison pins its original source snapshots rather than today's host file.

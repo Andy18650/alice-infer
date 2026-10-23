@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Standalone HIP build. Branch-clean defaults preserve the measured pre-change
-# binaries in temp/native-gemm/readable/ and earlier namespaces.
+# Standalone HIP build. Fresh MFMA-first defaults preserve branch-clean and
+# older measured binaries.
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)
@@ -31,7 +31,7 @@ case "$stage" in
     *) echo 'StageK must be32 or64' >&2; exit 2 ;;
 esac
 
-out=${2:-"$root/temp/native-gemm/branch-clean/s$stage-t$tile"}
+out=${2:-"$root/temp/native-gemm/mfma-first/s$stage-t$tile"}
 mkdir -p "$out/tmp"
 out=$(cd "$out" && pwd)
 export TMPDIR="$out/tmp"

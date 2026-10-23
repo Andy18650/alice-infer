@@ -82,6 +82,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--before-source', type=Path,
                         default=HERE / 'results/readable/source')
+    parser.add_argument('--after-source', type=Path,
+                        default=HERE / 'results/branch-clean/after/source')
     parser.add_argument('--work', type=Path,
                         default=ROOT / 'temp/native-gemm/branch-flow-audit')
     parser.add_argument('--output', type=Path,
@@ -100,7 +102,7 @@ def main():
         extra = ['--resident'] if resident else []
         headers = []
         for label, script in (('before', args.before_source / 'generate.py'),
-                              ('after', HERE / 'generate.py')):
+                              ('after', args.after_source / 'generate.py')):
             file = work / f'{name}-{label}.hpp'
             subprocess.run(['python3', str(script), '--tile', str(tile), '--stage-k',
                             str(stage_k), *extra, '--output', str(file)], check=True)

@@ -14,9 +14,10 @@ uses a different control-flow audit; it does not claim unchanged whole GPU code.
 
 **Selected design:**128x128 output tile, four waves/CTA, K32 pipeline,16 KiB
 single LDS buffer, wide global/register staging and b128 LDS transfers.
-After branch-only cleanup, the largest check reaches **145.92/145.88 TFLOP/s**,
-about **96.7%** of clock-adjusted theoretical throughput;208-CTA long-K reaches
-**135.26/135.32 TFLOP/s (~88.5%)**. No prefetch/MFMA interleaving change yet.
+After branch cleanup and [one MFMA moved after head VM0](MFMA_FIRST.md),
+the largest check reaches **146.55/146.44 TFLOP/s (~97.1%)**.208-CTA long-K
+reaches **137.90/137.99 TFLOP/s (~90.6%)**. The future global packets remain
+batched; no broader prefetch interleaving change has been made.
 This is near-compute-bound in these conditions, not proof of a global optimum
 or a general GEMM/prefill performance guarantee.
 
@@ -90,9 +91,10 @@ all K. Four K8 slices/stage, plus one extra raw slot for the last slice:
 1. Startup loads stage0, writes/publishes LDS, reads its four operand slices
    into registers, and prefetches stage1 globally into a separate register set.
 2. Steady head waits for all current operand reads, then a CTA **retirement
-   barrier before LDS overwrite**. Wait for prefetched global input; write
-   next stage to the same LDS buffer. Issue fresh global loads for stage+2.
-3. Compute current q0. Wait for next LDS writes and **publish with a barrier**.
+   barrier before LDS overwrite**. Wait for prefetched global input.
+   Immediately issue current q0/C00 MFMA, then write next stage to the same
+   LDS buffer and issue fresh global loads for stage+2.
+3. Issue the remaining current q0 MFMAs, wait for next LDS writes and **publish with a barrier**.
    Read next q0 into consumed q0 registers and next q3 into the spare slot.
 4. Compute current q1/read next q1, compute current q2/read next q2, compute
    current q3. Those reads overlap independent matrix work.
@@ -107,9 +109,12 @@ operands are in registers before overwrite; all waves join before reuse.
 Native hot backedge (two K32 stages)/wave:32 MFMA,8 global DWORDx4,8 LDS b128
 writes,16 LDS b128 reads, four barriers, two VM0 waits, four LGKM0 waits.
 The current control flow has only subtract-by-two,compare,conditional backedge:
-81 instructions instead of90. The final1–3 stages are peeled outside it.
+81 instructions instead of90. The first current-q0 MFMA is now immediately
+after head VM0, before staging stores; counts/resources stay unchanged.
+The final1–3 stages are peeled outside the steady loop.
 [BRANCH_CLEANUP.md](BRANCH_CLEANUP.md) gives parity/bounds proof and matched
-104/208/312-CTA data; all memory/math/wait ordering per stage is unchanged.
+104/208/312-CTA data for that historical control-only step. [MFMA_FIRST.md](MFMA_FIRST.md)
+documents the subsequent intentional single-MFMA reorder.
 No datatype conversion, accumulator copies, lane moves, scratch spills or
 NOPs in that loop. VM0 operates on the prefetched panel after the preceding
 stage's matrix overlap; it is not a per-global-load serialization. A constant
@@ -142,9 +147,9 @@ not claimed ISA limits. No general alpha/beta/transposition/batched API.
 ## Verification and controls
 
 Original final/cleanup suite: **180 verified launches** =36 functional/input-
-seed cases plus144 timed launches. The later branch A/B has **312 checked
+seed cases plus144 timed launches. The later branch and one-MFMA A/B experiments each have **312 checked
 launches** (60 bounded-tail/seed checks +252 timings), plus10 optionalStageK64
-boundary checks. These are separate datasets, not relabeled old results. Small cases use full original-row-major CPU references;
+boundary checks each. These are separate datasets, not relabeled old results. Small cases use full original-row-major CPU references;
 large cases check~2–3K sampled/boundary outputs, scan **all C finite after
 NaN poisoning**, and check32 guards every launch. Do not relabel large sampled
 references as full references. Exact FP32 equality is justified for this
@@ -161,12 +166,12 @@ checks, dynamic dependency listings and overlap proof are committed under
 ## Build / replay
 
 ```sh
-bash research/native-gemm/build.sh                      #128,K32 ->temp/native-gemm/branch-clean/s32-t128
-numactl --cpunodebind=0 --membind=0 temp/native-gemm/branch-clean/s32-t128/probe \
+bash research/native-gemm/build.sh                      #128,K32 ->temp/native-gemm/mfma-first/s32-t128
+numactl --cpunodebind=0 --membind=0 temp/native-gemm/mfma-first/s32-t128/probe \
   --m 4096 --n 6656 --k 32768 --rounds 9 --warmup-ms 200
-# Branch-only A/B against preserved readable build, including312 CTAs:
+# One-MFMA A/B against preserved branch-clean build, including312 CTAs:
 bash research/native-gemm/build.sh 256
-python3 research/native-gemm/run_branch_compare.py --output <fresh-A-B-directory>
+python3 research/native-gemm/run_mfma_first.py --output <fresh-A-B-directory>
 # Optional expanded full comparison also retains208/312 coverage:
 python3 research/native-gemm/run.py --output <fresh-results-directory>
 python3 research/native-gemm/analyze.py <results-directory>
@@ -181,7 +186,7 @@ linear LDS lane mapping; `--swizzle 1` is opt-in null control. `resident` is a
 repeated-first-fragment diagnostic, **not ordinary GEMM**; it is never used
 by the final suite. Stage64 and archived CLI/header versions belong to their
 recorded paths/snapshots. Use fresh directories to preserve measured binaries.
-Current builds default under `temp/native-gemm/branch-clean/`; readable and
+Current builds default under `temp/native-gemm/mfma-first/`; branch-clean,readable and
 older measured namespaces remain untouched. CSV column names and timestamp
 binary layout are unchanged. The expanded default full runner has360 launches;
 the focused branch A/B and original180-launch suite remain distinct.

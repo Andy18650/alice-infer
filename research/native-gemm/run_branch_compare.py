@@ -64,10 +64,10 @@ def functional_cases(tile):
     yield Case(tile, 129, 131, 65, seed_b=2719)
 
 
-def write_comparison(output, records):
+def write_comparison(output, records, title='Branch-only A/B'):
     timing = [row for row in records if row['kind'] == 'timing']
     lines = [
-        '# Branch-only A/B', '',
+        '# ' + title, '',
         'Native HIP O3 gfx90a HIP0/BDF31:00.0, CPU+memory NUMA0, no model/context/'
         'clock override. Full kernel event TFLOP/s; packing/reference excluded. '
         'Two counterbalanced nine-sample process medians.', '',
@@ -91,8 +91,10 @@ def write_comparison(output, records):
     (output / 'comparison.md').write_text('\n'.join(lines) + '\n')
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+def main(defaults=None):
+    # The small MFMA-first entry point reuses this exact protocol, validators
+    # and resource checks, overriding paths/title rather than copying a runner.
+    parser = argparse.ArgumentParser(description=(defaults or {}).get('description', __doc__))
     parser.add_argument('--before-build', type=Path,
                         default=ROOT / 'temp/native-gemm/readable/s32-t128')
     parser.add_argument('--before-source', type=Path,
@@ -101,7 +103,13 @@ def main():
                         default=ROOT / 'temp/native-gemm/branch-clean/s32-t128')
     parser.add_argument('--after256', type=Path,
                         default=ROOT / 'temp/native-gemm/branch-clean/s32-t256')
+    parser.add_argument('--after-source', type=Path,
+                        default=HERE / 'results/branch-clean/after/source')
     parser.add_argument('--output', type=Path, default=HERE / 'results/branch-clean')
+    parser.set_defaults(title='Branch-only A/B', operation_change='control flow only',
+                        entry_point='run_branch_compare.py')
+    if defaults:
+        parser.set_defaults(**defaults)
     args = parser.parse_args()
     output = args.output.resolve()
     if output.exists() and any(output.iterdir()):
@@ -109,7 +117,8 @@ def main():
 
     builds = {'before': args.before_build.resolve(), 'after': args.after_build.resolve(),
               'after256': args.after256.resolve()}
-    sources = {'before': args.before_source.resolve(), 'after': HERE, 'after256': HERE}
+    sources = {'before': args.before_source.resolve(),
+               'after': args.after_source.resolve(), 'after256': args.after_source.resolve()}
     expected_hashes = {}
     for variant, build in builds.items():
         verify_manifest(build / 'hashes.txt', sources[variant])
@@ -125,12 +134,14 @@ def main():
     for variant, build in builds.items():
         snapshot_variant(output / variant, build, sources[variant])
     (output / 'driver').mkdir()
-    for name in ('run_branch_compare.py', 'run.py', 'audit_branch_flow.py'):
+    for name in dict.fromkeys(('run_branch_compare.py', 'run.py', 'verify_artifacts.py',
+                               args.entry_point)):
         shutil.copy2(HERE / name, output / 'driver' / name)
     (output / 'invocation.json').write_text(json.dumps(dict(
         builds={name: str(path) for name, path in builds.items()}, problems=PROBLEMS,
         tile=128, stage_k=32, placement='numactl CPU+memory node0',
-        operation_change='control flow only', interleave_prefetch=False,
+        operation_change=args.operation_change, interleave_prefetch=False,
+        title=args.title,
     ), indent=2) + '\n')
     capture_smi(output / 'amd-smi-before.txt')
     records = []
@@ -148,7 +159,7 @@ def main():
             write_summary(output / 'summary.csv', records)
             (output / 'launch-hashes.json').write_text(json.dumps(launches, indent=2) + '\n')
             if case.timing:
-                write_comparison(output, records)
+                write_comparison(output, records, args.title)
 
         for variant, tile in (('after', 128), ('after256', 256)):
             for case in functional_cases(tile):
@@ -162,7 +173,7 @@ def main():
 
     capture_smi(output / 'amd-smi-after.txt')
     print(f"COMPLETE {sum(row['samples'] for row in records)} checked launches; "
-          'branch-only comparison and bounded-tail correctness pass.')
+          f'{args.title} comparison and bounded-tail correctness pass.')
 
 
 if __name__ == '__main__':

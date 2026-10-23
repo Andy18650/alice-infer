@@ -6,6 +6,8 @@ boundaries, **not the GPU algorithm**. Original minified source snapshots in
 Fresh cleanup builds/results use a separate `readable` namespace. A later
 intentional [branch-only optimization](BRANCH_CLEANUP.md) uses `branch-clean`;
 its ordering proof is separate from the historical byte-identical cleanup.
+The next [single-MFMA move](MFMA_FIRST.md) has its own exact-move audit and
+fresh `mfma-first` builds, rather than relabeling the branch-only records.
 
 ## 1. File map and suggested reading order
 
@@ -23,7 +25,9 @@ its ordering proof is separate from the historical byte-identical cleanup.
 |`verify_artifacts.py`|Rebases old manifest paths to immutable source snapshots and checks preserved native binaries.|
 |`audit_cleanup.py`|Historical cleanup equivalence, pinned to original/readable snapshots.|
 |`audit_branch_flow.py`|Later branch-only change: executed non-control trace equality and unchanged resident headers.|
-|`run_branch_compare.py`|Matched before/after tests retaining104/208/312 CTAs and the large-grid check.|
+|`run_branch_compare.py`|Shared matched driver; defaults replay the historical branch experiment.|
+|`run_mfma_first.py`|Small entry point selecting the next single-MFMA A/B paths/title.|
+|`audit_mfma_first.py`|Checks exactly one move/head-VM0 and no other order changes.|
 |`bank-probe.hip`|Small explicit register-pair diagnostic; not the final GEMM benchmark.|
 
 The default is **tile128,StageK32,ordinary GEMM,linear LDS mapping**. Other tile/
@@ -96,8 +100,10 @@ mechanical C++ string serialization as the design description.
 2. **Publish:** after writing the next stage and issuing the first quarter of
    current math, LGKM0 then barrier makes all next-stage LDS data readable.
 
-The publish point does NOT drain the future global prefetch: VMEM has its
-own counter. VM0 is at the consumer point for the already-prefetched panel,
+After the head VM0, current q0/C00 now issues before LDS stores/global
+prefetch; the rest of q0 stays after them. This is the single intentional
+move documented in MFMA_FIRST.md. The publish point does NOT drain the
+future global prefetch: VMEM has its own counter. VM0 is at the consumer point for the already-prefetched panel,
 not after every global instruction.
 
 Only consumed q0/q1/q2 slots are overwritten by next-stage reads. Next q3
@@ -163,11 +169,12 @@ recorded SHA256, not inferred from approximate source similarity.
 ```sh
 bash research/native-gemm/build.sh 128
 bash research/native-gemm/build.sh 256
-# Current builds: temp/native-gemm/branch-clean/s32-t{128,256}; old builds retained.
+# Current builds: temp/native-gemm/mfma-first/s32-t{128,256}; old builds retained.
 # Historical cleanup audit pins results/readable/source and readable binaries:
 python3 research/native-gemm/audit_cleanup.py --output <fresh-audit-directory>
 python3 research/native-gemm/audit_branch_flow.py --output <fresh-flow-audit>
-python3 research/native-gemm/run_branch_compare.py --output <fresh-A-B-directory>
+python3 research/native-gemm/audit_mfma_first.py --output <fresh-move-audit>
+python3 research/native-gemm/run_mfma_first.py --output <fresh-A-B-directory>
 # Expanded full comparison (including208/312), not the original180 launches:
 python3 research/native-gemm/run.py --output <fresh-results-directory>
 python3 research/native-gemm/analyze.py <results-directory>
@@ -179,7 +186,9 @@ packed operand vectors for18 logical matrix/seed cases, original/new reference
 dots, and actual GPU `.text` for both GEMM candidates and bank-control kernels.
 `results/cleanup-audit/` records that proof; `results/readable/` records the
 original180-launch suite after cleanup. `results/branch-flow-audit/` and
-`results/branch-clean/` separately record the intentional branch change. ELF metadata/host executable hashes may
+`results/branch-clean/` separately record the intentional branch change.
+`results/mfma-first-audit/` and `results/mfma-first/` record the next exact
+one-instruction move and matched performance; none overwrite their predecessors. ELF metadata/host executable hashes may
 change; the proof specifically identifies the unchanged GPU instruction bytes.
 Use fresh build paths when changing source; never overwrite measured historical
 binaries just to make a manifest pass. No new package or formatter dependency.

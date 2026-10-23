@@ -117,11 +117,14 @@ actual shared harness and hash verifier used. Native executables/full ISA:
 `temp/native-gemm/branch-clean/s32-t*`; old `readable/` builds are unchanged.
 
 ```sh
-bash research/native-gemm/build.sh 128
-bash research/native-gemm/build.sh 256
+# Replay against preserved branch-clean builds/source snapshots, not today's generator.
 python3 research/native-gemm/audit_branch_flow.py --output <fresh-flow-audit>
 python3 research/native-gemm/run_branch_compare.py --output <fresh-A-B-results>
 ```
+
+The later MFMA-first experiment has a separate generator/build namespace;
+current build.sh no longer builds this historical branch-only algorithm.
+The branch audit and branch-comparison driver pin its completed snapshots.
 
 Current default full-problem runner also retains208/312 coverage; its expanded
 suite is distinct from the original180-launch cleanup suite. Historical

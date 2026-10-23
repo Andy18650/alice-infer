@@ -132,6 +132,12 @@ def audit(output_directory):
         for opcode, expected in expected_control.items():
             require(loop_counts[opcode] == expected,
                     f'Unexpected steady-loop control: {opcode}={loop_counts[opcode]}')
+        for index, instruction in enumerate(hot_loop):
+            if instruction == 's_waitcnt vmcnt(0)':
+                require(hot_loop[index + 1].startswith(MFMA),
+                        'Expected one current-q0 MFMA immediately after head VM0')
+                require(hot_loop[index + 2].startswith('ds_write_b128'),
+                        'Expected LDS stores immediately after the moved MFMA')
     require(not any(text.startswith('s_branch ') and int(text.split()[1], 0) == 0
                     for text in timed_body), 'Redundant fall-through branch in timed body')
 

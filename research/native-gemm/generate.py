@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Generate the fixed-register gfx90a GEMM pipeline.
 
-Register allocation and memory/math ordering are unchanged from the readable
-baseline. The ordinary GEMM loop peels its bounded final stages so its hot
-backedge needs only subtract/compare/branch; resident control is unchanged.
+The ordinary GEMM loop keeps its peeled control flow. One existing current-q0
+MFMA is issued immediately after the head VM0, before next-panel LDS stores.
+All memory order, per-accumulator MFMA order and register allocation are unchanged.
+Resident control is unchanged.
 
 Normal GEMM: one LDS buffer, global prefetch, rolling operand reads.
 Resident control: seed one StageK fragment and repeat it, without loop memory
@@ -142,7 +143,7 @@ class PipelineEmitter:
                     f"%[{address}]{displacement}"
                 )
 
-    def compute_fragment(self, raw_slot):
+    def compute_fragment(self, raw_slot, first=0, stop=None):
         """Outer product of the wave's A and B microfragments.
 
         Selected 128 tile: A0/A1 and B0/B1 update C00/C01/C10/C11.
@@ -152,16 +153,16 @@ class PipelineEmitter:
         micro_tiles = config.micro_tiles_per_wave_side
         base = raw_slot * config.registers_per_raw_slot
 
-        for row in range(micro_tiles):
-            for column in range(micro_tiles):
-                a_register = base + 2 * row
-                b_register = base + 2 * micro_tiles + 2 * column
-                accumulator = row * micro_tiles + column
-                self.emit(
-                    f"v_mfma_f32_32x32x8f16 %[c{accumulator}], "
-                    f"v[{a_register}:{a_register + 1}], "
-                    f"v[{b_register}:{b_register + 1}], %[c{accumulator}]"
-                )
+        end = micro_tiles * micro_tiles if stop is None else stop
+        for accumulator in range(first, end):
+            row, column = divmod(accumulator, micro_tiles)
+            a_register = base + 2 * row
+            b_register = base + 2 * micro_tiles + 2 * column
+            self.emit(
+                f"v_mfma_f32_32x32x8f16 %[c{accumulator}], "
+                f"v[{a_register}:{a_register + 1}], "
+                f"v[{b_register}:{b_register + 1}], %[c{accumulator}]"
+            )
 
     def emit_startup(self):
         self.emit("s_memtime %[begin]")
@@ -204,6 +205,9 @@ class PipelineEmitter:
         self.emit("s_waitcnt lgkmcnt(0)")
         self.emit("s_barrier")
         self.emit("s_waitcnt vmcnt(0)")
+        # Start one ready current-stage matrix operation before staging work.
+        # It is independent of producer VGPRs/LDS; do not duplicate it below.
+        self.compute_fragment(0, first=0, stop=1)
         self.write_prefetched_stage_to_lds()
 
         # The register producer buffer is free after the LDS writes issue.
@@ -213,7 +217,7 @@ class PipelineEmitter:
 
         publish_after = fragments // 4
         for fragment in range(publish_after):
-            self.compute_fragment(fragment)
+            self.compute_fragment(fragment, first=1 if fragment == 0 else 0)
 
         # PUBLISH: finish all next-stage LDS writes before any next-stage read.
         # This does not drain the future global prefetch (VMEM counter).

@@ -62,21 +62,21 @@ def verify_dependencies(directory):
             raise RuntimeError(f'Unexpected vendor GEMM dependency: {listing}')
 
 
-def verify_branch_comparison():
-    directory = RESULTS / 'branch-clean'
+def verify_pipeline_comparison(phase, audit_phase):
+    directory = RESULTS / phase
     if not (directory / 'summary.csv').exists():
         return
     for variant in ('before', 'after', 'after256'):
         root = directory / variant
         manifests = list((root / 'builds').glob('*/hashes.txt'))
         if not manifests:
-            raise RuntimeError(f'No branch-comparison manifest: {variant}')
+            raise RuntimeError(f'No {phase} comparison manifest: {variant}')
         for manifest in manifests:
             verify_manifest(manifest, root / 'source')
         verify_dependencies(root)
-    for manifest in (RESULTS / 'branch-flow-audit' / 'gpu64').glob('t*/hashes.txt'):
+    for manifest in (RESULTS / audit_phase / 'gpu64').glob('t*/hashes.txt'):
         verify_manifest(manifest, directory / 'after' / 'source')
-    print('branch-only before/after and StageK64 source/native hashes pass')
+    print(phase, 'before/after and optional StageK64 source/native hashes pass')
 
 
 def main():
@@ -87,7 +87,8 @@ def main():
     if (RESULTS / 'readable' / 'summary.csv').exists():
         verify_phase('readable')
         verify_dependencies(RESULTS / 'readable')
-    verify_branch_comparison()
+    verify_pipeline_comparison('branch-clean', 'branch-flow-audit')
+    verify_pipeline_comparison('mfma-first', 'mfma-first-audit')
     print('Recorded dynamic dependencies contain no vendor GEMM libraries')
 
 

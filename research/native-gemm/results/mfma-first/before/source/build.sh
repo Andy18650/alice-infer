@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# Standalone HIP build. Branch-clean defaults preserve the measured pre-change
+# binaries in temp/native-gemm/readable/ and earlier namespaces.
+set -euo pipefail
+
+here=$(cd "$(dirname "$0")" && pwd)
+root=$(cd "$here/../.." && pwd)
+
+if (($# > 4)); then
+    echo 'usage: build.sh [128|256 tile] [output-directory] [gemm|resident] [32|64 StageK]' >&2
+    exit 2
+fi
+
+tile=${1:-128}
+case "$tile" in
+    128|256) ;;
+    *) echo 'tile must be128 or256' >&2; exit 2 ;;
+esac
+
+kind=${3:-gemm}
+generator_options=()
+case "$kind" in
+    gemm) ;;
+    resident) generator_options=(--resident) ;;
+    *) echo 'kind must be gemm or resident' >&2; exit 2 ;;
+esac
+
+stage=${4:-32}
+case "$stage" in
+    32|64) ;;
+    *) echo 'StageK must be32 or64' >&2; exit 2 ;;
+esac
+
+out=${2:-"$root/temp/native-gemm/branch-clean/s$stage-t$tile"}
+mkdir -p "$out/tmp"
+out=$(cd "$out" && pwd)
+export TMPDIR="$out/tmp"
+
+python3 "$here/generate.py" \
+    --tile "$tile" \
+    --stage-k "$stage" \
+    "${generator_options[@]}" \
+    --output "$out/compute.hpp"
+
+flags=(
+    -O3
+    -std=c++20
+    --offload-arch=gfx90a
+    -fdenormal-fp-math=ieee
+    -Wall
+    -Wextra
+    -I"$out"
+)
+{
+    printf '%q' hipcc
+    printf ' %q' "${flags[@]}"
+    printf '\n'
+} > "$out/compiler-flags.txt"
+
+hipcc "${flags[@]}" "$here/probe.hip" -o "$out/probe"
+
+# Inspect the actual code object embedded in the executable, not a side build.
+llvm-objdump-21 --offloading "$out/probe" > "$out/offloading.txt"
+cp "$out/probe.0.hipv4-amdgcn-amd-amdhsa--gfx90a" "$out/probe.hsaco"
+llvm-objdump-21 -d --demangle "$out/probe.hsaco" > "$out/probe.isa"
+llvm-readobj-21 --notes "$out/probe.hsaco" > "$out/metadata.txt"
+
+# The same compilation flags are used by the local language-server database.
+python3 - "$here" "$out" "$(hipconfig -l)/clang++" "${flags[@]}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+source_directory, output_directory, compiler = sys.argv[1:4]
+source = str(Path(source_directory) / 'probe.hip')
+command = {
+    'directory': output_directory,
+    'file': source,
+    'arguments': [compiler, *sys.argv[4:], '-x', 'hip', '-c', source],
+}
+Path(output_directory, 'compile_commands.json').write_text(
+    json.dumps([command], indent=2) + '\n'
+)
+PY
+
+python3 "$here/inspect_code.py" "$out"
+sha256sum \
+    "$here/probe.hip" \
+    "$here/data.hpp" \
+    "$here/generate.py" \
+    "$out/compute.hpp" \
+    "$out/probe" \
+    "$out/probe.hsaco" > "$out/hashes.txt"
+
+echo "Built $out/probe"

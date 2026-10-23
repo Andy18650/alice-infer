@@ -1,0 +1,5 @@
+kind=gemm
+LDS lane permutation=linear (address-only, producer/consumer agree)
+HIP0 BDF=0000:31:00.0 O3 gfx90a, CUs=104 tile=128 stageK=32 singleLDS=16384 residentCTA/CU=3 grid=39x8(312) block256 M/N/K=4992/1024/32768 padded=4992/1024/32768; FP16 packed/FP32 C,packing 1464.969 ms outside timing,no BLAS/CK,model/context=none,external NUMA,no clock override
+REFERENCE SAMPLED 2424 outputs from original row-major operands; all C scanned finite/guards every round
+COMPLETE all reference outputs/finite C/guards exact

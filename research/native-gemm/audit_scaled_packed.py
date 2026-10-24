@@ -21,18 +21,24 @@ PAIR = r'v\[(\d+):(\d+)\]'
 
 def expand(op):
     if op.startswith('v_pk_mov_b32'):
-        match = re.fullmatch(r'v_pk_mov_b32 ' + PAIR + r', (.*), (.*)', op)
+        operand = r'(0|s\[\d+:\d+\])'
+        match = re.fullmatch(r'v_pk_mov_b32 ' + PAIR + ', ' + operand + ', ' + operand + r'(.*)', op)
         require(match is not None, 'Unexpected packed move syntax')
         low, high = int(match[1]), int(match[2])
         require(low % 2 == 0 and high == low + 1, 'Unaligned move destination')
-        if match.groups()[2:] == ('0', '0'):
+        if (match[3], match[4]) == ('0', '0'):
             return [f'v_mov_b32 v{low}, 0', f'v_mov_b32 v{high}, 0']
         require(match[3] == match[4], 'Expected identical SGPR pair move sources')
         source = re.fullmatch(r's\[(\d+):(\d+)\]', match[3])
         require(source is not None, 'Unexpected packed move source')
         a, b = map(int, source.groups())
         require(a % 2 == 0 and b == a + 1, 'Unaligned move source')
-        return [f'v_mov_b32 v{low}, s{a}', f'v_mov_b32 v{high}, s{b}']
+        # V_PK_MOV uses its two op_sel bits for the two destination words;
+        # unlike packed arithmetic, default is low source word for BOTH.
+        selectors = re.search(r'\bop_sel:\[(\d),(\d)\]', match[5])
+        selectors = tuple(map(int, selectors.groups())) if selectors else (0, 0)
+        return [f'v_mov_b32 v{low}, s{a + selectors[0]}',
+                f'v_mov_b32 v{high}, s{a + selectors[1]}']
     if op.startswith('v_pk_fma_f32'):
         match = re.fullmatch(r'v_pk_fma_f32 ' + PAIR + ', ' + PAIR
                              + r', s\[14:15\], ' + PAIR + r'(.*)', op)
@@ -82,16 +88,19 @@ def native_normalized(path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=HERE / 'results/scaled-packed-audit')
+    parser.add_argument('--output', type=Path, default=HERE / 'results/scaled-packed-fixed-audit')
     args = parser.parse_args()
     output = args.output.resolve()
     require(not output.exists() or not any(output.iterdir()), 'Choose a fresh output')
     output.mkdir(parents=True, exist_ok=True)
     builds = {
         'scalar': ROOT / 'temp/native-gemm/scaled/scaled',
-        'mov': ROOT / 'temp/native-gemm/scaled-packed/scaled-mov',
-        'packed': ROOT / 'temp/native-gemm/scaled-packed/scaled-all',
+        'mov': ROOT / 'temp/native-gemm/scaled-packed-fixed/scaled-mov',
+        'packed': ROOT / 'temp/native-gemm/scaled-packed-fixed/scaled-all',
     }
+    require(expand('v_pk_mov_b32 v[2:3], s[4:5], s[4:5]')
+            != ['v_mov_b32 v2, s4', 'v_mov_b32 v3, s5'],
+            'Auditor must reject the original incorrect default selector assumption')
     source_projections = {}
     native_projections = {}
     ownership = {}

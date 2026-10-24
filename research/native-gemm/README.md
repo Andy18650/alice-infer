@@ -10,8 +10,9 @@ All192 accumulation registers plus the full64-register operand/producer state
 fit in256 architected VGPRs,AGPR0/private0,two CTAs/CU. Scalar-address/lifetime
 compaction has no observed performance loss; separate controls quantify the
 occupancy and scaling costs. [Packed FP32 moves/FMAs](PACKED_FP32.md) retain
-that budget and improve long-K useful rate by~0.7-1.0%; packed moves alone
-are within noise. The unscaled defaults remain supported.
+that budget and improve long-K useful rate by~0.6-1.3%; packed moves alone
+are within noise. The original packed timestamp trial is withdrawn; the linked
+report uses the corrected-selector full rerun and independent bit/clock gates. The unscaled defaults remain supported.
 
 **Separate FP8-B experiment:** [FP8_B.md](FP8_B.md) distributes A/B K8
 production across all four waves (two A x4 loads + one FP8 B x4 each), expands

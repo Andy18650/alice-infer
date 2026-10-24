@@ -1,0 +1,1 @@
+hipcc -O3 -std=c++20 --offload-arch=gfx90a -fdenormal-fp-math=ieee -Wall -Wextra -DNATIVE_FP8_B=1 -DNATIVE_SCALED_B=1 -I/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scaled-packed-fixed/scaled-all

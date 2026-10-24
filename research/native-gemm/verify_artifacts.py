@@ -16,7 +16,7 @@ RESULTS = Path(__file__).resolve().parent / 'results'
 HISTORICAL_PHASES = ('initial', 'swizzle', 'late', 'early', 'stage64', 'resident', 'final')
 SOURCE_FILES = {'probe.hip', 'data.hpp', 'generate.py', 'generate_fp8.py',
                 'data_fp8.hpp', 'build_fp8.sh', 'verify_fp8.hip',
-                'data_scaled.hpp', 'scaled_kernel.hpp', 'generate_scaled.py'}
+                'data_scaled.hpp', 'scaled_kernel.hpp', 'generate_scaled.py', 'verify_packed_mov.hip'}
 
 
 def verify_manifest(manifest, source_directory):
@@ -95,6 +95,10 @@ def verify_scaled_comparison(phase='scaled', variants=('original', 'compact', 'h
         verify_manifest(root / 'build/hashes.txt', root / 'source')
         verify_dependencies(root)
     print(phase, 'comparison source/native hashes pass')
+    if phase == 'scaled-packed':
+        print('WARNING: scaled-packed clock trial is INVALID; see STATUS.json (hash checks only)')
+    if phase == 'scaled-packed-fixed':
+        verify_manifest(directory / 'gates/mov-hashes.txt', directory / 'gates')
 
 
 def main():
@@ -112,6 +116,7 @@ def main():
     verify_pipeline_comparison('fp8-interleaved', 'fp8-schedule-audit')
     verify_scaled_comparison()
     verify_scaled_comparison('scaled-packed', ('scalar', 'mov', 'packed'))
+    verify_scaled_comparison('scaled-packed-fixed', ('scalar', 'mov', 'packed'))
     print('Recorded dynamic dependencies contain no vendor GEMM libraries')
 
 

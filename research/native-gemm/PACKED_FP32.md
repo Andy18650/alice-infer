@@ -1,5 +1,12 @@
 # Packed FP32 moves and scale FMAs on gfx90a
 
+**Correction/rerun:** the first trial (`results/scaled-packed/`, commitda408541)
+had incorrect packed timestamp selectors and is marked INVALID for clock
+metrics. Its initial expansion auditor also modeled that default incorrectly.
+The final results here are from a fresh full rerun in `scaled-packed-fixed`,
+with explicit selectors, a hardware raw-bit gate/negative control, and an
+independent event-clock containment check. Original files are retained.
+
 User-directed change to the K128/N128 scaled kernel. Two increments are
 compared in one counterbalanced three-variant run: original scalar operations,
 packed moves only, then packed moves+FMAs. No load/read/fence/bank/scale layout
@@ -20,11 +27,13 @@ also use one packed move instead of two scalar moves:
 
 ```text
 v_mov_b32 v2,s4; v_mov_b32 v3,s5
-    -> v_pk_mov_b32 v[2:3],s[4:5],s[4:5]
+    -> v_pk_mov_b32 v[2:3],s[4:5],s[4:5] op_sel:[0,1]
 ```
 
-Both sources are the same aligned pair: default selectors copy its low and
-high words, not a floating-point conversion. Four timestamp pairs remove four
+Both sources are the same aligned pair, and explicit `op_sel:[0,1]` copies
+its low and high words. V_PK_MOV defaults to selecting the LOW word for both
+destinations; unlike packed FMA, it does not default to low/high selection.
+This is a raw-bit copy, not a floating-point conversion. Four timestamp pairs remove four
 more instructions. Unrelated scalar moves and single-register address setup
 stay unchanged.
 
@@ -63,8 +72,17 @@ scales across K/N, K128/eight-stage tails, long K65536, input seeds and finite
 FP8 cases all pass. Every output is scanned finite after NaN poison, guards
 checked; large references retain the original sampling policy.
 
-Every timed launch also validates raw per-wave timestamp dumps, including
-monotonicity, full grid steady span, core MHz and useful throughput. Thus the
+A dedicated GPU gate checks74048 exact64-bit copies (asymmetric words, every
+bit position,complements,raw NaN/sign-bit patterns and random inputs). The
+omitted-selector negative control reproducibly duplicates low32 and rejects
+73920 unequal-word outputs. The corrected expansion auditor rejects the old
+default-selector assumption. A regression rejects all28 affected old timing
+processes/252 samples while accepting the14 scalar controls.
+
+Every timed launch now also requires instrumented body span <=independent HIP
+event duration (with a small tolerance), not merely consistent ratios computed
+from the same dump. It validates raw per-wave timestamps, monotonicity, full
+grid steady span, core MHz and useful throughput. Thus the
 new timestamp pair moves are checked through the actual stored64-bit values,
 not only source spelling.
 
@@ -94,16 +112,16 @@ K32768 TFLOP/s,run1/run2:
 
 |CTAs|Scalar|Packed moves|Packed moves+FMA|Final efficiency|
 |---:|---:|---:|---:|---:|
-|104|118.817/119.040|118.838/119.101|120.002/120.147|76.60/76.73%|
-|208|135.798/135.798|135.811/135.824|136.944/136.809|89.74/89.69%|
-|312|137.941/138.041|138.032/137.968|139.114/139.086|91.59/91.56%|
-|1664|142.594/142.554|142.563/142.574|143.490/143.517|94.72/94.73%|
+|104|118.757/118.898|118.939/118.797|120.271/120.292|76.79/76.78%|
+|208|135.824/135.758|135.851/135.877|136.944/136.944|89.77/89.74%|
+|312|137.941/137.868|137.959/137.922|139.104/139.012|91.59/91.50%|
+|1664|142.481/142.548|142.512/142.504|143.433/143.431|94.65/94.66%|
 
 M/N respectively1664/1024,3328/1024,4992/1024,4096/6656. K8192 tests also
-retain104/208/312; all cases in `results/scaled-packed/comparison.md`.
+retain104/208/312; all cases in `results/scaled-packed-fixed/comparison.md`.
 
 Packed moves alone are within measured timing noise. Packed FMAs provide a
-modest consistent long-K improvement (~0.7-1.0% relative to scalar); the
+modest consistent long-K improvement (~0.6-1.3% relative to scalar); the
 removed operations were only part of the kernel and shared existing matrix
 execution windows. The run is not an isolated packed-FMA latency/throughput
 measurement, nor a zero-stall proof. No scale-prefetch or further interleaving
@@ -119,12 +137,13 @@ python3 research/native-gemm/audit_scaled_packed.py --output <fresh-audit>
 python3 research/native-gemm/verify_artifacts.py
 ```
 
-Default new builds use `temp/native-gemm/scaled-packed/scaled-{mov,all}`;
+Default new builds use `temp/native-gemm/scaled-packed-fixed/scaled-{mov,all}`;
 `build_scaled.sh` defaults to `all`. Direct generator defaults to `none` for
 explicit historical regeneration. Old scalar builds remain under `scaled/`.
 Matched sources/native/resource/raw clocks/commands/actual driver records:
-`results/scaled-packed/`; expansion/scale-selection/order proof:
-`results/scaled-packed-audit/` and expanded resource check
-`results/scaled-packed-audit-final/`.
+`results/scaled-packed-fixed/`; expansion/scale-selection/order proof:
+`results/scaled-packed-fixed-audit/`. The previous trial/proofs are explicitly
+withdrawn, not rewritten. Raw `.bin` dumps are marked binary in git attributes;
+that classification does not modify any captured bytes.
 No production/CMake/model/session/system/package/clock changes. Research-log
 working copy appended, unrelated user changes remain unstaged.

@@ -1,0 +1,8 @@
+{
+  "validation_status": "invalid_clock_metrics",
+  "cause": "V_PK_MOV_B32 omitted op_sel:[0,1], duplicating low timestamp words",
+  "expansion_audit_status": "invalid default-selector assumption",
+  "GEMM_reference_checks": "passed",
+  "HIP_event_timing": "independent of instrumented clocks; complete trial superseded",
+  "superseded_by": "../scaled-packed-fixed"
+}

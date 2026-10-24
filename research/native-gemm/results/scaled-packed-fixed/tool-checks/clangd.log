@@ -1,0 +1,158 @@
+I[18:00:35.125] Ubuntu clangd version 21.1.8 (6ubuntu1)
+I[18:00:35.125] Features: linux+grpc
+I[18:00:35.125] PID: 205592
+I[18:00:35.125] Working directory: /home/andyhu/projects/inference/alice-infer
+I[18:00:35.125] argv[0]: clangd
+I[18:00:35.125] argv[1]: --check=research/native-gemm/probe.hip
+I[18:00:35.125] argv[2]: --log=info
+I[18:00:35.125] Entering check mode (no LSP server)
+I[18:00:35.125] Testing on source file /home/andyhu/projects/inference/alice-infer/research/native-gemm/probe.hip
+I[18:00:35.125] Loading config file at /home/andyhu/projects/inference/alice-infer/research/native-gemm/.clangd
+I[18:00:35.125] Loading config file at /home/andyhu/.config/clangd/config.yaml
+I[18:00:35.125] Loading compilation database...
+I[18:00:35.126] Loaded compilation database from /home/andyhu/projects/inference/alice-infer/research/native-gemm/../../temp/native-gemm/scaled-packed-fixed/scaled-all/compile_commands.json
+I[18:00:35.126] Compile command from CDB is: [/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scaled-packed-fixed/scaled-all] /usr/lib/llvm-21/bin/clang++ --driver-mode=g++ -O3 -std=c++20 --offload-arch=gfx90a -fdenormal-fp-math=ieee -Wall -Wextra -DNATIVE_FP8_B=1 -DNATIVE_SCALED_B=1 -I/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scaled-packed-fixed/scaled-all -x hip -c -std=c++20 -x hip --offload-arch=gfx90a -D__HIP_PLATFORM_AMD__=1 -resource-dir=/usr/lib/llvm-21/lib/clang/21 -- /home/andyhu/projects/inference/alice-infer/research/native-gemm/probe.hip
+I[18:00:35.126] Parsing command...
+I[18:00:35.127] internal (cc1) args are: -cc1 -triple x86_64-pc-linux-gnu -aux-triple amdgcn-amd-amdhsa -O3 -fsyntax-only -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name probe.hip -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=none -fmath-errno -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scaled-packed-fixed/scaled-all -fcoverage-compilation-dir=/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scaled-packed-fixed/scaled-all -resource-dir /usr/lib/llvm-21/lib/clang/21 -internal-isystem /usr/lib/llvm-21/lib/clang/21/include/cuda_wrappers -idirafter /usr/include -include __clang_hip_runtime_wrapper.h -D NATIVE_FP8_B=1 -D NATIVE_SCALED_B=1 -I /home/andyhu/projects/inference/alice-infer/temp/native-gemm/scaled-packed-fixed/scaled-all -D __HIP_PLATFORM_AMD__=1 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/x86_64-linux-gnu/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16/backward -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/x86_64-linux-gnu/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16/backward -internal-isystem /usr/lib/llvm-21/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -internal-isystem /usr/lib/llvm-21/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -Wall -Wextra -std=c++20 -fdeprecated-macro -ferror-limit 19 -fhip-new-launch-api -fgnuc-version=4.2.1 -fno-implicit-modules -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -vectorize-loops -vectorize-slp -no-round-trip-args -cuid=8ba9b277934ca456 -fcuda-allow-variadic-functions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -x hip /home/andyhu/projects/inference/alice-infer/research/native-gemm/probe.hip
+I[18:00:35.127] Building preamble...
+I[18:00:36.496] Built preamble of size 18273900 for file /home/andyhu/projects/inference/alice-infer/research/native-gemm/probe.hip version null in 1.37 seconds
+I[18:00:36.496] Indexing headers...
+I[18:00:36.714] Building AST...
+I[18:00:36.944] Indexing AST...
+I[18:00:36.946] Building inlay hints
+I[18:00:36.946] Building semantic highlighting
+I[18:00:36.948] Testing features at each token (may be slow in large files)
+I[18:00:36.996] Found definition heuristically using nearby identifier InputMatrices
+I[18:00:36.996] Found definition heuristically in index for Fp8Matrices
+I[18:00:36.996] Found definition heuristically in index for Fp8Matrices
+I[18:00:36.998] Found definition heuristically using nearby identifier InputMatrices
+I[18:00:36.998] Found definition heuristically in index for TestMatrices
+I[18:00:36.998] Found definition heuristically in index for TestMatrices
+I[18:00:36.998] Found definition heuristically using nearby identifier kFp8B
+I[18:00:37.000] Found definition heuristically in index for status
+I[18:00:37.000] Found definition heuristically in index for status
+I[18:00:37.000] Found definition heuristically in index for hipSuccess
+I[18:00:37.001] Found definition heuristically in index for hipSuccess
+I[18:00:37.001] Found definition heuristically in index for std
+I[18:00:37.001] Found definition heuristically in index for std
+I[18:00:37.001] Found definition heuristically using nearby identifier runtime_error
+I[18:00:37.001] Found definition heuristically using nearby identifier runtime_error
+I[18:00:37.001] Found definition heuristically in index for std
+I[18:00:37.001] Found definition heuristically in index for std
+I[18:00:37.002] Found definition heuristically in index for string
+I[18:00:37.002] Found definition heuristically in index for string
+I[18:00:37.002] Found definition heuristically in index for hipGetErrorString
+I[18:00:37.003] Found definition heuristically in index for hipGetErrorString
+I[18:00:37.003] Found definition heuristically in index for status
+I[18:00:37.003] Found definition heuristically in index for status
+I[18:00:37.010] Found definition heuristically using nearby identifier native_gemm
+I[18:00:37.010] Found definition heuristically using nearby identifier native_gemm
+I[18:00:37.010] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.010] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.012] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.012] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.013] Found definition heuristically in index for out
+I[18:00:37.013] Found definition heuristically in index for out
+I[18:00:37.013] Found definition heuristically using nearby identifier uint64_t
+I[18:00:37.013] Found definition heuristically using nearby identifier uint64_t
+I[18:00:37.014] Found definition heuristically in index for m
+I[18:00:37.014] Found definition heuristically in index for m
+I[18:00:37.016] Found definition heuristically in index for swizzle
+I[18:00:37.016] Found definition heuristically in index for swizzle
+I[18:00:37.017] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.018] Found definition heuristically in index for blockIdx
+I[18:00:37.018] Found definition heuristically in index for blockIdx
+I[18:00:37.019] Found definition heuristically in index for blockIdx
+I[18:00:37.019] Found definition heuristically in index for blockIdx
+I[18:00:37.020] Found definition heuristically in index for threadIdx
+I[18:00:37.020] Found definition heuristically in index for threadIdx
+I[18:00:37.020] Found definition heuristically in index for threadIdx
+I[18:00:37.020] Found definition heuristically in index for threadIdx
+I[18:00:37.023] Found definition heuristically in index for uintptr_t
+I[18:00:37.023] Found definition heuristically in index for uintptr_t
+I[18:00:37.023] Found definition heuristically in index for uintptr_t
+I[18:00:37.025] Found definition heuristically in index for size_t
+I[18:00:37.025] Found definition heuristically in index for size_t
+I[18:00:37.026] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.027] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.027] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.028] Found definition heuristically using nearby identifier kStageK
+I[18:00:37.028] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.028] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.029] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.029] Found definition heuristically in index for uintptr_t
+I[18:00:37.029] Found definition heuristically in index for uintptr_t
+I[18:00:37.030] Found definition heuristically using nearby identifier swizzle
+I[18:00:37.031] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.032] Found definition heuristically using nearby identifier kStageK
+I[18:00:37.033] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.034] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.034] Found definition heuristically using nearby identifier kStageK
+I[18:00:37.035] Found definition heuristically in index for F16
+I[18:00:37.036] Found definition heuristically using nearby identifier uint64_t
+I[18:00:37.036] Found definition heuristically using nearby identifier core_begin
+I[18:00:37.036] Found definition heuristically using nearby identifier core_begin
+I[18:00:37.036] Found definition heuristically using nearby identifier steady_begin
+I[18:00:37.036] Found definition heuristically using nearby identifier steady_begin
+I[18:00:37.037] Found definition heuristically using nearby identifier steady_end
+I[18:00:37.037] Found definition heuristically using nearby identifier steady_end
+I[18:00:37.037] Found definition heuristically using nearby identifier kStageK
+I[18:00:37.038] Found definition heuristically in index for uintptr_t
+I[18:00:37.038] Found definition heuristically in index for uintptr_t
+I[18:00:37.038] Found definition heuristically in index for uintptr_t
+I[18:00:37.039] Found definition heuristically using nearby identifier size_t
+I[18:00:37.039] Found definition heuristically using nearby identifier size_t
+I[18:00:37.040] Found definition heuristically in index for uintptr_t
+I[18:00:37.041] Found definition heuristically in index for uintptr_t
+I[18:00:37.041] Found definition heuristically in index for uintptr_t
+I[18:00:37.042] Found definition heuristically using nearby identifier size_t
+I[18:00:37.042] Found definition heuristically using nearby identifier size_t
+I[18:00:37.043] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.044] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.044] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.044] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.044] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.045] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.045] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.046] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.047] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.047] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.047] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.048] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.048] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.049] Found definition heuristically using nearby identifier core_begin
+I[18:00:37.049] Found definition heuristically using nearby identifier core_begin
+I[18:00:37.049] Found definition heuristically using nearby identifier steady_begin
+I[18:00:37.049] Found definition heuristically using nearby identifier steady_begin
+I[18:00:37.049] Found definition heuristically using nearby identifier steady_end
+I[18:00:37.050] Found definition heuristically using nearby identifier steady_end
+I[18:00:37.050] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.050] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.050] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.051] Found definition heuristically using nearby identifier uint32_t
+I[18:00:37.053] Found definition heuristically using nearby identifier core_begin
+I[18:00:37.053] Found definition heuristically using nearby identifier core_begin
+I[18:00:37.053] Found definition heuristically using nearby identifier core_end
+I[18:00:37.053] Found definition heuristically using nearby identifier core_end
+I[18:00:37.053] Found definition heuristically using nearby identifier steady_begin
+I[18:00:37.053] Found definition heuristically using nearby identifier steady_begin
+I[18:00:37.053] Found definition heuristically using nearby identifier steady_end
+I[18:00:37.053] Found definition heuristically using nearby identifier steady_end
+I[18:00:37.054] Found definition heuristically using nearby identifier size_t
+I[18:00:37.055] Found definition heuristically using nearby identifier size_t
+I[18:00:37.055] Found definition heuristically in index for blockIdx
+I[18:00:37.055] Found definition heuristically in index for blockIdx
+I[18:00:37.056] Found definition heuristically using nearby identifier core_begin
+I[18:00:37.056] Found definition heuristically using nearby identifier core_begin
+I[18:00:37.057] Found definition heuristically using nearby identifier core_end
+I[18:00:37.057] Found definition heuristically using nearby identifier core_end
+I[18:00:37.057] Found definition heuristically using nearby identifier steady_begin
+I[18:00:37.057] Found definition heuristically using nearby identifier steady_begin
+I[18:00:37.058] Found definition heuristically using nearby identifier steady_end
+I[18:00:37.058] Found definition heuristically using nearby identifier steady_end
+I[18:00:37.067] Found definition heuristically in index for m
+I[18:00:37.068] Found definition heuristically in index for out
+I[18:00:37.068] Found definition heuristically in index for out
+I[18:00:37.068] Found definition heuristically using nearby identifier size_t
+I[18:00:37.068] Found definition heuristically using nearby identifier size_t
+I[18:00:38.530] All checks completed, 0 errors

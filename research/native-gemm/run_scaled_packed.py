@@ -39,15 +39,15 @@ if __name__ == '__main__':
     main(dict(
         builds={
             'scalar': ROOT / 'temp/native-gemm/scaled/scaled',
-            'mov': ROOT / 'temp/native-gemm/scaled-packed/scaled-mov',
-            'packed': ROOT / 'temp/native-gemm/scaled-packed/scaled-all',
+            'mov': ROOT / 'temp/native-gemm/scaled-packed-fixed/scaled-mov',
+            'packed': ROOT / 'temp/native-gemm/scaled-packed-fixed/scaled-all',
         },
         sources={
             'scalar': HERE / 'results/scaled/scaled/source',
             'mov': HERE,
             'packed': HERE,
         },
-        output=HERE / 'results/scaled-packed',
+        output=HERE / 'results/scaled-packed-fixed',
         description=__doc__,
         entry_point='run_scaled_packed.py',
         report_function=report,

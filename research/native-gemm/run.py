@@ -145,6 +145,11 @@ def validate_samples(case, samples, output):
         require(sample['valid'] == '1'
                 and sample['mismatches'] == sample['nonfinite'] == sample['guards'] == '0',
                 f'Numerical/coverage/guard check failed: {case.stem}')
+        # Independent event clock must contain the instrumented body span.
+        # Recomputing ratios from the same corrupted dump is not sufficient:
+        # duplicated high/low timestamp words can preserve core/steady ratios.
+        require(0 <= float(sample['grid_body_us']) <= float(sample['event_us']) * 1.05 + 10,
+                f'Body span exceeds independent HIP event duration: {case.stem}')
         expected_blocks = ((case.m + case.tile - 1) // case.tile
                            * ((case.n + case.tile - 1) // case.tile))
         require(int(sample['lds_bytes']) == case.tile * 128

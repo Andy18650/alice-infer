@@ -287,7 +287,7 @@ class ScaledEmitter(Fp8Emitter):
         for offset, register in ((0, 4), (8, 6), (16, 8), (24, 10)):
             if self.packed in ('mov', 'all'):
                 self.emit(f'v_pk_mov_b32 v[2:3], s[{register}:{register + 1}], '
-                          f's[{register}:{register + 1}]')
+                          f's[{register}:{register + 1}] op_sel:[0,1]')
             else:
                 self.emit(f'v_mov_b32 v2, s{register}')
                 self.emit(f'v_mov_b32 v3, s{register + 1}')

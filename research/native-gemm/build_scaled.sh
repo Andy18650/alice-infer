@@ -7,7 +7,7 @@ mode=${1:-scaled}
 case "$mode" in scaled|compact|heavy) ;; *) exit 2;; esac
 packed=${3:-all}
 case "$packed" in none|mov|all) ;; *) exit 2;; esac
-out=${2:-"$root/temp/native-gemm/scaled-packed/$mode-$packed"}
+out=${2:-"$root/temp/native-gemm/scaled-packed-fixed/$mode-$packed"}
 mkdir -p "$out/tmp"
 out=$(cd "$out" && pwd)
 export TMPDIR="$out/tmp"

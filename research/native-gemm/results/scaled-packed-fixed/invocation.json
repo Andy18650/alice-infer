@@ -1,0 +1,48 @@
+{
+  "builds": {
+    "scalar": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scaled/scaled",
+    "mov": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scaled-packed-fixed/scaled-mov",
+    "packed": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scaled-packed-fixed/scaled-all"
+  },
+  "problems": [
+    [
+      1664,
+      1024,
+      8192
+    ],
+    [
+      1664,
+      1024,
+      32768
+    ],
+    [
+      3328,
+      1024,
+      8192
+    ],
+    [
+      3328,
+      1024,
+      32768
+    ],
+    [
+      4992,
+      1024,
+      8192
+    ],
+    [
+      4992,
+      1024,
+      32768
+    ],
+    [
+      4096,
+      6656,
+      32768
+    ]
+  ],
+  "scale_layout": "FP32 [ceil(K/128)][ceil(N/128)]",
+  "scale_pattern": 1,
+  "placement": "CPU+memory NUMA0",
+  "clock_override": false
+}

@@ -9,7 +9,9 @@ or atomics. Standalone research, not engine integration.
 All192 accumulation registers plus the full64-register operand/producer state
 fit in256 architected VGPRs,AGPR0/private0,two CTAs/CU. Scalar-address/lifetime
 compaction has no observed performance loss; separate controls quantify the
-occupancy and scaling costs. The unscaled defaults remain supported.
+occupancy and scaling costs. [Packed FP32 moves/FMAs](PACKED_FP32.md) retain
+that budget and improve long-K useful rate by~0.7-1.0%; packed moves alone
+are within noise. The unscaled defaults remain supported.
 
 **Separate FP8-B experiment:** [FP8_B.md](FP8_B.md) distributes A/B K8
 production across all four waves (two A x4 loads + one FP8 B x4 each), expands
@@ -199,10 +201,11 @@ bash research/native-gemm/build_fp8.sh
 # Historical A/B reuses preserved schedule builds/source snapshots:
 python3 research/native-gemm/run_fp8_schedule.py --step interleaved --output <fresh-FP8-A-B-directory>
 # New scaled/control kernels and matched register-budget comparison:
-bash research/native-gemm/build_scaled.sh compact
-bash research/native-gemm/build_scaled.sh heavy
-bash research/native-gemm/build_scaled.sh scaled
-python3 research/native-gemm/run_scaled.py --output <fresh-scaled-results>
+bash research/native-gemm/build_scaled.sh scaled <fresh-mov> mov
+bash research/native-gemm/build_scaled.sh scaled <fresh-packed> all
+python3 research/native-gemm/run_scaled_packed.py --mov-build <fresh-mov> --packed-build <fresh-packed> --output <fresh-scaled-results>
+# Historical register-budget comparison uses preserved scalar builds:
+python3 research/native-gemm/run_scaled.py --output <fresh-budget-results>
 ```
 
 `build.sh [128|256] [output-directory] [gemm|resident] [32|64]` supports only

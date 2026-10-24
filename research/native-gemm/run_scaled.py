@@ -49,18 +49,27 @@ def report(output, records):
     (output/'comparison.md').write_text('\n'.join(lines)+'\n')
 
 
-def main():
-    parser=argparse.ArgumentParser(description=__doc__)
+def main(defaults=None):
+    parser=argparse.ArgumentParser(description=(defaults or {}).get('description', __doc__))
     parser.add_argument('--output',type=Path,default=HERE/'results/scaled')
+    default_builds={'original':ROOT/'temp/native-gemm/fp8-schedule/interleaved'}
+    default_builds.update({name:ROOT/f'temp/native-gemm/scaled/{name}' for name in ('compact','heavy','scaled')})
+    parser.set_defaults(builds=default_builds,
+                        sources={name:HERE/f'results/scaled/{name}/source' for name in default_builds},
+                        functional_variants=('compact','heavy','scaled'),rich_variants=('scaled',),
+                        entry_point='run_scaled.py',report_function=report)
+    if defaults: parser.set_defaults(**defaults)
+    for variant, build in parser.get_default('builds').items():
+        parser.add_argument(f'--{variant}-build', type=Path, default=build)
     args=parser.parse_args()
+    args.builds={variant:getattr(args,f'{variant}_build') for variant in args.builds}
     output=args.output.resolve()
     require(not output.exists() or not any(output.iterdir()),'Choose a fresh output directory')
     output.mkdir(parents=True,exist_ok=True)
-    builds={'original':ROOT/'temp/native-gemm/fp8-schedule/interleaved'}
-    builds.update({name:ROOT/f'temp/native-gemm/scaled/{name}' for name in ('compact','heavy','scaled')})
+    builds=args.builds
     hashes={}
     for variant,build in builds.items():
-        source=HERE/'results/fp8-interleaved/after/source' if variant=='original' else HERE
+        source=args.sources[variant]
         verify_manifest(build/'hashes.txt',source)
         hashes[variant]=sha(build/'probe')
         target=output/variant
@@ -73,7 +82,7 @@ def main():
         with (target/'ldd.txt').open('w') as stream:
             subprocess.run(['ldd',str(build/'probe')],stdout=stream,check=True)
     (output/'driver').mkdir()
-    for file in ('run_scaled.py','run.py','run_branch_compare.py','verify_artifacts.py'):
+    for file in dict.fromkeys(('run_scaled.py','run.py','run_branch_compare.py','verify_artifacts.py',args.entry_point)):
         shutil.copy2(HERE/file,output/'driver'/file)
     (output/'invocation.json').write_text(json.dumps(dict(
         builds={key:str(value) for key,value in builds.items()},problems=PROBLEMS,
@@ -94,9 +103,9 @@ def main():
                                 b_pattern=case.b_pattern,**record))
             write_summary(output/'summary.csv',records)
             (output/'launch-hashes.json').write_text(json.dumps(launches,indent=2)+'\n')
-            if case.timing: report(output,records)
+            if case.timing: args.report_function(output,records)
 
-        for variant in ('compact','heavy','scaled'):
+        for variant in args.functional_variants:
             for m,n,k in FUNCTIONAL_CASES:
                 execute(variant,Case(128,m,n,k))
             for k in BOUNDARIES:
@@ -105,14 +114,15 @@ def main():
                 execute(variant,Case(128,129,131,257,seed_a=seed_a,seed_b=seed_b))
         # Scale table varies along BOTH K and N; M rows must reuse it. Exact
         # std::fma reference also exercises zero and non-power-of-two scales.
-        for pattern in (0,1,2,3):
-            for k in (0,1,127,128,129,255,256,257,289,513,1025):
-                execute('scaled',Case(128,257,259,k,scale_pattern=pattern))
-        for k in (1,7,8,9,31,32,33,63,64):
-            execute('scaled',Case(128,129,131,k,scale_pattern=2,b_pattern=1))
+        for variant in args.rich_variants:
+            for pattern in (0,1,2,3):
+                for k in (0,1,127,128,129,255,256,257,289,513,1025):
+                    execute(variant,Case(128,257,259,k,scale_pattern=pattern))
+            for k in (1,7,8,9,31,32,33,63,64):
+                execute(variant,Case(128,129,131,k,scale_pattern=2,b_pattern=1))
         for repeat in (1,2):
             problems=PROBLEMS if repeat==1 else reversed(PROBLEMS)
-            order=('original','compact','heavy','scaled')
+            order=tuple(builds)
             if repeat==2: order=tuple(reversed(order))
             for m,n,k in problems:
                 for variant in order:

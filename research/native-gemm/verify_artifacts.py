@@ -86,15 +86,15 @@ def verify_pipeline_comparison(phase, audit_phase):
     print(phase, 'before/after, optional auxiliary source/native hashes pass')
 
 
-def verify_scaled_comparison():
-    directory = RESULTS / 'scaled'
+def verify_scaled_comparison(phase='scaled', variants=('original', 'compact', 'heavy', 'scaled')):
+    directory = RESULTS / phase
     if not (directory / 'summary.csv').exists():
         return
-    for variant in ('original', 'compact', 'heavy', 'scaled'):
+    for variant in variants:
         root = directory / variant
         verify_manifest(root / 'build/hashes.txt', root / 'source')
         verify_dependencies(root)
-    print('scaled original/compact/reserved/scaled source/native hashes pass')
+    print(phase, 'comparison source/native hashes pass')
 
 
 def main():
@@ -111,6 +111,7 @@ def main():
     verify_pipeline_comparison('fp8-early', 'fp8-schedule-audit')
     verify_pipeline_comparison('fp8-interleaved', 'fp8-schedule-audit')
     verify_scaled_comparison()
+    verify_scaled_comparison('scaled-packed', ('scalar', 'mov', 'packed'))
     print('Recorded dynamic dependencies contain no vendor GEMM libraries')
 
 

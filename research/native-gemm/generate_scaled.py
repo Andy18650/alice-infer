@@ -16,9 +16,10 @@ from generate_fp8 import Fp8Emitter, CONSTANTS
 
 
 class ScaledEmitter(Fp8Emitter):
-    def __init__(self, mode):
+    def __init__(self, mode, packed='none'):
         super().__init__('interleaved')
         self.mode = mode
+        self.packed = packed
         self.scaled = mode == 'scaled'
         self.stage_index = 0
         self.initial_zero = True
@@ -69,9 +70,31 @@ class ScaledEmitter(Fp8Emitter):
             self.emit(f'ds_read_b128 v[{destination}:{destination + 3}], v{address}{offset}')
 
     def scale_microtile(self, previous_bank, microtile, scale):
-        for element in range(16):
-            index = microtile * 16 + element
-            self.emit(f'v_fma_f32 v{64 + index}, v{previous_bank + index}, {scale}, v{64 + index}')
+        if self.packed == 'all':
+            # s14 is current, s15 previous. Both instruction halves MUST use
+            # the same scale, not adjacent current/previous values. Source1
+            # is the aligned s14:15 pair; select its low or high word twice.
+            selector = 0 if scale == 's14' else 1
+            for element in range(0, 16, 2):
+                index = microtile * 16 + element
+                destination = 64 + index
+                source = previous_bank + index
+                self.emit(f'v_pk_fma_f32 v[{destination}:{destination + 1}], '
+                          f'v[{source}:{source + 1}], s[14:15], '
+                          f'v[{destination}:{destination + 1}] '
+                          f'op_sel:[0,{selector},0] op_sel_hi:[1,{selector},1]')
+        else:
+            for element in range(16):
+                index = microtile * 16 + element
+                self.emit(f'v_fma_f32 v{64 + index}, v{previous_bank + index}, {scale}, v{64 + index}')
+
+    def zero_registers(self, begin, end):
+        if self.packed in ('mov', 'all'):
+            for register in range(begin, end, 2):
+                self.emit(f'v_pk_mov_b32 v[{register}:{register + 1}], 0, 0')
+        else:
+            for register in range(begin, end):
+                self.emit(f'v_mov_b32 v{register}, 0')
 
     def compute_fragment(self, raw_slot, first=0, stop=None):
         stop = 4 if stop is None else stop
@@ -116,11 +139,9 @@ class ScaledEmitter(Fp8Emitter):
         self.emit('v_add_u32 v41, %[lds_a], v40')
         self.emit('v_add_u32 v42, %[lds_b], v40')
         self.emit('v_add_u32 v43, %[lds_dst], v40')
-        for register in range(64, 128):
-            self.emit(f'v_mov_b32 v{register}, 0')
+        self.zero_registers(64, 128)
         if self.scaled:
-            for register in range(192, 256):
-                self.emit(f'v_mov_b32 v{register}, 0')
+            self.zero_registers(192, 256)
         self.emit('s_memtime s[4:5]')
         self.emit('s_memrealtime s[8:9]')
         self.emit('s_waitcnt lgkmcnt(0)')
@@ -264,8 +285,12 @@ class ScaledEmitter(Fp8Emitter):
         self.emit('s_and_saveexec_b64 s[18:19], vcc')
         self.emit('v_mov_b32 v0, 0')
         for offset, register in ((0, 4), (8, 6), (16, 8), (24, 10)):
-            self.emit(f'v_mov_b32 v2, s{register}')
-            self.emit(f'v_mov_b32 v3, s{register + 1}')
+            if self.packed in ('mov', 'all'):
+                self.emit(f'v_pk_mov_b32 v[2:3], s[{register}:{register + 1}], '
+                          f's[{register}:{register + 1}]')
+            else:
+                self.emit(f'v_mov_b32 v2, s{register}')
+                self.emit(f'v_mov_b32 v3, s{register + 1}')
             self.emit(f'global_store_dwordx2 v0, v[2:3], %[stamp] offset:{offset}')
         self.emit('s_mov_b64 exec, s[18:19]')
 
@@ -279,6 +304,7 @@ class ScaledEmitter(Fp8Emitter):
         lines = [
             'constexpr int kTile=128,kR=2,kStageK=32,kQ=4,kLdsBytes=16384;',
             f'constexpr bool kResident=false,kScaled={str(self.scaled).lower()};',
+            f'constexpr bool kPackedMov={str(self.packed != "none").lower()},kPackedFma={str(self.packed == "all").lower()};',
             '__device__ __forceinline__ void scaled_pipeline(',
             ' uint32_t a_lo,uint32_t a_hi,uint32_t b_lo,uint32_t b_hi,',
             ' uint32_t a_step,uint32_t b_step,uint32_t lds_a,uint32_t lds_b,uint32_t lds_dst,',
@@ -304,7 +330,8 @@ class ScaledEmitter(Fp8Emitter):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--mode', choices=('compact', 'heavy', 'scaled'), default='scaled')
+    parser.add_argument('--packed', choices=('none', 'mov', 'all'), default='none')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(ScaledEmitter(args.mode).render())
+    args.output.write_text(ScaledEmitter(args.mode, args.packed).render())

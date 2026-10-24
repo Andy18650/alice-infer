@@ -1,5 +1,5 @@
 CompileFlags:
-  CompilationDatabase: ../../temp/native-gemm/scaled/scaled
+  CompilationDatabase: ../../temp/native-gemm/scaled-packed/scaled-all
   Compiler: /usr/lib/llvm-21/bin/clang++
   Add: [-std=c++20, -x, hip, --offload-arch=gfx90a, -D__HIP_PLATFORM_AMD__=1]
 ---

@@ -9,7 +9,9 @@ The register compaction itself has no observed performance loss. A compact
 unscaled control is slightly faster than the previous144-register kernel.
 The final scaled kernel has the expected additional cost, measured separately
 from compaction and register-limited occupancy below. This is standalone
-research, not engine/model-format integration.
+research, not engine/model-format integration. This page records the scalar
+instruction baseline; [packed FP32 improvements](PACKED_FP32.md) are a later,
+separately measured change with the same register budget.
 
 ## Mathematical and numerical contract
 
@@ -166,14 +168,17 @@ Native hot loop has128 MFMA,128 scale FMAs,two scale loads,24 global x4,
 No accumulator transfers, scratch accesses or AGPR allocation anywhere.
 
 ```sh
-bash research/native-gemm/build_scaled.sh compact <fresh-build>
-bash research/native-gemm/build_scaled.sh heavy <fresh-build>
-bash research/native-gemm/build_scaled.sh scaled <fresh-build>
-python3 research/native-gemm/run_scaled.py --output <fresh-results>
+# Reproduce THIS scalar baseline from its immutable compilation sources:
+bash research/native-gemm/results/scaled/compact/source/build_scaled.sh compact <fresh-compact>
+bash research/native-gemm/results/scaled/heavy/source/build_scaled.sh heavy <fresh-heavy>
+bash research/native-gemm/results/scaled/scaled/source/build_scaled.sh scaled <fresh-scaled>
+python3 research/native-gemm/run_scaled.py --compact-build <fresh-compact> --heavy-build <fresh-heavy> --scaled-build <fresh-scaled> --output <fresh-results>
 python3 research/native-gemm/audit_scaled.py --output <fresh-audit>
 ```
 
-Defaults use `temp/native-gemm/scaled/{compact,heavy,scaled}`. Actual
+Recorded scalar builds use `temp/native-gemm/scaled/{compact,heavy,scaled}`.
+Current build_scaled.sh defaults to packed operations in a fresh namespace;
+the original comparison pins its completed source snapshots. Actual
 compilation sources, resource/native manifests, raw clocks/results, commands,
 drivers and immutable before-source snapshot: `results/scaled/`;
 order/byte-identical control proof: `results/scaled-audit/`.

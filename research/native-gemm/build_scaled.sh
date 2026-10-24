@@ -5,11 +5,13 @@ here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
 mode=${1:-scaled}
 case "$mode" in scaled|compact|heavy) ;; *) exit 2;; esac
-out=${2:-"$root/temp/native-gemm/scaled/$mode"}
+packed=${3:-all}
+case "$packed" in none|mov|all) ;; *) exit 2;; esac
+out=${2:-"$root/temp/native-gemm/scaled-packed/$mode-$packed"}
 mkdir -p "$out/tmp"
 out=$(cd "$out" && pwd)
 export TMPDIR="$out/tmp"
-python3 "$here/generate_scaled.py" --mode "$mode" --output "$out/compute.hpp"
+python3 "$here/generate_scaled.py" --mode "$mode" --packed "$packed" --output "$out/compute.hpp"
 flags=(-O3 -std=c++20 --offload-arch=gfx90a -fdenormal-fp-math=ieee
        -Wall -Wextra -DNATIVE_FP8_B=1 -DNATIVE_SCALED_B=1 -I"$out")
 { printf '%q' hipcc; printf ' %q' "${flags[@]}"; printf '\n'; } >"$out/compiler-flags.txt"

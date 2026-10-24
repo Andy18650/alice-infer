@@ -99,7 +99,7 @@ def execute(code,stages):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output',type=Path,default=HERE/'results/scaled-audit')
+    parser.add_argument('--output',type=Path,default=HERE/'results/scaled/checks')
     args=parser.parse_args()
     out=args.output.resolve()
     require(not out.exists() or not any(out.iterdir()),'Choose a fresh output')
@@ -112,7 +112,7 @@ def main():
     require(a==b,'Reserved-register control changed instruction bytes')
     proof=dict(checks=checks,compact_heavy_text_identical=True,text_bytes=len(a),
                text_sha256=hashlib.sha256(a).hexdigest())
-    (out/'proof.json').write_text(json.dumps(proof,indent=2)+'\n')
+    (out/'summary.json').write_text(json.dumps(proof,indent=2)+'\n')
     print('PASS',len(checks),'stage counts: exact ordered K128 groups/banks/scales/no overfetch; compact/heavy whole.text identical')
 
 

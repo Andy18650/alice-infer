@@ -181,7 +181,7 @@ Current build_scaled.sh defaults to packed operations in a fresh namespace;
 the original comparison pins its completed source snapshots. Actual
 compilation sources, resource/native manifests, raw clocks/results, commands,
 drivers and immutable before-source snapshot: `results/scaled/`;
-order/byte-identical control proof: `results/scaled-audit/`.
+order/byte-identical control proof: `results/scaled/checks/`.
 HIP builds are warning-free; Python/shell syntax and LSP diagnostics pass.
 Clangd main-file check reports0 errors. Header check has no compiler/AST
 errors but reports three interactive DefineOutline-tweak failures (no suitable

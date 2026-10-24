@@ -66,7 +66,7 @@ byte-identical. This is not a hardware emulator or a substitute for GPU tests.
 Actual native hot-loop non-control instructions also match in order/text for
 128 and256. `inspect_code.py` checks the new3-instruction control backedge,
 unchanged math/memory counts, absence of zero-displacement unconditional
-branches in timing and zero spills. `results/branch-flow-audit/` stores trace
+branches in timing and zero spills. `results/branch-clean/checks/` stores trace
 hashes/native-loop-order proof and10 additional StageK64 GPU boundary checks.
 
 Functional tests cover the original dimensions/seeds plus K95/96/97,

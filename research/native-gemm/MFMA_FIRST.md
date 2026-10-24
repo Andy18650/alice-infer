@@ -107,7 +107,7 @@ The recorded builds are under `temp/native-gemm/mfma-first/`; old branch-clean,
 readable and original measured executables remain untouched. Raw clocks,
 reference/check results,resource snapshots,source/native fingerprints and
 executed commands: `results/mfma-first/`. Order proof:
-`results/mfma-first-audit/`. The historical branch-flow audit now pins its
+`results/mfma-first/checks/`. The historical branch-flow audit now pins its
 completed before/after source snapshots rather than assuming that later
 intentional MFMA scheduling changes preserve its old projection.
 

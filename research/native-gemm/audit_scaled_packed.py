@@ -88,7 +88,7 @@ def native_normalized(path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=HERE / 'results/scaled-packed-fixed-audit')
+    parser.add_argument('--output', type=Path, default=HERE / 'results/scaled-packed-fixed/checks')
     args = parser.parse_args()
     output = args.output.resolve()
     require(not output.exists() or not any(output.iterdir()), 'Choose a fresh output')
@@ -121,7 +121,7 @@ def main():
         require(native_projections[variant] == native_projections['scalar'],
                 f'Native changes exceed packed replacements: {variant}')
         require(ownership[variant] == ownership['scalar'], 'Scale/bank semantics changed')
-    (output / 'proof.json').write_text(json.dumps(dict(
+    (output / 'summary.json').write_text(json.dumps(dict(
         generated_full_flow_equal_after_expansion=True,
         native_full_kernel_equal_after_expansion_and_branch_normalization=True,
         ownership=ownership, identical_resources=True,

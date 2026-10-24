@@ -144,7 +144,7 @@ scale-latency/host-bridge paths and the historical runner pins its snapshots. Di
 explicit historical regeneration. Old scalar builds remain under `scaled/`.
 Matched sources/native/resource/raw clocks/commands/actual driver records:
 `results/scaled-packed-fixed/`; expansion/scale-selection/order proof:
-`results/scaled-packed-fixed-audit/`. The previous trial/proofs are explicitly
+`results/scaled-packed-fixed/checks/`. The previous trial/proofs are explicitly
 withdrawn, not rewritten. Raw `.bin` dumps are marked binary in git attributes;
 that classification does not modify any captured bytes.
 No production/CMake/model/session/system/package/clock changes. Research-log

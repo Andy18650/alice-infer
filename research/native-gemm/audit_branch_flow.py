@@ -87,7 +87,7 @@ def main():
     parser.add_argument('--work', type=Path,
                         default=ROOT / 'temp/native-gemm/branch-flow-audit')
     parser.add_argument('--output', type=Path,
-                        default=HERE / 'results/branch-flow-audit')
+                        default=HERE / 'results/branch-clean/checks')
     args = parser.parse_args()
     work = args.work.resolve()
     output = args.output.resolve()
@@ -127,7 +127,7 @@ def main():
         proof.append(dict(configuration=name, checks=checks))
         print(name, f'{len(checks)} stage-count traces match exactly')
 
-    (output / 'equivalence.json').write_text(json.dumps(proof, indent=2) + '\n')
+    (output / 'summary.json').write_text(json.dumps(proof, indent=2) + '\n')
     print('PASS: normal memory/math/wait/barrier traces unchanged; resident headers unchanged.')
 
 

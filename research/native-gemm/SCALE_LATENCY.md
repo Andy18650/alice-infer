@@ -144,7 +144,8 @@ python3 research/native-gemm/audit_scale_latency.py --output <fresh-audit>
 ```
 
 Actual source/build/native/resource/driver/commands/results/clocks under
-`results/scale-latency/`;readiness/padding/order proof `scale-latency-audit/`.
+`results/scale-latency/`;readiness/padding/order checks in its `checks/`
+subdirectory (`summary.json` is final, `initial-summary.json` retains the first run).
 New builds: `temp/native-gemm/scale-latency/{late,batch,read}`. Historical
 packed-FP32 driver pins its completed snapshots. All old data/binaries remain
 unchanged;normal/scaled host bridges use fresh namespaces after batch-table

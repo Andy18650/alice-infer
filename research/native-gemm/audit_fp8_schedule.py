@@ -32,7 +32,7 @@ def move_current_c01(trace, skip_startup):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=HERE / 'results/fp8-schedule-audit')
+    parser.add_argument('--output', type=Path, default=HERE / 'results/fp8-interleaved/checks')
     args = parser.parse_args()
     output = args.output.resolve()
     if output.exists() and any(output.iterdir()):
@@ -88,7 +88,7 @@ def main():
                    for name in ('early', 'interleaved')]
     for key in ('vgpr_count', 'agpr_count', 'sgpr_count', 'private_segment_fixed_size', 'lds_bytes'):
         require(inventories[0][key] == inventories[1][key], f'Interleave resource change: {key}')
-    (output / 'proof.json').write_text(json.dumps(dict(
+    (output / 'summary.json').write_text(json.dumps(dict(
         checks=checks, native_exact_two_mfma_moves=True, native_instructions=len(loops[1]),
         same_interleave_resources=True, regenerated_burst_asm_identical=True,
     ), indent=2) + '\n')

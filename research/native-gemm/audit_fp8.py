@@ -21,7 +21,7 @@ KEEP = ('v_mfma_', 'ds_read_b128', 's_waitcnt', 's_barrier', 's_memtime', 's_mem
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=HERE / 'results/fp8-b-audit')
+    parser.add_argument('--output', type=Path, default=HERE / 'results/fp8-b/checks')
     args = parser.parse_args()
     output = args.output.resolve()
     if output.exists() and any(output.iterdir()):
@@ -65,7 +65,7 @@ def main():
         require(len(addresses) == 2, 'Expected separate A/B LDS input addresses')
         reads.append(projection)
     require(reads[0] == reads[1], 'Native raw destinations/offset/order changed')
-    (output / 'proof.json').write_text(json.dumps(dict(
+    (output / 'summary.json').write_text(json.dumps(dict(
         generated=proof, native_math_identical=True, native_reads_address_normalized_equal=True,
         before_loop_instructions=len(loops[0]), after_loop_instructions=len(loops[1]),
     ), indent=2) + '\n')

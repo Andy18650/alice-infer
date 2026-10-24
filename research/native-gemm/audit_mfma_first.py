@@ -37,7 +37,7 @@ def main():
                         default=HERE / 'results/branch-clean/after/source')
     parser.add_argument('--after-source', type=Path, default=HERE)
     parser.add_argument('--work', type=Path, default=ROOT / 'temp/native-gemm/mfma-first/audit')
-    parser.add_argument('--output', type=Path, default=HERE / 'results/mfma-first-audit')
+    parser.add_argument('--output', type=Path, default=HERE / 'results/mfma-first/checks')
     args = parser.parse_args()
     output = args.output.resolve()
     work = args.work.resolve()
@@ -90,7 +90,7 @@ def main():
             instruction_count=len(new),
             sha256=hashlib.sha256('\n'.join(new).encode()).hexdigest(),
         ))
-    (output / 'equivalence.json').write_text(
+    (output / 'summary.json').write_text(
         json.dumps(dict(generated=proofs, native=native), indent=2) + '\n'
     )
     print('PASS: exactly one MFMA move/stage; all other order and resident headers unchanged.')

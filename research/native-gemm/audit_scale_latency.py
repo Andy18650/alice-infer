@@ -124,7 +124,7 @@ def trace(code, stages, batch):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=HERE / 'results/scale-latency-audit')
+    parser.add_argument('--output', type=Path, default=HERE / 'results/scale-latency/checks')
     args = parser.parse_args()
     out = args.output.resolve()
     require(not out.exists() or not any(out.iterdir()), 'Choose a fresh output')
@@ -153,7 +153,7 @@ def main():
     read = parse_instructions((ROOT / 'temp/native-gemm/scale-latency/read/probe.isa').read_text())
     restored, moves = restore_late_read_order([op for _, op in read])
     require(restored == [op for _, op in late], 'Native read movement not isolated')
-    (out / 'proof.json').write_text(json.dumps(dict(
+    (out / 'summary.json').write_text(json.dumps(dict(
         readiness_and_bank_checks=proofs, native_read_moves=moves,
         native_read_projection_identical=True, late_only_retimes_metadata_hot_loop=True,
     ), indent=2) + '\n')

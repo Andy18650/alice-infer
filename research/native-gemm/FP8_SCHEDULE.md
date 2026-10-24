@@ -133,7 +133,8 @@ python3 research/native-gemm/verify_artifacts.py
 
 Raw/reference/clock/source/native/driver records: `results/fp8-early/`,
 `results/fp8-interleaved/`; order/no-overfetch proof in
-`results/fp8-schedule-audit/` and expanded `results/fp8-schedule-audit-final/`.
+`results/fp8-interleaved/checks/` (shared by the early/interleaved steps),
+with the final `summary.json` and distinct `initial-summary.json`.
 The first snapshot pass omitted before-side FP8 extra files (the shared driver
 previously only needed FP16 before files). Missing files were supplemented from
 the immutable parent compilation snapshot, never today's changed generator;

@@ -170,7 +170,7 @@ def main():
     parser.add_argument('--after-source', type=Path, default=HERE / 'results/readable/source')
     parser.add_argument('--after-build-root', type=Path, default=ROOT / 'temp/native-gemm/readable')
     parser.add_argument('--work', type=Path, default=ROOT / 'temp/native-gemm/cleanup/audit')
-    parser.add_argument('--output', type=Path, default=HERE / 'results/cleanup-audit')
+    parser.add_argument('--output', type=Path, default=HERE / 'results/readable/checks')
     args = parser.parse_args()
     baseline = args.baseline.resolve()
     work = args.work.resolve()
@@ -192,7 +192,7 @@ def main():
             f'Selected/control StageK32 tile{tile}',
         ))
     proofs['bank'] = check_bank_probe(work, output)
-    (output / 'equivalence.json').write_text(json.dumps(proofs, indent=2) + '\n')
+    (output / 'summary.json').write_text(json.dumps(proofs, indent=2) + '\n')
     print('PASS: eight byte-identical generated headers; packing/reference equivalence; '
           'selected/control/bank GPU .text byte-identical.')
     print(proofs['packing']['result'])

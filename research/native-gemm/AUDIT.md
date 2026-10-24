@@ -210,13 +210,43 @@ python3 research/native-gemm/verify_artifacts.py
 The historical cleanup audit compares all8 generator outputs byte-for-byte, all144
 packed operand vectors for18 logical matrix/seed cases, original/new reference
 dots, and actual GPU `.text` for both GEMM candidates and bank-control kernels.
-`results/cleanup-audit/` records that proof; `results/readable/` records the
-original180-launch suite after cleanup. `results/branch-flow-audit/` and
-`results/branch-clean/` separately record the intentional branch change.
-`results/mfma-first-audit/` and `results/mfma-first/` record the next exact
-one-instruction move and matched performance; none overwrite their predecessors.
-`results/fp8-b/` and `results/fp8-b-audit/` separately preserve the FP8 format/
-packing experiment, exhaustive conversion gates and negative low-grid result. ELF metadata/host executable hashes may
+`results/readable/checks/` records those checks; `results/readable/` records
+the original180-launch suite after cleanup. The branch and next one-instruction
+change keep checks under `results/branch-clean/checks/` and
+`results/mfma-first/checks/`, alongside their measurements.
+`results/fp8-b/` and its `checks/` preserve the FP8 format/packing experiment,
+exhaustive conversion gates and negative low-grid result. ELF metadata/host executable hashes may
 change; the proof specifically identifies the unchanged GPU instruction bytes.
 Use fresh build paths when changing source; never overwrite measured historical
 binaries just to make a manifest pass. No new package or formatter dependency.
+
+## Result layout
+
+Recorded validation belongs to the experiment it checks, not a sibling audit
+experiment. `checks/summary.json` is the last recorded result; a distinct
+`initial-summary.json` retains an earlier summary where both existed. Identical
+generated headers are deduplicated. This reorganization changes paths only,
+not captured bytes or the validity of any trial.
+
+|Experiment|Checks location|
+|---|---|
+|Readability cleanup|`results/readable/checks/`|
+|Branch cleanup|`results/branch-clean/checks/`|
+|First MFMA move|`results/mfma-first/checks/`|
+|Initial FP8|`results/fp8-b/checks/`|
+|FP8 early/interleaved steps (shared checks)|`results/fp8-interleaved/checks/`|
+|Scaled register-budget experiment|`results/scaled/checks/`|
+|Withdrawn packed clock trial|`results/scaled-packed/checks/` — remains INVALID|
+|Corrected packed trial|`results/scaled-packed-fixed/checks/`|
+|Scale-latency experiments|`results/scale-latency/checks/`|
+
+StageK64 supplementary GPU files now live under the owning `checks/gpu64/`;
+the current artifact verifier checks these relocated manifests. Archived
+compilation/driver snapshots remain byte-for-byte as-run and can contain old
+path strings. Use the current check scripts and verifier for the new layout,
+not a historical driver's default output paths. No compatibility sibling
+folders or symlinks are kept.
+
+For intermediate reruns use `--output temp/native-gemm/checks/<fresh-name>`.
+Publish one checks result with a new recorded experiment; do not create sibling
+`*-audit` or `*-audit-final` directories for intermediate assertions.

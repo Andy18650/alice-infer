@@ -65,7 +65,7 @@ def verify_dependencies(directory):
             raise RuntimeError(f'Unexpected vendor GEMM dependency: {listing}')
 
 
-def verify_pipeline_comparison(phase, audit_phase):
+def verify_pipeline_comparison(phase):
     directory = RESULTS / phase
     if not (directory / 'summary.csv').exists():
         return
@@ -78,7 +78,10 @@ def verify_pipeline_comparison(phase, audit_phase):
         for manifest in manifests:
             verify_manifest(manifest, root / 'source')
         verify_dependencies(root)
-    for manifest in (RESULTS / audit_phase / 'gpu64').glob('t*/hashes.txt'):
+    auxiliary = list((directory / 'checks' / 'gpu64').glob('t*/hashes.txt'))
+    if phase in ('branch-clean', 'mfma-first') and len(auxiliary) != 2:
+        raise RuntimeError(f'Missing relocated StageK64 manifests: {phase}')
+    for manifest in auxiliary:
         verify_manifest(manifest, directory / 'after' / 'source')
     if phase.startswith('fp8-'):
         verify_manifest(directory / 'gates/conversion-hashes.txt', directory / 'after/source')
@@ -110,11 +113,11 @@ def main():
     if (RESULTS / 'readable' / 'summary.csv').exists():
         verify_phase('readable')
         verify_dependencies(RESULTS / 'readable')
-    verify_pipeline_comparison('branch-clean', 'branch-flow-audit')
-    verify_pipeline_comparison('mfma-first', 'mfma-first-audit')
-    verify_pipeline_comparison('fp8-b', 'fp8-b-audit')
-    verify_pipeline_comparison('fp8-early', 'fp8-schedule-audit')
-    verify_pipeline_comparison('fp8-interleaved', 'fp8-schedule-audit')
+    verify_pipeline_comparison('branch-clean')
+    verify_pipeline_comparison('mfma-first')
+    verify_pipeline_comparison('fp8-b')
+    verify_pipeline_comparison('fp8-early')
+    verify_pipeline_comparison('fp8-interleaved')
     verify_scaled_comparison()
     verify_scaled_comparison('scaled-packed', ('scalar', 'mov', 'packed'))
     verify_scaled_comparison('scaled-packed-fixed', ('scalar', 'mov', 'packed'))

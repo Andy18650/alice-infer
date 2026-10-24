@@ -21,6 +21,9 @@ compact/reserved controls have byte-identical GPU instructions.
 [Packed FP32](PACKED_FP32.md) is checked by exact expansion back into the
 scalar full-kernel instruction flow, with native branch-target normalization
 and explicit low/high scale selectors; no scheduling changes.
+[Scale-latency proposals](SCALE_LATENCY.md) then separately test a deferred
+request,paired SGPR queue and earlier q1 refill. Only the simple deferred load
+has a consistent gain; the other mixed/near-noise results are retained.
 
 ## 1. File map and suggested reading order
 
@@ -49,7 +52,8 @@ and explicit low/high scale selectors; no scheduling changes.
 |`data_scaled.hpp`|Logical K128/N128 FP32 scale table and independent grouped int64/std::fma oracle.|
 |`inspect_scaled.py`, `audit_scaled.py`|Actual zero-spill/no-AGPR resource gate and scale/bank/order/control proof.|
 |`build_scaled.sh`, `run_scaled.py`|Scaled builds; historical register-budget experiment pins scalar snapshots.|
-|`run_scaled_packed.py`, `audit_scaled_packed.py`|Three-way packed comparison, exact source/native expansion and scale-selection proof.|
+|`run_scaled_packed.py`, `audit_scaled_packed.py`|Historical packed comparison, exact source/native expansion and scale-selection proof.|
+|`generate_scale_latency.py`, `run_scale_latency.py`, `audit_scale_latency.py`|Three fixed experiments, matched four-way comparison and explicit metadata-readiness/padding proof.|
 |`bank-probe.hip`|Small explicit register-pair diagnostic; not the final GEMM benchmark.|
 
 The default is **tile128,StageK32,ordinary GEMM,linear LDS mapping**. Other tile/
@@ -191,7 +195,7 @@ recorded SHA256, not inferred from approximate source similarity.
 ```sh
 bash research/native-gemm/build.sh 128
 bash research/native-gemm/build.sh 256
-# Current normal builds: temp/native-gemm/fp16-scale-host-bridge/s32-t{128,256}; old builds retained.
+# Current normal builds: temp/native-gemm/fp16-latency-host-bridge/s32-t{128,256}; old builds retained.
 # Historical cleanup audit pins results/readable/source and readable binaries:
 python3 research/native-gemm/audit_cleanup.py --output <fresh-audit-directory>
 python3 research/native-gemm/audit_branch_flow.py --output <fresh-flow-audit>

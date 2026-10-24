@@ -229,11 +229,11 @@ def case_sequence(builds):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=HERE / 'results/fp16-scale-host-bridge-full')
+    parser.add_argument('--output', type=Path, default=HERE / 'results/fp16-latency-host-bridge-full')
     parser.add_argument('--build128', type=Path,
-                        default=ROOT / 'temp/native-gemm/fp16-scale-host-bridge/s32-t128')
+                        default=ROOT / 'temp/native-gemm/fp16-latency-host-bridge/s32-t128')
     parser.add_argument('--build256', type=Path,
-                        default=ROOT / 'temp/native-gemm/fp16-scale-host-bridge/s32-t256')
+                        default=ROOT / 'temp/native-gemm/fp16-latency-host-bridge/s32-t256')
     args = parser.parse_args()
     output = args.output.resolve()
     builds = {128: args.build128.resolve(), 256: args.build256.resolve()}

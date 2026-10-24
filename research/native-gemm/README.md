@@ -13,6 +13,9 @@ occupancy and scaling costs. [Packed FP32 moves/FMAs](PACKED_FP32.md) retain
 that budget and improve long-K useful rate by~0.6-1.3%; packed moves alone
 are within noise. The original packed timestamp trial is withdrawn; the linked
 report uses the corrected-selector full rerun and independent bit/clock gates. The unscaled defaults remain supported.
+[Scale-latency experiments](SCALE_LATENCY.md) implement all three next proposals:
+late scale loads give~125.4/137.3/139.6 TFLOP/s at104/208/312,K32768 and~144.6
+on the large grid. Pair batching/earlier q1 reads are mixed and not promoted.
 
 **Separate FP8-B experiment:** [FP8_B.md](FP8_B.md) distributes A/B K8
 production across all four waves (two A x4 loads + one FP8 B x4 each), expands
@@ -185,8 +188,8 @@ checks, dynamic dependency listings and overlap proof are committed under
 ## Build / replay
 
 ```sh
-bash research/native-gemm/build.sh                      #128,K32 ->temp/native-gemm/fp16-scale-host-bridge/s32-t128
-numactl --cpunodebind=0 --membind=0 temp/native-gemm/fp16-scale-host-bridge/s32-t128/probe \
+bash research/native-gemm/build.sh                      #128,K32 ->temp/native-gemm/fp16-latency-host-bridge/s32-t128
+numactl --cpunodebind=0 --membind=0 temp/native-gemm/fp16-latency-host-bridge/s32-t128/probe \
   --m 4096 --n 6656 --k 32768 --rounds 9 --warmup-ms 200
 # Historical one-MFMA A/B uses preserved builds/source snapshots:
 python3 research/native-gemm/run_mfma_first.py --output <fresh-A-B-directory>
@@ -201,10 +204,12 @@ python3 research/native-gemm/analyze.py research/native-gemm/results/final \
 bash research/native-gemm/build_fp8.sh
 # Historical A/B reuses preserved schedule builds/source snapshots:
 python3 research/native-gemm/run_fp8_schedule.py --step interleaved --output <fresh-FP8-A-B-directory>
-# New scaled/control kernels and matched register-budget comparison:
-bash research/native-gemm/build_scaled.sh scaled <fresh-mov> mov
-bash research/native-gemm/build_scaled.sh scaled <fresh-packed> all
+# Historical packed comparison (use archived sources for historical rebuilds):
+bash research/native-gemm/results/scaled-packed-fixed/mov/source/build_scaled.sh scaled <fresh-mov> mov
+bash research/native-gemm/results/scaled-packed-fixed/packed/source/build_scaled.sh scaled <fresh-packed> all
 python3 research/native-gemm/run_scaled_packed.py --mov-build <fresh-mov> --packed-build <fresh-packed> --output <fresh-scaled-results>
+# New explicit late-scale experiment; full three-proposal replay in SCALE_LATENCY.md:
+bash research/native-gemm/build_scaled.sh scaled <fresh-late> all late
 # Historical register-budget comparison uses preserved scalar builds:
 python3 research/native-gemm/run_scaled.py --output <fresh-budget-results>
 ```
@@ -215,8 +220,8 @@ linear LDS lane mapping; `--swizzle 1` is opt-in null control. `resident` is a
 repeated-first-fragment diagnostic, **not ordinary GEMM**; it is never used
 by the final suite. Stage64 and archived CLI/header versions belong to their
 recorded paths/snapshots. Use fresh directories to preserve measured binaries.
-Normal builds now default under `temp/native-gemm/fp16-scale-host-bridge/`
-and unscaled FP8 under `fp8-scale-host-bridge/` to preserve earlier measured
+Normal builds now default under `temp/native-gemm/fp16-latency-host-bridge/`
+and unscaled FP8 under `fp8-latency-host-bridge/` to preserve earlier measured
 binaries after the shared host additions. Both original FP16 tiles and the
 unscaled FP8 whole GPU .text remain byte-identical. Scaled modes use `scaled/`;
 all older measured namespaces remain untouched. CSV column names and timestamp

@@ -1,0 +1,15 @@
+# Scale metadata and packed-drain scheduling
+
+Native HIP O3 gfx90a HIP0/BDF31:00.0 CPU+memory NUMA0 block256,automatic clocks.
+No model/context/clock override. Full-kernel useful TFLOP/s;packing/H2D/reference excluded.
+Two counterbalanced9-sample process medians. Read variant is based on late,not batch.
+
+|M x N x K|CTAs|Baseline|Late scale|Batched pair|Late+early q1 read|
+|---|---:|---:|---:|---:|---:|
+|1664x1024x8192|104|113.594/113.665|117.258/117.334|117.574/117.731|117.415/116.628|
+|1664x1024x32768|104|120.331/120.619|125.390/125.454|125.277/125.544|125.345/125.477|
+|3328x1024x8192|208|131.435/131.432|131.832/131.680|131.534/131.779|131.584/131.779|
+|3328x1024x32768|208|136.927/136.978|137.277/137.328|137.183/137.100|137.250/137.288|
+|4992x1024x8192|312|134.733/134.592|135.151/135.148|135.081/135.148|135.256/135.182|
+|4992x1024x32768|312|139.194/139.098|139.565/139.590|139.574/139.646|139.640/139.636|
+|4096x6656x32768|1664|143.428/143.443|144.631/144.634|144.712/144.692|144.581/144.560|

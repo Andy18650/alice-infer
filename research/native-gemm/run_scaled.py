@@ -57,7 +57,7 @@ def main(defaults=None):
     parser.set_defaults(builds=default_builds,
                         sources={name:HERE/f'results/scaled/{name}/source' for name in default_builds},
                         functional_variants=('compact','heavy','scaled'),rich_variants=('scaled',),
-                        entry_point='run_scaled.py',report_function=report)
+                        entry_point='run_scaled.py',report_function=report,extra_sources={},experiment_metadata=None)
     if defaults: parser.set_defaults(**defaults)
     for variant, build in parser.get_default('builds').items():
         parser.add_argument(f'--{variant}-build', type=Path, default=build)
@@ -75,7 +75,8 @@ def main(defaults=None):
         target=output/variant
         for folder in ('source','build','verification','timing','clocks'):
             (target/folder).mkdir(parents=True,exist_ok=True)
-        for file in (*SOURCES,*(SCALED_SOURCES if variant!='original' else ())):
+        for file in (*SOURCES,*(SCALED_SOURCES if variant!='original' else ()),
+                     *args.extra_sources.get(variant, ())):
             shutil.copy2(source/file,target/'source'/file)
         for file in BUILD_FILES:
             shutil.copy2(build/file,target/'build'/file)
@@ -87,7 +88,7 @@ def main(defaults=None):
     (output/'invocation.json').write_text(json.dumps(dict(
         builds={key:str(value) for key,value in builds.items()},problems=PROBLEMS,
         scale_layout='FP32 [ceil(K/128)][ceil(N/128)]',scale_pattern=1,
-        placement='CPU+memory NUMA0',clock_override=False,
+        placement='CPU+memory NUMA0',clock_override=False,experiment_metadata=args.experiment_metadata,
     ),indent=2)+'\n')
     capture_smi(output/'amd-smi-before.txt')
     records=[]

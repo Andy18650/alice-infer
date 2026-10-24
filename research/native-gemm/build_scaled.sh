@@ -7,13 +7,26 @@ mode=${1:-scaled}
 case "$mode" in scaled|compact|heavy) ;; *) exit 2;; esac
 packed=${3:-all}
 case "$packed" in none|mov|all) ;; *) exit 2;; esac
-out=${2:-"$root/temp/native-gemm/scaled-packed-fixed/$mode-$packed"}
+plan=${4:-baseline}
+case "$plan" in baseline|late|batch|read) ;; *) exit 2;; esac
+namespace=scale-latency/host-bridge/$mode-$packed
+if [[ $plan != baseline ]]; then
+    [[ $mode == scaled && $packed == all ]] || exit 2
+    namespace=scale-latency/$plan
+fi
+out=${2:-"$root/temp/native-gemm/$namespace"}
 mkdir -p "$out/tmp"
 out=$(cd "$out" && pwd)
 export TMPDIR="$out/tmp"
-python3 "$here/generate_scaled.py" --mode "$mode" --packed "$packed" --output "$out/compute.hpp"
+if [[ $plan == baseline ]]; then
+    python3 "$here/generate_scaled.py" --mode "$mode" --packed "$packed" --output "$out/compute.hpp"
+else
+    python3 "$here/generate_scale_latency.py" --plan "$plan" --output "$out/compute.hpp"
+fi
+extra_flags=()
+if [[ $plan == batch ]]; then extra_flags=(-DNATIVE_SCALE_BATCH=1); fi
 flags=(-O3 -std=c++20 --offload-arch=gfx90a -fdenormal-fp-math=ieee
-       -Wall -Wextra -DNATIVE_FP8_B=1 -DNATIVE_SCALED_B=1 -I"$out")
+       -Wall -Wextra -DNATIVE_FP8_B=1 -DNATIVE_SCALED_B=1 -I"$out" "${extra_flags[@]}")
 { printf '%q' hipcc; printf ' %q' "${flags[@]}"; printf '\n'; } >"$out/compiler-flags.txt"
 hipcc "${flags[@]}" "$here/probe.hip" -o "$out/probe"
 llvm-objdump-21 --offloading "$out/probe" >"$out/offloading.txt"
@@ -32,3 +45,4 @@ PY
 python3 "$here/inspect_scaled.py" "$out"
 sha256sum "$here/"{probe.hip,data.hpp,data_fp8.hpp,data_scaled.hpp,scaled_kernel.hpp,generate.py,generate_fp8.py,generate_scaled.py} \
     "$out/"{compute.hpp,probe,probe.hsaco} >"$out/hashes.txt"
+if [[ $plan != baseline ]]; then sha256sum "$here/generate_scale_latency.py" >>"$out/hashes.txt"; fi

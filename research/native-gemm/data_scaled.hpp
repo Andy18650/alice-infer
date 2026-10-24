@@ -28,6 +28,20 @@ struct ScaledMatrices : Fp8Matrices {
         }
     }
 
+    std::vector<float> pack_scale_pairs() const {
+        // Two contiguous K-group scales per SMEM request. Pad the final pair
+        // explicitly; the dummy element is never used in an output update.
+        const int groups = (reduction + 127) / 128;
+        const int padded_groups = (groups + 1) / 2 * 2;
+        const int columns_of_scales = (columns + 127) / 128;
+        std::vector<float> result(size_t(columns_of_scales) * padded_groups, 0.0f);
+        for (int column = 0; column < columns_of_scales; ++column)
+            for (int group = 0; group < groups; ++group)
+                result[size_t(column) * padded_groups + group] =
+                    scales[size_t(group) * columns_of_scales + column];
+        return result;
+    }
+
     float reference_dot(int row, int column, int limit = -1) const {
         if (!scaling_enabled) return Fp8Matrices::reference_dot(row, column, limit);
         const int end = limit < 0 ? reduction : limit;

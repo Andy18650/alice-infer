@@ -1,0 +1,55 @@
+{
+  "builds": {
+    "baseline": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scaled-packed-fixed/scaled-all",
+    "late": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scale-latency/late",
+    "batch": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scale-latency/batch",
+    "read": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scale-latency/read"
+  },
+  "problems": [
+    [
+      1664,
+      1024,
+      8192
+    ],
+    [
+      1664,
+      1024,
+      32768
+    ],
+    [
+      3328,
+      1024,
+      8192
+    ],
+    [
+      3328,
+      1024,
+      32768
+    ],
+    [
+      4992,
+      1024,
+      8192
+    ],
+    [
+      4992,
+      1024,
+      32768
+    ],
+    [
+      4096,
+      6656,
+      32768
+    ]
+  ],
+  "scale_layout": "FP32 [ceil(K/128)][ceil(N/128)]",
+  "scale_pattern": 1,
+  "placement": "CPU+memory NUMA0",
+  "clock_override": false,
+  "experiment_metadata": {
+    "baseline": "K-major single scale at group head",
+    "late": "K-major single scale after previous-bank q1 drain",
+    "batch": "N-major K-pairs padded to even,SGPRs20:21;deferred low/high consumption",
+    "read": "late plus q1 operand refill before last packed microtile drain"
+  }
+}

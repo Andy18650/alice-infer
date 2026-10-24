@@ -1,0 +1,20 @@
+initial source/header/original executable/code-object hashes pass
+swizzle source/header/original executable/code-object hashes pass
+late source/header/original executable/code-object hashes pass
+early source/header/original executable/code-object hashes pass
+stage64 source/header/original executable/code-object hashes pass
+resident source/header/original executable/code-object hashes pass
+final source/header/original executable/code-object hashes pass
+bank-control archived source/original native hashes pass
+readable source/header/original executable/code-object hashes pass
+branch-clean before/after, optional auxiliary source/native hashes pass
+mfma-first before/after, optional auxiliary source/native hashes pass
+fp8-b before/after, optional auxiliary source/native hashes pass
+fp8-early before/after, optional auxiliary source/native hashes pass
+fp8-interleaved before/after, optional auxiliary source/native hashes pass
+scaled comparison source/native hashes pass
+scaled-packed comparison source/native hashes pass
+WARNING: scaled-packed clock trial is INVALID; see STATUS.json (hash checks only)
+scaled-packed-fixed comparison source/native hashes pass
+scale-latency comparison source/native hashes pass
+Recorded dynamic dependencies contain no vendor GEMM libraries

@@ -103,7 +103,7 @@ def analyze(results, report_directory):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('results', type=Path, nargs='?', default=HERE / 'results/fp16-scale-host-bridge-full')
+    parser.add_argument('results', type=Path, nargs='?', default=HERE / 'results/fp16-latency-host-bridge-full')
     parser.add_argument('--report-dir', type=Path)
     args = parser.parse_args()
     results = args.results.resolve()

@@ -10,6 +10,8 @@ from inspect_code import parse_instructions, find_hot_loop, opcode_counts, integ
 def audit(output):
     header = (output/'compute.hpp').read_text()
     scaled = 'kScaled=true' in header
+    plan_match = re.search(r'kScalePlan=(\d+)', header)
+    scale_plan = int(plan_match[1]) if plan_match else 0
     packed_fma = 'kPackedFma=true' in header
     packed_mov = 'kPackedMov=true' in header
     instructions = parse_instructions((output/'probe.isa').read_text())
@@ -19,6 +21,9 @@ def audit(output):
     loop = find_hot_loop(instructions,128)
     counts = opcode_counts(loop)
     require(counts[MFMA] == 128, 'Wrong MFMA count')
+    if scaled:
+        require(counts['s_load_dword'] == (0 if scale_plan == 2 else 2), 'Wrong scalar scale request count')
+        require(counts['s_load_dwordx2'] == (1 if scale_plan == 2 else 0), 'Wrong paired scale request count')
     require(counts['v_fma_f32'] == (128 if scaled and not packed_fma else 0), 'Wrong scalar scale FMA count')
     require(counts['v_pk_fma_f32'] == (64 if scaled and packed_fma else 0), 'Wrong packed scale FMA count')
     prefix = [op for _, op in instructions[:start]]
@@ -40,7 +45,7 @@ def audit(output):
             'Spill or unexpected AGPR allocation')
     require(fields['vgpr_count'] <= 256, 'Exceeded architected budget')
     fields.update(tile=128,stage_k=32,kind='gemm',lds_bytes=16384,scaled=scaled,
-                  instructions_per_loop=dict(counts),packed_fma=packed_fma,packed_mov=packed_mov)
+                  instructions_per_loop=dict(counts),packed_fma=packed_fma,packed_mov=packed_mov,scale_plan=scale_plan)
     (output/'inventory.json').write_text(json.dumps(fields,indent=2)+'\n')
     (output/'loop.txt').write_text('\n'.join(loop)+'\n')
     (output/'body.txt').write_text('\n'.join(body)+'\n')

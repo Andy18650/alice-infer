@@ -465,12 +465,17 @@ int main(int argc, char** argv) try {
     DeviceBuffer<uint32_t> device_a(packed_a.size());
     DeviceBuffer<uint32_t> device_b(packed_b.size());
 #ifdef NATIVE_SCALED_B
-    DeviceBuffer<float> device_scales(matrices.scales.size());
-    if (!matrices.scales.empty())
-        HIP(hipMemcpy(device_scales.pointer, matrices.scales.data(), matrices.scales.size() * 4,
+#ifdef NATIVE_SCALE_BATCH
+    const auto upload_scales = matrices.pack_scale_pairs();
+#else
+    const auto& upload_scales = matrices.scales;
+#endif
+    DeviceBuffer<float> device_scales(upload_scales.size());
+    if (!upload_scales.empty())
+        HIP(hipMemcpy(device_scales.pointer, upload_scales.data(), upload_scales.size() * 4,
                       hipMemcpyHostToDevice));
-    std::fprintf(stderr, "SCALES K128/N128 FP32 pattern%d enabled%d count%zu\n",
-                 options.scale_pattern, int(kScaled), matrices.scales.size());
+    std::fprintf(stderr, "SCALES K128/N128 FP32 pattern%d enabled%d logical%zu uploaded%zu\n",
+                 options.scale_pattern, int(kScaled), matrices.scales.size(), upload_scales.size());
 #endif
     DeviceBuffer<float> device_output(size_t(m) * n + 32);
     DeviceBuffer<uint64_t> device_stamps(size_t(blocks) * 16);

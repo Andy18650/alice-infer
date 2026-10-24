@@ -44,8 +44,8 @@ if __name__ == '__main__':
         },
         sources={
             'scalar': HERE / 'results/scaled/scaled/source',
-            'mov': HERE,
-            'packed': HERE,
+            'mov': HERE / 'results/scaled-packed-fixed/mov/source',
+            'packed': HERE / 'results/scaled-packed-fixed/packed/source',
         },
         output=HERE / 'results/scaled-packed-fixed',
         description=__doc__,

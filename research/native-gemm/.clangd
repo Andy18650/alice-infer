@@ -1,12 +1,12 @@
 CompileFlags:
-  CompilationDatabase: ../../temp/native-gemm/scaled-packed-fixed/scaled-all
+  CompilationDatabase: ../../temp/native-gemm/scale-latency/late
   Compiler: /usr/lib/llvm-21/bin/clang++
   Add: [-std=c++20, -x, hip, --offload-arch=gfx90a, -D__HIP_PLATFORM_AMD__=1]
 ---
 If:
   PathMatch: (verify_fp8\.hip|data_fp8\.hpp)
 CompileFlags:
-  CompilationDatabase: ../../temp/native-gemm/fp8-scale-host-bridge/interleaved
+  CompilationDatabase: ../../temp/native-gemm/fp8-latency-host-bridge/interleaved
 ---
 If:
   PathMatch: scaled_kernel\.hpp

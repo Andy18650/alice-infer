@@ -130,15 +130,17 @@ optimization was tried.
 ## Build/replay and records
 
 ```sh
-bash research/native-gemm/build_scaled.sh scaled <fresh-mov> mov
-bash research/native-gemm/build_scaled.sh scaled <fresh-packed> all
+# Historical packed algorithm: use the recorded compilation sources.
+bash research/native-gemm/results/scaled-packed-fixed/mov/source/build_scaled.sh scaled <fresh-mov> mov
+bash research/native-gemm/results/scaled-packed-fixed/packed/source/build_scaled.sh scaled <fresh-packed> all
 python3 research/native-gemm/run_scaled_packed.py --mov-build <fresh-mov> --packed-build <fresh-packed> --output <fresh-results>
 python3 research/native-gemm/audit_scaled_packed.py --output <fresh-audit>
 python3 research/native-gemm/verify_artifacts.py
 ```
 
 Default new builds use `temp/native-gemm/scaled-packed-fixed/scaled-{mov,all}`;
-`build_scaled.sh` defaults to `all`. Direct generator defaults to `none` for
+The recorded `build_scaled.sh` defaults to `all`; current builds use fresh
+scale-latency/host-bridge paths and the historical runner pins its snapshots. Direct generator defaults to `none` for
 explicit historical regeneration. Old scalar builds remain under `scaled/`.
 Matched sources/native/resource/raw clocks/commands/actual driver records:
 `results/scaled-packed-fixed/`; expansion/scale-selection/order proof:

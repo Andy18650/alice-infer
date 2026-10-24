@@ -29,6 +29,10 @@ class ScaledEmitter(Fp8Emitter):
         return 128 if self.mode == 'compact' else 256
 
     @property
+    def scalar_register_end(self):
+        return 20
+
+    @property
     def bank(self):
         return (128 + 64 * ((self.stage_index // 4) % 2)) if self.scaled else 64
 
@@ -321,7 +325,7 @@ class ScaledEmitter(Fp8Emitter):
                   '   [half_row_bytes] "s"(row_bytes*4),[gap_row_bytes] "s"(row_bytes*5),',
                   '   [rows_left] "s"(rows_left),[cols_left] "s"(cols_left),' + CONSTANTS]
         clobbers = ['"memory"', '"scc"', '"vcc"']
-        clobbers += [f'"s{i}"' for i in range(20)]
+        clobbers += [f'"s{i}"' for i in range(self.scalar_register_end)]
         clobbers += [f'"v{i}"' for i in range(self.register_end)]
         lines += [' : ' + ','.join(clobbers) + ');', '}']
         return '\n'.join(lines) + '\n'

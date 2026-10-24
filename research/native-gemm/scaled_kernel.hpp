@@ -14,7 +14,14 @@ __global__ __launch_bounds__(256) void native_gemm(
     const int col_anchor = tile_column * 128 + (wave % 2) * 64;
     const uintptr_t a_base = reinterpret_cast<uintptr_t>(a) + size_t(tile_row) * 8192 + wave * 2048;
     const uintptr_t b_base = reinterpret_cast<uintptr_t>(b) + size_t(tile_column) * 4096 + wave * 1024;
+#ifdef NATIVE_SCALE_BATCH
+    const int scale_groups = (tiles + 3) / 4;
+    const int padded_scale_groups = (scale_groups + 1) / 2 * 2;
+    const uintptr_t scale_base = reinterpret_cast<uintptr_t>(scales)
+        + size_t(tile_column) * padded_scale_groups * 4;
+#else
     const uintptr_t scale_base = reinterpret_cast<uintptr_t>(scales) + tile_column * 4;
+#endif
     const uintptr_t out_base = reinterpret_cast<uintptr_t>(out)
         + (uint64_t(row_anchor) * n + col_anchor) * 4;
     const uintptr_t stamp_base = reinterpret_cast<uintptr_t>(stamps)

@@ -1,0 +1,622 @@
+{
+  "readiness_and_bank_checks": {
+    "late": [
+      {
+        "stages": 0,
+        "groups": 0,
+        "requests": 0,
+        "physical_scale_words": 0,
+        "minimum_mfmas_before_wait": null
+      },
+      {
+        "stages": 1,
+        "groups": 1,
+        "requests": 1,
+        "physical_scale_words": 1,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 2,
+        "groups": 1,
+        "requests": 1,
+        "physical_scale_words": 1,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 3,
+        "groups": 1,
+        "requests": 1,
+        "physical_scale_words": 1,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 4,
+        "groups": 1,
+        "requests": 1,
+        "physical_scale_words": 1,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 5,
+        "groups": 2,
+        "requests": 2,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 6,
+        "groups": 2,
+        "requests": 2,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 7,
+        "groups": 2,
+        "requests": 2,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 8,
+        "groups": 2,
+        "requests": 2,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 9,
+        "groups": 3,
+        "requests": 3,
+        "physical_scale_words": 3,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 10,
+        "groups": 3,
+        "requests": 3,
+        "physical_scale_words": 3,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 11,
+        "groups": 3,
+        "requests": 3,
+        "physical_scale_words": 3,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 12,
+        "groups": 3,
+        "requests": 3,
+        "physical_scale_words": 3,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 15,
+        "groups": 4,
+        "requests": 4,
+        "physical_scale_words": 4,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 16,
+        "groups": 4,
+        "requests": 4,
+        "physical_scale_words": 4,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 17,
+        "groups": 5,
+        "requests": 5,
+        "physical_scale_words": 5,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 31,
+        "groups": 8,
+        "requests": 8,
+        "physical_scale_words": 8,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 32,
+        "groups": 8,
+        "requests": 8,
+        "physical_scale_words": 8,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 33,
+        "groups": 9,
+        "requests": 9,
+        "physical_scale_words": 9,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 63,
+        "groups": 16,
+        "requests": 16,
+        "physical_scale_words": 16,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 64,
+        "groups": 16,
+        "requests": 16,
+        "physical_scale_words": 16,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 65,
+        "groups": 17,
+        "requests": 17,
+        "physical_scale_words": 17,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 127,
+        "groups": 32,
+        "requests": 32,
+        "physical_scale_words": 32,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 128,
+        "groups": 32,
+        "requests": 32,
+        "physical_scale_words": 32,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 129,
+        "groups": 33,
+        "requests": 33,
+        "physical_scale_words": 33,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 255,
+        "groups": 64,
+        "requests": 64,
+        "physical_scale_words": 64,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 256,
+        "groups": 64,
+        "requests": 64,
+        "physical_scale_words": 64,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 257,
+        "groups": 65,
+        "requests": 65,
+        "physical_scale_words": 65,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 2048,
+        "groups": 512,
+        "requests": 512,
+        "physical_scale_words": 512,
+        "minimum_mfmas_before_wait": 8
+      }
+    ],
+    "batch": [
+      {
+        "stages": 0,
+        "groups": 0,
+        "requests": 0,
+        "physical_scale_words": 0,
+        "minimum_mfmas_before_wait": null
+      },
+      {
+        "stages": 1,
+        "groups": 1,
+        "requests": 1,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 2,
+        "groups": 1,
+        "requests": 1,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 3,
+        "groups": 1,
+        "requests": 1,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 4,
+        "groups": 1,
+        "requests": 1,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 5,
+        "groups": 2,
+        "requests": 1,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 6,
+        "groups": 2,
+        "requests": 1,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 7,
+        "groups": 2,
+        "requests": 1,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 8,
+        "groups": 2,
+        "requests": 1,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 9,
+        "groups": 3,
+        "requests": 2,
+        "physical_scale_words": 4,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 10,
+        "groups": 3,
+        "requests": 2,
+        "physical_scale_words": 4,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 11,
+        "groups": 3,
+        "requests": 2,
+        "physical_scale_words": 4,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 12,
+        "groups": 3,
+        "requests": 2,
+        "physical_scale_words": 4,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 15,
+        "groups": 4,
+        "requests": 2,
+        "physical_scale_words": 4,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 16,
+        "groups": 4,
+        "requests": 2,
+        "physical_scale_words": 4,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 17,
+        "groups": 5,
+        "requests": 3,
+        "physical_scale_words": 6,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 31,
+        "groups": 8,
+        "requests": 4,
+        "physical_scale_words": 8,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 32,
+        "groups": 8,
+        "requests": 4,
+        "physical_scale_words": 8,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 33,
+        "groups": 9,
+        "requests": 5,
+        "physical_scale_words": 10,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 63,
+        "groups": 16,
+        "requests": 8,
+        "physical_scale_words": 16,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 64,
+        "groups": 16,
+        "requests": 8,
+        "physical_scale_words": 16,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 65,
+        "groups": 17,
+        "requests": 9,
+        "physical_scale_words": 18,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 127,
+        "groups": 32,
+        "requests": 16,
+        "physical_scale_words": 32,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 128,
+        "groups": 32,
+        "requests": 16,
+        "physical_scale_words": 32,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 129,
+        "groups": 33,
+        "requests": 17,
+        "physical_scale_words": 34,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 255,
+        "groups": 64,
+        "requests": 32,
+        "physical_scale_words": 64,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 256,
+        "groups": 64,
+        "requests": 32,
+        "physical_scale_words": 64,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 257,
+        "groups": 65,
+        "requests": 33,
+        "physical_scale_words": 66,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 2048,
+        "groups": 512,
+        "requests": 256,
+        "physical_scale_words": 512,
+        "minimum_mfmas_before_wait": 8
+      }
+    ],
+    "read": [
+      {
+        "stages": 0,
+        "groups": 0,
+        "requests": 0,
+        "physical_scale_words": 0,
+        "minimum_mfmas_before_wait": null
+      },
+      {
+        "stages": 1,
+        "groups": 1,
+        "requests": 1,
+        "physical_scale_words": 1,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 2,
+        "groups": 1,
+        "requests": 1,
+        "physical_scale_words": 1,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 3,
+        "groups": 1,
+        "requests": 1,
+        "physical_scale_words": 1,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 4,
+        "groups": 1,
+        "requests": 1,
+        "physical_scale_words": 1,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 5,
+        "groups": 2,
+        "requests": 2,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 6,
+        "groups": 2,
+        "requests": 2,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 7,
+        "groups": 2,
+        "requests": 2,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 8,
+        "groups": 2,
+        "requests": 2,
+        "physical_scale_words": 2,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 9,
+        "groups": 3,
+        "requests": 3,
+        "physical_scale_words": 3,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 10,
+        "groups": 3,
+        "requests": 3,
+        "physical_scale_words": 3,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 11,
+        "groups": 3,
+        "requests": 3,
+        "physical_scale_words": 3,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 12,
+        "groups": 3,
+        "requests": 3,
+        "physical_scale_words": 3,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 15,
+        "groups": 4,
+        "requests": 4,
+        "physical_scale_words": 4,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 16,
+        "groups": 4,
+        "requests": 4,
+        "physical_scale_words": 4,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 17,
+        "groups": 5,
+        "requests": 5,
+        "physical_scale_words": 5,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 31,
+        "groups": 8,
+        "requests": 8,
+        "physical_scale_words": 8,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 32,
+        "groups": 8,
+        "requests": 8,
+        "physical_scale_words": 8,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 33,
+        "groups": 9,
+        "requests": 9,
+        "physical_scale_words": 9,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 63,
+        "groups": 16,
+        "requests": 16,
+        "physical_scale_words": 16,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 64,
+        "groups": 16,
+        "requests": 16,
+        "physical_scale_words": 16,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 65,
+        "groups": 17,
+        "requests": 17,
+        "physical_scale_words": 17,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 127,
+        "groups": 32,
+        "requests": 32,
+        "physical_scale_words": 32,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 128,
+        "groups": 32,
+        "requests": 32,
+        "physical_scale_words": 32,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 129,
+        "groups": 33,
+        "requests": 33,
+        "physical_scale_words": 33,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 255,
+        "groups": 64,
+        "requests": 64,
+        "physical_scale_words": 64,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 256,
+        "groups": 64,
+        "requests": 64,
+        "physical_scale_words": 64,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 257,
+        "groups": 65,
+        "requests": 65,
+        "physical_scale_words": 65,
+        "minimum_mfmas_before_wait": 8
+      },
+      {
+        "stages": 2048,
+        "groups": 512,
+        "requests": 512,
+        "physical_scale_words": 512,
+        "minimum_mfmas_before_wait": 8
+      }
+    ]
+  },
+  "native_read_moves": 8,
+  "native_read_projection_identical": true,
+  "late_only_retimes_metadata_hot_loop": true
+}

@@ -11,6 +11,9 @@ fresh `mfma-first` builds, rather than relabeling the branch-only records.
 The separate [FP8 B producer](FP8_B.md) changes packing/producer work but
 preserves compute/raw-read/fence order. It regresses low grids and remains an
 experimental variant, not the default. Its FP16 host bridge is GPU-byte-identical.
+[Subsequent scheduling](FP8_SCHEDULE.md) has separate early/interleaved A/Bs;
+permutation copies free a distinct raw buffer before prefetch, and one extra
+current MFMA divides conversion. Wait/barrier/read order and math order remain fixed.
 
 ## 1. File map and suggested reading order
 
@@ -33,7 +36,8 @@ experimental variant, not the default. Its FP16 host bridge is GPU-byte-identica
 |`audit_mfma_first.py`|Checks exactly one move/head-VM0 and no other order changes.|
 |`generate_fp8.py`, `data_fp8.hpp`|Balanced all-wave FP8 producer, explicit repacking and finite-code oracle.|
 |`verify_fp8.hip`, `audit_fp8.py`|Independent packing/bit gates and preserved compute/fence projection.|
-|`build_fp8.sh`, `run_fp8.py`|Separate FP8 build and matched104/208/312/large-grid experiment.|
+|`build_fp8.sh`, `run_fp8.py`|Separate FP8 build; original experiment pins archived source.|
+|`run_fp8_schedule.py`, `audit_fp8_schedule.py`|Two matched scheduling steps, copied-buffer/no-overfetch/exact-MFMA-move proof.|
 |`bank-probe.hip`|Small explicit register-pair diagnostic; not the final GEMM benchmark.|
 
 The default is **tile128,StageK32,ordinary GEMM,linear LDS mapping**. Other tile/

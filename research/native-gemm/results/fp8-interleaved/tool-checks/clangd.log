@@ -1,0 +1,98 @@
+I[08:53:13.056] Ubuntu clangd version 21.1.8 (6ubuntu1)
+I[08:53:13.056] Features: linux+grpc
+I[08:53:13.056] PID: 183769
+I[08:53:13.056] Working directory: /home/andyhu/projects/inference/alice-infer
+I[08:53:13.056] argv[0]: /usr/bin/clangd
+I[08:53:13.056] argv[1]: --check=research/native-gemm/probe.hip
+I[08:53:13.056] argv[2]: --compile-commands-dir=temp/native-gemm/fp8-schedule/interleaved
+I[08:53:13.056] argv[3]: --log=info
+I[08:53:13.056] Entering check mode (no LSP server)
+I[08:53:13.056] Testing on source file /home/andyhu/projects/inference/alice-infer/research/native-gemm/probe.hip
+I[08:53:13.056] Loading config file at /home/andyhu/projects/inference/alice-infer/research/native-gemm/.clangd
+I[08:53:13.056] Loading config file at /home/andyhu/.config/clangd/config.yaml
+I[08:53:13.056] Loading compilation database...
+I[08:53:13.057] Loaded compilation database from /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/interleaved/compile_commands.json
+I[08:53:13.057] Compile command from CDB is: [/home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/interleaved] /usr/lib/llvm-21/bin/clang++ --driver-mode=g++ -O3 -std=c++20 --offload-arch=gfx90a -fdenormal-fp-math=ieee -Wall -Wextra -I/home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/interleaved -DNATIVE_FP8_B=1 -x hip -c -std=c++20 -x hip --offload-arch=gfx90a -D__HIP_PLATFORM_AMD__=1 -resource-dir=/usr/lib/llvm-21/lib/clang/21 -- /home/andyhu/projects/inference/alice-infer/research/native-gemm/probe.hip
+I[08:53:13.057] Parsing command...
+I[08:53:13.059] internal (cc1) args are: -cc1 -triple x86_64-pc-linux-gnu -aux-triple amdgcn-amd-amdhsa -O3 -fsyntax-only -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name probe.hip -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=none -fmath-errno -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/interleaved -fcoverage-compilation-dir=/home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/interleaved -resource-dir /usr/lib/llvm-21/lib/clang/21 -internal-isystem /usr/lib/llvm-21/lib/clang/21/include/cuda_wrappers -idirafter /usr/include -include __clang_hip_runtime_wrapper.h -I /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/interleaved -D NATIVE_FP8_B=1 -D __HIP_PLATFORM_AMD__=1 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/x86_64-linux-gnu/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16/backward -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/x86_64-linux-gnu/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16/backward -internal-isystem /usr/lib/llvm-21/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -internal-isystem /usr/lib/llvm-21/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -Wall -Wextra -std=c++20 -fdeprecated-macro -ferror-limit 19 -fhip-new-launch-api -fgnuc-version=4.2.1 -fno-implicit-modules -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -vectorize-loops -vectorize-slp -no-round-trip-args -cuid=60df57af0e9299e2 -fcuda-allow-variadic-functions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -x hip /home/andyhu/projects/inference/alice-infer/research/native-gemm/probe.hip
+I[08:53:13.059] Building preamble...
+I[08:53:14.421] Built preamble of size 18203524 for file /home/andyhu/projects/inference/alice-infer/research/native-gemm/probe.hip version null in 1.36 seconds
+I[08:53:14.421] Indexing headers...
+I[08:53:14.639] Building AST...
+I[08:53:14.863] Indexing AST...
+I[08:53:14.866] Building inlay hints
+I[08:53:14.867] Building semantic highlighting
+I[08:53:14.868] Testing features at each token (may be slow in large files)
+I[08:53:14.919] Found definition heuristically using nearby identifier InputMatrices
+I[08:53:14.919] Found definition heuristically in index for TestMatrices
+I[08:53:14.919] Found definition heuristically in index for TestMatrices
+I[08:53:14.919] Found definition heuristically using nearby identifier kFp8B
+I[08:53:14.921] Found definition heuristically in index for status
+I[08:53:14.922] Found definition heuristically in index for status
+I[08:53:14.922] Found definition heuristically in index for hipSuccess
+I[08:53:14.922] Found definition heuristically in index for hipSuccess
+I[08:53:14.922] Found definition heuristically in index for std
+I[08:53:14.922] Found definition heuristically in index for std
+I[08:53:14.922] Found definition heuristically using nearby identifier runtime_error
+I[08:53:14.922] Found definition heuristically using nearby identifier runtime_error
+I[08:53:14.923] Found definition heuristically in index for std
+I[08:53:14.923] Found definition heuristically in index for std
+I[08:53:14.923] Found definition heuristically in index for string
+I[08:53:14.923] Found definition heuristically in index for string
+I[08:53:14.924] Found definition heuristically in index for hipGetErrorString
+I[08:53:14.924] Found definition heuristically in index for hipGetErrorString
+I[08:53:14.924] Found definition heuristically in index for status
+I[08:53:14.924] Found definition heuristically in index for status
+I[08:53:14.973] Found definition heuristically using nearby identifier kTile
+I[08:53:14.973] Found definition heuristically using nearby identifier kStageK
+I[08:53:14.973] Found definition heuristically using nearby identifier kStageK
+I[08:53:14.973] Found definition heuristically using nearby identifier uintptr_t
+I[08:53:14.973] Found definition heuristically using nearby identifier uintptr_t
+I[08:53:14.973] Found definition heuristically using nearby identifier uintptr_t
+I[08:53:14.975] Found definition heuristically using nearby identifier size_t
+I[08:53:14.975] Found definition heuristically using nearby identifier size_t
+I[08:53:14.975] Found definition heuristically using nearby identifier tile_row
+I[08:53:14.975] Found definition heuristically using nearby identifier tile_column
+I[08:53:14.976] Found definition heuristically using nearby identifier tile_column
+I[08:53:14.976] Found definition heuristically using nearby identifier lane
+I[08:53:14.976] Found definition heuristically using nearby identifier uint32_t
+I[08:53:14.976] Found definition heuristically using nearby identifier __builtin_amdgcn_readfirstlane
+I[08:53:14.976] Found definition heuristically using nearby identifier __builtin_amdgcn_readfirstlane
+I[08:53:14.976] Found definition heuristically using nearby identifier uint32_t
+I[08:53:14.976] Found definition heuristically using nearby identifier uint32_t
+I[08:53:14.977] Found definition heuristically using nearby identifier kStageK
+I[08:53:14.977] Found definition heuristically using nearby identifier kTile
+I[08:53:14.988] Found definition heuristically using nearby identifier uint32_t
+I[08:53:14.988] Found definition heuristically using nearby identifier lds_base
+I[08:53:14.988] Found definition heuristically using nearby identifier wave
+I[08:53:14.988] Found definition heuristically using nearby identifier wave
+I[08:53:14.988] Found definition heuristically using nearby identifier half_fragment_bytes
+I[08:53:14.988] Found definition heuristically using nearby identifier kTile
+I[08:53:14.988] Found definition heuristically using nearby identifier kStageK
+I[08:53:14.989] Found definition heuristically using nearby identifier wave
+I[08:53:14.989] Found definition heuristically using nearby identifier half_fragment_bytes
+I[08:53:14.989] Found definition heuristically using nearby identifier half_fragment_bytes
+I[08:53:14.989] Found definition heuristically using nearby identifier lds_lane
+I[08:53:15.073] Found definition heuristically using nearby identifier pipeline
+I[08:53:15.073] Found definition heuristically using nearby identifier pipeline
+I[08:53:15.073] Found definition heuristically using nearby identifier uint32_t
+I[08:53:15.073] Found definition heuristically using nearby identifier uint32_t
+I[08:53:15.073] Found definition heuristically using nearby identifier uint32_t
+I[08:53:15.073] Found definition heuristically using nearby identifier uint32_t
+I[08:53:15.075] Found definition heuristically using nearby identifier operand_a_address
+I[08:53:15.075] Found definition heuristically using nearby identifier operand_a_address
+I[08:53:15.075] Found definition heuristically using nearby identifier operand_b_address
+I[08:53:15.075] Found definition heuristically using nearby identifier operand_b_address
+I[08:53:15.075] Found definition heuristically using nearby identifier tiles
+I[08:53:15.075] Found definition heuristically using nearby identifier tiles
+I[08:53:15.075] Found definition heuristically using nearby identifier accumulators
+I[08:53:15.075] Found definition heuristically using nearby identifier accumulators
+I[08:53:15.075] Found definition heuristically using nearby identifier core_begin
+I[08:53:15.075] Found definition heuristically using nearby identifier core_begin
+I[08:53:15.075] Found definition heuristically using nearby identifier core_end
+I[08:53:15.075] Found definition heuristically using nearby identifier core_end
+I[08:53:15.075] Found definition heuristically using nearby identifier steady_begin
+I[08:53:15.075] Found definition heuristically using nearby identifier steady_begin
+I[08:53:15.076] Found definition heuristically using nearby identifier steady_end
+I[08:53:15.076] Found definition heuristically using nearby identifier steady_end
+I[08:53:16.567] All checks completed, 0 errors

@@ -1,0 +1,13 @@
+# FP8 clustered permutations + immediate B prefetch
+
+Native HIP O3 gfx90a HIP0/BDF31:00.0, CPU+memory NUMA0, no model/context/clock override. Full kernel event TFLOP/s; packing/reference excluded. Two counterbalanced nine-sample process medians.
+
+|M x N x K|CTAs|Before TFLOP/s|After TFLOP/s|Before global efficiency|After global efficiency|
+|---|---:|---:|---:|---:|---:|
+|1664x1024x8192|104|113.228/113.522|112.642/112.643|72.620/72.787|72.067/72.015|
+|1664x1024x32768|104|120.687/120.896|119.776/119.940|77.702/77.807|76.940/76.952|
+|3328x1024x8192|208|129.103/129.247|129.631/129.969|84.516/84.573|84.871/85.069|
+|3328x1024x32768|208|134.063/134.179|134.515/134.658|88.091/88.116|88.397/88.475|
+|4992x1024x8192|312|135.398/135.468|135.539/135.679|89.398/89.456|89.469/89.527|
+|4992x1024x32768|312|139.067/139.141|139.132/139.160|92.164/92.153|92.228/92.194|
+|4096x6656x32768|1664|146.494/146.482|146.817/146.821|97.428/97.405|97.644/97.648|

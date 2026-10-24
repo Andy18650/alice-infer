@@ -10,7 +10,7 @@ if __name__ == '__main__':
         before_source=HERE / 'results/mfma-first/after/source',
         after_build=ROOT / 'temp/native-gemm/fp8-b/s32-t128',
         after256=None,
-        after_source=HERE,
+        after_source=HERE / 'results/fp8-b/after/source',
         output=HERE / 'results/fp8-b',
         title='Balanced all-wave FP8 B versus FP16 B',
         description=__doc__,

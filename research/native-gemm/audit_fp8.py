@@ -30,7 +30,7 @@ def main():
     traces = []
     for name, source, extra in (
         ('before', HERE / 'results/mfma-first/after/source/generate.py', ['--tile', '128', '--stage-k', '32']),
-        ('after', HERE / 'generate_fp8.py', []),
+        ('after', HERE / 'results/fp8-b/after/source/generate_fp8.py', []),
     ):
         file = output / f'{name}.hpp'
         subprocess.run(['python3', str(source), *extra, '--output', str(file)], check=True)

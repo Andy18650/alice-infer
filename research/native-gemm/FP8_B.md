@@ -2,7 +2,9 @@
 
 User-directed experiment: FP16 A, finite E4M3FN B, FP32 accumulation/output.
 Packing is an external pre-GEMM contract and may change for both operands.
-This is a separate experimental variant, **not the new FP16 default**.
+This is the historical first experimental variant, **not the FP16 default**.
+Later user-directed [copy/early-load and MFMA-interleaving changes](FP8_SCHEDULE.md)
+are measured separately; none of the original data below is overwritten.
 
 **Result:** correct, but slower than the FP16 MFMA-first kernel at104/208/312
 CTAs with the first conversion-burst schedule. Large-grid useful throughput is
@@ -141,14 +143,17 @@ uniform CTA placement per CU.
 ## Reproduction and provenance
 
 ```sh
-bash research/native-gemm/build_fp8.sh [fresh-build-directory]
+# To rebuild THIS historical algorithm, use its immutable compilation sources:
+bash research/native-gemm/results/fp8-b/after/source/build_fp8.sh <fresh-build-directory>
 numactl --cpunodebind=0 --membind=0 <build>/verify-fp8
 python3 research/native-gemm/audit_fp8.py --output <fresh-audit-directory>
 python3 research/native-gemm/run_fp8.py --after-build <build> --output <fresh-A-B-directory>
 python3 research/native-gemm/verify_artifacts.py
 ```
 
-FP8 defaults: `temp/native-gemm/fp8-b/s32-t128`, results `results/fp8-b/`.
+Recorded FP8 builds: `temp/native-gemm/fp8-b/s32-t128`, results `results/fp8-b/`.
+Current build_fp8.sh defaults to a later schedule in its own namespace;
+the historical run_fp8.py/audit_fp8.py pin these original source snapshots.
 Only128x128x32 ordinary GEMM supported; no claim of256/StageK64 integration.
 Normal build defaults move to `temp/native-gemm/fp16-bridge/s32-t{128,256}`;
 both .text payloads match the old measured FP16 code exactly.

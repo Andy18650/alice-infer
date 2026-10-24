@@ -11,6 +11,9 @@ B before LDS, and passes exhaustive finite conversion/whole-GEMM checks. The
 first conversion-burst schedule regresses104/208/312 grids (~120.6/~134.0/
 ~139.0 TFLOP/s atK32768); large grid remains~146.5. It is retained under
 `fp8-b`, **not promoted over the FP16 default**. Packing changes are explicit.
+[Later FP8 scheduling](FP8_SCHEDULE.md) clusters copies/prefetches B early and
+interleaves conversion with current math: ~124.6/136.7/140.9 TFLOP/s at104/208/
+312 CTAs,K32768,~147.35 on the large grid. Two matched increments are preserved.
 
 **For process/code review, start with [AUDIT.md](AUDIT.md).** The active code
 has been expanded into named kernel, packing, reference, timing and validation
@@ -186,8 +189,9 @@ python3 research/native-gemm/analyze.py <results-directory>
 python3 research/native-gemm/analyze.py research/native-gemm/results/final \
   --report-dir <fresh-audit-report-directory>
 # Separate experimental FP8 B (128x128x32 only):
+bash research/native-gemm/build_fp8.sh temp/native-gemm/fp8-schedule/early early
 bash research/native-gemm/build_fp8.sh
-python3 research/native-gemm/run_fp8.py --output <fresh-FP8-A-B-directory>
+python3 research/native-gemm/run_fp8_schedule.py --step interleaved --output <fresh-FP8-A-B-directory>
 ```
 
 `build.sh [128|256] [output-directory] [gemm|resident] [32|64]` supports only

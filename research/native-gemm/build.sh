@@ -40,7 +40,12 @@ if [[ ${NATIVE_FP8_B:-0} == 1 ]]; then
         echo 'FP8 variant supports only128x128x32 ordinary GEMM' >&2; exit 2;
     }
     generator=generate_fp8.py
-    namespace=fp8-b
+    schedule=${NATIVE_FP8_SCHEDULE:-interleaved}
+    case "$schedule" in
+        burst|early|interleaved) ;;
+        *) echo 'unknown FP8 schedule' >&2; exit 2 ;;
+    esac
+    namespace=fp8-schedule/$schedule
     format_flags=(-DNATIVE_FP8_B=1)
     extra_sources=("$here/generate_fp8.py" "$here/data_fp8.hpp" "$here/build_fp8.sh")
 fi
@@ -50,7 +55,7 @@ out=$(cd "$out" && pwd)
 export TMPDIR="$out/tmp"
 
 if [[ $generator == generate_fp8.py ]]; then
-    python3 "$here/$generator" --output "$out/compute.hpp"
+    python3 "$here/$generator" --schedule "$schedule" --output "$out/compute.hpp"
 else
     python3 "$here/$generator" --tile "$tile" --stage-k "$stage" \
         "${generator_options[@]}" --output "$out/compute.hpp"

@@ -3,8 +3,9 @@
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
-out=${1:-"$root/temp/native-gemm/fp8-b/s32-t128"}
-NATIVE_FP8_B=1 bash "$here/build.sh" 128 "$out" gemm 32
+schedule=${2:-interleaved}
+out=${1:-"$root/temp/native-gemm/fp8-schedule/$schedule"}
+NATIVE_FP8_B=1 NATIVE_FP8_SCHEDULE="$schedule" bash "$here/build.sh" 128 "$out" gemm 32
 out=$(cd "$out" && pwd)
 hipcc -O3 -std=c++20 --offload-arch=gfx90a -fdenormal-fp-math=ieee \
     -Wall -Wextra -I"$out" "$here/verify_fp8.hip" -o "$out/verify-fp8"

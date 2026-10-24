@@ -1,0 +1,2 @@
+PASS independent logical-coordinate packing: 524288 padded elements
+PASS GPU expansion/source-buffer reuse: 4064 blocks/65024 values; all254 finite codes in every byte position, mixed neighbors, signed zero/subnormals

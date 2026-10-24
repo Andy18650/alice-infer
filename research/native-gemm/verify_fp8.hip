@@ -105,7 +105,7 @@ int main() try {
     }
     CHECK_HIP(hipFree(device_input));
     CHECK_HIP(hipFree(device_output));
-    std::printf("PASS GPU in-place expansion: %d blocks/%d values; all254 finite codes in every byte position, mixed neighbors, signed zero/subnormals\n",
+    std::printf("PASS GPU expansion/source-buffer reuse: %d blocks/%d values; all254 finite codes in every byte position, mixed neighbors, signed zero/subnormals\n",
                 count, count * 16);
     return 0;
 } catch (const std::exception& error) {

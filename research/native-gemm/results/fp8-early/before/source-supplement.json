@@ -1,0 +1,22 @@
+[
+  {
+    "file": "generate_fp8.py",
+    "parent": "research/native-gemm/results/fp8-b/after/source/generate_fp8.py",
+    "sha256": "5c9e596266e37dc5621a4131c3946e4bd0df3595c2a216643f0f711b876f242e"
+  },
+  {
+    "file": "data_fp8.hpp",
+    "parent": "research/native-gemm/results/fp8-b/after/source/data_fp8.hpp",
+    "sha256": "651be08447be9068f23ee7b43a0cb3b47884d1a3aea0b36b2747b14ad02c10dd"
+  },
+  {
+    "file": "build_fp8.sh",
+    "parent": "research/native-gemm/results/fp8-b/after/source/build_fp8.sh",
+    "sha256": "c51fcb7c823f410fcbb347f739fa49025c359802f1d7d638e593a25e2a0e68ab"
+  },
+  {
+    "file": "verify_fp8.hip",
+    "parent": "research/native-gemm/results/fp8-b/after/source/verify_fp8.hip",
+    "sha256": "e53459ce162b57a3fb40c6bd8f7a56998f641f68249e2186b494f0aee11e9428"
+  }
+]

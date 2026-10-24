@@ -108,7 +108,7 @@ def main(defaults=None):
     parser.add_argument('--output', type=Path, default=HERE / 'results/branch-clean')
     parser.add_argument('--allow-resource-change', action='store_true')
     parser.set_defaults(title='Branch-only A/B', operation_change='control flow only',
-                        entry_point='run_branch_compare.py', extra_sources=(),
+                        entry_point='run_branch_compare.py', extra_sources=(), before_extra_sources=(),
                         functional_variants=(('after', 128), ('after256', 256)))
     if defaults:
         parser.set_defaults(**defaults)
@@ -135,7 +135,7 @@ def main(defaults=None):
                 f'Resource change would confound this test: {field}')
 
     for variant, build in builds.items():
-        extra = args.extra_sources if variant != 'before' else ()
+        extra = args.extra_sources if variant != 'before' else args.before_extra_sources
         snapshot_variant(output / variant, build, sources[variant], extra)
     (output / 'driver').mkdir()
     for name in dict.fromkeys(('run_branch_compare.py', 'run.py', 'verify_artifacts.py',

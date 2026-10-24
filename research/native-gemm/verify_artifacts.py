@@ -67,7 +67,7 @@ def verify_pipeline_comparison(phase, audit_phase):
     directory = RESULTS / phase
     if not (directory / 'summary.csv').exists():
         return
-    variants = ('before', 'after') if phase == 'fp8-b' else ('before', 'after', 'after256')
+    variants = ('before', 'after') if phase.startswith('fp8-') else ('before', 'after', 'after256')
     for variant in variants:
         root = directory / variant
         manifests = list((root / 'builds').glob('*/hashes.txt'))
@@ -78,8 +78,9 @@ def verify_pipeline_comparison(phase, audit_phase):
         verify_dependencies(root)
     for manifest in (RESULTS / audit_phase / 'gpu64').glob('t*/hashes.txt'):
         verify_manifest(manifest, directory / 'after' / 'source')
-    if phase == 'fp8-b':
+    if phase.startswith('fp8-'):
         verify_manifest(directory / 'gates/conversion-hashes.txt', directory / 'after/source')
+    if phase == 'fp8-b':
         verify_manifest(directory / 'fp16-bridge/hashes.txt', directory / 'after/source')
     print(phase, 'before/after, optional auxiliary source/native hashes pass')
 
@@ -95,6 +96,8 @@ def main():
     verify_pipeline_comparison('branch-clean', 'branch-flow-audit')
     verify_pipeline_comparison('mfma-first', 'mfma-first-audit')
     verify_pipeline_comparison('fp8-b', 'fp8-b-audit')
+    verify_pipeline_comparison('fp8-early', 'fp8-schedule-audit')
+    verify_pipeline_comparison('fp8-interleaved', 'fp8-schedule-audit')
     print('Recorded dynamic dependencies contain no vendor GEMM libraries')
 
 

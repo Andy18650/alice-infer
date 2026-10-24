@@ -1,0 +1,176 @@
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 1 --n 1 --k 0 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 1 --n 1 --k 1 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 17 --n 23 --k 7 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 31 --n 35 --k 8 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 64 --n 64 --k 31 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 127 --n 129 --k 32 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 128 --n 128 --k 33 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 63 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 64 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 65 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 255 --n 257 --k 127 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 257 --n 259 --k 129 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 128 --n 128 --k 512 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 257 --n 129 --k 1024 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 17 --n 19 --k 65535 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 17 --n 19 --k 65536 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 95 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 96 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 97 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 127 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 128 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 129 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 191 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 192 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 193 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 255 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 256 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 257 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 65 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1730 --seed-b 2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 129 --n 131 --k 65 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2719
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 1 --n 1 --k 0 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 1 --n 1 --k 1 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 17 --n 23 --k 7 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 31 --n 35 --k 8 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 64 --n 64 --k 31 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 127 --n 129 --k 32 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 128 --n 128 --k 33 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 63 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 64 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 65 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 255 --n 257 --k 127 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 257 --n 259 --k 129 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 128 --n 128 --k 512 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 257 --n 129 --k 1024 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 17 --n 19 --k 65535 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 17 --n 19 --k 65536 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 95 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 96 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 97 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 127 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 128 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 129 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 191 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 192 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 193 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 255 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 256 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 257 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 65 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1730 --seed-b 2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 129 --n 131 --k 65 --rounds 1 --warmup-ms 0 --swizzle 0 --seed-a 1729 --seed-b 2719
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 1664 --n 1024 --k 8192 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/before/clocks/t128-m1664-n1024-k8192-r1-a1729-b2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 1664 --n 1024 --k 8192 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/after/clocks/t128-m1664-n1024-k8192-r1-a1729-b2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 1664 --n 1024 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/before/clocks/t128-m1664-n1024-k32768-r1-a1729-b2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 1664 --n 1024 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/after/clocks/t128-m1664-n1024-k32768-r1-a1729-b2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 3328 --n 1024 --k 8192 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/before/clocks/t128-m3328-n1024-k8192-r1-a1729-b2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 3328 --n 1024 --k 8192 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/after/clocks/t128-m3328-n1024-k8192-r1-a1729-b2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 3328 --n 1024 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/before/clocks/t128-m3328-n1024-k32768-r1-a1729-b2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 3328 --n 1024 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/after/clocks/t128-m3328-n1024-k32768-r1-a1729-b2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 4992 --n 1024 --k 8192 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/before/clocks/t128-m4992-n1024-k8192-r1-a1729-b2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 4992 --n 1024 --k 8192 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/after/clocks/t128-m4992-n1024-k8192-r1-a1729-b2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 4992 --n 1024 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/before/clocks/t128-m4992-n1024-k32768-r1-a1729-b2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 4992 --n 1024 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/after/clocks/t128-m4992-n1024-k32768-r1-a1729-b2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 4096 --n 6656 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/before/clocks/t128-m4096-n6656-k32768-r1-a1729-b2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 4096 --n 6656 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/after/clocks/t128-m4096-n6656-k32768-r1-a1729-b2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 4096 --n 6656 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/after/clocks/t128-m4096-n6656-k32768-r2-a1729-b2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 4096 --n 6656 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/before/clocks/t128-m4096-n6656-k32768-r2-a1729-b2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 4992 --n 1024 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/after/clocks/t128-m4992-n1024-k32768-r2-a1729-b2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 4992 --n 1024 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/before/clocks/t128-m4992-n1024-k32768-r2-a1729-b2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 4992 --n 1024 --k 8192 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/after/clocks/t128-m4992-n1024-k8192-r2-a1729-b2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 4992 --n 1024 --k 8192 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/before/clocks/t128-m4992-n1024-k8192-r2-a1729-b2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 3328 --n 1024 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/after/clocks/t128-m3328-n1024-k32768-r2-a1729-b2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 3328 --n 1024 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/before/clocks/t128-m3328-n1024-k32768-r2-a1729-b2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 3328 --n 1024 --k 8192 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/after/clocks/t128-m3328-n1024-k8192-r2-a1729-b2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 3328 --n 1024 --k 8192 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/before/clocks/t128-m3328-n1024-k8192-r2-a1729-b2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 1664 --n 1024 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/after/clocks/t128-m1664-n1024-k32768-r2-a1729-b2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 1664 --n 1024 --k 32768 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/before/clocks/t128-m1664-n1024-k32768-r2-a1729-b2718
+# after
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early/probe --m 1664 --n 1024 --k 8192 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/after/clocks/t128-m1664-n1024-k8192-r2-a1729-b2718
+# before
+numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-b/s32-t128/probe --m 1664 --n 1024 --k 8192 --rounds 9 --warmup-ms 200 --swizzle 0 --seed-a 1729 --seed-b 2718 --stamps-prefix /home/andyhu/projects/inference/alice-infer/research/native-gemm/results/fp8-early/before/clocks/t128-m1664-n1024-k8192-r2-a1729-b2718

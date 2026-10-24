@@ -6,4 +6,4 @@ CompileFlags:
 If:
   PathMatch: (verify_fp8\.hip|data_fp8\.hpp)
 CompileFlags:
-  CompilationDatabase: ../../temp/native-gemm/fp8-b/s32-t128
+  CompilationDatabase: ../../temp/native-gemm/fp8-schedule/interleaved

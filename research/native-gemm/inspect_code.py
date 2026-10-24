@@ -72,6 +72,8 @@ def audit(output_directory):
     fragments = stage_k // 8
     resident = 'kResident=true' in header
     fp8_b = 'kFp8BStorage=true' in header
+    schedule_match = re.search(r'kFp8Schedule=(\d+)', header)
+    fp8_schedule = int(schedule_match[1]) if schedule_match else 0
 
     disassembly = (output_directory / 'probe.isa').read_text()
     instructions = parse_instructions(disassembly)
@@ -124,6 +126,18 @@ def audit(output_directory):
             require(loop_counts[opcode] == 16 and counts[opcode] == 48,
                     f'Wrong FP8 conversion count for {opcode}')
         require(len(hot_loop) == 147, 'Unexpected balanced FP8 loop length')
+        if fp8_schedule:
+            for index, instruction in enumerate(hot_loop):
+                if instruction != 's_waitcnt vmcnt(0)':
+                    continue
+                require(all(op.startswith('v_perm_b32')
+                            for op in hot_loop[index + 4:index + 12]),
+                        'Expected eight clustered source-copy permutations')
+                require(hot_loop[index + 12].startswith('global_load_dwordx4 v[60:63]'),
+                        'B prefetch must immediately follow the last permutation')
+                if fp8_schedule == 2:
+                    require(hot_loop[index + 21].startswith(MFMA),
+                            'Expected current q0/C01 after six conversion arithmetic ops')
     if not resident:
         # Two stages, one bottom-controlled backedge. Boundary tests belong
         # only to the bounded tails, not either steady phase.
@@ -158,6 +172,7 @@ def audit(output_directory):
         stage_k=stage_k,
         kind='resident-control' if resident else 'gemm',
         storage='fp16-a/fp8-b' if fp8_b else 'fp16-a/fp16-b',
+        fp8_schedule=fp8_schedule if fp8_b else None,
         lds_bytes=tile * stage_k * 4,
         instructions_per_loop=dict(loop_counts),
     )

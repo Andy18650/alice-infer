@@ -1,0 +1,118 @@
+{
+  "builds": {
+    "before": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/early",
+    "after": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/fp8-schedule/interleaved"
+  },
+  "problems": [
+    [
+      1664,
+      1024,
+      8192
+    ],
+    [
+      1664,
+      1024,
+      32768
+    ],
+    [
+      3328,
+      1024,
+      8192
+    ],
+    [
+      3328,
+      1024,
+      32768
+    ],
+    [
+      4992,
+      1024,
+      8192
+    ],
+    [
+      4992,
+      1024,
+      32768
+    ],
+    [
+      4096,
+      6656,
+      32768
+    ]
+  ],
+  "tile": 128,
+  "stage_k": 32,
+  "placement": "numactl CPU+memory node0",
+  "operation_change": "Move current q0/C01 after six conversion arithmetic instructions",
+  "interleave_prefetch": false,
+  "title": "FP8 conversion arithmetic among current MFMAs",
+  "allow_resource_change": false,
+  "before_resources": {
+    "vgpr_count": 144,
+    "sgpr_count": 46,
+    "private_segment_fixed_size": 0,
+    "agpr_count": 64,
+    "tile": 128,
+    "stage_k": 32,
+    "kind": "gemm",
+    "storage": "fp16-a/fp8-b",
+    "fp8_schedule": 1,
+    "lds_bytes": 16384,
+    "instructions_per_loop": {
+      "s_waitcnt": 6,
+      "s_barrier": 4,
+      "v_mfma_f32_32x32x8f16": 32,
+      "ds_write_b128": 8,
+      "v_perm_b32": 16,
+      "global_load_dwordx4": 6,
+      "v_add_co_u32_e32": 4,
+      "v_addc_co_u32_e32": 4,
+      "v_pk_ashrrev_i16": 16,
+      "v_and_b32_e32": 16,
+      "v_pk_mul_f16": 16,
+      "ds_read_b128": 16,
+      "s_sub_u32": 1,
+      "s_cmp_ge_u32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  "after_resources": {
+    "vgpr_count": 144,
+    "sgpr_count": 46,
+    "private_segment_fixed_size": 0,
+    "agpr_count": 64,
+    "tile": 128,
+    "stage_k": 32,
+    "kind": "gemm",
+    "storage": "fp16-a/fp8-b",
+    "fp8_schedule": 2,
+    "lds_bytes": 16384,
+    "instructions_per_loop": {
+      "s_waitcnt": 6,
+      "s_barrier": 4,
+      "v_mfma_f32_32x32x8f16": 32,
+      "ds_write_b128": 8,
+      "v_perm_b32": 16,
+      "global_load_dwordx4": 6,
+      "v_add_co_u32_e32": 4,
+      "v_addc_co_u32_e32": 4,
+      "v_pk_ashrrev_i16": 16,
+      "v_and_b32_e32": 16,
+      "v_pk_mul_f16": 16,
+      "ds_read_b128": 16,
+      "s_sub_u32": 1,
+      "s_cmp_ge_u32": 1,
+      "s_cbranch_scc1": 1
+    }
+  },
+  "functional_variants": [
+    [
+      "before",
+      128
+    ],
+    [
+      "after",
+      128
+    ]
+  ]
+}

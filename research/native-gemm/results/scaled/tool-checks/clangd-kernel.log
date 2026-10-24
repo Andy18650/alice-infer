@@ -1,0 +1,28 @@
+I[12:14:32.580] Ubuntu clangd version 21.1.8 (6ubuntu1)
+I[12:14:32.580] Features: linux+grpc
+I[12:14:32.580] PID: 193665
+I[12:14:32.580] Working directory: /home/andyhu/projects/inference/alice-infer
+I[12:14:32.580] argv[0]: clangd
+I[12:14:32.580] argv[1]: --check=research/native-gemm/scaled_kernel.hpp
+I[12:14:32.580] argv[2]: --log=info
+I[12:14:32.580] Entering check mode (no LSP server)
+I[12:14:32.580] Testing on source file /home/andyhu/projects/inference/alice-infer/research/native-gemm/scaled_kernel.hpp
+I[12:14:32.580] Loading config file at /home/andyhu/projects/inference/alice-infer/research/native-gemm/.clangd
+I[12:14:32.580] Loading config file at /home/andyhu/.config/clangd/config.yaml
+I[12:14:32.580] Loading compilation database...
+I[12:14:32.580] Loaded compilation database from /home/andyhu/projects/inference/alice-infer/research/native-gemm/../../temp/native-gemm/scaled/scaled/compile_commands.json
+I[12:14:32.580] Compile command inferred from /home/andyhu/projects/inference/alice-infer/research/native-gemm/probe.hip is: [/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scaled/scaled] /usr/lib/llvm-21/bin/clang++ --driver-mode=g++ -O3 --offload-arch=gfx90a -fdenormal-fp-math=ieee -Wall -Wextra -DNATIVE_FP8_B=1 -DNATIVE_SCALED_B=1 -I/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scaled/scaled -c -std=c++20 -x hip --offload-arch=gfx90a -D__HIP_PLATFORM_AMD__=1 -include hip/hip_runtime.h -include compute.hpp -resource-dir=/usr/lib/llvm-21/lib/clang/21 -- /home/andyhu/projects/inference/alice-infer/research/native-gemm/scaled_kernel.hpp
+I[12:14:32.581] Parsing command...
+I[12:14:32.582] internal (cc1) args are: -cc1 -triple x86_64-pc-linux-gnu -aux-triple amdgcn-amd-amdhsa -O3 -fsyntax-only -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name scaled_kernel.hpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=none -fmath-errno -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scaled/scaled -fcoverage-compilation-dir=/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scaled/scaled -resource-dir /usr/lib/llvm-21/lib/clang/21 -internal-isystem /usr/lib/llvm-21/lib/clang/21/include/cuda_wrappers -idirafter /usr/include -include __clang_hip_runtime_wrapper.h -include hip/hip_runtime.h -include compute.hpp -D NATIVE_FP8_B=1 -D NATIVE_SCALED_B=1 -I /home/andyhu/projects/inference/alice-infer/temp/native-gemm/scaled/scaled -D __HIP_PLATFORM_AMD__=1 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/x86_64-linux-gnu/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16/backward -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/x86_64-linux-gnu/c++/16 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../include/c++/16/backward -internal-isystem /usr/lib/llvm-21/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -internal-isystem /usr/lib/llvm-21/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/16/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -Wall -Wextra -std=c++20 -fdeprecated-macro -ferror-limit 19 -fhip-new-launch-api -fgnuc-version=4.2.1 -fno-implicit-modules -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -vectorize-loops -vectorize-slp -no-round-trip-args -cuid=aeefb00ec66043d6 -fcuda-allow-variadic-functions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -x hip /home/andyhu/projects/inference/alice-infer/research/native-gemm/scaled_kernel.hpp
+I[12:14:32.582] Building preamble...
+I[12:14:33.506] Built preamble of size 13231664 for file /home/andyhu/projects/inference/alice-infer/research/native-gemm/scaled_kernel.hpp version null in 0.92 seconds
+I[12:14:33.506] Indexing headers...
+I[12:14:33.684] Building AST...
+I[12:14:33.748] Indexing AST...
+I[12:14:33.748] Building inlay hints
+I[12:14:33.748] Building semantic highlighting
+I[12:14:33.749] Testing features at each token (may be slow in large files)
+E[12:14:33.749]     tweak: DefineOutline ==> FAIL: Couldn't find a suitable implementation file.
+E[12:14:33.750]     tweak: DefineOutline ==> FAIL: Couldn't find a suitable implementation file.
+E[12:14:33.751]     tweak: DefineOutline ==> FAIL: Couldn't find a suitable implementation file.
+I[12:14:33.832] All checks completed, 3 errors

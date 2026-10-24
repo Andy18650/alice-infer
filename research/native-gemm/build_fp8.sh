@@ -4,7 +4,7 @@ set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
 schedule=${2:-interleaved}
-out=${1:-"$root/temp/native-gemm/fp8-schedule/$schedule"}
+out=${1:-"$root/temp/native-gemm/fp8-scale-host-bridge/$schedule"}
 NATIVE_FP8_B=1 NATIVE_FP8_SCHEDULE="$schedule" bash "$here/build.sh" 128 "$out" gemm 32
 out=$(cd "$out" && pwd)
 hipcc -O3 -std=c++20 --offload-arch=gfx90a -fdenormal-fp-math=ieee \

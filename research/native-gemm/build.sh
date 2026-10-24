@@ -32,7 +32,7 @@ case "$stage" in
 esac
 
 generator=generate.py
-namespace=fp16-bridge
+namespace=fp16-scale-host-bridge
 format_flags=()
 extra_sources=()
 if [[ ${NATIVE_FP8_B:-0} == 1 ]]; then
@@ -45,7 +45,7 @@ if [[ ${NATIVE_FP8_B:-0} == 1 ]]; then
         burst|early|interleaved) ;;
         *) echo 'unknown FP8 schedule' >&2; exit 2 ;;
     esac
-    namespace=fp8-schedule/$schedule
+    namespace=fp8-scale-host-bridge/$schedule
     format_flags=(-DNATIVE_FP8_B=1)
     extra_sources=("$here/generate_fp8.py" "$here/data_fp8.hpp" "$here/build_fp8.sh")
 fi

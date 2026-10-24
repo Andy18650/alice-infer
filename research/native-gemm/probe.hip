@@ -17,7 +17,12 @@
 #include "data.hpp"
 #ifdef NATIVE_FP8_B
 #include "data_fp8.hpp"
+#ifdef NATIVE_SCALED_B
+#include "data_scaled.hpp"
+using InputMatrices = ScaledMatrices;
+#else
 using InputMatrices = Fp8Matrices;
+#endif
 constexpr bool kFp8B = true;
 #else
 using InputMatrices = TestMatrices;
@@ -37,6 +42,9 @@ constexpr bool kFp8B = false;
 using F16 = float __attribute__((ext_vector_type(16)));
 #include "compute.hpp"
 
+#ifdef NATIVE_SCALED_B
+#include "scaled_kernel.hpp"
+#else
 // Kernel arguments and operations intentionally retain the measured ordering.
 // Output tile and StageK are compile-time constants from compute.hpp.
 __global__ __launch_bounds__(256) void native_gemm(
@@ -144,6 +152,8 @@ __global__ __launch_bounds__(256) void native_gemm(
     }
 }
 
+#endif // NATIVE_SCALED_B
+
 // Everything below is host-only setup, timing, verification and reporting.
 // None of these helpers is part of the timed device K loop.
 template<class T>
@@ -184,6 +194,7 @@ struct Options {
     int warmup_ms = 200;
     int swizzle = 0;
     int b_pattern = 0;
+    int scale_pattern = 1;
     uint32_t seed_a = 1729;
     uint32_t seed_b = 2718;
     std::string stamp_prefix;
@@ -217,6 +228,8 @@ Options parse_options(int argc, char** argv) {
             options.warmup_ms = std::stoi(value);
         } else if (key == "--stamps-prefix") {
             options.stamp_prefix = value;
+        } else if (key == "--scale-pattern") {
+            options.scale_pattern = std::stoi(value);
         } else if (key == "--b-pattern") {
             options.b_pattern = std::stoi(value);
         } else if (key == "--swizzle") {
@@ -407,6 +420,10 @@ int main(int argc, char** argv) try {
     const int n = options.columns;
     const int k = options.reduction;
 
+#ifdef NATIVE_SCALED_B
+    if (options.swizzle || options.scale_pattern < 0 || options.scale_pattern > 3)
+        throw std::runtime_error("scaled variant requires linear LDS and scale pattern0..3");
+#endif
     HIP(hipSetDevice(0));
     int steady_clock_khz;
     HIP(hipDeviceGetAttribute(&steady_clock_khz, hipDeviceAttributeWallClockRate, 0));
@@ -435,6 +452,9 @@ int main(int argc, char** argv) try {
     InputMatrices matrices(m, n, k, options.seed_a, options.seed_b);
 #ifdef NATIVE_FP8_B
     matrices.set_finite_pattern(options.b_pattern != 0);
+#ifdef NATIVE_SCALED_B
+    matrices.set_scales(options.scale_pattern, kScaled);
+#endif
 #endif
     const auto packing_begin = std::chrono::steady_clock::now();
     auto packed_a = matrices.pack_operand(false, kTile, kStageK);
@@ -444,6 +464,14 @@ int main(int argc, char** argv) try {
 
     DeviceBuffer<uint32_t> device_a(packed_a.size());
     DeviceBuffer<uint32_t> device_b(packed_b.size());
+#ifdef NATIVE_SCALED_B
+    DeviceBuffer<float> device_scales(matrices.scales.size());
+    if (!matrices.scales.empty())
+        HIP(hipMemcpy(device_scales.pointer, matrices.scales.data(), matrices.scales.size() * 4,
+                      hipMemcpyHostToDevice));
+    std::fprintf(stderr, "SCALES K128/N128 FP32 pattern%d enabled%d count%zu\n",
+                 options.scale_pattern, int(kScaled), matrices.scales.size());
+#endif
     DeviceBuffer<float> device_output(size_t(m) * n + 32);
     DeviceBuffer<uint64_t> device_stamps(size_t(blocks) * 16);
     if (!packed_a.empty()) {
@@ -474,7 +502,11 @@ int main(int argc, char** argv) try {
     auto launch = [&] {
         native_gemm<<<blocks, 256, kLdsBytes>>>(
             device_a.pointer, device_b.pointer, device_output.pointer + 16,
-            device_stamps.pointer, m, n, padded_m, padded_n, stage_count, options.swizzle);
+            device_stamps.pointer, m, n, padded_m, padded_n, stage_count, options.swizzle
+#ifdef NATIVE_SCALED_B
+            , device_scales.pointer
+#endif
+        );
         HIP(hipGetLastError());
     };
 

@@ -5,6 +5,12 @@ called**, including validation. HIP runtime plus native global/LDS/MFMA ISA.
 FP16 A/B operands, FP32 accumulators and row-major C, alpha1/beta0, no split-K
 or atomics. Standalone research, not engine integration.
 
+**K128/N128 FP32 scales implemented:** [SCALED_FP8.md](SCALED_FP8.md).
+All192 accumulation registers plus the full64-register operand/producer state
+fit in256 architected VGPRs,AGPR0/private0,two CTAs/CU. Scalar-address/lifetime
+compaction has no observed performance loss; separate controls quantify the
+occupancy and scaling costs. The unscaled defaults remain supported.
+
 **Separate FP8-B experiment:** [FP8_B.md](FP8_B.md) distributes A/B K8
 production across all four waves (two A x4 loads + one FP8 B x4 each), expands
 B before LDS, and passes exhaustive finite conversion/whole-GEMM checks. The
@@ -176,8 +182,8 @@ checks, dynamic dependency listings and overlap proof are committed under
 ## Build / replay
 
 ```sh
-bash research/native-gemm/build.sh                      #128,K32 ->temp/native-gemm/fp16-bridge/s32-t128
-numactl --cpunodebind=0 --membind=0 temp/native-gemm/fp16-bridge/s32-t128/probe \
+bash research/native-gemm/build.sh                      #128,K32 ->temp/native-gemm/fp16-scale-host-bridge/s32-t128
+numactl --cpunodebind=0 --membind=0 temp/native-gemm/fp16-scale-host-bridge/s32-t128/probe \
   --m 4096 --n 6656 --k 32768 --rounds 9 --warmup-ms 200
 # Historical one-MFMA A/B uses preserved builds/source snapshots:
 python3 research/native-gemm/run_mfma_first.py --output <fresh-A-B-directory>
@@ -189,9 +195,14 @@ python3 research/native-gemm/analyze.py <results-directory>
 python3 research/native-gemm/analyze.py research/native-gemm/results/final \
   --report-dir <fresh-audit-report-directory>
 # Separate experimental FP8 B (128x128x32 only):
-bash research/native-gemm/build_fp8.sh temp/native-gemm/fp8-schedule/early early
 bash research/native-gemm/build_fp8.sh
+# Historical A/B reuses preserved schedule builds/source snapshots:
 python3 research/native-gemm/run_fp8_schedule.py --step interleaved --output <fresh-FP8-A-B-directory>
+# New scaled/control kernels and matched register-budget comparison:
+bash research/native-gemm/build_scaled.sh compact
+bash research/native-gemm/build_scaled.sh heavy
+bash research/native-gemm/build_scaled.sh scaled
+python3 research/native-gemm/run_scaled.py --output <fresh-scaled-results>
 ```
 
 `build.sh [128|256] [output-directory] [gemm|resident] [32|64]` supports only
@@ -200,10 +211,11 @@ linear LDS lane mapping; `--swizzle 1` is opt-in null control. `resident` is a
 repeated-first-fragment diagnostic, **not ordinary GEMM**; it is never used
 by the final suite. Stage64 and archived CLI/header versions belong to their
 recorded paths/snapshots. Use fresh directories to preserve measured binaries.
-Normal builds now default under `temp/native-gemm/fp16-bridge/` to avoid
-overwriting measured MFMA-first binaries after the shared host/preprocessor
-bridge. Its whole GPU .text is byte-identical. FP8 builds use `fp8-b`; all
-older measured namespaces remain untouched. CSV column names and timestamp
+Normal builds now default under `temp/native-gemm/fp16-scale-host-bridge/`
+and unscaled FP8 under `fp8-scale-host-bridge/` to preserve earlier measured
+binaries after the shared host additions. Both original FP16 tiles and the
+unscaled FP8 whole GPU .text remain byte-identical. Scaled modes use `scaled/`;
+all older measured namespaces remain untouched. CSV column names and timestamp
 binary layout are unchanged. The expanded default full runner has360 launches;
 the focused branch A/B and original180-launch suite remain distinct.
 

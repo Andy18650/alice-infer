@@ -59,6 +59,8 @@ class Case:
     repeat: int = 0
     seed_a: int = 1729
     seed_b: int = 2718
+    scale_pattern: int | None = None
+    b_pattern: int = 0
 
     @property
     def timing(self):
@@ -73,6 +75,8 @@ class Case:
         return (
             f't{self.tile}-m{self.m}-n{self.n}-k{self.k}-r{self.repeat}'
             f'-a{self.seed_a}-b{self.seed_b}'
+            + (f'-scale{self.scale_pattern}' if self.scale_pattern is not None else '')
+            + ('-finite' if self.b_pattern else '')
         )
 
 
@@ -166,6 +170,10 @@ def run_case(case, builds, output, commands):
         '--warmup-ms', '200' if case.timing else '0',
         '--swizzle', '0', '--seed-a', str(case.seed_a), '--seed-b', str(case.seed_b),
     ]
+    if case.scale_pattern is not None:
+        command += ['--scale-pattern', str(case.scale_pattern)]
+    if case.b_pattern:
+        command += ['--b-pattern', str(case.b_pattern)]
     if case.timing:
         command += ['--stamps-prefix', str(output / 'clocks' / case.stem)]
     commands.write(shlex.join(command) + '\n')
@@ -216,11 +224,11 @@ def case_sequence(builds):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=HERE / 'results/fp16-bridge-full')
+    parser.add_argument('--output', type=Path, default=HERE / 'results/fp16-scale-host-bridge-full')
     parser.add_argument('--build128', type=Path,
-                        default=ROOT / 'temp/native-gemm/fp16-bridge/s32-t128')
+                        default=ROOT / 'temp/native-gemm/fp16-scale-host-bridge/s32-t128')
     parser.add_argument('--build256', type=Path,
-                        default=ROOT / 'temp/native-gemm/fp16-bridge/s32-t256')
+                        default=ROOT / 'temp/native-gemm/fp16-scale-host-bridge/s32-t256')
     args = parser.parse_args()
     output = args.output.resolve()
     builds = {128: args.build128.resolve(), 256: args.build256.resolve()}

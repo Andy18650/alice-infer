@@ -1,0 +1,239 @@
+{
+  "checks": [
+    {
+      "stages": 0,
+      "groups": 0,
+      "mfmas": 0,
+      "minimum_prior_bank_issue_distance": null,
+      "scalar_loads": 0,
+      "scale_fmas": 0
+    },
+    {
+      "stages": 1,
+      "groups": 1,
+      "mfmas": 16,
+      "minimum_prior_bank_issue_distance": null,
+      "scalar_loads": 1,
+      "scale_fmas": 128
+    },
+    {
+      "stages": 2,
+      "groups": 1,
+      "mfmas": 32,
+      "minimum_prior_bank_issue_distance": null,
+      "scalar_loads": 1,
+      "scale_fmas": 128
+    },
+    {
+      "stages": 3,
+      "groups": 1,
+      "mfmas": 48,
+      "minimum_prior_bank_issue_distance": null,
+      "scalar_loads": 1,
+      "scale_fmas": 128
+    },
+    {
+      "stages": 4,
+      "groups": 1,
+      "mfmas": 64,
+      "minimum_prior_bank_issue_distance": null,
+      "scalar_loads": 1,
+      "scale_fmas": 128
+    },
+    {
+      "stages": 5,
+      "groups": 2,
+      "mfmas": 80,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 2,
+      "scale_fmas": 192
+    },
+    {
+      "stages": 6,
+      "groups": 2,
+      "mfmas": 96,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 2,
+      "scale_fmas": 192
+    },
+    {
+      "stages": 7,
+      "groups": 2,
+      "mfmas": 112,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 2,
+      "scale_fmas": 192
+    },
+    {
+      "stages": 8,
+      "groups": 2,
+      "mfmas": 128,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 2,
+      "scale_fmas": 192
+    },
+    {
+      "stages": 9,
+      "groups": 3,
+      "mfmas": 144,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 3,
+      "scale_fmas": 256
+    },
+    {
+      "stages": 10,
+      "groups": 3,
+      "mfmas": 160,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 3,
+      "scale_fmas": 256
+    },
+    {
+      "stages": 11,
+      "groups": 3,
+      "mfmas": 176,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 3,
+      "scale_fmas": 256
+    },
+    {
+      "stages": 12,
+      "groups": 3,
+      "mfmas": 192,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 3,
+      "scale_fmas": 256
+    },
+    {
+      "stages": 15,
+      "groups": 4,
+      "mfmas": 240,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 4,
+      "scale_fmas": 320
+    },
+    {
+      "stages": 16,
+      "groups": 4,
+      "mfmas": 256,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 4,
+      "scale_fmas": 320
+    },
+    {
+      "stages": 17,
+      "groups": 5,
+      "mfmas": 272,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 5,
+      "scale_fmas": 384
+    },
+    {
+      "stages": 31,
+      "groups": 8,
+      "mfmas": 496,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 8,
+      "scale_fmas": 576
+    },
+    {
+      "stages": 32,
+      "groups": 8,
+      "mfmas": 512,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 8,
+      "scale_fmas": 576
+    },
+    {
+      "stages": 33,
+      "groups": 9,
+      "mfmas": 528,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 9,
+      "scale_fmas": 640
+    },
+    {
+      "stages": 63,
+      "groups": 16,
+      "mfmas": 1008,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 16,
+      "scale_fmas": 1088
+    },
+    {
+      "stages": 64,
+      "groups": 16,
+      "mfmas": 1024,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 16,
+      "scale_fmas": 1088
+    },
+    {
+      "stages": 65,
+      "groups": 17,
+      "mfmas": 1040,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 17,
+      "scale_fmas": 1152
+    },
+    {
+      "stages": 127,
+      "groups": 32,
+      "mfmas": 2032,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 32,
+      "scale_fmas": 2112
+    },
+    {
+      "stages": 128,
+      "groups": 32,
+      "mfmas": 2048,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 32,
+      "scale_fmas": 2112
+    },
+    {
+      "stages": 129,
+      "groups": 33,
+      "mfmas": 2064,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 33,
+      "scale_fmas": 2176
+    },
+    {
+      "stages": 255,
+      "groups": 64,
+      "mfmas": 4080,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 64,
+      "scale_fmas": 4160
+    },
+    {
+      "stages": 256,
+      "groups": 64,
+      "mfmas": 4096,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 64,
+      "scale_fmas": 4160
+    },
+    {
+      "stages": 257,
+      "groups": 65,
+      "mfmas": 4112,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 65,
+      "scale_fmas": 4224
+    },
+    {
+      "stages": 2048,
+      "groups": 512,
+      "mfmas": 32768,
+      "minimum_prior_bank_issue_distance": 9,
+      "scalar_loads": 512,
+      "scale_fmas": 32832
+    }
+  ],
+  "compact_heavy_text_identical": true,
+  "text_bytes": 21952,
+  "text_sha256": "f3f0a2f7887fc0aac5aea23d652015560fb6d60f18868107ff16cfb0d3b7615f"
+}

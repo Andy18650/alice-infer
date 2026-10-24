@@ -1,0 +1,16 @@
+initial source/header/original executable/code-object hashes pass
+swizzle source/header/original executable/code-object hashes pass
+late source/header/original executable/code-object hashes pass
+early source/header/original executable/code-object hashes pass
+stage64 source/header/original executable/code-object hashes pass
+resident source/header/original executable/code-object hashes pass
+final source/header/original executable/code-object hashes pass
+bank-control archived source/original native hashes pass
+readable source/header/original executable/code-object hashes pass
+branch-clean before/after, optional auxiliary source/native hashes pass
+mfma-first before/after, optional auxiliary source/native hashes pass
+fp8-b before/after, optional auxiliary source/native hashes pass
+fp8-early before/after, optional auxiliary source/native hashes pass
+fp8-interleaved before/after, optional auxiliary source/native hashes pass
+scaled original/compact/reserved/scaled source/native hashes pass
+Recorded dynamic dependencies contain no vendor GEMM libraries

@@ -122,10 +122,11 @@ has intentional later changes. Normal FP16 generator and kernel untouched;
 FP16 remains the default format. New FP8 defaults use a fresh schedule namespace.
 
 ```sh
-bash research/native-gemm/build_fp8.sh temp/native-gemm/fp8-schedule/early early
-bash research/native-gemm/build_fp8.sh temp/native-gemm/fp8-schedule/interleaved interleaved
-python3 research/native-gemm/run_fp8_schedule.py --step early --output <fresh-step1>
-python3 research/native-gemm/run_fp8_schedule.py --step interleaved --output <fresh-step2>
+# Rebuild historical sources into FRESH directories, never overwrite measured builds:
+bash research/native-gemm/results/fp8-early/after/source/build_fp8.sh <fresh-early> early
+bash research/native-gemm/results/fp8-interleaved/after/source/build_fp8.sh <fresh-interleaved> interleaved
+python3 research/native-gemm/run_fp8_schedule.py --step early --after-build <fresh-early> --output <fresh-step1>
+python3 research/native-gemm/run_fp8_schedule.py --step interleaved --before-build <fresh-early> --after-build <fresh-interleaved> --output <fresh-step2>
 python3 research/native-gemm/audit_fp8_schedule.py --output <fresh-audit>
 python3 research/native-gemm/verify_artifacts.py
 ```

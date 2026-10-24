@@ -22,7 +22,7 @@ if __name__ == '__main__':
         before_source=before_source,
         after_build=ROOT / f'temp/native-gemm/fp8-schedule/{selected.step}',
         after256=None,
-        after_source=HERE,
+        after_source=HERE / f'results/fp8-{selected.step}/after/source',
         output=HERE / f'results/fp8-{selected.step}',
         title=('FP8 clustered permutations + immediate B prefetch' if early else
                'FP8 conversion arithmetic among current MFMAs'),

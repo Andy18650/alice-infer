@@ -15,7 +15,8 @@ from pathlib import Path
 RESULTS = Path(__file__).resolve().parent / 'results'
 HISTORICAL_PHASES = ('initial', 'swizzle', 'late', 'early', 'stage64', 'resident', 'final')
 SOURCE_FILES = {'probe.hip', 'data.hpp', 'generate.py', 'generate_fp8.py',
-                'data_fp8.hpp', 'build_fp8.sh', 'verify_fp8.hip'}
+                'data_fp8.hpp', 'build_fp8.sh', 'verify_fp8.hip',
+                'data_scaled.hpp', 'scaled_kernel.hpp', 'generate_scaled.py'}
 
 
 def verify_manifest(manifest, source_directory):
@@ -85,6 +86,17 @@ def verify_pipeline_comparison(phase, audit_phase):
     print(phase, 'before/after, optional auxiliary source/native hashes pass')
 
 
+def verify_scaled_comparison():
+    directory = RESULTS / 'scaled'
+    if not (directory / 'summary.csv').exists():
+        return
+    for variant in ('original', 'compact', 'heavy', 'scaled'):
+        root = directory / variant
+        verify_manifest(root / 'build/hashes.txt', root / 'source')
+        verify_dependencies(root)
+    print('scaled original/compact/reserved/scaled source/native hashes pass')
+
+
 def main():
     for phase in HISTORICAL_PHASES:
         verify_phase(phase)
@@ -98,6 +110,7 @@ def main():
     verify_pipeline_comparison('fp8-b', 'fp8-b-audit')
     verify_pipeline_comparison('fp8-early', 'fp8-schedule-audit')
     verify_pipeline_comparison('fp8-interleaved', 'fp8-schedule-audit')
+    verify_scaled_comparison()
     print('Recorded dynamic dependencies contain no vendor GEMM libraries')
 
 

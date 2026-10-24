@@ -14,6 +14,10 @@ experimental variant, not the default. Its FP16 host bridge is GPU-byte-identica
 [Subsequent scheduling](FP8_SCHEDULE.md) has separate early/interleaved A/Bs;
 permutation copies free a distinct raw buffer before prefetch, and one extra
 current MFMA divides conversion. Wait/barrier/read order and math order remain fixed.
+The [scaled extension](SCALED_FP8.md) keeps all five operand slots and producer
+buffers, but moves addresses to SGPR-base GLOBAL operations and output stores
+inside asm. This fits192 accumulator+64 other registers without spills; the
+compact/reserved controls have byte-identical GPU instructions.
 
 ## 1. File map and suggested reading order
 
@@ -37,7 +41,11 @@ current MFMA divides conversion. Wait/barrier/read order and math order remain f
 |`generate_fp8.py`, `data_fp8.hpp`|Balanced all-wave FP8 producer, explicit repacking and finite-code oracle.|
 |`verify_fp8.hip`, `audit_fp8.py`|Independent packing/bit gates and preserved compute/fence projection.|
 |`build_fp8.sh`, `run_fp8.py`|Separate FP8 build; original experiment pins archived source.|
-|`run_fp8_schedule.py`, `audit_fp8_schedule.py`|Two matched scheduling steps, copied-buffer/no-overfetch/exact-MFMA-move proof.|
+|`run_fp8_schedule.py`, `audit_fp8_schedule.py`|Two historical scheduling steps and their order proof.|
+|`generate_scaled.py`, `scaled_kernel.hpp`|SGPR-address pipeline; all-arch192-register triple accumulation plus64 pipeline regs.|
+|`data_scaled.hpp`|Logical K128/N128 FP32 scale table and independent grouped int64/std::fma oracle.|
+|`inspect_scaled.py`, `audit_scaled.py`|Actual zero-spill/no-AGPR resource gate and scale/bank/order/control proof.|
+|`build_scaled.sh`, `run_scaled.py`|Fresh compact128/reserved256/scaled256 builds and four-way matched experiment.|
 |`bank-probe.hip`|Small explicit register-pair diagnostic; not the final GEMM benchmark.|
 
 The default is **tile128,StageK32,ordinary GEMM,linear LDS mapping**. Other tile/
@@ -179,7 +187,7 @@ recorded SHA256, not inferred from approximate source similarity.
 ```sh
 bash research/native-gemm/build.sh 128
 bash research/native-gemm/build.sh 256
-# Current normal builds: temp/native-gemm/fp16-bridge/s32-t{128,256}; old builds retained.
+# Current normal builds: temp/native-gemm/fp16-scale-host-bridge/s32-t{128,256}; old builds retained.
 # Historical cleanup audit pins results/readable/source and readable binaries:
 python3 research/native-gemm/audit_cleanup.py --output <fresh-audit-directory>
 python3 research/native-gemm/audit_branch_flow.py --output <fresh-flow-audit>

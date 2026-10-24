@@ -1,0 +1,20 @@
+[
+  {
+    "before": "temp/native-gemm/fp16-bridge/s32-t128/probe.hsaco",
+    "after": "temp/native-gemm/fp16-scale-host-bridge/s32-t128/probe.hsaco",
+    "bytes": 8704,
+    "sha256": "e9053be64e7c50fe87e366c2c2a6ec06171fb9ed15ade389a49ef4364eb74607"
+  },
+  {
+    "before": "temp/native-gemm/fp16-bridge/s32-t256/probe.hsaco",
+    "after": "temp/native-gemm/fp16-scale-host-bridge/s32-t256/probe.hsaco",
+    "bytes": 28416,
+    "sha256": "6c8a292650d8f2975a653c5267c57ce103e76c45fc47b81b1c1e6d3d32f84f1a"
+  },
+  {
+    "before": "temp/native-gemm/fp8-schedule/interleaved/probe.hsaco",
+    "after": "temp/native-gemm/fp8-scale-host-bridge/interleaved/probe.hsaco",
+    "bytes": 10048,
+    "sha256": "1efa1bb9da03e897933e80e834b871858cca32803b7b907e59131d6ba710150b"
+  }
+]

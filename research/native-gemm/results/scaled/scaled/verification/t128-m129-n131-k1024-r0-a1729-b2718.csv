@@ -1,0 +1,2 @@
+kind,round,tile,stage_k,swizzle,m,n,k,mp,np,kp,ctas,resident_ctas_per_cu,lds_bytes,event_us,grid_body_us,useful_TFLOPs,executed_TFLOPs,median_core_MHz,median_cta_share_of_cu_peak,global_clock_adjusted_efficiency,reference_outputs,full_reference,mismatches,nonfinite,guards,valid,pack_ms
+gemm,0,128,32,0,129,131,1024,256,256,1024,4,2,16384,72.320000,48.960000,0.478556,1.855887,1684.293,0.398666569,0.002667974,16899,1,0,0,0,1,1.204

@@ -1,0 +1,791 @@
+{
+  "sha256": "197dd4e06d1119c9464e94ac6ba4bc43e87478217310c818e4bb7f56d383b204",
+  "kernels": [
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 8,
+      "dup": 1,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 12,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 8,
+      "batch": 8,
+      "dup": 1,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 22,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 16,
+      "batch": 8,
+      "dup": 1,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 38,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 1,
+      "dup": 1,
+      "full": 0,
+      "initial_pending": 0,
+      "peak_pending": 1,
+      "resources": {
+        "vgpr_count": 8,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 2,
+      "dup": 1,
+      "full": 0,
+      "initial_pending": 1,
+      "peak_pending": 2,
+      "resources": {
+        "vgpr_count": 8,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 4,
+      "dup": 1,
+      "full": 0,
+      "initial_pending": 3,
+      "peak_pending": 4,
+      "resources": {
+        "vgpr_count": 8,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 16,
+      "dup": 1,
+      "full": 0,
+      "initial_pending": 15,
+      "peak_pending": 16,
+      "resources": {
+        "vgpr_count": 20,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 8,
+      "dup": 2,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 12,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 8,
+      "dup": 4,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 12,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 8,
+      "dup": 8,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 12,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 8,
+      "dup": 16,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 12,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 8,
+      "dup": 32,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 12,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 8,
+      "dup": 64,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 12,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 16,
+      "batch": 8,
+      "dup": 2,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 38,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 16,
+      "batch": 8,
+      "dup": 4,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 38,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 16,
+      "batch": 8,
+      "dup": 8,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 38,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 16,
+      "batch": 8,
+      "dup": 16,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 38,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 16,
+      "batch": 8,
+      "dup": 32,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 38,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 16,
+      "batch": 8,
+      "dup": 64,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 38,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 4,
+      "width": 4,
+      "batch": 8,
+      "dup": 1,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 15,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": false
+    },
+    {
+      "mode": 4,
+      "width": 16,
+      "batch": 8,
+      "dup": 1,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 40,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": false
+    },
+    {
+      "mode": 3,
+      "width": 4,
+      "batch": 8,
+      "dup": 1,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 27,
+        "sgpr_count": 22,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 1024
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 3,
+      "width": 8,
+      "batch": 8,
+      "dup": 1,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 27,
+        "sgpr_count": 22,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 1024
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 3,
+      "width": 16,
+      "batch": 8,
+      "dup": 1,
+      "full": 0,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 36,
+        "sgpr_count": 22,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 1024
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 8,
+      "dup": 1,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 12,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 8,
+      "batch": 8,
+      "dup": 1,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 22,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 16,
+      "batch": 8,
+      "dup": 1,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 40,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 1,
+      "dup": 1,
+      "full": 1,
+      "initial_pending": 0,
+      "peak_pending": 1,
+      "resources": {
+        "vgpr_count": 8,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 2,
+      "dup": 1,
+      "full": 1,
+      "initial_pending": 1,
+      "peak_pending": 2,
+      "resources": {
+        "vgpr_count": 8,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 4,
+      "dup": 1,
+      "full": 1,
+      "initial_pending": 3,
+      "peak_pending": 4,
+      "resources": {
+        "vgpr_count": 8,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 16,
+      "dup": 1,
+      "full": 1,
+      "initial_pending": 15,
+      "peak_pending": 16,
+      "resources": {
+        "vgpr_count": 20,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 8,
+      "dup": 2,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 12,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 8,
+      "dup": 4,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 12,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 8,
+      "dup": 8,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 12,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 8,
+      "dup": 16,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 12,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 8,
+      "dup": 32,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 12,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 4,
+      "batch": 8,
+      "dup": 64,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 12,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 16,
+      "batch": 8,
+      "dup": 2,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 40,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 16,
+      "batch": 8,
+      "dup": 4,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 40,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 16,
+      "batch": 8,
+      "dup": 8,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 40,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 16,
+      "batch": 8,
+      "dup": 16,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 40,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 16,
+      "batch": 8,
+      "dup": 32,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 40,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 0,
+      "width": 16,
+      "batch": 8,
+      "dup": 64,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 40,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 4,
+      "width": 4,
+      "batch": 8,
+      "dup": 1,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 15,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": false
+    },
+    {
+      "mode": 4,
+      "width": 8,
+      "batch": 8,
+      "dup": 1,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 24,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": false
+    },
+    {
+      "mode": 4,
+      "width": 16,
+      "batch": 8,
+      "dup": 1,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 42,
+        "sgpr_count": 18,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 0
+      },
+      "invariant_pointers": false
+    },
+    {
+      "mode": 3,
+      "width": 4,
+      "batch": 8,
+      "dup": 1,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 27,
+        "sgpr_count": 22,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 1024
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 3,
+      "width": 8,
+      "batch": 8,
+      "dup": 1,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 27,
+        "sgpr_count": 22,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 1024
+      },
+      "invariant_pointers": true
+    },
+    {
+      "mode": 3,
+      "width": 16,
+      "batch": 8,
+      "dup": 1,
+      "full": 1,
+      "initial_pending": 7,
+      "peak_pending": 8,
+      "resources": {
+        "vgpr_count": 40,
+        "sgpr_count": 22,
+        "private_segment_fixed_size": 0,
+        "group_segment_fixed_size": 1024
+      },
+      "invariant_pointers": true
+    }
+  ],
+  "premature_read_negative_controls_rejected": 325,
+  "eviction_reader": "one explicit dwordx4 load per grid-stride iteration; runtime checksum validated"
+}

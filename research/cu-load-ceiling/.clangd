@@ -1,0 +1,4 @@
+CompileFlags:
+  CompilationDatabase: None
+  Compiler: /usr/bin/clang++-21
+  Add: [-std=c++20, -x, hip, --offload-arch=gfx90a, -D__HIP_PLATFORM_AMD__=1]

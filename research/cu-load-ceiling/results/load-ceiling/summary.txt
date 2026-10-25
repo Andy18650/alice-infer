@@ -1,0 +1,40 @@
+One CTA, pure load rings, no MFMA/conversion. Cycles per load per wave (median of per-CU median).
+B/core-cycle figures are GROSS requested bytes (waves*width*64/cycles) unless labeled unique.
+
+1) Hot width x waves sweep (B=8, dup=1), run1/run2 cache-warm | gross B/cyc/CU:
+W    | waves1 | waves2 | waves4 | waves8
+   4 |   11.7/11.7   |   24.0/24.0   |   48.0/46.8   |   62.9/62.8  
+   8 |   24.0/23.2   |   31.3/31.3   |   31.9/31.8   |   38.7/36.7  
+  16 |   46.8/48.1   |   63.8/63.0   |   63.8/63.9   |   73.3/73.2  
+
+   cycles/load: W4  22.0 21.3 21.3 32.6   W8  21.3 32.8 64.1 105.9   W16 21.9 32.1 64.2 111.7
+
+2) Ring depth sweep (hot, W4, waves4), cycles/load: B1=124.94 B2=63.03 B4=32.69 B8=21.32 B16=22.04
+
+3) Dup sweep (hot, B=8, waves4): cycles/load vs GROSS/unique B/cyc/CU (run1):
+W    | dup1 | dup2 | dup4 | dup8 | dup16 | dup32 | dup64
+   4 cyc |  21.3 |  21.6 |  21.5 |  21.6 |  21.6 |  21.6 |  21.5
+   4 gross|  48.0 |  47.4 |  47.6 |  47.5 |  47.5 |  47.5 |  47.7
+   4 uniq |  48.0 |  23.7 |  11.9 |   5.9 |   3.0 |   1.5 |   0.7
+  16 cyc |  64.2 |  64.4 |  64.5 |  64.5 |  64.3 |  64.5 |  64.4
+  16 gross|  63.8 |  63.6 |  63.5 |  63.5 |  63.7 |  63.5 |  63.6
+  16 uniq |  63.8 |  31.8 |  15.9 |   7.9 |   4.0 |   2.0 |   1.0
+
+4) LDS contrast (B=8, dup=1): W4x4=47.6B/cyc(21.5cyc) W8x4=95.0B/cyc(21.5cyc) W16x4=125.3B/cyc(32.7cyc) W16x1=47.4B/cyc(21.6cyc)
+
+5) Hot2 (data-varying, still L1-hot) vs hot, cycles/load (run1, cache0): W4 21.72 vs 21.32; W16 64.36 vs 64.24
+
+6) Cache protocols agree (warm vs evicted+primed): max |delta| cycles/load across all
+   global cases: 6.351
+
+VERDICT vs "each CU can receive at most 32 bytes per cycle":
+- Hot dwordx4 (W16) at 4 waves sustains 63.8/63.9 B/core-cycle gross (~2x the claim);
+  hot dword at 8 waves sustains 62.9 B/core-cycle; LDS b128 delivers 125.3 B/core-cycle.
+- Hot dwordx2 (W8) saturates near 31.9 B/core-cycle: dwordx2 and dwordx4 take the SAME
+  ~64 cycles per instruction at 4 waves, so the limiter is per-instruction, not per-byte.
+- Dup sweep: W16 cycles/load change by only 0.3 cycles between 1024 B and 16 unique B
+  per instruction -> the hot ceiling is NOT unique-byte delivery.
+- The fp8-w8a16 fixed-probe "32 B/core-cycle" is therefore not a universal CU receive ceiling;
+  it is consistent with a per-instruction global-load return limit (~1 wide load per ~14-16 CU
+  cycles, ~1 dword load per ~4-5 cycles) acting on its 8-loads-per-step pattern, plus its
+  conversion/copy VALUs. No hardware counters were used; the limiting unit is not identified.

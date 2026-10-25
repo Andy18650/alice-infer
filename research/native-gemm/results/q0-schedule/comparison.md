@@ -1,0 +1,15 @@
+# Early A loads and balanced q0 scheduling
+
+HIP O3 gfx90a HIP0/BDF31:00.0 CPU+memory NUMA0 block256,automatic clocks.
+No model/context/override;full-kernel useful TFLOP/s,packing/H2D/reference excluded.
+Two counterbalanced9-sample process medians;all variants use late K128/N128 FP32 scales.
+
+|M x N x K|CTAs|Baseline|Early A only|Balanced q0|
+|---|---:|---:|---:|---:|
+|1664x1024x8192|104|117.814/117.418|117.576/117.815|119.345/119.101|
+|1664x1024x32768|104|125.618/125.528|125.573/125.663|127.920/127.874|
+|3328x1024x8192|208|131.885/131.885|131.487/131.537|133.448/133.499|
+|3328x1024x32768|208|137.348/137.321|136.890/136.944|139.003/139.072|
+|4992x1024x8192|312|135.258/135.258|134.979/134.979|137.065/136.957|
+|4992x1024x32768|312|139.708/139.773|139.243/139.225|141.397/141.406|
+|4096x6656x32768|1664|144.745/144.749|144.026/144.024|146.174/146.176|

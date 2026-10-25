@@ -2,7 +2,9 @@
 
 All three user-approved proposals implemented and measured once in a matched
 four-way run. No search for a large win, no follow-up tile/interleave sweep.
-**Keep the simple late load:** it gives a clear104-CTA gain. Pair batching and
+**Keep the simple late load:** it gives a clear104-CTA gain.
+The later [balanced q0 producer](Q0_SCHEDULE.md) is a separate user-directed
+experiment; the results below remain the original scale-latency comparison. Pair batching and
 moving q1 reads are mixed/near noise and are not promoted as improvements.
 
 ## Variants
@@ -136,9 +138,10 @@ K and single-stage groups explicitly tested. Padded metadata is bounds-checked
 in the model and numerical GPU cases with odd K-group counts/multipleNtiles.
 
 ```sh
-bash research/native-gemm/build_scaled.sh scaled <fresh-late> all late
-bash research/native-gemm/build_scaled.sh scaled <fresh-batch> all batch
-bash research/native-gemm/build_scaled.sh scaled <fresh-read> all read
+# Reproduce the recorded sources rather than a later live producer schedule:
+bash research/native-gemm/results/scale-latency/late/source/build_scaled.sh scaled <fresh-late> all late
+bash research/native-gemm/results/scale-latency/batch/source/build_scaled.sh scaled <fresh-batch> all batch
+bash research/native-gemm/results/scale-latency/read/source/build_scaled.sh scaled <fresh-read> all read
 python3 research/native-gemm/run_scale_latency.py --late-build <fresh-late> --batch-build <fresh-batch> --read-build <fresh-read> --output <fresh-results>
 python3 research/native-gemm/audit_scale_latency.py --output <fresh-audit>
 ```

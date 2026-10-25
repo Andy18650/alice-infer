@@ -8,11 +8,12 @@ case "$mode" in scaled|compact|heavy) ;; *) exit 2;; esac
 packed=${3:-all}
 case "$packed" in none|mov|all) ;; *) exit 2;; esac
 plan=${4:-baseline}
-case "$plan" in baseline|late|batch|read) ;; *) exit 2;; esac
+case "$plan" in baseline|late|batch|read|earlya|balanced) ;; *) exit 2;; esac
 namespace=scale-latency/host-bridge/$mode-$packed
 if [[ $plan != baseline ]]; then
     [[ $mode == scaled && $packed == all ]] || exit 2
     namespace=scale-latency/$plan
+    if [[ $plan == earlya || $plan == balanced ]]; then namespace=q0-schedule/$plan; fi
 fi
 out=${2:-"$root/temp/native-gemm/$namespace"}
 mkdir -p "$out/tmp"
@@ -20,6 +21,8 @@ out=$(cd "$out" && pwd)
 export TMPDIR="$out/tmp"
 if [[ $plan == baseline ]]; then
     python3 "$here/generate_scaled.py" --mode "$mode" --packed "$packed" --output "$out/compute.hpp"
+elif [[ $plan == earlya || $plan == balanced ]]; then
+    python3 "$here/generate_q0_schedule.py" --q0-plan "$plan" --output "$out/compute.hpp"
 else
     python3 "$here/generate_scale_latency.py" --plan "$plan" --output "$out/compute.hpp"
 fi
@@ -46,3 +49,4 @@ python3 "$here/inspect_scaled.py" "$out"
 sha256sum "$here/"{probe.hip,data.hpp,data_fp8.hpp,data_scaled.hpp,scaled_kernel.hpp,generate.py,generate_fp8.py,generate_scaled.py} \
     "$out/"{compute.hpp,probe,probe.hsaco} >"$out/hashes.txt"
 if [[ $plan != baseline ]]; then sha256sum "$here/generate_scale_latency.py" >>"$out/hashes.txt"; fi
+if [[ $plan == earlya || $plan == balanced ]]; then sha256sum "$here/generate_q0_schedule.py" >>"$out/hashes.txt"; fi

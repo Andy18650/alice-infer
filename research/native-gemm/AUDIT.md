@@ -24,6 +24,9 @@ and explicit low/high scale selectors; no scheduling changes.
 [Scale-latency proposals](SCALE_LATENCY.md) then separately test a deferred
 request,paired SGPR queue and earlier q1 refill. Only the simple deferred load
 has a consistent gain; the other mixed/near-noise results are retained.
+The [next q0 producer experiment](Q0_SCHEDULE.md) separately measures early A
+loads and the user-suggested balanced issue order; pointer/staging ownership,
+ordered semantic streams and unchanged native budgets are checked.
 
 ## 1. File map and suggested reading order
 
@@ -54,6 +57,7 @@ has a consistent gain; the other mixed/near-noise results are retained.
 |`build_scaled.sh`, `run_scaled.py`|Scaled builds; historical register-budget experiment pins scalar snapshots.|
 |`run_scaled_packed.py`, `audit_scaled_packed.py`|Historical packed comparison, exact source/native expansion and scale-selection proof.|
 |`generate_scale_latency.py`, `run_scale_latency.py`, `audit_scale_latency.py`|Three fixed experiments, matched four-way comparison and explicit metadata-readiness/padding proof.|
+|`generate_q0_schedule.py`, `run_q0_schedule.py`, `audit_q0_schedule.py`|Early A/balanced q0 increments, staging/pointer checks and native ordering budgets.|
 |`bank-probe.hip`|Small explicit register-pair diagnostic; not the final GEMM benchmark.|
 
 The default is **tile128,StageK32,ordinary GEMM,linear LDS mapping**. Other tile/
@@ -239,6 +243,7 @@ not captured bytes or the validity of any trial.
 |Withdrawn packed clock trial|`results/scaled-packed/checks/` — remains INVALID|
 |Corrected packed trial|`results/scaled-packed-fixed/checks/`|
 |Scale-latency experiments|`results/scale-latency/checks/`|
+|Early A/balanced q0|`results/q0-schedule/checks/`|
 
 StageK64 supplementary GPU files now live under the owning `checks/gpu64/`;
 the current artifact verifier checks these relocated manifests. Archived

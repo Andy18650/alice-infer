@@ -12,6 +12,8 @@ def audit(output):
     scaled = 'kScaled=true' in header
     plan_match = re.search(r'kScalePlan=(\d+)', header)
     scale_plan = int(plan_match[1]) if plan_match else 0
+    q0_match = re.search(r'kQ0Plan=(\d+)', header)
+    q0_plan = int(q0_match[1]) if q0_match else 0
     packed_fma = 'kPackedFma=true' in header
     packed_mov = 'kPackedMov=true' in header
     instructions = parse_instructions((output/'probe.isa').read_text())
@@ -21,6 +23,20 @@ def audit(output):
     loop = find_hot_loop(instructions,128)
     counts = opcode_counts(loop)
     require(counts[MFMA] == 128, 'Wrong MFMA count')
+    if q0_plan:
+        for index, op in enumerate(loop):
+            if op != 's_waitcnt vmcnt(0)':
+                continue
+            window = loop[index + 1:]
+            arithmetic = next(i for i, item in enumerate(window) if item.startswith('v_pk_ashrrev_i16'))
+            a_loads = [i for i, item in enumerate(window[:arithmetic])
+                       if item.startswith(('global_load_dwordx4 v[44:47]', 'global_load_dwordx4 v[48:51]'))]
+            require(len(a_loads) == 2, 'Future A loads must precede B arithmetic')
+            if q0_plan == 2:
+                matrix = [i for i, item in enumerate(window) if item.startswith(MFMA)][:4]
+                require(matrix[1] - matrix[0] - 1 == 13, 'Expected13 instructions in first q0 gap')
+                require(matrix[2] - matrix[1] - 1 == 15, 'Expected15 instructions in second q0 gap')
+                require(matrix[3] - matrix[2] - 1 == 15, 'Expected15 instructions in third q0 gap')
     if scaled:
         require(counts['s_load_dword'] == (0 if scale_plan == 2 else 2), 'Wrong scalar scale request count')
         require(counts['s_load_dwordx2'] == (1 if scale_plan == 2 else 0), 'Wrong paired scale request count')
@@ -45,7 +61,7 @@ def audit(output):
             'Spill or unexpected AGPR allocation')
     require(fields['vgpr_count'] <= 256, 'Exceeded architected budget')
     fields.update(tile=128,stage_k=32,kind='gemm',lds_bytes=16384,scaled=scaled,
-                  instructions_per_loop=dict(counts),packed_fma=packed_fma,packed_mov=packed_mov,scale_plan=scale_plan)
+                  instructions_per_loop=dict(counts),packed_fma=packed_fma,packed_mov=packed_mov,scale_plan=scale_plan,q0_plan=q0_plan)
     (output/'inventory.json').write_text(json.dumps(fields,indent=2)+'\n')
     (output/'loop.txt').write_text('\n'.join(loop)+'\n')
     (output/'body.txt').write_text('\n'.join(body)+'\n')

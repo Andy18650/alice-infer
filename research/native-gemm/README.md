@@ -16,6 +16,9 @@ report uses the corrected-selector full rerun and independent bit/clock gates. T
 [Scale-latency experiments](SCALE_LATENCY.md) implement all three next proposals:
 late scale loads give~125.4/137.3/139.6 TFLOP/s at104/208/312,K32768 and~144.6
 on the large grid. Pair batching/earlier q1 reads are mixed and not promoted.
+[Balanced q0 scheduling](Q0_SCHEDULE.md) then moves future A loads early and
+spreads q0 work into13/15/15 native-instruction gaps:~127.9/139.0/141.4 TFLOP/s
+at104/208/312,K32768 and~146.2 large. Early A loads alone are slightly negative.
 
 **Separate FP8-B experiment:** [FP8_B.md](FP8_B.md) distributes A/B K8
 production across all four waves (two A x4 loads + one FP8 B x4 each), expands
@@ -208,8 +211,8 @@ python3 research/native-gemm/run_fp8_schedule.py --step interleaved --output <fr
 bash research/native-gemm/results/scaled-packed-fixed/mov/source/build_scaled.sh scaled <fresh-mov> mov
 bash research/native-gemm/results/scaled-packed-fixed/packed/source/build_scaled.sh scaled <fresh-packed> all
 python3 research/native-gemm/run_scaled_packed.py --mov-build <fresh-mov> --packed-build <fresh-packed> --output <fresh-scaled-results>
-# New explicit late-scale experiment; full three-proposal replay in SCALE_LATENCY.md:
-bash research/native-gemm/build_scaled.sh scaled <fresh-late> all late
+# Current balanced-q0 experiment; staged comparison in Q0_SCHEDULE.md:
+bash research/native-gemm/build_scaled.sh scaled <fresh-balanced> all balanced
 # Historical register-budget comparison uses preserved scalar builds:
 python3 research/native-gemm/run_scaled.py --output <fresh-budget-results>
 ```

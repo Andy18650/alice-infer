@@ -1,0 +1,13 @@
+b929a0501b086d6018b8ee79118b292c1159642615fc17190f70e6f0a79f77fc  /home/andyhu/projects/inference/alice-infer/research/native-gemm/probe.hip
+d905012c9e7700ddad0d1c0aa5f92d99fb14efabf78ad270c63d9670df22a193  /home/andyhu/projects/inference/alice-infer/research/native-gemm/data.hpp
+651be08447be9068f23ee7b43a0cb3b47884d1a3aea0b36b2747b14ad02c10dd  /home/andyhu/projects/inference/alice-infer/research/native-gemm/data_fp8.hpp
+2ee46d332fd3100799110b4ba7f9927dce85928d8942dbf12672e8e1207e7390  /home/andyhu/projects/inference/alice-infer/research/native-gemm/data_scaled.hpp
+b993a931540696ba3709269aebf950bdd8ca2673a9d7d723a9d4c7c2b86cc26f  /home/andyhu/projects/inference/alice-infer/research/native-gemm/scaled_kernel.hpp
+98f84edcc9870e74599f4dbbee7729817026678979632fa0710f8957d5895380  /home/andyhu/projects/inference/alice-infer/research/native-gemm/generate.py
+133774b4283f9d98545062b9f0290f773a32e4c9319daf902644728ceb5da3da  /home/andyhu/projects/inference/alice-infer/research/native-gemm/generate_fp8.py
+209eb909d050f352205f5ba11e1cc8b3f31fd3fc3abd2a478716dcbe62264d7e  /home/andyhu/projects/inference/alice-infer/research/native-gemm/generate_scaled.py
+1e4569ebf31a5f0564a5b1c6f373b5bf97d59faba153a16052b131f26062ada6  /home/andyhu/projects/inference/alice-infer/temp/native-gemm/q0-schedule/earlya/compute.hpp
+a2ac0c23c87f254f07cdc83cd9c1bbe9f272349f3ad0596718bb29d07557f79c  /home/andyhu/projects/inference/alice-infer/temp/native-gemm/q0-schedule/earlya/probe
+20d6377d428041c7c00e3c30ea1f83dab6cefdae632c4f767a27f7a727b77dab  /home/andyhu/projects/inference/alice-infer/temp/native-gemm/q0-schedule/earlya/probe.hsaco
+1f82e1858c6d8aa91e0f2ef1cb9d3672f725e742f5858ff226837c28f627d10a  /home/andyhu/projects/inference/alice-infer/research/native-gemm/generate_scale_latency.py
+fa0d98941b9ef580be4a4bfc6d3032c43ad75437abc4ce80a90be0218d147853  /home/andyhu/projects/inference/alice-infer/research/native-gemm/generate_q0_schedule.py

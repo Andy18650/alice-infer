@@ -1,0 +1,53 @@
+{
+  "builds": {
+    "baseline": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/scale-latency/late",
+    "earlya": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/q0-schedule/earlya",
+    "balanced": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/q0-schedule/balanced"
+  },
+  "problems": [
+    [
+      1664,
+      1024,
+      8192
+    ],
+    [
+      1664,
+      1024,
+      32768
+    ],
+    [
+      3328,
+      1024,
+      8192
+    ],
+    [
+      3328,
+      1024,
+      32768
+    ],
+    [
+      4992,
+      1024,
+      8192
+    ],
+    [
+      4992,
+      1024,
+      32768
+    ],
+    [
+      4096,
+      6656,
+      32768
+    ]
+  ],
+  "scale_layout": "FP32 [ceil(K/128)][ceil(N/128)]",
+  "scale_pattern": 1,
+  "placement": "CPU+memory NUMA0",
+  "clock_override": false,
+  "experiment_metadata": {
+    "baseline": "late scale,six/eighteen conversion split,A loads late",
+    "earlya": "A load instructions moved early,other ordering retained",
+    "balanced": "early A,13/15/15 full-stage q0 gaps,scalar pointer adds after B stores"
+  }
+}

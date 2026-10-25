@@ -17,7 +17,7 @@ HISTORICAL_PHASES = ('initial', 'swizzle', 'late', 'early', 'stage64', 'resident
 SOURCE_FILES = {'probe.hip', 'data.hpp', 'generate.py', 'generate_fp8.py',
                 'data_fp8.hpp', 'build_fp8.sh', 'verify_fp8.hip',
                 'data_scaled.hpp', 'scaled_kernel.hpp', 'generate_scaled.py', 'verify_packed_mov.hip',
-                'generate_scale_latency.py'}
+                'generate_scale_latency.py', 'generate_q0_schedule.py'}
 
 
 def verify_manifest(manifest, source_directory):
@@ -122,6 +122,7 @@ def main():
     verify_scaled_comparison('scaled-packed', ('scalar', 'mov', 'packed'))
     verify_scaled_comparison('scaled-packed-fixed', ('scalar', 'mov', 'packed'))
     verify_scaled_comparison('scale-latency', ('baseline', 'late', 'batch', 'read'))
+    verify_scaled_comparison('q0-schedule', ('baseline', 'earlya', 'balanced'))
     print('Recorded dynamic dependencies contain no vendor GEMM libraries')
 
 

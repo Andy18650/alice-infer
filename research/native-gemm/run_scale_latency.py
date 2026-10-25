@@ -38,7 +38,7 @@ if __name__ == '__main__':
         },
         sources={
             'baseline': HERE / 'results/scaled-packed-fixed/packed/source',
-            **{variant: HERE for variant in VARIANTS[1:]},
+            **{variant: HERE / f'results/scale-latency/{variant}/source' for variant in VARIANTS[1:]},
         },
         output=HERE / 'results/scale-latency',
         description=__doc__,

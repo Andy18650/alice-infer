@@ -1445,3 +1445,11 @@ runner already did; rejection tests pass,old measurements unchanged. Local
 external tool checkout/venv remains ignored,not vendored. User deleted the
 handwritten assembly sketch;it is not restored or committed. No production/
 model/CMake/system/package/clock-policy changes from this review.
+
+**Design summary (user-requested):** `native-gemm/DESIGN.md` is the concise
+human/agent entry point for final FP16 and block-scaled FP8 geometry, packing,
+operand/scale-bank pipeline, register budget, key results and validation lessons.
+Links replace duplicated chronology; README and early DESIGN_LOG direct readers
+there. Final table values checked against recorded FP16/MFMA-first and balanced
+FP8 CSVs, with cross-series comparison limits explicit. Documentation only;
+no new benchmark, kernel, policy or production change.

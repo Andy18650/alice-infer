@@ -1,5 +1,9 @@
 # Native gfx90a FP16 GEMM: selected128x128x32
 
+**Start with [DESIGN.md](DESIGN.md)** for the concise FP16/scaled-FP8 design,
+final results and development lessons. This README retains detailed historical
+comparisons and build controls; [AUDIT.md](AUDIT.md) covers code/artifact review.
+
 From-scratch full-grid GEMM, **no rocBLAS/CK or other GEMM library linked or
 called**, including validation. HIP runtime plus native global/LDS/MFMA ISA.
 FP16 A/B operands, FP32 accumulators and row-major C, alpha1/beta0, no split-K

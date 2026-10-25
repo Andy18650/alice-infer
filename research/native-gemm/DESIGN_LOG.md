@@ -1,5 +1,9 @@
 # Native GEMM implementation record
 
+This is the early experiment record, not the current design summary. Start
+with [DESIGN.md](DESIGN.md) for the final FP16/scaled-FP8 architecture, results
+and lessons; follow its links for later scheduling/scaling experiments.
+
 All studies below are native HIP O3/C++20 gfx90a HIP0/BDF31:00.0, CPU+memory
 NUMA0, no model/context or clock overrides, packing/H2D/checking outside the
 kernel interval. No library GEMM, including references. Preserve baseline

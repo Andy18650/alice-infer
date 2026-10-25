@@ -1,0 +1,10 @@
+jobs:
+  - pmc:
+      - SQ_WAVES
+      - SQ_INSTS_VMEM
+      - TCP_TOTAL_CACHE_ACCESSES
+      - TCP_TCC_READ_REQ
+      - TCC_HIT
+      - TCC_MISS
+      - TCC_EA_RDREQ
+      - TCC_EA_RDREQ_32B

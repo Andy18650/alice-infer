@@ -1,0 +1,85 @@
+{
+  "entries": [
+    {
+      "width_dwords": 1,
+      "depth": 1,
+      "load_sites": 1,
+      "private_bytes": 0,
+      "lds_bytes": 0,
+      "entry": "0000000000005d00 <void window_entry<1, 1>(unsigned int const*, unsigned int*, unsigned int)>:"
+    },
+    {
+      "width_dwords": 1,
+      "depth": 2,
+      "load_sites": 2,
+      "private_bytes": 0,
+      "lds_bytes": 0,
+      "entry": "0000000000005e00 <void window_entry<1, 2>(unsigned int const*, unsigned int*, unsigned int)>:"
+    },
+    {
+      "width_dwords": 1,
+      "depth": 4,
+      "load_sites": 4,
+      "private_bytes": 0,
+      "lds_bytes": 0,
+      "entry": "0000000000005f00 <void window_entry<1, 4>(unsigned int const*, unsigned int*, unsigned int)>:"
+    },
+    {
+      "width_dwords": 1,
+      "depth": 8,
+      "load_sites": 8,
+      "private_bytes": 0,
+      "lds_bytes": 0,
+      "entry": "0000000000006000 <void window_entry<1, 8>(unsigned int const*, unsigned int*, unsigned int)>:"
+    },
+    {
+      "width_dwords": 1,
+      "depth": 16,
+      "load_sites": 16,
+      "private_bytes": 0,
+      "lds_bytes": 0,
+      "entry": "0000000000006200 <void window_entry<1, 16>(unsigned int const*, unsigned int*, unsigned int)>:"
+    },
+    {
+      "width_dwords": 4,
+      "depth": 1,
+      "load_sites": 1,
+      "private_bytes": 0,
+      "lds_bytes": 0,
+      "entry": "0000000000006400 <void window_entry<4, 1>(unsigned int const*, unsigned int*, unsigned int)>:"
+    },
+    {
+      "width_dwords": 4,
+      "depth": 2,
+      "load_sites": 2,
+      "private_bytes": 0,
+      "lds_bytes": 0,
+      "entry": "0000000000006500 <void window_entry<4, 2>(unsigned int const*, unsigned int*, unsigned int)>:"
+    },
+    {
+      "width_dwords": 4,
+      "depth": 4,
+      "load_sites": 4,
+      "private_bytes": 0,
+      "lds_bytes": 0,
+      "entry": "0000000000006600 <void window_entry<4, 4>(unsigned int const*, unsigned int*, unsigned int)>:"
+    },
+    {
+      "width_dwords": 4,
+      "depth": 8,
+      "load_sites": 8,
+      "private_bytes": 0,
+      "lds_bytes": 0,
+      "entry": "0000000000006800 <void window_entry<4, 8>(unsigned int const*, unsigned int*, unsigned int)>:"
+    },
+    {
+      "width_dwords": 4,
+      "depth": 16,
+      "load_sites": 16,
+      "private_bytes": 0,
+      "lds_bytes": 0,
+      "entry": "0000000000006a00 <void window_entry<4, 16>(unsigned int const*, unsigned int*, unsigned int)>:"
+    }
+  ],
+  "checks": "exact D independent loads with address-only adds, one full wait before consumption, no private/LDS or per-load timestamps"
+}

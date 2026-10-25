@@ -1,0 +1,9 @@
+jobs:
+  - pmc:
+      - VmemLatency
+      - SQ_INSTS_VMEM
+      - SQ_WAVES
+      - GRBM_GUI_ACTIVE
+      - TCC_EA_RDREQ
+      - TCC_EA_RDREQ_32B
+      - TCC_EA_RDREQ_DRAM

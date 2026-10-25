@@ -1,0 +1,87 @@
+{
+  "private_bytes": 0,
+  "lds_bytes": 0,
+  "entries": [
+    {
+      "entry": "0000000000003b00 <void chase<1, true, false, true>(unsigned int const*, Result*, unsigned int, unsigned int, unsigned int, unsigned int)>:",
+      "control": true,
+      "global_load_sites": 0,
+      "core_timestamp_sites": 4,
+      "steady_timestamp_sites": 2,
+      "load_instructions": []
+    },
+    {
+      "entry": "0000000000003d00 <void chase<1, true, true, false>(unsigned int const*, Result*, unsigned int, unsigned int, unsigned int, unsigned int)>:",
+      "control": false,
+      "global_load_sites": 3,
+      "core_timestamp_sites": 6,
+      "steady_timestamp_sites": 2,
+      "load_instructions": [
+        "global_load_dword v2, v[4:5], off glc",
+        "global_load_dword v2, v[2:3], off glc",
+        "global_load_dword v2, v[4:5], off glc"
+      ]
+    },
+    {
+      "entry": "0000000000003f00 <void chase<1, true, false, false>(unsigned int const*, Result*, unsigned int, unsigned int, unsigned int, unsigned int)>:",
+      "control": false,
+      "global_load_sites": 3,
+      "core_timestamp_sites": 6,
+      "steady_timestamp_sites": 2,
+      "load_instructions": [
+        "global_load_dword v2, v[4:5], off",
+        "global_load_dword v2, v[2:3], off",
+        "global_load_dword v2, v[4:5], off"
+      ]
+    },
+    {
+      "entry": "0000000000004100 <void chase<1, false, true, false>(unsigned int const*, Result*, unsigned int, unsigned int, unsigned int, unsigned int)>:",
+      "control": false,
+      "global_load_sites": 3,
+      "core_timestamp_sites": 6,
+      "steady_timestamp_sites": 2,
+      "load_instructions": [
+        "global_load_dword v2, v[4:5], off glc",
+        "global_load_dword v2, v[2:3], off glc",
+        "global_load_dword v2, v[4:5], off glc"
+      ]
+    },
+    {
+      "entry": "0000000000004300 <void chase<1, false, false, false>(unsigned int const*, Result*, unsigned int, unsigned int, unsigned int, unsigned int)>:",
+      "control": false,
+      "global_load_sites": 3,
+      "core_timestamp_sites": 6,
+      "steady_timestamp_sites": 2,
+      "load_instructions": [
+        "global_load_dword v2, v[4:5], off",
+        "global_load_dword v2, v[2:3], off",
+        "global_load_dword v2, v[4:5], off"
+      ]
+    },
+    {
+      "entry": "0000000000004500 <void chase<4, false, true, false>(unsigned int const*, Result*, unsigned int, unsigned int, unsigned int, unsigned int)>:",
+      "control": false,
+      "global_load_sites": 3,
+      "core_timestamp_sites": 6,
+      "steady_timestamp_sites": 2,
+      "load_instructions": [
+        "global_load_dwordx4 v[2:5], v[2:3], off glc",
+        "global_load_dwordx4 v[2:5], v[2:3], off glc",
+        "global_load_dwordx4 v[2:5], v[2:3], off glc"
+      ]
+    },
+    {
+      "entry": "0000000000004700 <void chase<4, false, false, false>(unsigned int const*, Result*, unsigned int, unsigned int, unsigned int, unsigned int)>:",
+      "control": false,
+      "global_load_sites": 3,
+      "core_timestamp_sites": 6,
+      "steady_timestamp_sites": 2,
+      "load_instructions": [
+        "global_load_dwordx4 v[2:5], v[2:3], off",
+        "global_load_dwordx4 v[2:5], v[2:3], off",
+        "global_load_dwordx4 v[2:5], v[2:3], off"
+      ]
+    }
+  ],
+  "checks": "three live loads per read entry (warm/single/timed loop), immediate vmcnt(0), timed single bracket without intervening address arithmetic"
+}

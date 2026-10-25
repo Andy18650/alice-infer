@@ -1,0 +1,36 @@
+[
+  {
+    "run": "temp/memory-window/a",
+    "binary_sha256": "d92363afb3faf2618bb6b805da960b31708b325589a9980c07e4400d3d162e21",
+    "source_sha256": "02472e0572df7fa96d7f393ac06e90c4846d8fda1182add381d1d4f24daff9d2",
+    "burst_header_sha256": "4291176d65609a9db0f8ad78898e21ac13b98d0cc9a920fbc9cdc465ab7ea282",
+    "command": "env HIP_VISIBLE_DEVICES=0 numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/memory-window/a/measured-window --mib 1040 --rounds 9 --repeats 4 --seed 12345",
+    "device": "device=0 pci=0000:31:00.0 arch=gfx90a:sramecc+:xnack- CUs=104 NUMA=external model=none context=none automatic_clocks bytes=1090519040 seed=12345 protocol=eager_4_operations warmup=2s_reference+3_per_case"
+  },
+  {
+    "run": "temp/memory-window/b",
+    "binary_sha256": "d92363afb3faf2618bb6b805da960b31708b325589a9980c07e4400d3d162e21",
+    "source_sha256": "02472e0572df7fa96d7f393ac06e90c4846d8fda1182add381d1d4f24daff9d2",
+    "burst_header_sha256": "4291176d65609a9db0f8ad78898e21ac13b98d0cc9a920fbc9cdc465ab7ea282",
+    "command": "env HIP_VISIBLE_DEVICES=0 numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/memory-window/b/measured-window --mib 1040 --rounds 9 --repeats 4 --seed 98765",
+    "device": "device=0 pci=0000:31:00.0 arch=gfx90a:sramecc+:xnack- CUs=104 NUMA=external model=none context=none automatic_clocks bytes=1090519040 seed=98765 protocol=eager_4_operations warmup=2s_reference+3_per_case"
+  },
+  {
+    "profile": "temp/memory-window/profile-a",
+    "binary_sha256": "d92363afb3faf2618bb6b805da960b31708b325589a9980c07e4400d3d162e21",
+    "counter_config_sha256": "12d9bd8887956c5cfa0239972da00425c85c10c04d338b22d84d505a48f222b2",
+    "command": "/home/andyhu/.cache/uv/archive-v0/2EEHNuXZame80Ad1/_rocm_sdk_core/bin/rocprofv3 -i /home/andyhu/projects/inference/alice-infer/temp/memory-window/profile-a/input.yaml -d /home/andyhu/projects/inference/alice-infer/temp/memory-window/profile-a/capture --kernel-trace --output-format csv --kernel-include-regex window_entry --kernel-iteration-range \\[4\\,8\\,12\\,16\\,20\\,24\\,28\\,32\\] -- numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/memory-window/profile-a/measured-window --mib 1040 --rounds 1 --repeats 1 --seed 12345"
+  },
+  {
+    "profile": "temp/memory-window/profile-b",
+    "binary_sha256": "d92363afb3faf2618bb6b805da960b31708b325589a9980c07e4400d3d162e21",
+    "counter_config_sha256": "12d9bd8887956c5cfa0239972da00425c85c10c04d338b22d84d505a48f222b2",
+    "command": "/home/andyhu/.cache/uv/archive-v0/2EEHNuXZame80Ad1/_rocm_sdk_core/bin/rocprofv3 -i /home/andyhu/projects/inference/alice-infer/temp/memory-window/profile-b/input.yaml -d /home/andyhu/projects/inference/alice-infer/temp/memory-window/profile-b/capture --kernel-trace --output-format csv --kernel-include-regex window_entry --kernel-iteration-range \\[4\\,8\\,12\\,16\\,20\\,24\\,28\\,32\\] -- numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/memory-window/profile-b/measured-window --mib 1040 --rounds 1 --repeats 1 --seed 12345"
+  },
+  {
+    "profile": "temp/memory-window/profile-c",
+    "binary_sha256": "d92363afb3faf2618bb6b805da960b31708b325589a9980c07e4400d3d162e21",
+    "counter_config_sha256": "12d9bd8887956c5cfa0239972da00425c85c10c04d338b22d84d505a48f222b2",
+    "command": "/home/andyhu/.cache/uv/archive-v0/2EEHNuXZame80Ad1/_rocm_sdk_core/bin/rocprofv3 -i /home/andyhu/projects/inference/alice-infer/temp/memory-window/profile-c/input.yaml -d /home/andyhu/projects/inference/alice-infer/temp/memory-window/profile-c/capture --kernel-trace --output-format csv --kernel-include-regex window_entry --kernel-iteration-range \\[4\\,8\\,12\\,16\\,20\\,24\\,28\\,32\\] -- numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/memory-window/profile-c/measured-window --mib 1040 --rounds 1 --repeats 1 --seed 12345"
+  }
+]

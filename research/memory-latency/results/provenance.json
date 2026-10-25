@@ -1,0 +1,16 @@
+[
+  {
+    "run": "temp/memory-latency/a",
+    "binary_sha256": "8b8eec342e73bdc4cd2dbe44db0f69cdb23f52f42f222e6789aafadb30bc0e16",
+    "source_sha256": "181e2f447958faad344662daa5eb421b4b43557fb08aea0acb6b8e07e8da4c74",
+    "command": "env HIP_VISIBLE_DEVICES=0 numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/memory-latency/a/measured-probe --rounds 9 --iterations 65536 --seed 12345",
+    "device": "device=0 pci=0000:31:00.0 arch=gfx90a:sramecc+:xnack- CUs=104 steady_khz=25000 seed=12345 model=none context=none automatic_clocks"
+  },
+  {
+    "run": "temp/memory-latency/b",
+    "binary_sha256": "8b8eec342e73bdc4cd2dbe44db0f69cdb23f52f42f222e6789aafadb30bc0e16",
+    "source_sha256": "181e2f447958faad344662daa5eb421b4b43557fb08aea0acb6b8e07e8da4c74",
+    "command": "env HIP_VISIBLE_DEVICES=0 numactl --cpunodebind=0 --membind=0 /home/andyhu/projects/inference/alice-infer/temp/memory-latency/b/measured-probe --rounds 9 --iterations 65536 --seed 98765",
+    "device": "device=0 pci=0000:31:00.0 arch=gfx90a:sramecc+:xnack- CUs=104 steady_khz=25000 seed=98765 model=none context=none automatic_clocks"
+  }
+]

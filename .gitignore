@@ -16,3 +16,4 @@ tests/hf_oracle/
 /temp/*
 !/temp/.gitkeep
 .rocprofv3/
+/tools/external/

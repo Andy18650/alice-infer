@@ -1,0 +1,3 @@
+layout,protocol,round,m,n,k,ctas,resident_ctas_per_cu,a_bytes,packed_a_bytes,pack_us,event_us,gemm_us,grid_body_us,median_core_MHz,useful_TFLOPs,executed_TFLOPs,reference_outputs,full_reference,valid
+packed,kernel,0,63,131,352,2,2,44352,90112,0.000000,51.360001,51.360001,26.720000,1687.201,0.113125,0.449156,8253,1,1
+packed,activation,0,63,131,352,2,2,44352,90112,13.280000,60.160000,46.880001,27.200000,1676.131,0.096578,0.492079,8253,1,1

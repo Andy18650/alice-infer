@@ -1,0 +1,3 @@
+layout,protocol,round,m,n,k,ctas,resident_ctas_per_cu,a_bytes,packed_a_bytes,pack_us,event_us,gemm_us,grid_body_us,median_core_MHz,useful_TFLOPs,executed_TFLOPs,reference_outputs,full_reference,valid
+rowmajor,kernel,0,33,129,160,2,2,10560,40960,0.000000,20.799999,20.799999,8.160000,1673.897,0.065492,0.504123,4257,1,1
+rowmajor,activation,0,33,129,160,2,2,10560,40960,0.000000,44.639000,44.639000,20.320000,1688.386,0.030517,0.234901,4257,1,1

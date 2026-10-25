@@ -1,0 +1,16 @@
+0f7751a0f0913973648f71b46e932a6d68733907109400c51a79d024ff0e2e10  /home/andyhu/projects/inference/alice-infer/research/practical-gemm/probe.hip
+224e913c7841ad47074bb3ca973c2c6cd344e7abad9edf74b36066c8fa822a9f  /home/andyhu/projects/inference/alice-infer/research/practical-gemm/rowmajor_kernel.hpp
+62166694a90697da4333bb71b21c86a58281b51625915271f76ef6f000ad9e15  /home/andyhu/projects/inference/alice-infer/research/practical-gemm/generate.py
+faff5dc8d2cae2294328b2edaad053cad7903c4dcabf8795e0537c008b09fbaf  /home/andyhu/projects/inference/alice-infer/research/practical-gemm/build.sh
+d905012c9e7700ddad0d1c0aa5f92d99fb14efabf78ad270c63d9670df22a193  /home/andyhu/projects/inference/alice-infer/research/native-gemm/data.hpp
+651be08447be9068f23ee7b43a0cb3b47884d1a3aea0b36b2747b14ad02c10dd  /home/andyhu/projects/inference/alice-infer/research/native-gemm/data_fp8.hpp
+2ee46d332fd3100799110b4ba7f9927dce85928d8942dbf12672e8e1207e7390  /home/andyhu/projects/inference/alice-infer/research/native-gemm/data_scaled.hpp
+b993a931540696ba3709269aebf950bdd8ca2673a9d7d723a9d4c7c2b86cc26f  /home/andyhu/projects/inference/alice-infer/research/native-gemm/scaled_kernel.hpp
+98f84edcc9870e74599f4dbbee7729817026678979632fa0710f8957d5895380  /home/andyhu/projects/inference/alice-infer/research/native-gemm/generate.py
+133774b4283f9d98545062b9f0290f773a32e4c9319daf902644728ceb5da3da  /home/andyhu/projects/inference/alice-infer/research/native-gemm/generate_fp8.py
+209eb909d050f352205f5ba11e1cc8b3f31fd3fc3abd2a478716dcbe62264d7e  /home/andyhu/projects/inference/alice-infer/research/native-gemm/generate_scaled.py
+1f82e1858c6d8aa91e0f2ef1cb9d3672f725e742f5858ff226837c28f627d10a  /home/andyhu/projects/inference/alice-infer/research/native-gemm/generate_scale_latency.py
+fa0d98941b9ef580be4a4bfc6d3032c43ad75437abc4ce80a90be0218d147853  /home/andyhu/projects/inference/alice-infer/research/native-gemm/generate_q0_schedule.py
+22e8e57bde9a77c0f16e92b35c9778ba71afe48284bc5bc193547f4ee88dde30  /home/andyhu/projects/inference/alice-infer/temp/practical-gemm/rowmajor-a-v2/rowmajor/compute.hpp
+7f86fc330a34d336c04a1cf1277af6c8f357d36f8fc1e4f1ddf875ff6dcaad01  /home/andyhu/projects/inference/alice-infer/temp/practical-gemm/rowmajor-a-v2/rowmajor/probe
+ca47167977dfcf712555b90a5fd1a5fc65e93cf746a5ce500d9901361b111831  /home/andyhu/projects/inference/alice-infer/temp/practical-gemm/rowmajor-a-v2/rowmajor/probe.hsaco

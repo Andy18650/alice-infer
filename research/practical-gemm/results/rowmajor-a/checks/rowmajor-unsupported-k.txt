@@ -1,0 +1,1 @@
+ERROR initial study requires K multiple-of32 or zero; dimensions/options out of range

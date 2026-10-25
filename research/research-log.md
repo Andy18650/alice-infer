@@ -1453,3 +1453,32 @@ Links replace duplicated chronology; README and early DESIGN_LOG direct readers
 there. Final table values checked against recorded FP16/MFMA-first and balanced
 FP8 CSVs, with cross-series comparison limits explicit. Documentation only;
 no new benchmark, kernel, policy or production change.
+
+**Practical-shaped GEMM study (user-directed):** new `practical-gemm/` isolates
+row-major FP16 A (true stride K, no M/K padding) against balanced packed-A /
+finite E4M3FN B / K128N128 FP32 scales. Keep B/consumer/matrix/scale pipeline
+unchanged, four adjacent lanes per row's K32, four A b64 LDS scatters instead
+of two b128. 256 VGPR/0 AGPR/private0/cap2, SGPR51->59. Explicit initial
+K-multiple-of32 restriction; M/N tails and K0 supported. No smaller-M tile yet.
+Packed baseline's complete23,292 native instruction bytes equal the historical
+balanced kernel. Both variants checked independently from logical operands.
+
+First matched study:8B QKV/gate-up/down projections at M1/16/128/512/2048 plus
+QKV33/129,104/208/312 at K8192/32768 and1664-CTA large check. Kernel-only versus
+GPU pack+GEMM activation protocol, already-FP16 device A; no FP32 conversion,
+weight packing/H2D or model claim. Plain GPU packer is not optimal. HIP0/BDF31,
+CPU+memoryNUMA0,automaticclocks,two counterbalanced paired nine-sample repeats.
+Row-major loses every kernel comparison: QKV M1 +15.94% time (activation
++4.84%); down M2048 +9.67% (activation -6.86%); large +53.11% (activation
++30.90%),145.9->95.3 useful TFLOP/s. Narrow-N controls can favor skipping this
+packer; small-M practical shapes do not. New address/scatter work disrupts
+q0 balance, changes LDS/locality behavior; do not infer a unique bottleneck or
+an intrinsic row-major disadvantage. No follow-up tuning hidden in the study.
+
+1964 checked GEMM launches/214 hashed processes,1,387,008 coordinate cases,
+all-process full GPU-A-pack gates, full/sampled numerical references, all-C
+poison/finite/guards,1964 raw-clock checks and1964 low-word-duplication negatives.
+As-run sources/ISA/metadata/commands/data and checks collocated under
+`practical-gemm/results/rowmajor-a/`; v1 pilot and v2 measured binaries intact
+in durabletemp. See its README for limits, variance caveat and replay. No
+production/CMake/model/session/system/package/clock-policy changes.

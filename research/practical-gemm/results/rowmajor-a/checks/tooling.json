@@ -1,0 +1,13 @@
+{
+  "python_ast": true,
+  "shell_syntax": true,
+  "documentation_links": true,
+  "derived_reports_byte_identical": true,
+  "coordinate_native_resource_replay_identical": true,
+  "warning_free_hip_builds": true,
+  "clangd_main_exit": 0,
+  "clangd_header_exit": 3,
+  "clangd_header_compiler_ast_errors": 0,
+  "clangd_header_interactive_define_outline_failures": 3,
+  "header_tidy_note": "single-TU kernel definition in header; ODR warning not a compilation failure"
+}

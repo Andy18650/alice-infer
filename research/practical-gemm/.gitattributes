@@ -1,0 +1,3 @@
+*.bin binary
+# Python's standard CSV dialect writes RFC4180 CRLF; preserve recorded bytes.
+results/**/*.csv whitespace=cr-at-eol

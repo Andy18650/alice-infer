@@ -1,0 +1,4 @@
+HIP0 BDF=0000:31:00.0 CUs104 residentCTA/CU2 layout=packed M/N/K=64/131/256 grid2 no model/context,automatic clocks,external NUMA; FP16 A/E4M3FN B/K128N128 FP32 scales
+wall_clock_khz=25000
+GPU A pack FULL 16384 words exact; reference FULL 8384 outputs; A bytes rowmajor32768 packed65536
+COMPLETE all C finite after poison, logical refs/guards/input pack exact

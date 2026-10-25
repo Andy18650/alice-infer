@@ -1,0 +1,1 @@
+hipcc -O3 -std=c++20 --offload-arch=gfx90a -fdenormal-fp-math=ieee -Wall -Wextra -I/home/andyhu/projects/inference/alice-infer/temp/practical-gemm/rowmajor-a-v2/rowmajor -DSTUDY_ROW_MAJOR_A=1 /home/andyhu/projects/inference/alice-infer/research/practical-gemm/probe.hip -o /home/andyhu/projects/inference/alice-infer/temp/practical-gemm/rowmajor-a-v2/rowmajor/probe

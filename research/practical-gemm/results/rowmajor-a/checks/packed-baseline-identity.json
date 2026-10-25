@@ -1,0 +1,8 @@
+{
+  "reference_build": "/home/andyhu/projects/inference/alice-infer/temp/native-gemm/q0-schedule/balanced",
+  "new_build": "/home/andyhu/projects/inference/alice-infer/temp/practical-gemm/rowmajor-a-v2/packed",
+  "generated_header_identical": true,
+  "complete_native_gemm_instruction_bytes_identical": true,
+  "kernel_instruction_bytes": 23292,
+  "kernel_instruction_sha256": "a2754e6370c5d94340cb260a270e9d6337c9e941db26a7d274b3aa62cffe894c"
+}

@@ -1,5 +1,9 @@
 # Practical-shaped GEMM: row-major A, packed FP8 B
 
+**Follow-up: [COMMON_B.md](COMMON_B.md)** compares one shared B representation
+across decode and prefill on 70B TP4/8 per-rank shapes. Results below retain the
+initial row-major-A/packing-cost experiment, not the later format comparison.
+
 First stage of the user-directed practical-interface study. **FP16 A is ordinary
 row-major `[M,K]`, stride exactly K, with no M/K padding.** B retains the existing
 finite E4M3FN packing and logical FP32 K128/N128 scale table. No B simplification,

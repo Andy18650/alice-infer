@@ -1,0 +1,2 @@
+format,path,round,m,n,k,ctas,waves_per_cta,resident_ctas_per_cu,b_storage_bytes,event_us,grid_body_us,median_core_MHz,useful_TFLOPs,useful_weight_GBs,requested_weight_GBs,reference_outputs,full_reference,valid
+block256,gemm,0,64,129,640,2,4,2,163840,68.800003,47.360000,1680.271,0.153600,1.200000,2.381395,8256,1,1

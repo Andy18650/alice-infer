@@ -1482,3 +1482,36 @@ As-run sources/ISA/metadata/commands/data and checks collocated under
 `practical-gemm/results/rowmajor-a/`; v1 pilot and v2 measured binaries intact
 in durabletemp. See its README for limits, variance caveat and replay. No
 production/CMake/model/session/system/package/clock-policy changes.
+
+**Shared B for decode/prefill (approved comparison):** `practical-gemm/COMMON_B.md`
+compares native MFMA packing, plain N-contiguous, K128/N128 and K128/N256 blocked
+FP8 weights. Same execution B allocation passes both row-major-A GEMM and
+column-coalesced split-K FP8 GEMV; no runtime A/B pack. Preserve K128/N128 FP32
+scale semantics and ordered accumulation. GEMM common-format adapter uses four
+DWORD B loads,8 byte-transpose perms and four b64 stores, preserving all matrix/
+scale/raw-read/fence projections. 256 VGPR/0 AGPR/private0/cap2,SGPR59->66.
+Decode reuses the CM strategy, not the BF16 binary/roofline: N4/lane,K128 raw
+partials,FP8 expansion and ordered scaled combine. All three main kernels are
+spill-free. Native GEMM complete26,716 instruction bytes match prior row-major
+baseline exactly. No independently tuned format/small-M/CTA sweep.
+
+70B **TP4/8 per-rank** QKV/O/gate-up/down,decode M1 and GEMM16/128/512/2048;
+no full-model/collective claim. Retain104/208/312 at K8192/32768 and1664-CTA
+large control. One HIP0/BDF31 GCD,CPU+memoryNUMA0,automaticclocks,no context,
+two reversed paired9-sample repeats. Plain is leading joint-format candidate,
+not a performance-neutral drop-in: TP4 gate-up/down decode native678.7/583.8
+->plain838.9/707.1 useful weightGB/s; TP8 gate-up/down587.2/504.8->685.3/542.1.
+Actual M2048 GEMM native->plain TP4 gate-up124.4->110.4,down126.4->114.7;
+TP8 gate-up124.7->112.4,down121.5->109.6 usefulTFLOP/s. Block128 recovers a
+little GEMM rate but can lose16-26% decode versus plain; Block256 no broad win.
+Long-K synthetic controls can favor Block128,with repeat variance retained.
+Rates are full-event/useful bytes or FLOPs,not physical HBM counters; FP8 decode
+max839 GB/s is not the existing BF16 near-roofline path. No automatic promotion.
+
+3552 checked timed invocations +1088 checked interop matmuls/544 hashed processes;
+65024 finite half bits and16256 byte transposes plus full B roundtrip/immutability
+in every process. Full/sampled logical refs,all-C poison/finite/guards,4,661,248
+address cases,272 stage/full-tail control cases,3552 raw-clock checks and3552
+low-word-duplication negatives. `results/common-b/` owns checks/source/native/
+commands/raw data; binaries/pilots remain `temp/practical-gemm/common-b-v1/`.
+No production/CMake/model/session/system/package/clock-policy changes.

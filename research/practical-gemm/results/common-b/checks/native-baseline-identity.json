@@ -1,0 +1,8 @@
+{
+  "reference_build": "/home/andyhu/projects/inference/alice-infer/temp/practical-gemm/rowmajor-a-v2/rowmajor",
+  "new_build": "/home/andyhu/projects/inference/alice-infer/temp/practical-gemm/common-b-v1/native",
+  "generated_header_identical": true,
+  "complete_native_gemm_instruction_bytes_identical": true,
+  "kernel_instruction_bytes": 26716,
+  "kernel_instruction_sha256": "9951e40b9a1e590c2577dd5300398652013cafabf94405ffc199285eea0512f2"
+}

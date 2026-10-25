@@ -7,3 +7,8 @@ If:
   PathMatch: rowmajor_kernel\.hpp
 CompileFlags:
   Add: [-include, hip/hip_runtime.h, -include, compute.hpp]
+---
+If:
+  PathMatch: (common_probe\.hip|common_gpu\.hpp|common_host\.hpp)
+CompileFlags:
+  CompilationDatabase: ../../temp/practical-gemm/common-b-v1/block128

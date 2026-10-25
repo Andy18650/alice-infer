@@ -1,0 +1,4 @@
+PRIMITIVES 65024 exact half outputs;16256 byte transposes PASS
+INTEROP same B pointer GEMM+decode PASS;full layout roundtrip65536 bytes
+HIP0 BDF=0000:31:00.0 CUs104 format=block256 path=gemm M/N/K=129/259/32 grid6 waves4 occupancy2 wall_clock_khz=25000; automatic clocks,no model/context,external NUMA
+COMPLETE timed refs/finite C/guards/B immutable;interop GEMM+decode pass

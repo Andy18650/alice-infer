@@ -1,0 +1,16 @@
+{
+  "python_ast": true,
+  "shell_syntax": true,
+  "documentation_links_and_table_values": true,
+  "derived_reports_byte_identical": true,
+  "coordinate_native_resource_replay_identical": true,
+  "warning_free_hip_builds": true,
+  "clangd_main_exit": 0,
+  "clangd_header_exit": 3,
+  "clangd_header_compiler_ast_errors": 0,
+  "clangd_header_interactive_define_outline_failures": 24,
+  "single_TU_kernel_header_ODR_warnings": 4,
+  "as_run_auditor_sha256": "3a484db26cf15ceca2f1a4644f31d1b9db9c26f2a2c69b85162b00fe0d17a42c",
+  "reviewed_auditor_sha256": "f08ade267c024a33cfa8f977c0fb0e26a502c7d75ef1b56d9a30093a5ded5897",
+  "auditor_cleanup": "Unused imports and explicit parentheses only; as-run source frozen; identical results reproduced."
+}

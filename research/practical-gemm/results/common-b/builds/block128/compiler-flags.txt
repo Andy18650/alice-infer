@@ -1,0 +1,1 @@
+hipcc -O3 -std=c++20 --offload-arch=gfx90a -fdenormal-fp-math=ieee -Wall -Wextra -DCOMMON_B_FORMAT=2 -I/home/andyhu/projects/inference/alice-infer/temp/practical-gemm/common-b-v1/block128 /home/andyhu/projects/inference/alice-infer/research/practical-gemm/common_probe.hip -o /home/andyhu/projects/inference/alice-infer/temp/practical-gemm/common-b-v1/block128/probe

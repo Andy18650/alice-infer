@@ -6,6 +6,8 @@ comparisons and build controls; [AUDIT.md](AUDIT.md) covers code/artifact review
 The follow-up [practical-shaped study](../practical-gemm/README.md) compares
 ordinary row-major A with this packed-A baseline, including GPU packing cost;
 its first loader is correct but not promoted over the packed kernel.
+The [shared-B comparison](../practical-gemm/COMMON_B.md) then tests plain/blocked
+weights with both decode and prefill on 70B TP4/8 per-rank projection shapes.
 
 From-scratch full-grid GEMM, **no rocBLAS/CK or other GEMM library linked or
 called**, including validation. HIP runtime plus native global/LDS/MFMA ISA.

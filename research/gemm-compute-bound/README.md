@@ -188,6 +188,13 @@ utilization: zero spills alone is not sufficient. See
 reuse, profiler limitations and reproduction commands. Profiled timings remain
 separate from the earlier unprofiled performance confirmations.
 
+## Retained exploratory MFMA controls
+
+The previously untracked accumulator-chain and single-MFMA loop-shape probes
+are described in [MFMA_PROBES.md](MFMA_PROBES.md), including fresh build/run
+commands and the limits of their historical hypotheses. They are separate
+from the main GEMM benchmark and do not add a production implementation.
+
 ## Reproduce and retained data
 
 ```sh
